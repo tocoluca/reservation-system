@@ -10,9 +10,24 @@
 
 <div class="max-w-7xl mx-auto mt-6 md:mt-10 bg-white p-4 md:p-8 rounded-xl shadow">
 
-    <h2 class="text-xl md:text-2xl font-bold mb-6">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+
+    <a href="{{ route('admin.dashboard') }}"
+       class="inline-flex items-center gap-2
+              border border-gray-300
+              text-gray-700
+              px-4 py-2 rounded-lg
+              hover:bg-gray-100
+              transition text-sm md:text-base">
+
+        <span class="text-lg">←</span> ダッシュボードへ戻る
+    </a>
+
+    <h2 class="text-xl md:text-2xl font-bold">
         企業一覧
     </h2>
+
+</div>
 
     @if(session('success'))
         <div class="bg-green-100 text-green-700 p-3 mb-4 rounded">

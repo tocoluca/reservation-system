@@ -10,9 +10,25 @@
 
 <div class="max-w-2xl mx-auto mt-6 md:mt-16 bg-white p-4 md:p-8 rounded-2xl shadow-lg">
 
-    <h2 class="text-xl md:text-2xl font-bold mb-6">
+
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+
+    <a href="{{ route('admin.dashboard') }}"
+       class="inline-flex items-center gap-2
+              border border-gray-300
+              text-gray-700
+              px-4 py-2 rounded-lg
+              hover:bg-gray-100
+              transition text-sm md:text-base">
+
+        <span class="text-lg">←</span> ダッシュボードへ戻る
+    </a>
+
+    <h2 class="text-xl md:text-2xl font-bold">
         企業登録
     </h2>
+
+</div>
 
     @if ($errors->any())
         <div class="bg-red-100 text-red-700 p-4 mb-6 rounded-lg text-sm">
@@ -109,12 +125,6 @@
         </button>
 
     </form>
-
-    <a href="{{ route('admin.dashboard') }}"
-       class="block mt-6 text-blue-500 hover:underline text-sm">
-        ← ダッシュボードへ戻る
-    </a>
-
 </div>
 
 </body>

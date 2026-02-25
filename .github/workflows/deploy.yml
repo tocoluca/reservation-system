@@ -1,0 +1,34 @@
+name: Deploy Laravel to Lolipop (Subdomain)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+
+      - name: Install Composer
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Deploy via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ftp.lolipop.jp
+	username: ${{ secrets.FTP_USERNAME }}
+	password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: reserve/laravel/
+          exclude: |
+            **/.env
+            **/storage/**
+            **/.git*

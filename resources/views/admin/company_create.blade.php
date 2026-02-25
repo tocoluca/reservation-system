@@ -2,16 +2,20 @@
 <html>
 <head>
     <title>企業登録</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100">
 
-<div class="max-w-xl mx-auto mt-20 bg-white p-8 rounded shadow">
+<div class="max-w-2xl mx-auto mt-6 md:mt-16 bg-white p-4 md:p-8 rounded-2xl shadow-lg">
 
-    <h2 class="text-xl font-bold mb-6">企業登録</h2>
+    <h2 class="text-xl md:text-2xl font-bold mb-6">
+        企業登録
+    </h2>
 
     @if ($errors->any())
-        <div class="bg-red-100 text-red-700 p-3 mb-4 rounded">
+        <div class="bg-red-100 text-red-700 p-4 mb-6 rounded-lg text-sm">
             @foreach ($errors->all() as $error)
                 <div>{{ $error }}</div>
             @endforeach
@@ -21,68 +25,93 @@
     <form method="POST" action="{{ route('admin.company.store') }}">
         @csrf
 
-        <div class="mb-4">
-            <label class="block mb-1">企業名</label>
-            <input type="text" name="name" value="{{ old('name') }}"
-                class="border p-2 w-full rounded">
+        <!-- 基本情報 -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-1">
+                企業名
+            </label>
+            <input type="text"
+                   name="name"
+                   value="{{ old('name') }}"
+                   class="w-full border border-gray-300 p-3 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-400">
         </div>
 
-        <div class="mb-4">
-            <label class="block mb-1">業種</label>
-            <select name="industry_type" class="border p-2 w-full rounded">
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-1">
+                業種
+            </label>
+            <select name="industry_type"
+                    class="w-full border border-gray-300 p-3 rounded-lg
+                           focus:outline-none focus:ring-2 focus:ring-green-400">
                 <option value="beauty">美容院</option>
                 <option value="dental">歯科</option>
             </select>
         </div>
 
-	<hr class="my-8">
+        <hr class="my-8">
 
-	<h2 class="text-lg font-bold mb-4">
-	マスター担当者情報
-	</h2>
+        <!-- マスター担当者 -->
+        <h3 class="text-lg md:text-xl font-bold mb-4">
+            マスター担当者情報
+        </h3>
 
-	<div class="mb-4">
-	    <label>担当者コード</label>
-	    <input name="staff_code"
-	           class="border p-2 w-full"
-		   value="{{ old('staff_code') }}"
-	           required>
-	</div>
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-1">
+                担当者コード
+            </label>
+            <input name="staff_code"
+                   value="{{ old('staff_code') }}"
+                   required
+                   class="w-full border border-gray-300 p-3 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-400">
+        </div>
 
-	<div class="mb-4">
-	    <label>担当者名</label>
-	    <input name="staff_name"
-	           class="border p-2 w-full"
-		   value="{{ old('staff_name') }}"
-	           required>
-	</div>
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-1">
+                担当者名
+            </label>
+            <input name="staff_name"
+                   value="{{ old('staff_name') }}"
+                   required
+                   class="w-full border border-gray-300 p-3 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-400">
+        </div>
 
-	<div class="mb-4">
-	    <label>パスワード</label>
-	    <input type="password"
-	           name="staff_password"
-	           class="border p-2 w-full"
-	           required>
-	</div>
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-1">
+                パスワード
+            </label>
+            <input type="password"
+                   name="staff_password"
+                   required
+                   class="w-full border border-gray-300 p-3 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-400">
+        </div>
 
-	<div class="mb-4">
-	    <label>マスター用メールアドレス</label>
-	    <input type="email"
-	           name="email"
-	           value="{{ old('email') }}"
-	           class="border p-2 w-full"
-	           required>
-	</div>
+        <div class="mb-8">
+            <label class="block text-sm font-semibold mb-1">
+                マスター用メールアドレス
+            </label>
+            <input type="email"
+                   name="email"
+                   value="{{ old('email') }}"
+                   required
+                   class="w-full border border-gray-300 p-3 rounded-lg
+                          focus:outline-none focus:ring-2 focus:ring-green-400">
+        </div>
 
-        <button class="bg-green-500 text-white px-4 py-2 rounded">
-            登録
+        <button class="w-full md:w-auto
+                       bg-green-500 hover:bg-green-600
+                       text-white px-6 py-3 rounded-lg
+                       font-semibold transition">
+            登録する
         </button>
-
 
     </form>
 
     <a href="{{ route('admin.dashboard') }}"
-       class="block mt-4 text-blue-500">
+       class="block mt-6 text-blue-500 hover:underline text-sm">
         ← ダッシュボードへ戻る
     </a>
 

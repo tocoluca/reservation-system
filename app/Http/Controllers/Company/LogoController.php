@@ -62,8 +62,8 @@ class LogoController extends Controller
             Storage::disk('public')->delete($filename);
         }
 
-        Storage::disk('public')->put($filename, $encoded);
-
+ //       Storage::disk('public')->put($filename, $encoded);
+    file_put_contents($path . '/' . $filename, $encoded);
         $company->update([
             'logo_path' => $filename
         ]);

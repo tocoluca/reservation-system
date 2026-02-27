@@ -49,19 +49,26 @@ public function update(Request $request)
     // 600x600
     $image->resize(600, 600);
 
-    // WebP
+    // WebP変換
     $encoded = $image->toWebp(quality: 85);
 
     $filename = $company->company_code . '.webp';
+
+    // 👇 ここが重要
     $path = public_path('logos');
 
-    // フォルダなければ作成
     if (!file_exists($path)) {
         mkdir($path, 0755, true);
     }
 
-    // 保存
-    file_put_contents($path . '/' . $filename, $encoded);
+    $fullPath = $path . '/' . $filename;
+
+    // 既存削除（任意）
+    if (file_exists($fullPath)) {
+        unlink($fullPath);
+    }
+
+    file_put_contents($fullPath, $encoded);
 
     $company->update([
         'logo_path' => 'logos/' . $filename

@@ -75,5 +75,7 @@ public function update(Request $request)
     ]);
 
     return back()->with('success', 'ロゴを更新しました');
+}
 
-}}
+
+}

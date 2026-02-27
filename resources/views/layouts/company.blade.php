@@ -22,54 +22,55 @@
 <body class="bg-gray-100 min-h-screen">
 
 @if($company)
-<header class="bg-white shadow">
+<header class="bg-white shadow-sm">
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3">
 
-        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div class="flex items-center justify-between">
 
             {{-- ================= 左：会社情報 ================= --}}
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3">
 
                 @if($company->logo_path)
-			<img src="{{ asset($company->logo_path) }}"
-     class="w-32 h-32 object-contain bg-white rounded">
+                    <img src="{{ asset($company->logo_path) }}"
+                         class="h-10 sm:h-12 w-auto object-contain bg-white rounded">
                 @else
-                    <div class="h-10 w-10 rounded-full bg-gray-200
-                                flex items-center justify-center font-bold">
+                    <div class="h-9 w-9 rounded-full bg-gray-200
+                                flex items-center justify-center font-bold text-sm">
                         {{ strtoupper(substr($company->name,0,1)) }}
                     </div>
                 @endif
 
-                <div>
-                    <div class="font-bold text-base sm:text-lg">
+                <div class="leading-tight">
+                    <div class="font-semibold text-sm sm:text-base">
                         {{ $company->name }}
                     </div>
-                    <div class="text-xs text-gray-500">
+                    <div class="text-xs text-gray-400">
                         管理画面
                     </div>
                 </div>
+
             </div>
 
             {{-- ================= 右：担当者情報 ================= --}}
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-center sm:text-right">
+            <div class="flex items-center gap-4 text-right">
 
-                <div>
-                    <div class="font-semibold text-sm">
+                <div class="hidden sm:block leading-tight">
+                    <div class="font-medium text-sm">
                         {{ $staff->name }}
                     </div>
-                    <div class="text-xs text-gray-500">
-                        権限：{{ $staff->role }}
+                    <div class="text-xs text-gray-400">
+                        {{ $staff->role }}
                     </div>
                 </div>
 
                 <form method="POST"
-                      action="{{ route('company.logout') }}"
-                      class="w-full sm:w-auto">
+                      action="{{ route('company.logout') }}">
                     @csrf
-                    <button class="w-full sm:w-auto
-                                   bg-red-500 text-white px-4 py-2
-                                   rounded-lg hover:opacity-90 transition">
+                    <button type="submit"
+                            class="text-xs text-gray-400
+                                   hover:text-red-500
+                                   transition">
                         ログアウト
                     </button>
                 </form>

@@ -29,8 +29,8 @@
                 <div class="flex flex-col sm:flex-row items-center gap-6">
 
                     @if($staff->image_path)
-                        <img src="{{ asset('storage/'.$staff->image_path) }}"
-                             class="h-24 w-24 rounded-full object-cover shadow">
+			    <img src="{{ asset($staff->image_path) }}"
+			         class="h-10 w-10 rounded-full object-cover">
                     @else
                         <div class="h-24 w-24 rounded-full bg-gray-200
                                     flex items-center justify-center text-gray-500">

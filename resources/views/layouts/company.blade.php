@@ -32,8 +32,8 @@
             <div class="flex items-center gap-4">
 
                 @if($company->logo_path)
-                    <img src="{{ asset('storage/'.$company->logo_path) }}"
-                         class="h-10 w-10 object-cover rounded-full">
+			<img src="{{ asset($company->logo_path) }}"
+     class="w-32 h-32 object-contain bg-white rounded">
                 @else
                     <div class="h-10 w-10 rounded-full bg-gray-200
                                 flex items-center justify-center font-bold">

@@ -39,15 +39,11 @@ public function update(Request $request)
     $company = $staff->company;
     $file = $request->file('logo');
 
-    $manager = new ImageManager(new Driver());
-    $image = $manager->read($file);
+	$manager = new ImageManager(new Driver());
+	$image = $manager->read($file);
 
-    // 中央正方形トリミング
-    $size = min($image->width(), $image->height());
-    $image->crop($size, $size);
-
-    // 600x600
-    $image->resize(600, 600);
+	// 最大600pxに縮小（比率維持）
+	$image->scaleDown(width: 600, height: 600);
 
     // WebP変換
     $encoded = $image->toWebp(quality: 85);

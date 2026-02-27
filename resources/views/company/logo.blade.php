@@ -20,8 +20,8 @@
         <div class="mb-8 text-center">
 
             @if($company->logo_path)
-                <img src="{{ asset('storage/'.$company->logo_path) }}"
-                     class="h-28 sm:h-32 mx-auto mb-4 object-contain">
+		<img src="{{ asset($company->logo_path) }}"
+     class="w-32 h-32 object-contain bg-white rounded">
             @else
                 <div class="h-24 w-24 sm:h-32 sm:w-32 mx-auto rounded-full bg-gray-200
                             flex items-center justify-center text-2xl sm:text-3xl font-bold">

@@ -178,11 +178,36 @@
             {{-- ================= 保存ボタン ================= --}}
             <div class="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t">
 
-                <a href="{{ route('company.dashboard') }}"
-                   class="text-center sm:text-left px-4 py-3 rounded-lg font-semibold"
-                   style="color: {{ $theme }}">
-                    ← ダッシュボードへ戻る
-                </a>
+@php
+    $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
+@endphp
+
+<a href="{{ route('company.dashboard') }}"
+   class="group inline-flex items-center justify-center gap-2
+          w-full sm:w-auto
+          px-6 py-3
+          rounded-xl
+          text-white font-semibold
+          shadow-lg
+          transition-all duration-200
+          hover:shadow-xl hover:-translate-y-0.5"
+   style="background: {{ $theme }}">
+
+    {{-- 左矢印アイコン --}}
+    <svg xmlns="http://www.w3.org/2000/svg"
+         class="w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1"
+         fill="none"
+         viewBox="0 0 24 24"
+         stroke="currentColor">
+        <path stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"/>
+    </svg>
+
+    ダッシュボードに戻る
+
+</a>
 
                 <button type="submit"
                         class="w-full sm:w-auto text-white px-6 py-3 rounded-lg shadow"

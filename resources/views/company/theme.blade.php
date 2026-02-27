@@ -2,19 +2,22 @@
 
 @section('content')
 
-<div class="max-w-4xl mx-auto">
+@php
+    $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
+@endphp
 
-    <h1 class="text-2xl font-bold mb-6">
+<div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+
+    {{-- タイトル --}}
+    <h1 class="text-2xl sm:text-3xl font-bold mb-8">
         テーマカラー設定
     </h1>
 
-    {{-- ============================= --}}
-    {{-- テーマ選択フォーム --}}
-    {{-- ============================= --}}
+    {{-- ================= テーマ選択 ================= --}}
     <form method="POST" action="{{ route('company.theme') }}">
         @csrf
 
-        <div class="grid grid-cols-5 gap-4 mb-8">
+        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 mb-10">
 
             @foreach($colors as $color)
                 <label class="cursor-pointer">
@@ -24,7 +27,7 @@
                            class="hidden theme-radio"
                            {{ $company->theme_color == $color ? 'checked' : '' }}>
 
-                    <div class="h-12 rounded-lg border-4
+                    <div class="h-14 rounded-xl border-4 transition
                                 {{ $company->theme_color == $color ? 'border-black' : 'border-transparent' }}
                                 theme-box"
                          style="background-color: {{ $color }}">
@@ -33,46 +36,51 @@
             @endforeach
 
         </div>
-		<div class="flex justify-between items-center mt-6">
 
-		@php
-		    $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
-		@endphp
+        {{-- ボタン --}}
+        <div class="flex flex-col sm:flex-row justify-between gap-4 mb-10">
 
-		<a href="{{ route('company.dashboard') }}"
-		   class="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg transition-all duration-200"
-		   style="color: {{ $theme }}">
+            <a href="{{ route('company.dashboard') }}"
+               class="w-full sm:w-auto text-center sm:text-left
+                      inline-flex items-center justify-center gap-2
+                      text-sm font-semibold px-4 py-3 rounded-lg"
+               style="color: {{ $theme }}">
 
-		    <svg xmlns="http://www.w3.org/2000/svg"
-		         class="w-4 h-4 transition-transform duration-200"
-		         fill="none" viewBox="0 0 24 24" stroke="currentColor">
-		        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-		              d="M15 19l-7-7 7-7" />
-		    </svg>
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="w-4 h-4"
+                     fill="none" viewBox="0 0 24 24"
+                     stroke="currentColor">
+                    <path stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 19l-7-7 7-7" />
+                </svg>
 
-		    ダッシュボードへ戻る
-		</a>
+                ダッシュボードへ戻る
+            </a>
 
-		    <button type="submit"
-		            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded">
-		        保存する
-		    </button>
+            <button id="saveButton"
+                    type="submit"
+                    class="w-full sm:w-auto text-white px-6 py-3 rounded-lg shadow-lg
+                           hover:opacity-90 transition duration-200"
+                    style="background-color: {{ $theme }}">
+                保存する
+            </button>
 
-		</div>
+        </div>
+
     </form>
 
-    {{-- ============================= --}}
-    {{-- プレビューエリア --}}
-    {{-- ============================= --}}
+    {{-- ================= プレビュー ================= --}}
     <hr class="my-10">
 
-    <h2 class="text-xl font-bold mb-4">
+    <h2 class="text-xl font-bold mb-6">
         プレビュー
     </h2>
 
-    <div class="max-w-md mx-auto bg-white shadow-xl rounded-2xl p-6">
+    <div class="max-w-md mx-auto bg-white shadow-2xl rounded-2xl p-6">
 
-        <div class="text-center mb-4">
+        <div class="text-center mb-6">
             <div class="text-lg font-bold">
                 {{ $company->name }}
             </div>
@@ -83,7 +91,7 @@
 
         <button id="previewButton"
                 style="background-color: {{ $company->theme_color }}"
-                class="w-full text-white py-3 rounded-full">
+                class="w-full text-white py-4 rounded-full shadow-lg">
             予約する
         </button>
 
@@ -91,9 +99,7 @@
 
 </div>
 
-{{-- ============================= --}}
-{{-- JS（リアルタイムプレビュー） --}}
-{{-- ============================= --}}
+{{-- ================= JS ================= --}}
 <script>
 
 document.querySelectorAll('.theme-radio').forEach(radio => {

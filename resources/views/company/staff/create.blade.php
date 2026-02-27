@@ -3,112 +3,139 @@
 @section('content')
 
 @php
-    $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
+    $company = auth()->guard('company')->user()->company;
+    $theme = $company->theme_color ?? '#3b82f6';
 @endphp
 
-<div class="max-w-3xl mx-auto">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 py-8">
 
-    {{-- ヘッダー --}}
-    <div class="rounded-xl shadow mb-8 p-6 text-white"
+    {{-- ================= ヘッダー ================= --}}
+    <div class="rounded-2xl shadow mb-8 p-6 sm:p-8 text-white"
          style="background: {{ $theme }}">
 
-        <h1 class="text-2xl font-bold">
+        <h1 class="text-2xl sm:text-3xl font-bold">
             担当者新規登録
         </h1>
 
-        <p class="text-sm opacity-90 mt-1">
+        <p class="text-sm opacity-90 mt-2">
             新しい担当者を登録します
         </p>
     </div>
 
-    <div class="bg-white shadow rounded-xl p-8">
+    {{-- ================= フォーム ================= --}}
+    <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
 
         <form method="POST" action="{{ route('company.staff.store') }}">
             @csrf
 
             {{-- 担当者コード --}}
-            <div class="mb-6">
-                <label class="block font-semibold mb-2">
+            <div class="mb-8">
+                <label class="block font-semibold mb-3">
                     担当者コード
                 </label>
-		<input type="text" disabled placeholder="自動採番されます">
+
+                <input type="text"
+                       disabled
+                       placeholder="自動採番されます"
+                       class="w-full border rounded-lg p-3 bg-gray-100 text-gray-500">
             </div>
 
             {{-- 名前 --}}
-            <div class="mb-6">
-                <label class="block font-semibold mb-2">
+            <div class="mb-8">
+                <label class="block font-semibold mb-3">
                     担当者名
                 </label>
+
                 <input type="text"
                        name="name"
                        value="{{ old('name') }}"
-                       class="w-full border rounded p-2 focus:ring-2"
+                       class="w-full border rounded-lg p-3 text-base
+                              focus:ring-2 focus:outline-none"
                        style="--tw-ring-color: {{ $theme }}">
+
+                @error('name')
+                    <div class="text-red-500 text-sm mt-2">
+                        {{ $message }}
+                    </div>
+                @enderror
             </div>
 
             {{-- パスワード --}}
-            <div class="mb-6">
-                <label class="block font-semibold mb-2">
+            <div class="mb-8">
+                <label class="block font-semibold mb-3">
                     初期パスワード
                 </label>
+
                 <input type="password"
                        name="password"
-                       class="w-full border rounded p-2 focus:ring-2"
+                       class="w-full border rounded-lg p-3 text-base
+                              focus:ring-2 focus:outline-none"
                        style="--tw-ring-color: {{ $theme }}">
+
+                @error('password')
+                    <div class="text-red-500 text-sm mt-2">
+                        {{ $message }}
+                    </div>
+                @enderror
             </div>
 
             {{-- 権限 --}}
-            <div class="mb-6">
-                <label class="block font-semibold mb-2">
+            <div class="mb-8">
+                <label class="block font-semibold mb-3">
                     権限
                 </label>
 
                 <select name="role"
-                        class="w-full border rounded p-2 focus:ring-2"
+                        class="w-full border rounded-lg p-3 text-base
+                               focus:ring-2 focus:outline-none"
                         style="--tw-ring-color: {{ $theme }}">
 
                     <option value="staff">一般スタッフ</option>
                     <option value="leader">リーダー</option>
                     <option value="area_leader">エリアリーダー</option>
                     <option value="master">マスター</option>
-
                 </select>
             </div>
 
             {{-- 予約可否 --}}
-            <div class="mb-6">
-                <label class="flex items-center gap-2">
+            <div class="mb-8">
+                <label class="flex items-center gap-3 text-base">
                     <input type="checkbox"
                            name="is_reservable"
                            value="1"
+                           class="w-5 h-5"
                            checked>
                     予約受付対象にする
                 </label>
             </div>
 
             {{-- 表示順 --}}
-            <div class="mb-8">
-                <label class="block font-semibold mb-2">
+            <div class="mb-10">
+                <label class="block font-semibold mb-3">
                     表示順
                 </label>
+
                 <input type="number"
                        name="priority_order"
                        value="0"
-                       class="w-full border rounded p-2 focus:ring-2"
+                       class="w-full border rounded-lg p-3 text-base
+                              focus:ring-2 focus:outline-none"
                        style="--tw-ring-color: {{ $theme }}">
             </div>
 
-            {{-- ボタン --}}
-            <div class="flex justify-between items-center">
+            {{-- ================= ボタン ================= --}}
+            <div class="flex flex-col sm:flex-row justify-between gap-4">
 
                 <a href="{{ route('company.staff.index') }}"
-                   class="text-gray-500 hover:text-gray-700">
+                   class="w-full sm:w-auto text-center sm:text-left
+                          px-4 py-3 rounded-lg text-gray-600 hover:text-gray-800 transition">
                     ← 一覧へ戻る
                 </a>
 
-                <button
-                    class="text-white px-6 py-2 rounded shadow hover:opacity-90 transition"
-                    style="background: {{ $theme }}">
+                <button type="submit"
+                        class="w-full sm:w-auto text-white px-6 py-3 rounded-lg
+                               shadow-lg hover:opacity-90 transition"
+                        style="background: {{ $theme }}">
                     登録する
                 </button>
 

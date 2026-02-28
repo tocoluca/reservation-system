@@ -101,6 +101,86 @@
                                class="w-full border rounded-lg p-3 focus:ring-2"
                                style="--tw-ring-color: {{ $theme }}">
                     </div>
+        {{-- 時間刻み --}}
+        <div class="mb-6">
+            <label class="block mb-2 font-semibold text-sm">
+                時間刻み（分）
+            </label>
+            <input type="number"
+                   name="slot_minutes"
+                   value="{{ old('address',$company->slot_minutes) }}"
+                   class="border p-3 w-full rounded-lg text-base focus:ring-2 focus:outline-none focus:ring-blue-400">
+        </div>
+
+        {{-- 同時予約数 --}}
+        <div class="mb-6">
+            <label class="block mb-2 font-semibold text-sm">
+                同時予約数
+            </label>
+
+            <input type="number"
+                   name="max_simultaneous_reservations"
+                   value="{{ old('address',$company->max_simultaneous_reservations) }}"
+                   class="border p-3 w-full rounded-lg text-base focus:ring-2 focus:outline-none focus:ring-blue-400">
+        </div>
+
+        {{-- 営業時間 --}}
+        <div class="mb-6">
+            <label class="block mb-2 font-semibold text-sm">
+                営業時間（開始）
+            </label>
+
+            <input type="time"
+                   name="open_time"
+                   value="{{ old('address',$company->open_time) }}"
+                   class="border p-3 w-full rounded-lg text-base focus:ring-2 focus:outline-none focus:ring-blue-400">
+        </div>
+
+        <div class="mb-6">
+            <label class="block mb-2 font-semibold text-sm">
+                営業時間（終了）
+            </label>
+
+            <input type="time"
+                   name="close_time"
+                   value="{{ old('address',$company->close_time) }}"
+                   class="border p-3 w-full rounded-lg text-base focus:ring-2 focus:outline-none focus:ring-blue-400">
+        </div>
+
+        {{-- 休業日 --}}
+        <div class="mb-6">
+            <label class="block mb-3 font-semibold text-sm">
+                休業日
+            </label>
+
+            @php
+                $days = ['日','月','火','水','木','金','土'];
+    $selected = old('regular_holidays', $company->regular_holidays ?? []);
+            @endphp
+
+<div class="grid grid-cols-4 gap-2 text-sm">
+    @foreach($days as $i => $day)
+        <label class="flex items-center gap-2 border rounded-lg px-2 py-2 cursor-pointer hover:bg-gray-50">
+            <input type="checkbox"
+                   name="regular_holidays[]"
+                   value="{{ $i }}"
+                   @checked(in_array($i, $selected))>
+            <span>{{ $day }}</span>
+        </label>
+    @endforeach
+</div>
+        </div>
+
+        {{-- 祝日設定 --}}
+        <div class="mb-8">
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox"
+                       name="holiday_is_closed"
+                       value="1"       
+			{{ old('active', $company->holiday_is_closed) ? 'checked' : '' }}>
+                祝日を休業日にする
+            </label>
+        </div>
 
                 </div>
             </div>

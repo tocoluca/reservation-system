@@ -12,6 +12,8 @@ class Company extends Model
 	'industry_type',
 	'logo_path',
 	'email',
+	'phone',
+	'address',
 	'slot_minutes',
 	'theme_color',
 	'max_simultaneous_reservations',

@@ -18,28 +18,28 @@ class CompanyController extends Controller
 
 	public function update(Request $request)
 	{
-//Log::debug('ログ１');
+Log::debug('ログ１');
 	    $company = Auth::guard('company')->user()->company;
 	    $current = Auth::guard('company')->user();
 
 	    if ($current->role !== 'master') {
 	        abort(403);
 	    }
-//Log::debug('ログ２');
+Log::debug('ログ２');
 
 	    $validated = $request->validate([
 //		'email' => 'nullable|email',
 	        'email' => 'nullable|email:rfc,dns',
 	        'homepage' => 'nullable|url',
 	        'theme_color' => 'required',
-	        'slot_minutes' => 'required|integer|min:5',
-	        'max_simultaneous_reservations' => 'required|integer|min:1',
+	        'slot_minutes' => 'required|integer|min:5|max:120',
+	        'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
 	        'open_patterns' => 'nullable|array',
 	        'regular_holidays' => 'nullable|array',
 	    ]);
 
 $dayNames = ['日','月','火','水','木','金','土'];
-
+Log::debug('ログ２－１');
 		foreach ($validated['open_patterns'] ?? [] as $weekday => $patterns) {
 
 		    foreach ($patterns as $index => $pattern) {
@@ -61,7 +61,7 @@ $dayNames = ['日','月','火','水','木','金','土'];
 		        }
 		    }
 		}
-//Log::debug('ログ３');
+Log::debug('ログ３');
 
 		$patterns = collect($request->open_patterns ?? [])
 		    ->map(function ($day) {
@@ -72,7 +72,7 @@ $dayNames = ['日','月','火','水','木','金','土'];
 		    })
 		    ->toArray();
 
-//Log::debug('ログ４');
+Log::debug('ログ４');
 
 
 	    $updateData = [
@@ -88,7 +88,7 @@ $dayNames = ['日','月','火','水','木','金','土'];
 	        'holiday_is_closed' => $request->boolean('holiday_is_closed'),
 	        'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
 	    ];
-//Log::debug('ログ５');
+Log::debug('ログ５');
 
 	    $company->update($updateData);
 

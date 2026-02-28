@@ -218,6 +218,12 @@ Route::prefix('company')->group(function () {
 		    [ReservationController::class,'cancel'])
 		    ->name('company.reservation.cancel');
 
+		Route::delete('reservation/{id}',
+		    [ReservationController::class,'destroy'])
+		    ->name('company.reservation.destroy');
+Route::get('calendar/available-staff',
+    [ReservationController::class,'availableStaff'])
+    ->name('company.calendar.availableStaff');
 
         });
     });

@@ -82,11 +82,25 @@ class StaffController extends Controller
 	        $newCode = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
 
 	        // 画像保存
-	        $path = null;
 	        if ($request->hasFile('image')) {
-	            $path = $request->file('image')
-	                ->store('staff', 'public');
-	        }
+			$path = null;
+
+			if ($request->hasFile('image')) {
+
+			    $file = $request->file('image');
+
+			    $dir = public_path('companies/'.$company->id.'/staff');
+
+			    if (!file_exists($dir)) {
+			        mkdir($dir, 0755, true);
+			    }
+
+			    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+
+			    $file->move($dir, $filename);
+
+			    $path = 'companies/'.$company->id.'/staff/'.$filename;
+			}	        }
 
 	        // Staff作成
 	        $staff = Staff::create([
@@ -159,9 +173,20 @@ public function update(Request $request, Staff $staff)
         // ✅ ① 新画像アップロード
         if ($request->hasFile('image')) {
 
-            $newImagePath = $request->file('image')
-                ->store('staff', 'public');
-        }
+	    $file = $request->file('image');
+
+	    $dir = public_path('companies/'.$staff->company_id.'/staff');
+
+	    if (!file_exists($dir)) {
+	        mkdir($dir, 0755, true);
+	    }
+
+	    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+
+	    $file->move($dir, $filename);
+
+	    $newImagePath = 'companies/'.$staff->company_id.'/staff/'.$filename;
+	}
 
         // ✅ ② DB更新
         $staff->update([
@@ -174,9 +199,9 @@ public function update(Request $request, Staff $staff)
 
         // ✅ ③ DB成功後に旧画像削除
         if ($request->hasFile('image') && $oldImagePath) {
-            if (Storage::disk('public')->exists($oldImagePath)) {
-                Storage::disk('public')->delete($oldImagePath);
-            }
+		if ($oldImagePath && file_exists(public_path($oldImagePath))) {
+		    unlink(public_path($oldImagePath));
+		}
         }
     });
 

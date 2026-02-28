@@ -205,38 +205,60 @@ function loadCalendar() {
                         return;
                     }
 
+                    // ===== 予約済み =====
                     if (cell.status === '×') {
-                        html += `
-                            <td class="p-4 text-center">
-                                <div class="mx-auto w-10 h-10 flex items-center justify-center
-                                            rounded-full bg-red-100 text-red-600
-                                            shadow cursor-pointer hover:bg-red-200 transition"
-                                    onclick='openReservationDetail(${JSON.stringify(cell)})'>
-                                    ×
-                                </div>
-                            </td>`;
-                    } else {
-                        html += `
-                            <td class="p-4 text-center">
-                                <div class="mx-auto w-9 h-9 flex items-center justify-center
-                                            rounded-full text-white shadow
-                                            cursor-pointer hover:opacity-90 transition"
-                                    style="background: {{ $theme }}"
-                                    onclick="reserve('${d} ${time}')">
-                                    ○
-                                </div>
-                            </td>`;
+
+                        if (cell.reservation_id) {
+
+                            html += `
+                                <td class="p-3 text-center">
+                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
+                                                rounded-full bg-red-100 text-red-600
+                                                shadow cursor-pointer hover:bg-red-200 transition"
+                                        data-id="${cell.reservation_id}"
+                                        onclick="handleCancelClick(this)">
+                                        ×
+                                    </div>
+                                </td>`;
+
+                        } else {
+
+                            html += `
+                                <td class="p-3 text-center">
+                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
+                                                rounded-full bg-gray-200 text-gray-400 shadow">
+                                        ×
+                                    </div>
+                                </td>`;
+                        }
+
                     }
+                    // ===== 空き =====
+                    else {
+			    html += `
+			        <td class="p-3 text-center">
+			            <div class="mx-auto w-8 h-8 flex items-center justify-center
+			                        rounded-full text-white shadow
+			                        cursor-pointer hover:opacity-90 transition"
+			                style="background: {{ $theme }}"
+			                onclick="openStaffSelector('${d} ${time}')">
+			                ○
+			            </div>
+			        </td>`;
+                    }
+
                 });
 
                 html += '</tr>';
+
             });
 
             html += '</tbody></table></div>';
+
             document.getElementById('calendar').innerHTML = html;
+
         });
 }
-
 /* ================= DAY ================= */
 /* ================= DAY ================= */
 
@@ -260,7 +282,7 @@ function loadDayCalendar() {
             head.innerHTML = "";
             body.innerHTML = "";
 
-            /* ===== ヘッダー（週表示と統一） ===== */
+            /* ===== ヘッダー ===== */
 
             let headerRow = `
                 <tr>
@@ -301,10 +323,11 @@ function loadDayCalendar() {
 
                         row += `
                             <td class="p-4 text-center">
-                                <div class="mx-auto w-9 h-9 flex items-center justify-center
+                                <div class="mx-auto w-8 h-8 flex items-center justify-center
                                             rounded-full bg-red-100 text-red-600
                                             shadow cursor-pointer hover:bg-red-200 transition"
-                                    onclick='openReservationDetail(${JSON.stringify(cell)})'>
+                                    data-id="${cell.reservation_id}"
+                                    onclick="handleCancelClick(this)">
                                     ×
                                 </div>
                             </td>`;
@@ -339,7 +362,6 @@ function loadDayCalendar() {
             });
         });
 }
-
 function reserve(datetime, staffId = null) {
 
     if (!confirm(datetime + ' で予約しますか？')) return;
@@ -366,7 +388,102 @@ function reserve(datetime, staffId = null) {
         }
     });
 }
+function cancelReservation(reservationId) {
 
+    if (!confirm('この予約をキャンセルしますか？')) return;
+
+    fetch(`/company/reservation/${reservationId}/cancel`, {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(result => {
+
+        if (result.success) {
+
+            if (mode === 'week') loadCalendar();
+            if (mode === 'day') loadDayCalendar();
+
+        } else {
+            alert(result.message);
+        }
+
+    });
+}
+function handleCancelClick(el) {
+    const reservationId = el.dataset.id;
+    cancelReservation(reservationId);
+}
+function openReservationDetail(cell) {
+
+    if (confirm(
+        `顧客名: ${cell.customer_name}\n` +
+        `日時: ${cell.start_at}\n\nキャンセルしますか？`
+    )) {
+        cancelReservation(cell.reservation_id);
+    }
+}
+function handleCancelClick(el) {
+
+    const reservationId = el.dataset.id;
+
+    if (!reservationId || reservationId === 'undefined') {
+        alert('予約IDが取得できません');
+        return;
+    }
+
+    cancelReservation(reservationId);
+}
+
+let selectedDatetime = null;
+
+function openStaffSelector(datetime) {
+
+    selectedDatetime = datetime;
+
+    fetch(`/company/calendar/available-staff?datetime=${datetime}`)
+        .then(res => res.json())
+        .then(data => {
+
+            const area = document.getElementById('staffListArea');
+            area.innerHTML = '';
+
+            data.forEach(staff => {
+                area.innerHTML += `
+                    <div onclick="reserveWithStaff(${staff.id})"
+                        class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <img src="${staff.image_url ?? '/noimage.png'}"
+                             class="w-10 h-10 rounded-full object-cover">
+                        <div>${staff.name}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('staffModal').classList.remove('hidden');
+            document.getElementById('staffModal').classList.add('flex');
+        });
+}
+
+function closeStaffModal() {
+    document.getElementById('staffModal').classList.add('hidden');
+}
+
+function reserveWithStaff(staffId) {
+    closeStaffModal();
+    reserve(selectedDatetime, staffId);
+}
 </script>
 
 @endsection
+<div id="staffModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-96 p-6">
+        <h2 class="text-lg font-bold mb-4">担当者を選択</h2>
+        <div id="staffListArea" class="space-y-3"></div>
+        <button onclick="closeStaffModal()" class="mt-4 text-sm text-gray-500">
+            閉じる
+        </button>
+    </div>
+</div>

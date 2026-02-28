@@ -17,178 +17,102 @@ class ReservationController extends Controller
     /* ==========================================================
        予約登録
     ========================================================== */
-    public function store(Request $request)
-    {
+public function store(Request $request)
+{
+    $company = Auth::guard('company')->user()->company;
 
-        $company = Auth::guard('company')->user()->company;
+    try {
 
-        try {
+        $request->validate([
+            'start_at'      => 'required|date',
+            'customer_name' => 'required',
+            'menu_id'       => 'nullable|integer',
+            'staff_id'      => 'nullable|integer'
+        ]);
 
-            $request->validate([
-                'start_at'      => 'required|date',
-                'customer_name' => 'required',
-                'menu_id'       => 'nullable|integer',
- 		'staff_id'      => 'nullable|integer'
-            ]);
+        $start = Carbon::parse($request->start_at);
+        $duration = $company->slot_minutes;
 
-            $start = Carbon::parse($request->start_at);
-            $duration = $company->slot_minutes;
+        if (
+            $company->industry_type === 'beauty' &&
+            $company->menu_time_priority_flag &&
+            $request->menu_id
+        ) {
+            $menu = \App\Models\Menu::findOrFail($request->menu_id);
+            $duration = $menu->duration_minutes;
+        }
 
-            // 美容院メニュー時間優先
-            if (
-                $company->industry_type === 'beauty' &&
-                $company->menu_time_priority_flag &&
-                $request->menu_id
-            ) {
-                $menu = \App\Models\Menu::findOrFail($request->menu_id);
-                $duration = $menu->duration_minutes;
+        $end = $start->copy()->addMinutes($duration);
+
+        DB::transaction(function () use ($request, $company, $start, $end, &$reservation, &$assignedStaffId) {
+
+            $selectedStaffId = $request->staff_id;
+
+            if ($selectedStaffId) {
+                $staffList = $company->staff()
+                    ->where('id', $selectedStaffId)
+                    ->where('is_reservable', true)
+                    ->lockForUpdate()
+                    ->get();
+            } else {
+                $staffList = $company->staff()
+                    ->where('is_reservable', true)
+                    ->orderBy('priority_order')
+                    ->lockForUpdate()
+                    ->get();
             }
 
-            $end = $start->copy()->addMinutes($duration);
+            $assignedStaffId = null;
 
-            /* -------------------------
-               ① 休業日チェック
-            ------------------------- */
-            $weekday = $start->dayOfWeek;
-            $regularHolidays = $company->regular_holidays ?? [];
+            foreach ($staffList as $staff) {
 
-            if (in_array($weekday, $regularHolidays)) {
-                throw new \Exception('本日は定休日です');
-            }
+                $exists = Reservation::where('company_id', $company->id)
+                    ->where('staff_id', $staff->id)
+                    ->where('status', 'reserved')
+                    ->where(function ($q) use ($start, $end) {
+                        $q->where('start_at', '<', $end)
+                          ->where('end_at',   '>', $start);
+                    })
+                    ->exists();
 
-            if ($company->holiday_is_closed) {
-                $holidays = Yasumi::create('Japan', $start->year);
-                if ($holidays->isHoliday($start)) {
-                    throw new \Exception('本日は祝日のため休業です');
-                }
-            }
-
-            /* -------------------------
-               ② 営業時間チェック（曜日別）
-            ------------------------- */
-            $dayPatterns = $company->open_patterns[$weekday] ?? [];
-
-            if (empty($dayPatterns)) {
-                throw new \Exception('本日は休業日です');
-            }
-
-            $valid = false;
-
-            foreach ($dayPatterns as $pattern) {
-
-                if (empty($pattern['open']) || empty($pattern['close'])) {
-                    continue;
-                }
-
-                $open = Carbon::parse($start->format('Y-m-d').' '.$pattern['open']);
-                $close = Carbon::parse($start->format('Y-m-d').' '.$pattern['close']);
-
-                if ($start >= $open && $end <= $close) {
-                    $valid = true;
+                if (!$exists) {
+                    $assignedStaffId = $staff->id;
                     break;
                 }
             }
 
-            if (!$valid) {
-                throw new \Exception('営業時間外です');
+            if (!$assignedStaffId) {
+                throw new \Exception('この時間は満員です');
             }
 
-            /* -------------------------
-               ③ スタッフ自動割当
-            ------------------------- */
+            $reservation = Reservation::create([
+                'company_id' => $company->id,
+                'staff_id'   => $assignedStaffId,
+                'menu_id'    => $request->menu_id,
+                'customer_name' => $request->customer_name,
+                'start_at'   => $start,
+                'end_at'     => $end,
+                'status'     => 'reserved',
+                'fingerprint'=> request()->ip().'_'.request()->userAgent()
+            ]);
+        });
 
-		$reservation = null;
-		$assignedStaffId = null;   // ← 外で宣言
+        $assignedStaff = $company->staff()->find($assignedStaffId);
 
-		DB::transaction(function () use (
-		    $request,
-		    $company,
-		    $start,
-		    $end,
-		    &$reservation,
-		    &$assignedStaffId   // ← 参照渡し
-		) {
+        return response()->json([
+            'success' => true,
+            'staff_name' => $assignedStaff ? $assignedStaff->name : '不明'
+        ]);
 
-		    $selectedStaffId = $request->staff_id;
+    } catch (\Exception $e) {
 
-		    if ($selectedStaffId) {
-		        $staffList = $company->staff()
-		            ->where('id', $selectedStaffId)
-		            ->where('is_reservable', true)
-		            ->lockForUpdate()
-		            ->get();
-		    } else {
-		        $staffList = $company->staff()
-		            ->where('is_reservable', true)
-		            ->orderBy('priority_order')
-		            ->lockForUpdate()
-		            ->get();
-		    }
-
-		    foreach ($staffList as $staff) {
-
-		        $vacationExists = Vacation::where('staff_id', $staff->id)
-		            ->where('status','approved')
-		            ->where('start_at','<',$end)
-		            ->where('end_at','>',$start)
-		            ->lockForUpdate()
-		            ->exists();
-
-		        if ($vacationExists) continue;
-
-		        $count = Reservation::where('company_id', $company->id)
-		            ->where('staff_id', $staff->id)
-		            ->where('start_at','<',$end)
-		            ->where('end_at','>',$start)
-		            ->where('status','reserved')
-		            ->lockForUpdate()
-		            ->count();
-
-		        if ($count < $company->max_simultaneous_reservations) {
-		            $assignedStaffId = $staff->id;   // ← IDだけ保存
-		            break;
-		        }
-		    }
-
-		    if (!$assignedStaffId) {
-		        throw new \Exception('この時間は満員です');
-		    }
-
-		    $reservation = Reservation::create([
-		        'company_id' => $company->id,
-		        'staff_id'   => $assignedStaffId,
-		        'menu_id'    => $request->menu_id,
-		        'customer_name' => $request->customer_name,
-		        'start_at'   => $start,
-		        'end_at'     => $end,
-		        'status'     => 'reserved',
-		        'fingerprint'=> request()->ip().'_'.request()->userAgent()
-		    ]);
-		});
-
-		if ($company->industry_type === 'dental') {
-		return response()->json([
-		    'success'  => true,
-		    'redirect' => route('company.questionnaire', $reservation->id)
-		]);
-		}
-
-		$assignedStaff = $company->staff()->find($assignedStaffId);
-
-		return response()->json([
-		    'success' => true,
-		    'staff_name' => $assignedStaff ? $assignedStaff->name : '不明'
-		]);
-
-        } catch (\Exception $e) {
-
-//	Log::debug('ログEXCEPTION １');
-            return response()->json([
-                'success'=>false,
-                'message'=>$e->getMessage()
-            ],422);
-        }
+        return response()->json([
+            'success'=>false,
+            'message'=>$e->getMessage()
+        ],422);
     }
+}
+
 
     /* ==========================================================
        キャンセル
@@ -502,4 +426,63 @@ public function calendarData(Request $request)
 	        'slots' => $data
 	    ]);
 	}
+	public function destroy($id)
+	{
+	    $reservation = \App\Models\Reservation::findOrFail($id);
+
+	    // 念のため会社チェック
+	    if ($reservation->company_id !== auth()->guard('company')->user()->company_id) {
+	        return response()->json([
+	            'success' => false,
+	            'message' => '権限がありません'
+	        ]);
+	    }
+
+	    $reservation->delete();
+
+	    return response()->json([
+	        'success' => true
+	    ]);
+
+	}
+
+public function availableStaff(Request $request)
+{
+    $company = auth()->guard('company')->user()->company;
+
+    $start = Carbon::parse($request->datetime);
+    $end   = $start->copy()->addMinutes($company->slot_minutes);
+
+    $staffList = $company->staff()
+        ->where('is_reservable', true)
+        ->orderBy('priority_order')
+        ->get();
+
+    $available = [];
+
+    foreach ($staffList as $staff) {
+
+        $exists = Reservation::where('company_id', $company->id)
+            ->where('staff_id', $staff->id)
+            ->where('status', 'reserved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at',   '>', $start);
+            })
+            ->exists();
+
+        if (!$exists) {
+            $available[] = [
+                'id' => $staff->id,
+                'name' => $staff->name,
+                // 🔥 ここを修正（storage削除）
+                'image_url' => $staff->image
+                    ? asset($staff->image)
+                    : asset('images/noimage.png')            ];
+        }
+    }
+
+    return response()->json($available);
+}
+
 }

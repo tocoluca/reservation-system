@@ -235,46 +235,74 @@ Log::debug($mode);
                 throw new \Exception('営業時間外または休業日です');
             }
 
-            DB::transaction(function () use ($request, $company, $start, $end, &$assignedStaffId) {
+		DB::transaction(function () use ($request, $company, $start, $end, &$assignedStaffId) {
 
-                $staffList = $company->staff()
-                    ->where('is_reservable', true)
-                    ->orderBy('priority_order')
-                    ->lockForUpdate()
-                    ->get();
+		    $assignedStaffId = null;
 
-                $assignedStaffId = null;
+		    if ($request->staff_id) {
 
-                foreach ($staffList as $staff) {
+		        // 🔥 指名予約
+		        $staff = $company->staff()
+		            ->where('id', $request->staff_id)
+		            ->where('is_reservable', true)
+		            ->lockForUpdate()
+		            ->firstOrFail();
 
-                    $exists = Reservation::where('company_id', $company->id)
-                        ->where('staff_id', $staff->id)
-                        ->where('status', 'reserved')
-                        ->where(function ($q) use ($start, $end) {
-                            $q->where('start_at', '<', $end)
-                              ->where('end_at',   '>', $start);
-                        })
-                        ->exists();
+		        $exists = Reservation::where('company_id', $company->id)
+		            ->where('staff_id', $staff->id)
+		            ->where('status', 'reserved')
+		            ->where(function ($q) use ($start, $end) {
+		                $q->where('start_at', '<', $end)
+		                  ->where('end_at',   '>', $start);
+		            })
+		            ->exists();
 
-                    if (!$exists) {
-                        $assignedStaffId = $staff->id;
-                        break;
-                    }
-                }
+		        if ($exists) {
+		            throw new \Exception('この担当者は既に予約があります');
+		        }
 
-                if (!$assignedStaffId) {
-                    throw new \Exception('この時間は満員です');
-                }
+		        $assignedStaffId = $staff->id;
 
-                Reservation::create([
-                    'company_id' => $company->id,
-                    'staff_id'   => $assignedStaffId,
-                    'customer_name' => $request->customer_name,
-                    'start_at'   => $start,
-                    'end_at'     => $end,
-                    'status'     => 'reserved',
-                ]);
-            });
+		    } else {
+
+		        // 🔥 指名なし → 自動割当
+		        $staffList = $company->staff()
+		            ->where('is_reservable', true)
+		            ->orderBy('priority_order')
+		            ->lockForUpdate()
+		            ->get();
+
+		        foreach ($staffList as $staff) {
+
+		            $exists = Reservation::where('company_id', $company->id)
+		                ->where('staff_id', $staff->id)
+		                ->where('status', 'reserved')
+		                ->where(function ($q) use ($start, $end) {
+		                    $q->where('start_at', '<', $end)
+		                      ->where('end_at',   '>', $start);
+		                })
+		                ->exists();
+
+		            if (!$exists) {
+		                $assignedStaffId = $staff->id;
+		                break;
+		            }
+		        }
+
+		        if (!$assignedStaffId) {
+		            throw new \Exception('この時間は満員です');
+		        }
+		    }
+
+		    Reservation::create([
+		        'company_id'    => $company->id,
+		        'staff_id'      => $assignedStaffId,
+		        'customer_name' => $request->customer_name,
+		        'start_at'      => $start,
+		        'end_at'        => $end,
+		        'status'        => 'reserved',
+		    ]);
+		});
 
             return response()->json(['success'=>true]);
 

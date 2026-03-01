@@ -372,32 +372,87 @@ function loadDayCalendar() {
             });
         });
 }
-function reserve(datetime, staffId = null) {
 
-    if (!confirm(datetime + ' で予約しますか？')) return;
+let selectedDatetime = null;
+let selectedStaffId = null;
 
-    fetch('/company/reservation',{
+function reserve(datetime, staffId) {
+
+    selectedDatetime = datetime;
+    selectedStaffId  = staffId;
+
+    const nameInput = document.getElementById('modal_customer_name');
+    const telInput  = document.getElementById('modal_customer_phone');
+    const modal     = document.getElementById('reserveModal');
+
+    if (!modal) return; // モーダル無いページなら終了
+
+    document.getElementById('reserveDatetime').innerText = datetime;
+
+    if (nameInput) nameInput.value = '';
+    if (telInput)  telInput.value  = '';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeModal() {
+    const nameInput = document.getElementById('modal_customer_name');
+    const telInput  = document.getElementById('modal_customer_phone');
+    const modal     = document.getElementById('reserveModal');
+
+    if (nameInput) nameInput.value = '';
+    if (telInput)  telInput.value  = '';
+
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+}
+function submitReservation() {
+
+    const name = document.getElementById('modal_customer_name').value;
+    const phone  = document.getElementById('modal_customer_phone').value;
+    const phonePattern = /^[0-9\-]*$/;
+
+    if (!name) {
+        alert('お名前を入力してください');
+        return;
+    }
+
+    if (!phonePattern.test(phone)) {
+        alert('電話番号は数字とハイフンのみ入力できます');
+        return;
+    }
+
+    fetch('/company/reservation', {
         method:'POST',
         headers:{
             'Content-Type':'application/json',
             'X-CSRF-TOKEN':'{{ csrf_token() }}'
         },
-        body:JSON.stringify({
-            start_at: datetime,
-            customer_name: 'テスト予約',
-            staff_id: staffId
+        body: JSON.stringify({
+            start_at: selectedDatetime,
+            customer_name: name,
+            customer_phone: phone,
+            staff_id: selectedStaffId
         })
     })
     .then(res => res.json())
     .then(result => {
         if(result.success){
+
+            closeModal();
+
             if (mode === 'week') loadCalendar();
             if (mode === 'day') loadDayCalendar();
+
         } else {
             alert(result.message);
         }
     });
 }
+
 function cancelReservation(reservationId) {
 
     if (!confirm('この予約をキャンセルしますか？')) return;
@@ -448,8 +503,6 @@ function handleCancelClick(el) {
     cancelReservation(reservationId);
 }
 
-
-let selectedDatetime = null;
 
 function openStaffSelector(datetime) {
 
@@ -514,7 +567,10 @@ function closeReservationModal() {
     document.getElementById('reservationModal').classList.add('hidden');
 }
 
-
+function formatTel(input) {
+    // 数字とハイフン以外を削除
+    input.value = input.value.replace(/[^0-9\-]/g, '');
+}
 
 </script>
 
@@ -537,6 +593,45 @@ function closeReservationModal() {
                 class="mt-4 text-sm text-gray-500">
             閉じる
         </button>
+    </div>
+</div>
+
+<!-- 予約モーダル -->
+<div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+
+        <h2 class="text-lg font-bold mb-4">予約確認</h2>
+
+        <p class="mb-3 text-sm text-gray-600">
+            <span id="reserveDatetime"></span>
+        </p>
+
+        <div class="mb-3">
+            <label class="block text-sm mb-1">お名前</label>
+            <input type="text" id="modal_customer_name"
+                   class="border rounded-lg p-2 w-full">
+        </div>
+
+        <div class="mb-4">
+            <label class="block text-sm mb-1">電話番号（数字と‐のみ入力可）</label>
+		<input type="text"
+		       id="modal_customer_phone"
+		       class="border rounded-lg p-2 w-full"
+		       oninput="formatTel(this)">
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <button onclick="closeModal()"
+                    class="px-4 py-2 text-sm bg-gray-200 rounded-lg">
+                キャンセル
+            </button>
+
+            <button onclick="submitReservation()"
+                    class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">
+                予約する
+            </button>
+        </div>
+
     </div>
 </div>
 @endsection

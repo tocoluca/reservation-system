@@ -30,7 +30,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
 
             {{-- 予約カレンダー --}}
-            <a href="{{ route('company.calendar') }}"
+            <a href="{{ route('company.reserve') }}"
                class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-blue-500">
 
                 <div class="text-blue-500 text-xs font-semibold mb-2">
@@ -46,9 +46,26 @@
                 </div>
             </a>
 
-
             {{-- 担当者管理 --}}
             @if(in_array($staff->role, ['master','area_leader','leader']))
+            {{-- 営業日カレンダー --}}
+            <a href="{{ route('company.calendar.index') }}"
+               class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-blue-500">
+
+                <div class="text-blue-500 text-xs font-semibold mb-2">
+                    BUSINESS
+                </div>
+
+                <div class="text-lg sm:text-xl font-bold mb-2">
+                    営業日カレンダー
+                </div>
+
+                <div class="text-gray-500 text-sm">
+                    営業日の確認・登録・管理
+                </div>
+            </a>
+
+
             <a href="{{ route('company.staff.index') }}"
                class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-indigo-500">
 

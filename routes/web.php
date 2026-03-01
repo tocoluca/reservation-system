@@ -22,6 +22,7 @@ use App\Http\Controllers\Company\VacationController;
 use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\Company\CompanyController as CompanyInfoController;
 use App\Http\Controllers\Company\MyProfileController;
+use App\Http\Controllers\Company\CalendarController;
 /*
 |--------------------------------------------------------------------------
 | 共通
@@ -114,14 +115,14 @@ Route::prefix('company')->group(function () {
 
             Route::post('password-change', [PasswordController::class,'update']);
 
-            Route::get('calendar', [ReservationController::class,'calendar'])
-                ->name('company.calendar');
+            Route::get('reserve', [ReservationController::class,'calendar'])
+                ->name('company.reserve');
 
-            Route::post('calendar', [ReservationController::class,'calendar'])
-                ->name('company.calendar');
+            Route::post('reserve', [ReservationController::class,'calendar'])
+                ->name('company.reserve');
 
-            Route::get('calendar/data', [ReservationController::class,'calendarData'])
-                ->name('company.calendar.data');
+            Route::get('reserve/data', [ReservationController::class,'calendarData'])
+                ->name('company.reserve.data');
 
             Route::get('theme', [ThemeController::class, 'edit'])
                 ->name('company.theme');
@@ -214,13 +215,37 @@ Route::prefix('company')->group(function () {
 		    [ReservationController::class,'store'])
 		    ->name('company.reservation.store');
 
-		Route::post('reservation/{reservation}/cancel',
+		Route::post('reservation/{id}/cancel',
 		    [ReservationController::class,'cancel'])
 		    ->name('company.reservation.cancel');
 
 		Route::delete('reservation/{id}',
 		    [ReservationController::class,'destroy'])
 		    ->name('company.reservation.destroy');
+
+	        Route::get('calendar', [CalendarController::class, 'index'])
+	            ->name('company.calendar.index');
+
+	        Route::post('calendar/toggle', [CalendarController::class, 'toggle'])
+	            ->name('company.calendar.toggle');
+
+	        Route::post('calendar/update-time', [CalendarController::class, 'updateTime'])
+	            ->name('company.calendar.updateTime');
+
+		Route::get('calendar/year', [CalendarController::class, 'year'])
+		    ->name('company.calendar.year');
+
+Route::post('/company/calendar/bulk-year-weekday',
+    [CalendarController::class, 'bulkYearWeekday']
+)->name('company.calendar.bulkYearWeekday');
+
+Route::post('/company/calendar/bulk-weekday',
+    [CalendarController::class, 'bulkWeekday']
+)->name('company.calendar.bulkWeekday');
+Route::post('/company/calendar/bulk-year-open-weekday',
+    [CalendarController::class, 'bulkYearOpenWeekday']
+)->name('company.calendar.bulkYearOpenWeekday');
+
 Route::get('calendar/available-staff',
     [ReservationController::class,'availableStaff'])
     ->name('company.calendar.availableStaff');

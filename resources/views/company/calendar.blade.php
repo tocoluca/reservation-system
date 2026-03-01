@@ -23,7 +23,7 @@
 
     {{-- 表示切替 --}}
     <div class="flex gap-3 mb-6">
-        <a href="{{ route('company.calendar',['mode'=>'week']) }}"
+        <a href="{{ route('company.reserve',['mode'=>'week']) }}"
            class="px-4 py-2 rounded-lg shadow text-sm font-semibold"
            style="background:
            {{ request('mode','week')==='week' ? $theme : '#e5e7eb' }};
@@ -32,7 +32,7 @@
             週表示
         </a>
 
-        <a href="{{ route('company.calendar',['mode'=>'day']) }}"
+        <a href="{{ route('company.reserve',['mode'=>'day']) }}"
            class="px-4 py-2 rounded-lg shadow text-sm font-semibold"
            style="background:
            {{ request('mode')==='day' ? $theme : '#e5e7eb' }};
@@ -106,9 +106,9 @@
 
     </div>
 </div>
-
+<input type="hidden" id="modal_date" name="date">
+<input type="hidden" id="modal_time" name="time">
 <script>
-
 let currentDate = new Date();
 const mode = "{{ $mode }}";
 
@@ -141,7 +141,7 @@ function loadCalendar() {
     let dateStr = currentDate.toISOString().split('T')[0];
     let staffId = document.getElementById('staffSelect').value;
 
-    fetch(`/company/calendar/data?mode=week&date=${dateStr}&staff_id=${staffId}`)
+    fetch(`/company/reserve/data?mode=week&date=${dateStr}&staff_id=${staffId}`)
         .then(res => res.json())
         .then(data => {
 
@@ -206,35 +206,45 @@ function loadCalendar() {
                     }
 
                     // ===== 予約済み =====
-                    if (cell.status === '×') {
+			if (cell.status === '×') {
 
-                        if (cell.reservation_id) {
+			    if (cell.reservations && cell.reservations.length > 0) {
 
-                            html += `
-                                <td class="p-3 text-center">
-                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
-                                                rounded-full bg-red-100 text-red-600
-                                                shadow cursor-pointer hover:bg-red-200 transition"
-                                        data-id="${cell.reservation_id}"
-                                        onclick="handleCancelClick(this)">
-                                        ×
-                                    </div>
-                                </td>`;
+			        html += `
+			            <td class="p-3 text-center">
+			                <div class="mx-auto w-8 h-8 flex items-center justify-center
+			                            rounded-full bg-red-100 text-red-600
+			                            shadow cursor-pointer hover:bg-red-200 transition"
+			                    onclick='openReservationList(${JSON.stringify(cell.reservations)})'>
+			                    ×
+			                </div>
+			            </td>`;
 
-                        } else {
+			    } else if (cell.reservation_id) {
 
-                            html += `
-                                <td class="p-3 text-center">
-                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
-                                                rounded-full bg-gray-200 text-gray-400 shadow">
-                                        ×
-                                    </div>
-                                </td>`;
-                        }
+			        html += `
+			            <td class="p-3 text-center">
+			                <div class="mx-auto w-8 h-8 flex items-center justify-center
+			                            rounded-full bg-red-100 text-red-600
+			                            shadow cursor-pointer hover:bg-red-200 transition"
+			                    data-id="${cell.reservation_id}"
+			                    onclick="handleCancelClick(this)">
+			                    ×
+			                </div>
+			            </td>`;
 
-                    }
-                    // ===== 空き =====
-                    else {
+			    } else {
+
+			        html += `
+			            <td class="p-3 text-center">
+			                <div class="mx-auto w-8 h-8 flex items-center justify-center
+			                            rounded-full bg-gray-200 text-gray-400 shadow">
+			                    ×
+			                </div>
+			            </td>`;
+			    }
+			} else if (cell.status === '○') {
+
 			    html += `
 			        <td class="p-3 text-center">
 			            <div class="mx-auto w-8 h-8 flex items-center justify-center
@@ -245,7 +255,7 @@ function loadCalendar() {
 			                ○
 			            </div>
 			        </td>`;
-                    }
+			}
 
                 });
 
@@ -272,7 +282,7 @@ function loadDayCalendar() {
     document.getElementById('currentDateLabel').innerText = dateStr;
     document.getElementById('datePicker').value = dateStr;
 
-    fetch(`/company/calendar/data?mode=day&date=${dateStr}`)
+    fetch(`/company/reserve/data?mode=day&date=${dateStr}`)
         .then(res => res.json())
         .then(data => {
 
@@ -438,9 +448,13 @@ function handleCancelClick(el) {
     cancelReservation(reservationId);
 }
 
+
 let selectedDatetime = null;
 
 function openStaffSelector(datetime) {
+
+    const BASE_URL = "{{ url('/') }}";
+    const NO_IMAGE = "{{ asset('logos/logo.png') }}";
 
     selectedDatetime = datetime;
 
@@ -450,18 +464,16 @@ function openStaffSelector(datetime) {
 
             const area = document.getElementById('staffListArea');
             area.innerHTML = '';
-
             data.forEach(staff => {
                 area.innerHTML += `
                     <div onclick="reserveWithStaff(${staff.id})"
                         class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <img src="${staff.image_url ?? '/noimage.png'}"
+                        <img src="${staff.image_path && staff.image_path.trim() !== '' ? BASE_URL + '/' + staff.image_path : NO_IMAGE}"
                              class="w-10 h-10 rounded-full object-cover">
                         <div>${staff.name}</div>
                     </div>
                 `;
             });
-
             document.getElementById('staffModal').classList.remove('hidden');
             document.getElementById('staffModal').classList.add('flex');
         });
@@ -475,9 +487,38 @@ function reserveWithStaff(staffId) {
     closeStaffModal();
     reserve(selectedDatetime, staffId);
 }
+function openReservationList(reservations) {
+
+    let html = '';
+
+    reservations.forEach(r => {
+        html += `
+            <div class="flex justify-between items-center border p-3 rounded-lg">
+                <div>
+                    <div class="font-semibold">${r.staff_name}</div>
+                    <div class="text-xs text-gray-500">${r.customer_name}</div>
+                </div>
+                <button onclick="cancelReservation(${r.id})"
+                        class="text-red-500 text-sm hover:underline">
+                    キャンセル
+                </button>
+            </div>`;
+    });
+
+    document.getElementById('reservationListArea').innerHTML = html;
+    document.getElementById('reservationModal').classList.remove('hidden');
+    document.getElementById('reservationModal').classList.add('flex');
+}
+
+function closeReservationModal() {
+    document.getElementById('reservationModal').classList.add('hidden');
+}
+
+
+
 </script>
 
-@endsection
+
 <div id="staffModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
     <div class="bg-white rounded-xl shadow-xl w-96 p-6">
         <h2 class="text-lg font-bold mb-4">担当者を選択</h2>
@@ -487,3 +528,15 @@ function reserveWithStaff(staffId) {
         </button>
     </div>
 </div>
+<div id="reservationModal"
+     class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl w-96 p-6">
+        <h2 class="text-lg font-bold mb-4">予約一覧（キャンセルする担当者を選択）</h2>
+        <div id="reservationListArea" class="space-y-2"></div>
+        <button onclick="closeReservationModal()"
+                class="mt-4 text-sm text-gray-500">
+            閉じる
+        </button>
+    </div>
+</div>
+@endsection

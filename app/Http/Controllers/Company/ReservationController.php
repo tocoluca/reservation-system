@@ -6,483 +6,474 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Reservation;
 use App\Models\Vacation;
+use App\Models\CompanyBusinessCalendar;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Yasumi\Yasumi;
+use Illuminate\Support\Facades\Log;
 
 class ReservationController extends Controller
 {
+
+    public function calendar(Request $request)
+    {
+        $mode = $request->get('mode','week');
+        return view('company.calendar', compact('mode'));
+    }
+
     /* ==========================================================
-       予約登録
+       カレンダーデータ（DAY / WEEK 完全統合版）
     ========================================================== */
-public function store(Request $request)
-{
-    $company = Auth::guard('company')->user()->company;
+    public function calendarData(Request $request)
+    {
+        $company = auth()->guard('company')->user()->company;
+        $mode = $request->get('mode','week');
 
-    try {
+        /*
+        |--------------------------------------------------------------------------
+        | DAY MODE
+        |--------------------------------------------------------------------------
+        */
+        if ($mode === 'day') {
 
-        $request->validate([
-            'start_at'      => 'required|date',
-            'customer_name' => 'required',
-            'menu_id'       => 'nullable|integer',
-            'staff_id'      => 'nullable|integer'
-        ]);
+            $date = $request->date
+                ? Carbon::parse($request->date)
+                : now();
 
-        $start = Carbon::parse($request->start_at);
-        $duration = $company->slot_minutes;
+            $staffList = $company->staff()
+                ->where('is_reservable', true)
+                ->orderBy('priority_order')
+                ->get();
 
-        if (
-            $company->industry_type === 'beauty' &&
-            $company->menu_time_priority_flag &&
-            $request->menu_id
-        ) {
-            $menu = \App\Models\Menu::findOrFail($request->menu_id);
-            $duration = $menu->duration_minutes;
-        }
+            $staffIds = $staffList->pluck('id');
 
-        $end = $start->copy()->addMinutes($duration);
+            $reservations = Reservation::where('company_id', $company->id)
+                ->whereIn('staff_id', $staffIds)
+                ->whereDate('start_at', $date)
+                ->where('status','reserved')
+                ->get();
 
-        DB::transaction(function () use ($request, $company, $start, $end, &$reservation, &$assignedStaffId) {
+            $vacations = Vacation::whereIn('staff_id', $staffIds)
+                ->where('status','approved')
+                ->whereDate('start_at','<=',$date)
+                ->whereDate('end_at','>=',$date)
+                ->get();
 
-            $selectedStaffId = $request->staff_id;
+            $data = [];
 
-            if ($selectedStaffId) {
-                $staffList = $company->staff()
-                    ->where('id', $selectedStaffId)
-                    ->where('is_reservable', true)
-                    ->lockForUpdate()
-                    ->get();
-            } else {
-                $staffList = $company->staff()
-                    ->where('is_reservable', true)
-                    ->orderBy('priority_order')
-                    ->lockForUpdate()
-                    ->get();
-            }
+            $weekday = $date->dayOfWeek;
+            $patterns = (array) ($company->open_patterns[$weekday] ?? []);
 
-            $assignedStaffId = null;
+            foreach ($patterns as $p) {
 
-            foreach ($staffList as $staff) {
+                if (empty($p['open']) || empty($p['close'])) continue;
 
-                $exists = Reservation::where('company_id', $company->id)
-                    ->where('staff_id', $staff->id)
-                    ->where('status', 'reserved')
-                    ->where(function ($q) use ($start, $end) {
-                        $q->where('start_at', '<', $end)
-                          ->where('end_at',   '>', $start);
-                    })
-                    ->exists();
+                $open  = Carbon::parse($date->format('Y-m-d').' '.$p['open']);
+                $close = Carbon::parse($date->format('Y-m-d').' '.$p['close']);
 
-                if (!$exists) {
-                    $assignedStaffId = $staff->id;
-                    break;
+                $time = $open->copy();
+
+                while ($time < $close) {
+
+                    $slotEnd = $time->copy()->addMinutes($company->slot_minutes);
+
+                    $business = $this->getBusinessStatus($company,$time,$slotEnd);
+
+                    foreach ($staffList as $staff) {
+
+                        if ($business !== 'open') {
+                            $data[$time->format('H:i')][$staff->id] = [
+                                'status'=>'×'
+                            ];
+                            continue;
+                        }
+
+                        $result = $this->checkAvailability(
+                            collect([$staff]),
+                            $reservations,
+                            $vacations,
+                            $time,
+                            $slotEnd
+                        );
+
+                        $data[$time->format('H:i')][$staff->id] = $result;
+                    }
+
+                    $time->addMinutes($company->slot_minutes);
                 }
             }
 
-            if (!$assignedStaffId) {
-                throw new \Exception('この時間は満員です');
-            }
-
-            $reservation = Reservation::create([
-                'company_id' => $company->id,
-                'staff_id'   => $assignedStaffId,
-                'menu_id'    => $request->menu_id,
-                'customer_name' => $request->customer_name,
-                'start_at'   => $start,
-                'end_at'     => $end,
-                'status'     => 'reserved',
-                'fingerprint'=> request()->ip().'_'.request()->userAgent()
+            return response()->json([
+                'staffs'=>$staffList,
+                'slots'=>$data
             ]);
-        });
+        }
 
-        $assignedStaff = $company->staff()->find($assignedStaffId);
+        /*
+        |--------------------------------------------------------------------------
+        | WEEK MODE
+        |--------------------------------------------------------------------------
+        */
+Log::debug($mode);
+	$staffId = $request->staff_id;
 
-        return response()->json([
-            'success' => true,
-            'staff_name' => $assignedStaff ? $assignedStaff->name : '不明'
-        ]);
+        $startDate = $request->date
+            ? Carbon::parse($request->date)->startOfWeek()
+            : now()->startOfWeek();
 
-    } catch (\Exception $e) {
+        $endDate = $startDate->copy()->addDays(6)->endOfDay();
 
-        return response()->json([
-            'success'=>false,
-            'message'=>$e->getMessage()
-        ],422);
-    }
-}
+	$staffQuery = $company->staff()
+	    ->where('is_reservable', true)
+	    ->orderBy('priority_order');
 
-
-    /* ==========================================================
-       キャンセル
-    ========================================================== */
-
-	public function cancel(Reservation $reservation)
-	{
-	    $reservation->status = 'cancelled';
-	    $reservation->save();
-
-	    return response()->json(['success'=>true]);
-	}
-    /* ==========================================================
-       カレンダー表示
-    ========================================================== */
-	public function calendar(Request $request)
-	{
-	    $mode = $request->get('mode','week');
-	    return view('company.calendar', compact('mode'));
+	if (!empty($staffId)) {
+	    $staffQuery->where('id', $staffId);
 	}
 
+	$staffList = $staffQuery->get();
 
-    /* ==========================================================
-       カレンダーデータ
-    ========================================================== */
-public function calendarData(Request $request)
-{
-    $company = Auth::guard('company')->user()->company;
-    $mode = $request->get('mode','week');
-
-    /*
-    |--------------------------------------------------------------------------
-    | 日表示モード
-    |--------------------------------------------------------------------------
-    */
-    if ($mode === 'day') {
-
-        $date = $request->date
-            ? Carbon::parse($request->date)
-            : now();
-
-        $staffList = $company->staff()
-            ->where('is_reservable', true)
-            ->orderBy('priority_order')
-            ->get();
-
-        $staffIds = $staffList->pluck('id')->toArray();
+        $staffIds = $staffList->pluck('id');
 
         $reservations = Reservation::where('company_id', $company->id)
             ->whereIn('staff_id', $staffIds)
-            ->whereDate('start_at', $date)
+            ->whereBetween('start_at', [$startDate, $endDate])
             ->where('status','reserved')
             ->get();
 
         $vacations = Vacation::whereIn('staff_id', $staffIds)
             ->where('status','approved')
-            ->whereDate('start_at', $date)
+            ->whereBetween('start_at', [$startDate, $endDate])
             ->get();
-
-        $patterns = is_array($company->open_patterns)
-            ? $company->open_patterns
-            : [];
-
-        $weekday = $date->dayOfWeek;
-        $dayPatterns = $patterns[$weekday] ?? [];
 
         $data = [];
 
-        foreach ($dayPatterns as $pattern) {
+        for ($d=0;$d<7;$d++) {
 
-            if (empty($pattern['open']) || empty($pattern['close'])) continue;
+            $day = $startDate->copy()->addDays($d);
+            $weekday = $day->dayOfWeek;
+            $patterns = (array) ($company->open_patterns[$weekday] ?? []);
 
-            $open = Carbon::parse($date->format('Y-m-d').' '.$pattern['open']);
-            $close = Carbon::parse($date->format('Y-m-d').' '.$pattern['close']);
+            foreach ($patterns as $p) {
 
-            $time = $open->copy();
+                if (empty($p['open']) || empty($p['close'])) continue;
 
-            while ($time < $close) {
+                $open  = Carbon::parse($day->format('Y-m-d').' '.$p['open']);
+                $close = Carbon::parse($day->format('Y-m-d').' '.$p['close']);
 
-                $slotEnd = $time->copy()
-                    ->addMinutes($company->slot_minutes);
+                $time = $open->copy();
 
-                foreach ($staffList as $staff) {
+                while ($time < $close) {
 
-                    // 休暇チェック
-                    $vacationExists = $vacations->first(function ($v) use ($staff,$time,$slotEnd) {
-                        return $v->staff_id == $staff->id &&
-                               $v->start_at < $slotEnd &&
-                               $v->end_at > $time;
-                    });
+                    $slotStart = Carbon::parse($day->format('Y-m-d').' '.$time->format('H:i'));
+                    $slotEnd   = $slotStart->copy()->addMinutes($company->slot_minutes);
 
-                    if ($vacationExists) {
+                    $business = $this->getBusinessStatus($company,$slotStart,$slotEnd);
 
-                        $data[$time->format('H:i')][$staff->id] = [
-                            'status' => '休'
-                        ];
+                    if ($business !== 'open') {
 
-                        continue;
-                    }
-
-                    // 予約チェック
-                    $reservation = $reservations
-                        ->where('staff_id',$staff->id)
-                        ->first(function ($r) use ($time,$slotEnd) {
-                            return $r->start_at < $slotEnd &&
-                                   $r->end_at > $time;
-                        });
-
-                    if ($reservation) {
-
-                        $data[$time->format('H:i')][$staff->id] = [
-                            'status' => '×',
-                            'reservation_id' => $reservation->id,
-                            'staff_name' => $staff->name,
-                            'customer_name' => $reservation->customer_name,
-                            'start_at' => Carbon::parse($reservation->start_at)
-                                            ->format('Y-m-d H:i'),
-                            'end_at' => Carbon::parse($reservation->end_at)
-                                            ->format('Y-m-d H:i'),
+                        $data[$time->format('H:i')][$day->format('Y-m-d')] = [
+                            'status'=>'×'
                         ];
 
                     } else {
 
-                        $data[$time->format('H:i')][$staff->id] = [
-                            'status' => '○'
-                        ];
-                    }
-                }
+                        $result = $this->checkAvailability(
+                            $staffList,
+                            $reservations,
+                            $vacations,
+                            $slotStart,
+                            $slotEnd
+                        );
 
-                $time->addMinutes($company->slot_minutes);
+                        $data[$time->format('H:i')][$day->format('Y-m-d')] = $result;
+                    }
+
+                    $time->addMinutes($company->slot_minutes);
+                }
             }
         }
 
         return response()->json([
-            'mode' => 'day',
-            'staffs' => $staffList,
-            'slots' => $data
+            'mode'=>'week',
+            'slots'=>$data
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | 週表示モード（既存ロジック）
-    |--------------------------------------------------------------------------
-    */
+    /* ==========================================================
+       予約登録
+    ========================================================== */
+    public function store(Request $request)
+    {
+        $company = Auth::guard('company')->user()->company;
 
-    $startDate = $request->date
-        ? Carbon::parse($request->date)->startOfWeek()
-        : now()->startOfWeek();
+        try {
 
-    $endDate = $startDate->copy()->addDays(6)->endOfDay();
+            $request->validate([
+                'start_at'      => 'required|date',
+                'customer_name' => 'required',
+                'menu_id'       => 'nullable|integer',
+                'staff_id'      => 'nullable|integer'
+            ]);
 
-    $staffId = $request->staff_id;
+            $start = Carbon::parse($request->start_at);
+            $duration = $company->slot_minutes;
 
-    if ($staffId) {
-        $staffList = $company->staff()
-            ->where('id', $staffId)
-            ->where('is_reservable', true)
-            ->get();
-    } else {
-        $staffList = $company->staff()
-            ->where('is_reservable', true)
-            ->orderBy('priority_order')
-            ->get();
-    }
+            if (
+                $company->industry_type === 'beauty' &&
+                $company->menu_time_priority_flag &&
+                $request->menu_id
+            ) {
+                $menu = \App\Models\Menu::findOrFail($request->menu_id);
+                $duration = $menu->duration_minutes;
+            }
 
-    $staffIds = $staffList->pluck('id')->toArray();
+            $end = $start->copy()->addMinutes($duration);
 
-    $reservations = Reservation::where('company_id', $company->id)
-        ->whereIn('staff_id', $staffIds)
-        ->whereBetween('start_at', [$startDate, $endDate])
-        ->where('status','reserved')
-        ->get();
+            if ($this->getBusinessStatus($company,$start,$end) !== 'open') {
+                throw new \Exception('営業時間外または休業日です');
+            }
 
-    $vacations = Vacation::whereIn('staff_id', $staffIds)
-        ->where('status','approved')
-        ->whereBetween('start_at', [$startDate, $endDate])
-        ->get();
+            DB::transaction(function () use ($request, $company, $start, $end, &$assignedStaffId) {
 
-    $data = [];
+                $staffList = $company->staff()
+                    ->where('is_reservable', true)
+                    ->orderBy('priority_order')
+                    ->lockForUpdate()
+                    ->get();
 
-    $patterns = is_array($company->open_patterns)
-        ? $company->open_patterns
-        : [];
-
-    for ($d = 0; $d < 7; $d++) {
-
-        $day = $startDate->copy()->addDays($d);
-        $weekday = $day->dayOfWeek;
-
-        $regularHolidays = is_array($company->regular_holidays)
-            ? $company->regular_holidays
-            : [];
-
-        if (in_array($weekday, $regularHolidays)) continue;
-
-        if ($company->holiday_is_closed) {
-            $holidays = Yasumi::create('Japan', $day->year);
-            if ($holidays->isHoliday($day)) continue;
-        }
-
-        $dayPatterns = $patterns[$weekday] ?? [];
-
-        foreach ($dayPatterns as $pattern) {
-
-            if (empty($pattern['open']) || empty($pattern['close'])) continue;
-
-            $open = Carbon::parse($day->format('Y-m-d').' '.$pattern['open']);
-            $close = Carbon::parse($day->format('Y-m-d').' '.$pattern['close']);
-
-            $time = $open->copy();
-
-            while ($time < $close) {
-
-                $slotEnd = $time->copy()
-                    ->addMinutes($company->slot_minutes);
-
-                $availableCount = 0;
+                $assignedStaffId = null;
 
                 foreach ($staffList as $staff) {
 
-                    $vacationExists = $vacations->first(function ($v) use ($staff,$time,$slotEnd) {
-                        return $v->staff_id == $staff->id &&
-                               $v->start_at < $slotEnd &&
-                               $v->end_at > $time;
-                    });
+                    $exists = Reservation::where('company_id', $company->id)
+                        ->where('staff_id', $staff->id)
+                        ->where('status', 'reserved')
+                        ->where(function ($q) use ($start, $end) {
+                            $q->where('start_at', '<', $end)
+                              ->where('end_at',   '>', $start);
+                        })
+                        ->exists();
 
-                    if ($vacationExists) continue;
-
-                    $exists = $reservations
-                        ->where('staff_id',$staff->id)
-                        ->first(function ($r) use ($time,$slotEnd) {
-                            return $r->start_at < $slotEnd &&
-                                   $r->end_at > $time;
-                        });
-
-                    if (!$exists) $availableCount++;
+                    if (!$exists) {
+                        $assignedStaffId = $staff->id;
+                        break;
+                    }
                 }
 
-                $data[$time->format('H:i')][$day->format('Y-m-d')] = [
-                    'status' => $availableCount > 0 ? '○' : '×',
-                    'is_holiday' => false
-                ];
+                if (!$assignedStaffId) {
+                    throw new \Exception('この時間は満員です');
+                }
 
-                $time->addMinutes($company->slot_minutes);
-            }
+                Reservation::create([
+                    'company_id' => $company->id,
+                    'staff_id'   => $assignedStaffId,
+                    'customer_name' => $request->customer_name,
+                    'start_at'   => $start,
+                    'end_at'     => $end,
+                    'status'     => 'reserved',
+                ]);
+            });
+
+            return response()->json(['success'=>true]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'success'=>false,
+                'message'=>$e->getMessage()
+            ],422);
         }
     }
 
-    return response()->json([
-        'mode' => 'week',
-        'slots' => $data
-    ]);
-}
+    public function cancel($id)
+    {
+        $company = auth()->guard('company')->user()->company;
 
+        $reservation = Reservation::where('id',$id)
+            ->where('company_id',$company->id)
+            ->first();
 
+        if (!$reservation) {
+            return response()->json([
+                'success'=>false,
+                'message'=>'予約が見つかりません'
+            ],404);
+        }
 
-	private function calendarDay(Request $request)
+        $reservation->status = 'cancelled';
+        $reservation->save();
+
+        return response()->json(['success'=>true]);
+    }
+
+	public function availableStaff(Request $request)
 	{
-	    $company = auth()->guard('company')->user()->company;
+	    $companyUser = auth()->guard('company')->user();
 
-	    $date = $request->date
-	        ? Carbon::parse($request->date)
-	        : now();
+	    if (!$companyUser) {
+	        return response()->json([], 401);
+	    }
 
-	    $staffList = $company->staff()
+	    $company = $companyUser->company;
+
+	    $datetime = $request->datetime;
+
+	    if (!$datetime) {
+	        return response()->json([], 400);
+	    }
+
+	    // ここは仮データ（あとでロジック入れる）
+	    // ★ ここが重要
+	    $staff = \App\Models\Staff::where('company_id', $company->id)
 	        ->where('is_reservable', true)
-	        ->orderBy('priority_order')
 	        ->get();
 
-	    $reservations = Reservation::where('company_id',$company->id)
-	        ->whereDate('start_at',$date)
-	        ->where('status','reserved')
-	        ->get();
+	    return response()->json($staff);
+	}
 
-	    $data = [];
 
-	    $patterns = $company->open_patterns[$date->dayOfWeek] ?? [];
+    /* ==========================================================
+       営業判定
+    ========================================================== */
+    private function getBusinessStatus($company,$start,$end)
+    {
+        $dateKey = $start->format('Y-m-d');
+        $weekday = $start->dayOfWeek;
 
-	    foreach ($patterns as $pattern) {
+        $calendar = CompanyBusinessCalendar::where('company_id',$company->id)
+            ->whereDate('date',$dateKey)
+            ->first();
 
-	        $open = Carbon::parse($date->format('Y-m-d').' '.$pattern['open']);
-	        $close = Carbon::parse($date->format('Y-m-d').' '.$pattern['close']);
+        if ($calendar) {
 
-	        $time = $open->copy();
+            if ($calendar->is_open == 0) {
+                return 'closed';
+            }
 
-	        while ($time < $close) {
+            if (!empty($calendar->open_time) && !empty($calendar->close_time)) {
 
-	            $slotEnd = $time->copy()
-	                ->addMinutes($company->slot_minutes);
+                $open  = Carbon::parse($dateKey.' '.$calendar->open_time);
+                $close = Carbon::parse($dateKey.' '.$calendar->close_time);
 
-	            foreach ($staffList as $staff) {
+                if ($start >= $open && $end <= $close) {
+                    return 'open';
+                }
 
-	                $exists = $reservations
-	                    ->where('staff_id',$staff->id)
-	                    ->filter(function ($r) use ($time,$slotEnd) {
-	                        return $r->start_at < $slotEnd &&
-	                               $r->end_at > $time;
-	                    })->count();
+                return 'out';
+            }
+        }
 
-	                $data[$time->format('H:i')][$staff->id] =
-	                    $exists > 0 ? '×' : '○';
-	            }
+        if (in_array($weekday,(array)$company->regular_holidays)) {
+            return 'closed';
+        }
 
-	            $time->addMinutes($company->slot_minutes);
+        if ($company->holiday_is_closed) {
+            $holidays = Yasumi::create('Japan',$start->year);
+            if ($holidays->isHoliday($start)) {
+                return 'closed';
+            }
+        }
+
+        $patterns = (array) ($company->open_patterns[$weekday] ?? []);
+
+        foreach ($patterns as $p) {
+
+            if (empty($p['open']) || empty($p['close'])) continue;
+
+            $open  = Carbon::parse($dateKey.' '.$p['open']);
+            $close = Carbon::parse($dateKey.' '.$p['close']);
+
+            if ($start >= $open && $end <= $close) {
+                return 'open';
+            }
+        }
+
+        return 'out';
+    }
+
+    /* ==========================================================
+       空き判定
+    ========================================================== */
+	private function checkAvailability(
+	    $staffList,
+	    $reservations,
+	    $vacations,
+	    $start,
+	    $end
+	) {
+
+	    $totalStaff = $staffList->count();
+
+	    $slotReservations = collect();
+	    $availableCount = 0;
+
+	    foreach ($staffList as $staff) {
+
+	        // 休暇チェック（空き計算には含めるが、予約扱いにはしない）
+	        $vacationExists = $vacations->first(function ($v) use ($staff,$start,$end) {
+	            return $v->staff_id == $staff->id &&
+	                   $v->start_at < $end &&
+	                   $v->end_at > $start;
+	        });
+
+	        // 予約チェック
+	        $reservation = $reservations
+	            ->where('staff_id',$staff->id)
+	            ->first(function ($r) use ($start,$end) {
+	                return $r->start_at < $end &&
+	                       $r->end_at > $start;
+	            });
+
+	        if ($reservation) {
+	            $slotReservations->push($reservation);
+	        } else {
+	            $availableCount++;
 	        }
 	    }
 
-	    return response()->json([
-	        'staffs' => $staffList,
-	        'slots' => $data
-	    ]);
-	}
-	public function destroy($id)
-	{
-	    $reservation = \App\Models\Reservation::findOrFail($id);
+	    /*
+	    |--------------------------------------------------------------------------
+	    | 個人モード（スタッフ1人だけ渡された場合）
+	    |--------------------------------------------------------------------------
+	    */
+	    if ($totalStaff === 1) {
 
-	    // 念のため会社チェック
-	    if ($reservation->company_id !== auth()->guard('company')->user()->company_id) {
-	        return response()->json([
-	            'success' => false,
-	            'message' => '権限がありません'
-	        ]);
+	        if ($slotReservations->count() > 0) {
+
+	            $reservation = $slotReservations->first();
+
+	            return [
+	                'status' => '×',
+	                'reservation_id' => $reservation->id,
+	                'staff_name' => $reservation->staff->name ?? null,
+	                'customer_name' => $reservation->customer_name ?? null,
+	            ];
+	        }
+
+	        return ['status' => '○'];
 	    }
 
-	    $reservation->delete();
+	    /*
+	    |--------------------------------------------------------------------------
+	    | 全担当モード
+	    |--------------------------------------------------------------------------
+	    */
+	    if ($slotReservations->count() >= $totalStaff) {
 
-	    return response()->json([
-	        'success' => true
-	    ]);
+	        return [
+	            'status' => '×',
+	            'reservations' => $slotReservations->map(function ($r) {
+	                return [
+	                    'id' => $r->id,
+	                    'staff_name' => $r->staff->name ?? null,
+	                    'customer_name' => $r->customer_name ?? null,
+	                ];
+	            })->values()
+	        ];
+	    }
 
+	    return ['status' => '○'];
 	}
-
-public function availableStaff(Request $request)
-{
-    $company = auth()->guard('company')->user()->company;
-
-    $start = Carbon::parse($request->datetime);
-    $end   = $start->copy()->addMinutes($company->slot_minutes);
-
-    $staffList = $company->staff()
-        ->where('is_reservable', true)
-        ->orderBy('priority_order')
-        ->get();
-
-    $available = [];
-
-    foreach ($staffList as $staff) {
-
-        $exists = Reservation::where('company_id', $company->id)
-            ->where('staff_id', $staff->id)
-            ->where('status', 'reserved')
-            ->where(function ($q) use ($start, $end) {
-                $q->where('start_at', '<', $end)
-                  ->where('end_at',   '>', $start);
-            })
-            ->exists();
-
-        if (!$exists) {
-            $available[] = [
-                'id' => $staff->id,
-                'name' => $staff->name,
-                // 🔥 ここを修正（storage削除）
-                'image_url' => $staff->image
-                    ? asset($staff->image)
-                    : asset('images/noimage.png')            ];
-        }
-    }
-
-    return response()->json($available);
-}
-
 }

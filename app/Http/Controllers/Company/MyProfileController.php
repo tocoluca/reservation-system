@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Log;
 
 class MyProfileController extends Controller
 {
@@ -25,7 +26,7 @@ class MyProfileController extends Controller
         $request->validate([
             'comment'  => 'nullable|string|max:500',
             'password' => 'nullable|min:8|confirmed',
-            'image'    => 'nullable|image|max:2048'
+//            'image'    => 'nullable|image|max:2048'
         ]);
 
         /*
@@ -33,6 +34,8 @@ class MyProfileController extends Controller
         | 画像アップロード（public直保存・ロリポップ対応）
         |--------------------------------------------------------------------------
         */
+
+Log::debug('LOG1'.$request->hasFile('image'));
 
         if ($request->hasFile('image')) {
 
@@ -43,6 +46,9 @@ class MyProfileController extends Controller
                     unlink($oldPath);
                 }
             }
+
+Log::debug('LOG2');
+
 
             $manager = new ImageManager(new Driver());
             $image   = $manager->read($request->file('image'));
@@ -56,6 +62,8 @@ class MyProfileController extends Controller
             $relativePath = "uploads/companies/{$companyId}/staff";
             $savePath     = public_path($relativePath);
 
+Log::debug('LOG3');
+
             // フォルダがなければ作成
             if (!file_exists($savePath)) {
                 mkdir($savePath, 0777, true);
@@ -66,6 +74,9 @@ class MyProfileController extends Controller
 
             // DBには public からの相対パスを保存
             $staff->image_path = $relativePath . '/' . $filename;
+Log::debug('LOG4'.$relativePath.'/'.$filename);
+
+
         }
 
         /*

@@ -27,4 +27,9 @@ class Reservation extends Model
 	    'start_at' => 'datetime',
 	    'end_at'   => 'datetime',
 	];
+
+	public function staff()
+	{
+	    return $this->belongsTo(\App\Models\Staff::class);
+	}
 }

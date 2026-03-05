@@ -80,10 +80,9 @@ class StaffController extends Controller
 
 	        $nextNumber = $lastCode ? intval($lastCode) + 1 : 1;
 	        $newCode = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-
+		$path = null;
 	        // 画像保存
 	        if ($request->hasFile('image')) {
-			$path = null;
 
 			if ($request->hasFile('image')) {
 
@@ -100,7 +99,8 @@ class StaffController extends Controller
 			    $file->move($dir, $filename);
 
 			    $path = 'companies/'.$company->id.'/staff/'.$filename;
-			}	        }
+			}
+	        }
 
 	        // Staff作成
 	        $staff = Staff::create([

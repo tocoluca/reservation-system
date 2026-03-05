@@ -36,23 +36,31 @@ public function index(Request $request)
     |--------------------------------------------------------------------------
     */
 
-    $holidayDates = [];
+	$holidayDates = [];
+	$holidayNames = [];
 
-    if ($company->holiday_is_closed) {
+	$holidays = Yasumi::create('Japan', $year, 'ja_JP');
 
-        $holidays = Yasumi::create('Japan', $year);
+	$date = $start->copy();
 
-        $date = $start->copy();
+	while ($date <= $end) {
 
-        while ($date <= $end) {
+	    if ($holidays->isHoliday($date)) {
 
-            if ($holidays->isHoliday($date)) {
-                $holidayDates[] = $date->format('Y-m-d');
-            }
+	        $dateStr = $date->format('Y-m-d');
 
-            $date->addDay();
-        }
-    }
+	        $holidayDates[] = $dateStr;
+
+		foreach ($holidays->on($date) as $holiday) {
+		    $holidayNames[$dateStr] = $holiday->getName();
+		    break;
+		}
+
+	    }
+
+	    $date->addDay();
+	}
+
 
     return view('company.calendar.index', [
         'year' => $year,
@@ -63,7 +71,8 @@ public function index(Request $request)
         'daysInMonth' => $current->daysInMonth,
         'startDayOfWeek' => $current->dayOfWeek,
         'calendars' => $calendars,
-        'holidayDates' => $holidayDates
+        'holidayDates' => $holidayDates,
+	'holidayNames' => $holidayNames
     ]);
 }
     /**
@@ -258,5 +267,21 @@ public function bulkYearOpenWeekday(Request $request)
     return response()->json([
         'success' => true
     ]);
+}
+public function deleteTime(Request $request)
+{
+    $company = auth()->guard('company')->user()->company;
+
+    $calendar = CompanyBusinessCalendar::where('company_id',$company->id)
+        ->where('date',$request->date)
+        ->first();
+
+    if ($calendar) {
+        $calendar->open_time = null;
+        $calendar->close_time = null;
+        $calendar->save();
+    }
+
+    return response()->json(['success'=>true]);
 }
 }

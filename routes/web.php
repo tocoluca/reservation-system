@@ -246,6 +246,9 @@ Route::post('/company/calendar/bulk-year-open-weekday',
     [CalendarController::class, 'bulkYearOpenWeekday']
 )->name('company.calendar.bulkYearOpenWeekday');
 
+Route::post('/calendar/delete-time', [CalendarController::class,'deleteTime'])
+->name('company.calendar.deleteTime');
+
 Route::get('calendar/available-staff',
     [ReservationController::class,'availableStaff'])
     ->name('company.calendar.availableStaff');

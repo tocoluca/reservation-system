@@ -105,6 +105,9 @@
             <div class="flex items-center gap-2">
                 <div class="w-4 h-4 bg-red-200 rounded"></div> 休日
             </div>
+		<div class="flex items-center gap-2">
+		    <div class="w-4 h-4 bg-yellow-200 rounded"></div> 営業時間変更
+		</div>
             <div class="flex items-center gap-2">
                 <div class="w-4 h-4 border-2 rounded"
                      style="border-color: {{ $theme }}"></div> 本日
@@ -148,6 +151,8 @@
 			$isHoliday = in_array($date, $holidayDates ?? []);
 		}
 
+		$holidayRing = $isHoliday ? 'ring-2 ring-red-400' : '';
+
 		if ($calendar) {
 		    // 🔥 カレンダーが最優先
 		    $isOpen = (bool)$calendar->is_open;
@@ -162,22 +167,48 @@
 		}
 
 
-		$bgClass = !$isOpen
-		    ? ($isHoliday ? 'bg-red-300' : 'bg-red-200')
-		    : 'bg-green-200';
+		$isTimeChanged = false;
+
+		if ($calendar && ($calendar->open_time || $calendar->close_time)) {
+		    $isTimeChanged = true;
+		}
+
+		if (!$isOpen) {
+		    $bgClass = $isHoliday ? 'bg-red-300' : 'bg-red-200';
+		}
+		elseif ($isTimeChanged) {
+		    $bgClass = 'bg-yellow-200'; // ⭐ 時間変更
+		}
+		else {
+		    $bgClass = 'bg-green-200';
+		}
         @endphp
 
-        <div onclick="toggleDay('{{ $date }}', this)"
-             class="aspect-square rounded-2xl p-2 text-xs font-semibold
-                    flex flex-col justify-between shadow-md
-                    transition active:scale-95 cursor-pointer
-                    {{ $bgClass }}
-                    {{ $weekday==0?'text-red-600':'' }}
-                    {{ $weekday==6?'text-blue-600':'' }}
-                    {{ $isToday?'ring-2':'' }}"
-             style="{{ $isToday?'ring-color:'.$theme:'' }}">
-
+	<div onclick="toggleDay('{{ $date }}', this)"
+	     class="aspect-square rounded-2xl p-2 text-xs font-semibold
+	            flex flex-col justify-between shadow-md
+	            transition active:scale-95 cursor-pointer
+	            {{ $bgClass }}
+	            {{ $weekday==0?'text-red-600':'' }}
+	            {{ $weekday==6?'text-blue-600':'' }}
+	            {{ $isToday ? 'ring-4' : '' }}
+	            {{ $holidayRing }}"
+	     style="
+	        {{ $isToday ? 'ring-color:'.$theme.';' : '' }}
+	        {{ $isHoliday ? 'ring-color:#f87171;' : '' }}
+	     ">
             <div class="text-sm font-bold">{{ $day }}</div>
+	@if(isset($holidayNames[$date]))
+	<div class="text-[9px] text-red-600 text-center leading-tight">
+	    {{ $holidayNames[$date] }}
+	</div>
+	@endif
+	    {{-- ⭐営業時間表示 --}}
+	    @if($calendar && $calendar->open_time)
+	    <div class="text-[9px] text-center leading-tight">
+	        {{ substr($calendar->open_time,0,5) }} - {{ substr($calendar->close_time,0,5) }}
+	    </div>
+	    @endif
 
             <div class="text-[10px] underline text-center"
                  onclick="event.stopPropagation(); openModal('{{ $date }}')"
@@ -241,6 +272,28 @@ function saveTime() {
         })
     }).then(() => {
         closeModal();
+    });
+}
+function deleteTime() {
+
+    const date = document.getElementById('modalDate').value;
+
+    if (!confirm("営業時間変更を削除しますか？")) {
+        return;
+    }
+
+    fetch("{{ route('company.calendar.deleteTime') }}", {
+        method: "POST",
+        headers: {
+            "X-CSRF-TOKEN": "{{ csrf_token() }}",
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            date: date
+        })
+    }).then(() => {
+        closeModal();
+        location.reload();
     });
 }
 function bulkHoliday(weekday) {
@@ -344,20 +397,32 @@ function bulkYearOpen(weekday) {
                    id="closeTime"
                    class="w-full border rounded-lg px-3 py-2 mt-1">
         </div>
+<div class="flex gap-2 mt-4">
 
-        <div class="flex justify-between">
-            <button onclick="closeModal()"
-                    class="px-4 py-2 text-sm text-gray-500">
-                キャンセル
-            </button>
+    {{-- 時間変更削除 --}}
+    <button onclick="deleteTime()"
+            class="flex-1 px-4 py-2 text-sm rounded-lg font-semibold text-white shadow"
+            style="background:#ef4444">
+        時間変更削除
+    </button>
 
-            <button onclick="saveTime()"
-                    class="px-4 py-2 text-white rounded-lg"
-                    style="background: {{ $theme }}">
-                保存
-            </button>
-        </div>
+    {{-- 閉じる --}}
+    <button onclick="closeModal()"
+            class="flex-1 px-4 py-2 text-sm rounded-lg font-semibold border"
+            style="border-color: {{ $theme }}; color: {{ $theme }}">
+        閉じる
+    </button>
+
+    {{-- 保存 --}}
+    <button onclick="saveTime()"
+            class="flex-1 px-4 py-2 text-sm rounded-lg font-semibold text-white shadow"
+            style="background: {{ $theme }}">
+        保存
+    </button>
+
+</div>
 
     </div>
+
 </div>
 @endsection

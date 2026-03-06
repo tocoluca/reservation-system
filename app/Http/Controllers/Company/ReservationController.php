@@ -352,15 +352,34 @@ Log::debug($mode);
 	        return response()->json([], 400);
 	    }
 
-	    // ここは仮データ（あとでロジック入れる）
-	    // ★ ここが重要
-	    $staff = \App\Models\Staff::where('company_id', $company->id)
+	    $start = Carbon::parse($datetime);
+	    $end   = $start->copy()->addMinutes($company->slot_minutes);
+
+	    $staffList = \App\Models\Staff::where('company_id', $company->id)
 	        ->where('is_reservable', true)
+	        ->orderBy('priority_order')
 	        ->get();
 
-	    return response()->json($staff);
-	}
+	    $availableStaff = [];
 
+	    foreach ($staffList as $staff) {
+
+	        $exists = Reservation::where('company_id', $company->id)
+	            ->where('staff_id', $staff->id)
+	            ->where('status','reserved')
+	            ->where(function ($q) use ($start, $end) {
+	                $q->where('start_at','<',$end)
+	                  ->where('end_at','>',$start);
+	            })
+	            ->exists();
+
+	        if (!$exists) {
+	            $availableStaff[] = $staff;
+	        }
+	    }
+
+	    return response()->json($availableStaff);
+	}
 
     /* ==========================================================
        営業判定
@@ -502,6 +521,22 @@ Log::debug($mode);
 	        ];
 	    }
 
-	    return ['status' => '○'];
+		/* ★ここ追加 */
+
+		if ($slotReservations->count() > 0) {
+
+		    return [
+		        'status' => '△',
+		        'reservations' => $slotReservations->map(function ($r) {
+		            return [
+		                'id' => $r->id,
+		                'staff_name' => $r->staff->name ?? null,
+		                'customer_name' => $r->customer_name ?? null,
+		            ];
+		        })->values()
+		    ];
+		}
+
+		return ['status' => '○'];
 	}
 }

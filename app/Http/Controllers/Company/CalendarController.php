@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\Reservation;
 use App\Models\CompanyBusinessCalendar;
 use Carbon\Carbon;
 use Yasumi\Yasumi;
@@ -29,6 +30,17 @@ public function index(Request $request)
         ->whereBetween('date', [$start, $end])
         ->get()
         ->keyBy(fn ($item) => $item->date->format('Y-m-d'));
+
+	$reservationCounts = Reservation::where('company_id', $company->id)
+	    ->whereBetween('start_at', [$start, $end])
+	    ->where('status','reserved')
+	    ->get()
+	    ->groupBy(function ($r) {
+	        return \Carbon\Carbon::parse($r->start_at)->format('Y-m-d');
+	    })
+	    ->map(function ($items) {
+	        return $items->count();
+	    });
 
     /*
     |--------------------------------------------------------------------------
@@ -72,7 +84,8 @@ public function index(Request $request)
         'startDayOfWeek' => $current->dayOfWeek,
         'calendars' => $calendars,
         'holidayDates' => $holidayDates,
-	'holidayNames' => $holidayNames
+	'holidayNames' => $holidayNames,
+	'reservationCounts' => $reservationCounts   // ★追加
     ]);
 }
     /**

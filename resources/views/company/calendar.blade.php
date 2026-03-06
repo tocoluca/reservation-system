@@ -14,11 +14,11 @@
             <h1 class="text-2xl font-bold">予約カレンダー</h1>
             <p class="text-gray-500 text-sm mt-1">予約状況の確認・登録</p>
         </div>
-        <a href="{{ route('company.dashboard') }}"
-           class="px-4 py-2 rounded-lg text-white shadow"
-           style="background: {{ $theme }}">
-            ダッシュボードへ戻る
-        </a>
+<a href="{{ route('company.dashboard') }}"
+   class="px-3 py-1 text-sm rounded-lg border hover:bg-gray-50 transition"
+   style="border-color: {{ $theme }}; color: {{ $theme }}">
+    ← ダッシュボード
+</a>
     </div>
 
     {{-- 表示切替 --}}
@@ -112,6 +112,13 @@
 let currentDate = new Date();
 const mode = "{{ $mode }}";
 
+function getLocalDateStr(date = new Date()) {
+    const y = date.getFullYear();
+    const m = ('0' + (date.getMonth() + 1)).slice(-2);
+    const d = ('0' + date.getDate()).slice(-2);
+    return `${y}-${m}-${d}`;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     if (mode === 'week') loadCalendar();
     if (mode === 'day') loadDayCalendar();
@@ -138,7 +145,7 @@ function loadCalendar() {
 
     if (mode !== 'week') return;
 
-    let dateStr = currentDate.toISOString().split('T')[0];
+    let dateStr = getLocalDateStr(currentDate);
     let staffId = document.getElementById('staffSelect').value;
 
     fetch(`/company/reserve/data?mode=week&date=${dateStr}&staff_id=${staffId}`)
@@ -152,7 +159,7 @@ function loadCalendar() {
             }
 
             let slots = data.slots;
-            let todayStr = new Date().toISOString().split('T')[0];
+            let todayStr = getLocalDateStr();
 
             let allDates = new Set();
             Object.values(slots).forEach(timeRow => {
@@ -255,6 +262,17 @@ function loadCalendar() {
 			                ○
 			            </div>
 			        </td>`;
+			}else if (cell.status === '△') {
+
+			    html += `
+			        <td class="p-3 text-center">
+			            <div class="mx-auto w-8 h-8 flex items-center justify-center
+			                        rounded-full bg-yellow-100 text-yellow-600
+			                        shadow cursor-pointer hover:bg-yellow-200 transition"
+			                onclick="openStaffSelector('${d} ${time}')">
+			                △
+			            </div>
+			        </td>`;
 			}
 
                 });
@@ -342,7 +360,18 @@ function loadDayCalendar() {
                                 </div>
                             </td>`;
 
-                    } else if (cell.status === '○') {
+                    }else if (cell.status === '△') {
+
+			    row += `
+			        <td class="p-4 text-center">
+			            <div class="mx-auto w-9 h-9 flex items-center justify-center
+			                        rounded-full bg-yellow-100 text-yellow-600 shadow
+			                        cursor-pointer hover:bg-yellow-200 transition"
+			                onclick="reserve('${dateStr} ${time}', ${staff.id})">
+			                △
+			            </div>
+			        </td>`;
+			} else if (cell.status === '○') {
 
                         row += `
                             <td class="p-4 text-center">

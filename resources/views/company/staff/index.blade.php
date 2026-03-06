@@ -14,12 +14,12 @@
         <h1 class="text-2xl sm:text-3xl font-bold">
             担当者一覧
         </h1>
+<a href="{{ route('company.dashboard') }}"
+   class="px-3 py-1 text-sm rounded-lg border hover:bg-gray-50 transition"
+   style="border-color: {{ $theme }}; color: {{ $theme }}">
+    ← ダッシュボード
+</a>
 
-        <a href="{{ route('company.staff.create') }}"
-           class="w-full sm:w-auto text-center text-white px-4 py-3 rounded-lg shadow hover:opacity-90 transition"
-           style="background: {{ $theme }}">
-            ＋ 新規登録
-        </a>
     </div>
 
     {{-- メッセージ --}}
@@ -141,33 +141,12 @@
 @php
     $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
 @endphp
+        <a href="{{ route('company.staff.create') }}"
+           class="w-full sm:w-auto text-center text-white px-4 py-3 rounded-lg shadow hover:opacity-90 transition"
+           style="background: {{ $theme }}">
+            ＋ 新規登録
+        </a>
 
-<a href="{{ route('company.dashboard') }}"
-   class="group inline-flex items-center justify-center gap-2
-          w-full sm:w-auto
-          px-6 py-3
-          rounded-xl
-          text-white font-semibold
-          shadow-lg
-          transition-all duration-200
-          hover:shadow-xl hover:-translate-y-0.5"
-   style="background: {{ $theme }}">
-
-    {{-- 左矢印アイコン --}}
-    <svg xmlns="http://www.w3.org/2000/svg"
-         class="w-5 h-5 transition-transform duration-200 group-hover:-translate-x-1"
-         fill="none"
-         viewBox="0 0 24 24"
-         stroke="currentColor">
-        <path stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M15 19l-7-7 7-7"/>
-    </svg>
-
-    ダッシュボードに戻る
-
-</a>
     </div>
 
 </div>

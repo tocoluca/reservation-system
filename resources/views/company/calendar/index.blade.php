@@ -5,20 +5,29 @@
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
 @endphp
+<div class="max-w-6xl mx-auto">
 
+    {{-- タイトル --}}
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-2xl font-bold">営業日カレンダー</h1>
+            <p class="text-gray-500 text-sm mt-1">営業日の登録・確認</p>
+        </div>
+<a href="{{ route('company.dashboard') }}"
+   class="px-3 py-1 text-sm rounded-lg border hover:bg-gray-50 transition"
+   style="border-color: {{ $theme }}; color: {{ $theme }}">
+    ← ダッシュボード
+</a>
+    </div>
 <div class="max-w-6xl mx-auto px-4 py-6">
 
     {{-- ============================= --}}
     {{-- ヘッダー --}}
     {{-- ============================= --}}
+
+
+
     <div class="flex flex-col gap-4 mb-6">
-
-        <a href="{{ route('company.dashboard') }}"
-           class="w-full text-center py-3 rounded-xl text-white font-semibold shadow-md"
-           style="background: {{ $theme }}">
-            ← ダッシュボードに戻る
-        </a>
-
         <h2 class="text-xl font-bold text-center"
             style="color: {{ $theme }}">
             {{ $year }}年 {{ $month }}月
@@ -198,6 +207,12 @@
 	        {{ $isHoliday ? 'ring-color:#f87171;' : '' }}
 	     ">
             <div class="text-sm font-bold">{{ $day }}</div>
+	@if(isset($reservationCounts[$date]))
+	<div class="text-[10px] text-center font-bold text-gray-700">
+	    予約 {{ $reservationCounts[$date] }}件
+	</div>
+	@endif
+
 	@if(isset($holidayNames[$date]))
 	<div class="text-[9px] text-red-600 text-center leading-tight">
 	    {{ $holidayNames[$date] }}

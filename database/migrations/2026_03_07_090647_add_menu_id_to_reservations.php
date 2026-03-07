@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('reservations', function (Blueprint $table) {
-	$table->foreignId('menu_id')->nullable()->constrained()->nullOnDelete();
             //
         });
     }

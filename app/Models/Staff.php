@@ -19,6 +19,7 @@ class Staff extends Authenticatable
         'role',
         'is_reservable',
         'priority_order',
+	'nomination_fee',
         'image_path',
         'comment',
 	'force_password_change'

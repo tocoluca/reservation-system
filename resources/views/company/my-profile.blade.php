@@ -7,11 +7,7 @@
     $theme = $company->theme_color ?? '#3b82f6';
 @endphp
 
-<div class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-
-    <div class="bg-white shadow-lg rounded-2xl p-6 sm:p-8">
-
-<div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+<div class="max-w-6xl mx-auto">
 
     {{-- タイトル --}}
     <div class="flex justify-between items-center mb-8">

@@ -111,6 +111,7 @@ class StaffController extends Controller
 	            'role' => $request->role,
 	            'is_reservable' => $request->boolean('is_reservable'),
 	            'priority_order' => $request->priority_order ?? 0,
+		    'nomination_fee'=> $request->nomination_fee ?? 0,
 	            'image_path' => $path,
 	            'force_password_change' => true
 	        ]);
@@ -194,6 +195,7 @@ public function update(Request $request, Staff $staff)
             'role' => $request->role,
             'is_reservable' => $request->boolean('is_reservable'),
             'priority_order' => $request->priority_order ?? 0,
+            'nomination_fee'=> $request->nomination_fee ?? 0,
             'image_path' => $newImagePath
         ]);
 

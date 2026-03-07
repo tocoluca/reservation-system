@@ -23,6 +23,9 @@ use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\Company\CompanyController as CompanyInfoController;
 use App\Http\Controllers\Company\MyProfileController;
 use App\Http\Controllers\Company\CalendarController;
+use App\Http\Controllers\Company\MenuController;
+use App\Http\Controllers\Company\MenuCategoryController;
+use App\Http\Controllers\Company\MenuSettingController;
 /*
 |--------------------------------------------------------------------------
 | 共通
@@ -128,6 +131,7 @@ Route::prefix('company')->group(function () {
                 ->name('company.theme');
 
             Route::post('theme', [ThemeController::class, 'update']);
+
 
             Route::get('logo', [LogoController::class,'edit'])
                 ->name('company.logo');
@@ -253,8 +257,59 @@ Route::get('calendar/available-staff',
     [ReservationController::class,'availableStaff'])
     ->name('company.calendar.availableStaff');
 
+Route::get('menu', [MenuController::class,'index'])
+    ->name('company.menu.index');
+
+Route::get('menu/create', [MenuController::class,'create'])
+    ->name('company.menu.create');
+
+Route::post('menu', [MenuController::class,'store'])
+    ->name('company.menu.store');
+
+Route::post('menu-category', [MenuCategoryController::class,'store'])
+    ->name('company.menu-category.store');
+
+
+
+Route::get('menu/settings',[MenuSettingController::class,'index'])
+    ->name('company.menu.settings');
+
+Route::post('menu/category',[MenuSettingController::class,'storeCategory'])
+    ->name('company.menu.category.store');
+
+Route::post('menu/tag',[MenuSettingController::class,'storeTag'])
+    ->name('company.menu.tag.store');
+
+Route::delete(
+    'menu/category/{id}',
+    [MenuSettingController::class,'deleteCategory']
+)->name('company.menu.category.delete');
+
+Route::delete(
+    'menu/tag/{id}',
+    [MenuSettingController::class,'deleteTag']
+)->name('company.menu.tag.delete');
+
+Route::get(
+    'menu/{menu}/edit',
+    [MenuController::class,'edit']
+)->name('company.menu.edit');
+
+Route::put(
+    'menu/{menu}',
+    [MenuController::class,'update']
+)->name('company.menu.update');
+
+Route::delete(
+    'menu/{menu}',
+    [MenuController::class,'destroy']
+)->name('company.menu.destroy');
+
+
+
         });
     });
+
 });
 
 //カレンダーの担当者選択時のAJAX処理
@@ -282,6 +337,8 @@ Route::prefix('r/{company_code}')
     });
 
 Route::post('reservation', [ReservationController::class,'store']);
+
+
 
 
 /*

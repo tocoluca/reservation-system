@@ -7,7 +7,7 @@
     $theme = $company->theme_color ?? '#3b82f6';
 @endphp
 
-<div class="max-w-2xl mx-auto px-4 sm:px-6 py-8">
+<div class="max-w-6xl mx-auto">
 
     <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
 

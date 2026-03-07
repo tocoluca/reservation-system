@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Reservation;
 use App\Models\Vacation;
+use App\Models\Menu;
 use App\Models\CompanyBusinessCalendar;
+use App\Models\Staff;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -16,14 +18,26 @@ use Illuminate\Support\Facades\Log;
 class ReservationController extends Controller
 {
 
+    /* ==========================================================
+       カレンダー表示
+    ========================================================== */
     public function calendar(Request $request)
     {
         $mode = $request->get('mode','week');
-        return view('company.calendar', compact('mode'));
+
+        $company = auth()->guard('company')->user()->company;
+
+        /* ★追加（メニュー取得） */
+        $menus = Menu::where('company_id',$company->id)->get();
+
+        return view('company.calendar',[
+            'mode'=>$mode,
+            'menus'=>$menus
+        ]);
     }
 
     /* ==========================================================
-       カレンダーデータ（DAY / WEEK 完全統合版）
+       カレンダーデータ
     ========================================================== */
     public function calendarData(Request $request)
     {
@@ -31,9 +45,9 @@ class ReservationController extends Controller
         $mode = $request->get('mode','week');
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | DAY MODE
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         */
         if ($mode === 'day') {
 
@@ -111,12 +125,12 @@ class ReservationController extends Controller
         }
 
         /*
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         | WEEK MODE
-        |--------------------------------------------------------------------------
+        |----------------------------------------------------------------------
         */
-Log::debug($mode);
-	$staffId = $request->staff_id;
+
+        $staffId = $request->staff_id;
 
         $startDate = $request->date
             ? Carbon::parse($request->date)->startOfWeek()
@@ -124,15 +138,15 @@ Log::debug($mode);
 
         $endDate = $startDate->copy()->addDays(6)->endOfDay();
 
-	$staffQuery = $company->staff()
-	    ->where('is_reservable', true)
-	    ->orderBy('priority_order');
+        $staffQuery = $company->staff()
+            ->where('is_reservable', true)
+            ->orderBy('priority_order');
 
-	if (!empty($staffId)) {
-	    $staffQuery->where('id', $staffId);
-	}
+        if (!empty($staffId)) {
+            $staffQuery->where('id', $staffId);
+        }
 
-	$staffList = $staffQuery->get();
+        $staffList = $staffQuery->get();
 
         $staffIds = $staffList->pluck('id');
 
@@ -204,117 +218,123 @@ Log::debug($mode);
     /* ==========================================================
        予約登録
     ========================================================== */
-    public function store(Request $request)
-    {
-        $company = Auth::guard('company')->user()->company;
+	public function store(Request $request)
+	{
+	    $company = Auth::guard('company')->user()->company;
 
-        try {
+	    try {
 
-            $request->validate([
-                'start_at'      => 'required|date',
-                'customer_name' => 'required',
-                'menu_id'       => 'nullable|integer',
-                'staff_id'      => 'nullable|integer'
-            ]);
+	        $request->validate([
+	            'start_at'      => 'required|date',
+	            'customer_name' => 'required',
+	            'menu_id'       => 'nullable|integer',
+	            'staff_id'      => 'nullable|integer'
+	        ]);
 
-            $start = Carbon::parse($request->start_at);
-            $duration = $company->slot_minutes;
+	        $start = Carbon::parse($request->start_at);
 
-            if (
-                $company->industry_type === 'beauty' &&
-                $company->menu_time_priority_flag &&
-                $request->menu_id
-            ) {
-                $menu = \App\Models\Menu::findOrFail($request->menu_id);
-                $duration = $menu->duration_minutes;
-            }
+	        /* =================================
+	           所要時間決定
+	        ================================= */
 
-            $end = $start->copy()->addMinutes($duration);
+	        if (
+	            $company->menu_time_priority_flag &&
+	            $request->menu_id
+	        ) {
 
-            if ($this->getBusinessStatus($company,$start,$end) !== 'open') {
-                throw new \Exception('営業時間外または休業日です');
-            }
+	            $menu = Menu::findOrFail($request->menu_id);
+	            $duration = $menu->duration;
 
-		DB::transaction(function () use ($request, $company, $start, $end, &$assignedStaffId) {
+	        } else {
 
-		    $assignedStaffId = null;
+	            $duration = $company->slot_minutes;
+	        }
 
-		    if ($request->staff_id) {
+	        $end = $start->copy()->addMinutes($duration);
 
-		        // 🔥 指名予約
-		        $staff = $company->staff()
-		            ->where('id', $request->staff_id)
-		            ->where('is_reservable', true)
-		            ->lockForUpdate()
-		            ->firstOrFail();
+	        /* =================================
+	           スタッフ決定
+	        ================================= */
 
-		        $exists = Reservation::where('company_id', $company->id)
-		            ->where('staff_id', $staff->id)
-		            ->where('status', 'reserved')
-		            ->where(function ($q) use ($start, $end) {
-		                $q->where('start_at', '<', $end)
-		                  ->where('end_at',   '>', $start);
-		            })
-		            ->exists();
+	        $assignedStaffId = $request->staff_id;
 
-		        if ($exists) {
-		            throw new \Exception('この担当者は既に予約があります');
-		        }
+	        if (!$assignedStaffId) {
 
-		        $assignedStaffId = $staff->id;
+	            $staff = Staff::where('company_id',$company->id)
+	                ->where('is_reservable',true)
+	                ->orderBy('priority_order')
+	                ->first();
 
-		    } else {
+	            if (!$staff) {
+	                throw new \Exception('担当者が見つかりません');
+	            }
 
-		        // 🔥 指名なし → 自動割当
-		        $staffList = $company->staff()
-		            ->where('is_reservable', true)
-		            ->orderBy('priority_order')
-		            ->lockForUpdate()
-		            ->get();
+	            $assignedStaffId = $staff->id;
+	        }
 
-		        foreach ($staffList as $staff) {
+	        $staff = Staff::find($assignedStaffId);
 
-		            $exists = Reservation::where('company_id', $company->id)
-		                ->where('staff_id', $staff->id)
-		                ->where('status', 'reserved')
-		                ->where(function ($q) use ($start, $end) {
-		                    $q->where('start_at', '<', $end)
-		                      ->where('end_at',   '>', $start);
-		                })
-		                ->exists();
+	        /* =================================
+	           料金計算
+	        ================================= */
 
-		            if (!$exists) {
-		                $assignedStaffId = $staff->id;
-		                break;
-		            }
-		        }
+	        $menu = null;
+	        $price = 0;
 
-		        if (!$assignedStaffId) {
-		            throw new \Exception('この時間は満員です');
-		        }
-		    }
+	        if ($request->menu_id) {
 
-		    Reservation::create([
-		        'company_id'    => $company->id,
-		        'staff_id'      => $assignedStaffId,
-		        'customer_name' => $request->customer_name,
-		        'start_at'      => $start,
-		        'end_at'        => $end,
-		        'status'        => 'reserved',
-		    ]);
-		});
+	            $menu = Menu::find($request->menu_id);
 
-            return response()->json(['success'=>true]);
+	            if ($menu) {
+	                $price = $menu->price;
+	            }
+	        }
 
-        } catch (\Exception $e) {
+	        $nominationFee = $staff->nomination_fee ?? 0;
 
-            return response()->json([
-                'success'=>false,
-                'message'=>$e->getMessage()
-            ],422);
-        }
-    }
+	        $totalPrice = $price + $nominationFee;
 
+Log::debug('menu'.$menu);
+Log::debug('$price'.$price);
+Log::debug('$nominationFee'.$nominationFee);
+
+
+	        DB::transaction(function () use (
+	            $request,
+	            $company,
+	            $start,
+	            $end,
+	            $assignedStaffId,
+	            $price,
+	            $nominationFee,
+	            $totalPrice
+	        ) {
+
+	            Reservation::create([
+	                'company_id'    => $company->id,
+	                'staff_id'      => $assignedStaffId,
+	                'customer_name' => $request->customer_name,
+	                'start_at'      => $start,
+	                'end_at'        => $end,
+	                'menu_id'       => $request->menu_id,
+	                'price'         => $price,
+	                'nomination_fee'=> $nominationFee,
+	                'total_price'   => $totalPrice,
+	                'status'        => 'reserved',
+	            ]);
+
+	        });
+
+	        return response()->json(['success'=>true]);
+
+	    } catch (\Exception $e) {
+
+	        return response()->json([
+	            'success'=>false,
+	            'message'=>$e->getMessage()
+	        ],422);
+	    }
+	}
     public function cancel($id)
     {
         $company = auth()->guard('company')->user()->company;
@@ -538,5 +558,9 @@ Log::debug($mode);
 		}
 
 		return ['status' => '○'];
+	}
+	public function menu()
+	{
+	return $this->belongsTo(Menu::class);
 	}
 }

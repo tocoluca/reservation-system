@@ -5,104 +5,266 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Reservation;
-use Carbon\Carbon;
 use App\Models\Staff;
+use App\Models\Menu;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
 
-	public function index()
-	{
-	    $staff = auth()->guard('company')->user();
-	    $company = $staff->company;
+    public function index()
+    {
 
-	    $now = Carbon::now();
-	    $startOfMonth = $now->copy()->startOfMonth();
-	    $endOfMonth = $now->copy()->endOfMonth();
+        $staff = auth()->guard('company')->user();
+        $company = $staff->company;
 
-	    /* ===============================
-	       今月の予約時間（分）
-	    =============================== */
-	    $reservations = Reservation::where('company_id', $company->id)
-	        ->whereBetween('start_at', [$startOfMonth, $endOfMonth])
-	        ->where('status','reserved')
-	        ->get();
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
 
-	    $totalReservedMinutes = 0;
+        /* ===============================
+           今月の予約時間（分）
+        =============================== */
 
-	    foreach ($reservations as $r) {
-	        $totalReservedMinutes +=
-	            Carbon::parse($r->start_at)
-	                ->diffInMinutes($r->end_at);
-	    }
+        $reservations = Reservation::where('company_id',$company->id)
+            ->whereBetween('start_at',[$startOfMonth,$endOfMonth])
+            ->where('status','reserved')
+            ->get();
 
-	    /* ===============================
-	       今月の営業時間（分）
-	    =============================== */
+        $totalReservedMinutes = 0;
 
-	    $totalAvailableMinutes = 0;
+        foreach($reservations as $r){
 
-	    $staffCount = Staff::where('company_id',$company->id)
-	        ->where('is_reservable',true)
-	        ->count();
+            $totalReservedMinutes +=
+                Carbon::parse($r->start_at)
+                ->diffInMinutes($r->end_at);
 
-	    $patterns = $company->open_patterns ?? [];
+        }
 
-	    $date = $startOfMonth->copy();
+        /* ===============================
+           今月の営業時間（分）
+        =============================== */
 
-	    while ($date <= $endOfMonth) {
+        $totalAvailableMinutes = 0;
 
-	        $weekday = $date->dayOfWeek;
+        $staffCount = Staff::where('company_id',$company->id)
+            ->where('is_reservable',true)
+            ->count();
 
-	        $dayPatterns = $patterns[$weekday] ?? [];
+        $patterns = $company->open_patterns ?? [];
 
-	        foreach ($dayPatterns as $pattern) {
+        $date = $startOfMonth->copy();
 
-	            if (empty($pattern['open']) || empty($pattern['close'])) {
-	                continue;
-	            }
+        while($date <= $endOfMonth){
 
-	            $open = Carbon::parse($date->format('Y-m-d').' '.$pattern['open']);
-	            $close = Carbon::parse($date->format('Y-m-d').' '.$pattern['close']);
+            $weekday = $date->dayOfWeek;
 
-	            $totalAvailableMinutes +=
-	                $open->diffInMinutes($close) * $staffCount;
-	        }
+            $dayPatterns = $patterns[$weekday] ?? [];
 
-	        $date->addDay();
-	    }
+            foreach($dayPatterns as $pattern){
 
-	    /* ===============================
-	       稼働率計算
-	    =============================== */
+                if(empty($pattern['open']) || empty($pattern['close'])){
+                    continue;
+                }
 
-	    $utilizationRate = 0;
+                $open = Carbon::parse($date->format('Y-m-d').' '.$pattern['open']);
+                $close = Carbon::parse($date->format('Y-m-d').' '.$pattern['close']);
 
-	    if ($totalAvailableMinutes > 0) {
-	        $utilizationRate =
-	            round(($totalReservedMinutes / $totalAvailableMinutes) * 100, 1);
-	    }
+                $totalAvailableMinutes +=
+                    $open->diffInMinutes($close) * $staffCount;
 
-	        $now = Carbon::now();
+            }
 
-	        // 今日の予約数
-	        $todayCount = Reservation::where('company_id', $company->id)
-	            ->whereDate('start_at', $now->toDateString())
-	            ->where('status', 'reserved')
-	            ->count();
+            $date->addDay();
+        }
 
-	        // 今月の予約数
-	        $monthlyCount = Reservation::where('company_id', $company->id)
-	            ->whereYear('start_at', $now->year)
-	            ->whereMonth('start_at', $now->month)
-	            ->where('status', 'reserved')
-	            ->count();
+        /* ===============================
+           稼働率
+        =============================== */
 
-	    return view('company.dashboard', compact(
-	        'staff',
+        $utilizationRate = 0;
+
+        if($totalAvailableMinutes > 0){
+
+            $utilizationRate =
+                round(($totalReservedMinutes / $totalAvailableMinutes) * 100 ,1);
+
+        }
+
+        /* ===============================
+           今日の予約数
+        =============================== */
+
+        $todayCount = Reservation::where('company_id',$company->id)
+            ->whereDate('start_at',$now->toDateString())
+            ->where('status','reserved')
+            ->count();
+
+        /* ===============================
+           今月予約数
+        =============================== */
+
+        $monthlyCount = Reservation::where('company_id',$company->id)
+            ->whereYear('start_at',$now->year)
+            ->whereMonth('start_at',$now->month)
+            ->where('status','reserved')
+            ->count();
+
+        /* ===============================
+           今日の予約一覧
+        =============================== */
+
+        $todayReservations = Reservation::where('company_id',$company->id)
+            ->whereDate('start_at',$now->toDateString())
+            ->where('status','reserved')
+            ->with(['staff','menu'])
+            ->orderBy('start_at')
+            ->get();
+
+
+    /* ===============================
+       今日の売上
+    =============================== */
+
+    $todaySales = Reservation::where('company_id',$company->id)
+        ->whereDate('start_at',$now->toDateString())
+        ->where('status','reserved')
+        ->sum('total_price');
+
+    /* ===============================
+       今月の売上
+    =============================== */
+
+    $monthlySales = Reservation::where('company_id',$company->id)
+        ->whereYear('start_at',$now->year)
+        ->whereMonth('start_at',$now->month)
+        ->where('status','reserved')
+        ->sum('total_price');
+    /* ===============================
+       今年売上
+    =============================== */
+
+    $yearlySales = Reservation::where('company_id',$company->id)
+        ->whereYear('start_at',$now->year)
+        ->where('status','reserved')
+        ->sum('total_price');
+
+
+$period = request('period','month');
+$year = request('year',now()->year);
+$month = request('month',now()->month);
+
+$query = Reservation::where('company_id',$company->id)
+->where('status','reserved');
+
+if($period=='month'){
+
+$query->whereYear('start_at',$year)
+      ->whereMonth('start_at',$month);
+
+}else{
+
+$query->whereYear('start_at',$year);
+
+}
+
+
+
+    /* ===============================
+       月別売上（グラフ用）
+    =============================== */
+
+$monthlyChart = collect(range(1,12))->map(function($month) use ($company,$year){
+
+    $total = Reservation::where('company_id',$company->id)
+        ->whereYear('start_at',$year)
+        ->whereMonth('start_at',$month)
+        ->where('status','reserved')
+        ->sum('total_price');
+
+    return [
+        'month'=>$month,
+        'total'=>$total
+    ];
+
+});
+
+    /* ===============================
+       スタッフ売上ランキング
+    =============================== */
+
+$staffRanking = (clone $query)
+->select(
+'staff_id',
+DB::raw('SUM(total_price) as total')
+)
+->groupBy('staff_id')
+->with('staff')
+->orderByDesc('total')
+->limit(10)
+->get();
+
+$nominationRanking = (clone $query)
+->where('nomination_fee','>',0)
+->select(
+'staff_id',
+DB::raw('COUNT(*) as nomination_count'),
+DB::raw('SUM(nomination_fee) as nomination_sales')
+)
+->groupBy('staff_id')
+->with('staff')
+->orderByDesc('nomination_count')
+->limit(10)
+->get();
+
+
+    /* ===============================
+       人気メニュー
+    =============================== */
+
+$menuRanking = (clone $query)
+->whereNotNull('menu_id')
+->select(
+'menu_id',
+DB::raw('COUNT(*) as total')
+)
+->groupBy('menu_id')
+->with('menu')
+->orderByDesc('total')
+->limit(10)
+->get();
+
+
+$totalSales = (clone $query)->sum('total_price');
+
+$totalReservations = (clone $query)->count();
+
+$averagePrice = $totalReservations
+? round($totalSales / $totalReservations)
+: 0;
+
+
+        return view('company.dashboard',compact(
+
+            'staff',
             'todayCount',
             'monthlyCount',
-	        'utilizationRate'
-	    ));
-	}
+            'utilizationRate',
+            'todayReservations',
+	        'todaySales',
+	        'monthlySales',
+        'yearlySales',
+        'monthlyChart',
+	        'staffRanking',
+	        'menuRanking',
+'nominationRanking',
+'averagePrice',
+'year',
+'month',
+'period'
+
+        ));
+    }
+
 }

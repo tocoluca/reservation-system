@@ -443,6 +443,7 @@ function submitReservation() {
     const name = document.getElementById('modal_customer_name').value;
     const phone  = document.getElementById('modal_customer_phone').value;
     const phonePattern = /^[0-9\-]*$/;
+    const menuId = document.getElementById('modal_menu_id').value;
 
     if (!name) {
         alert('お名前を入力してください');
@@ -464,7 +465,8 @@ function submitReservation() {
             start_at: selectedDatetime,
             customer_name: name,
             customer_phone: phone,
-            staff_id: selectedStaffId
+            staff_id: selectedStaffId,
+ 	    menu_id: menuId
         })
     })
     .then(res => res.json())
@@ -648,6 +650,24 @@ function formatTel(input) {
 		       class="border rounded-lg p-2 w-full"
 		       oninput="formatTel(this)">
         </div>
+
+	<div class="mb-4">
+	    <label class="block text-sm mb-1">メニュー</label>
+
+	    <select id="modal_menu_id"
+	            class="border rounded-lg p-2 w-full">
+
+	        @foreach($menus as $menu)
+
+	        <option value="{{ $menu->id }}">
+	            {{ $menu->name }}（{{ $menu->duration }}分）
+	        </option>
+
+	        @endforeach
+
+	    </select>
+
+	</div>
 
         <div class="flex justify-end gap-2">
             <button onclick="closeModal()"

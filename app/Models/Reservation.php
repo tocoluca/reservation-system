@@ -12,13 +12,18 @@ class Reservation extends Model
     protected $fillable = [
         'company_id',
         'staff_id',
+	'menu_id',   // ★追加
         'customer_name',
         'customer_email',
         'customer_phone',
         'start_at',
         'end_at',
         'status',
-        'fingerprint'
+        'fingerprint',
+	    // 追加
+	    'price',
+	    'nomination_fee',
+	    'total_price'
     ];
 
     protected $dates = ['start_at','end_at'];
@@ -32,4 +37,8 @@ class Reservation extends Model
 	{
 	    return $this->belongsTo(\App\Models\Staff::class);
 	}
+	    public function menu() // ★追加
+	    {
+	        return $this->belongsTo(\App\Models\Menu::class);
+	    }
 }

@@ -108,7 +108,16 @@
                     予約受付対象にする
                 </label>
             </div>
+<label>指名料</label>
 
+<input type="number"
+name="nomination_fee"
+value="{{ old('nomination_fee',$staff->nomination_fee ?? 0) }}"
+class="border p-2 w-full">
+
+<p class="text-xs text-gray-400">
+0円なら指名料なし
+</p>
             {{-- 表示順 --}}
             <div class="mb-10">
                 <label class="block font-semibold mb-3">

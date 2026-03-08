@@ -75,7 +75,6 @@ text-white px-5 py-2 rounded-lg transition">
 <th class="p-3 border text-left">企業名</th>
 <th class="p-3 border text-left">業種</th>
 <th class="p-3 border text-left">予約URL</th>
-<th class="p-3 border text-left">QR</th>
 <th class="p-3 border text-center">状態</th>
 <th class="p-3 border text-center">操作</th>
 </tr>

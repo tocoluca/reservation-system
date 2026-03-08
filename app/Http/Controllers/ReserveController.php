@@ -215,7 +215,7 @@ $reservation = Reservation::create([
 'total_price'=>$menu->price + Staff::find($staffId)->nomination_fee,
 
 'status'=>'reserved',
-'cancel_token'=>Str::uuid()
+'cancel_token'=>Str::random(6)
 
 ]);
 

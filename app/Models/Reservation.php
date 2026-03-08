@@ -23,7 +23,8 @@ class Reservation extends Model
 	    // 追加
 	    'price',
 	    'nomination_fee',
-	    'total_price'
+	    'total_price',
+	'cancel_token'
     ];
 
     protected $dates = ['start_at','end_at'];

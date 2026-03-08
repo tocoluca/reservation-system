@@ -348,10 +348,9 @@ Route::prefix('r/{company_code}')
 
 	Route::get('/slots',[ReserveController::class,'slots']);
 
-	Route::get('/cancel/{token}',[ReserveController::class,'cancel']);
 });
 
-
+Route::get('/cancel/{token}',[ReserveController::class,'cancel']);
 
 /*
 |--------------------------------------------------------------------------

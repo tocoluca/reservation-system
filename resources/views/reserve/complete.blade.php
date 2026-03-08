@@ -73,9 +73,7 @@ Googleカレンダーに追加
 <a
 href="{{ url('/cancel/'.$reservation->cancel_token) }}"
 class="text-red-500 underline block mb-4">
-
 予約をキャンセル
-
 </a>
 
 <button

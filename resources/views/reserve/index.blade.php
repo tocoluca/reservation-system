@@ -24,11 +24,19 @@ $theme = $company->theme_color ?? '#3b82f6';
 STEP1 メニュー
 </h2>
 
+@foreach($menus as $categoryName => $categoryMenus)
+
+<div class="mb-6">
+
+<div class="font-bold text-gray-700 mb-3">
+{{ $categoryName }}
+</div>
+
 <div class="space-y-3">
 
-@foreach($menus as $menu)
+@foreach($categoryMenus as $menu)
 
-<label class="block bg-white border rounded-xl p-4 shadow-sm cursor-pointer">
+<label class="block bg-white border rounded-xl p-4 shadow-sm cursor-pointer hover:border-gray-300">
 
 <input
 type="radio"
@@ -39,13 +47,72 @@ data-duration="{{ $menu->duration }}"
 class="mr-2"
 required>
 
+<div class="flex gap-3">
+
+{{-- メニュー画像 
+@if($menu->image)
+
+<img
+src="{{ $menu->image_url }}"
+class="w-16 h-16 rounded-lg object-cover">
+
+@else
+
+<img
+src="{{ asset('images/noimage.png') }}"
+class="w-16 h-16 rounded-lg object-cover">
+
+@endif
+--}}
+
+<div class="flex-1">
+
+{{-- メニュー名 --}}
 <div class="font-semibold">
+
 {{ $menu->name }}
+
+@if($menu->is_popular)
+
+<span class="text-xs px-2 py-1 ml-1 rounded-full text-white"
+style="background: {{ $theme }}">
+人気
+</span>
+
+@endif
+
 </div>
 
-<div class="text-sm text-gray-500">
-{{ number_format($menu->price) }}円
+
+{{-- タグ --}}
+@if($menu->tags->count())
+
+<div class="flex flex-wrap gap-1 mt-1">
+
+@foreach($menu->tags as $tag)
+
+<span class="text-xs px-2 py-1 rounded-full text-white"
+style="background: {{ $theme }}">
+{{ $tag->name }}
+</span>
+
+@endforeach
+
+</div>
+
+@endif
+
+
+{{-- 価格 --}}
+<div class="text-sm text-gray-500 mt-1">
+
+{{ number_format($menu->price) }}円  
 ・{{ $menu->duration }}分
+
+</div>
+
+</div>
+
 </div>
 
 </label>
@@ -53,6 +120,11 @@ required>
 @endforeach
 
 </div>
+
+</div>
+
+@endforeach
+
 </div>
 
 {{-- スタッフ --}}
@@ -241,6 +313,9 @@ document.getElementById('price').innerText = menuPrice + staffFee
 function loadSlots(){
 
 let date = document.getElementById('date').value
+if(!date){
+return
+}
 let menuEl = document.querySelector('[name=menu_id]:checked')
 
 if(!menuEl){

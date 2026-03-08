@@ -32,10 +32,15 @@ class CompanyController extends Controller
 	        'email' => 'nullable|email:rfc,dns',
 	        'homepage' => 'nullable|url',
 	        'theme_color' => 'required',
+		'address' => 'nullable|string|max:255',
+		'phone' => 'nullable|string|max:30',
 	        'slot_minutes' => 'required|integer|min:5|max:120',
 	        'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
 	        'open_patterns' => 'nullable|array',
 	        'regular_holidays' => 'nullable|array',
+		'reservation_month_limit' => 'nullable|integer|min:1|max:12',
+		'reservation_open_days' => 'nullable|integer|min:0|max:30',
+		'reservation_close_hours' => 'nullable|integer|min:0|max:48',
 	    ]);
 
 $dayNames = ['日','月','火','水','木','金','土'];
@@ -79,14 +84,17 @@ $dayNames = ['日','月','火','水','木','金','土'];
 	        'email' => $validated['email'] ?? null,
 	        'homepage' => $validated['homepage'] ?? null,
 	        'theme_color' => $validated['theme_color'],
-	        'address' => $request->address,
-	        'phone' => $request->phone,
+		'address' => $validated['address'] ?? null,
+		'phone' => $validated['phone'] ?? null,
+		'reservation_month_limit' => $validated['reservation_month_limit'] ?? 3,
+		'reservation_open_days' => $validated['reservation_open_days'] ?? 0,
+		'reservation_close_hours' => $validated['reservation_close_hours'] ?? 1,
 	        'slot_minutes' => $validated['slot_minutes'],
 	        'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],
 	        'open_patterns' => $patterns,
 	        'regular_holidays' => $validated['regular_holidays'] ?? [],
 	        'holiday_is_closed' => $request->boolean('holiday_is_closed'),
-	        'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
+	        'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag')
 	    ];
 //Log::debug('ログ５');
 

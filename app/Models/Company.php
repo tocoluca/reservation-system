@@ -22,6 +22,9 @@ class Company extends Model
 	'regular_holidays',
 	'holiday_is_closed',
 	'menu_time_priority_flag',
+	'reservation_month_limit',
+	'reservation_open_days',
+	'reservation_close_hours',
 	'is_initialized',
   	'open_patterns'
 	];

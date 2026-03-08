@@ -17,7 +17,31 @@ use Illuminate\Support\Facades\Log;
 
 class ReservationController extends Controller
 {
+	/* ==========================================================
+	予約制御設定
+	========================================================== */
+	private function getReservationLimits($company)
+	{
+	    $limitMonth = $company->reservation_month_limit ?? 3;
+	    $openDays   = $company->reservation_open_days ?? 0;
+	    $closeHours = $company->reservation_close_hours ?? 1;
 
+	    $startReservableDate = now()
+	        ->addDays($openDays)
+	        ->startOfDay();
+
+	    $lastReservableDate = now()
+	        ->addMonths($limitMonth)
+	        ->endOfMonth();
+
+	    $closeLimit = now()->addHours($closeHours);
+
+	    return [
+	        'start' => $startReservableDate,
+	        'end'   => $lastReservableDate,
+	        'close' => $closeLimit
+	    ];
+	}
     /* ==========================================================
        カレンダー表示
     ========================================================== */
@@ -54,7 +78,14 @@ class ReservationController extends Controller
             $date = $request->date
                 ? Carbon::parse($request->date)
                 : now();
+		$limits = $this->getReservationLimits($company);
 
+		if ($date->startOfDay() < $limits['start'] || $date->startOfDay() > $limits['end']) {
+		    return response()->json([
+		        'staffs'=>[],
+		        'slots'=>[]
+		    ]);
+		}
             $staffList = $company->staff()
                 ->where('is_reservable', true)
                 ->orderBy('priority_order')
@@ -137,6 +168,7 @@ class ReservationController extends Controller
             : now()->startOfWeek();
 
         $endDate = $startDate->copy()->addDays(6)->endOfDay();
+	$limits = $this->getReservationLimits($company);
 
         $staffQuery = $company->staff()
             ->where('is_reservable', true)
@@ -166,6 +198,12 @@ class ReservationController extends Controller
         for ($d=0;$d<7;$d++) {
 
             $day = $startDate->copy()->addDays($d);
+
+
+		if ($day < $limits['start'] || $day > $limits['end']) {
+		    continue;
+		}
+
             $weekday = $day->dayOfWeek;
             $patterns = (array) ($company->open_patterns[$weekday] ?? []);
 
@@ -233,6 +271,33 @@ class ReservationController extends Controller
 
 	        $start = Carbon::parse($request->start_at);
 
+		/* =================================
+		   予約可能期間チェック
+		================================ */
+
+		$limits = $this->getReservationLimits($company);
+
+		if ($start < $limits['start']) {
+		    return response()->json([
+		        'success'=>false,
+		        'message'=>'この日はまだ予約受付していません'
+		    ],422);
+		}
+
+		if ($start > $limits['end']) {
+		    return response()->json([
+		        'success'=>false,
+		        'message'=>'予約可能期間を超えています'
+		    ],422);
+		}
+
+		if ($start < $limits['close']) {
+		    return response()->json([
+		        'success'=>false,
+		        'message'=>'予約締切を過ぎています'
+		    ],422);
+		}
+
 	        /* =================================
 	           所要時間決定
 	        ================================= */
@@ -294,31 +359,61 @@ class ReservationController extends Controller
 
 	        $totalPrice = $price + $nominationFee;
 
-	        DB::transaction(function () use (
-	            $request,
-	            $company,
-	            $start,
-	            $end,
-	            $assignedStaffId,
-	            $price,
-	            $nominationFee,
-	            $totalPrice
-	        ) {
+		$overlapCount = Reservation::where('company_id',$company->id)
+		    ->where('status','reserved')
+		    ->where(function ($q) use ($start,$end) {
+		        $q->where('start_at','<',$end)
+		          ->where('end_at','>',$start);
+		    })
+		    ->count();
 
-	            Reservation::create([
-	                'company_id'    => $company->id,
-	                'staff_id'      => $assignedStaffId,
-	                'customer_name' => $request->customer_name,
-	                'start_at'      => $start,
-	                'end_at'        => $end,
-	                'menu_id'       => $request->menu_id,
-	                'price'         => $price,
-	                'nomination_fee'=> $nominationFee,
-	                'total_price'   => $totalPrice,
-	                'status'        => 'reserved',
-	            ]);
+		if ($overlapCount >= $company->max_simultaneous_reservations) {
 
-	        });
+		    return response()->json([
+		        'success'=>false,
+		        'message'=>'この時間は予約上限です'
+		    ],422);
+		}
+
+		DB::transaction(function () use (
+		    $request,
+		    $company,
+		    $start,
+		    $end,
+		    $assignedStaffId,
+		    $price,
+		    $nominationFee,
+		    $totalPrice
+		) {
+
+		    $exists = Reservation::where('company_id',$company->id)
+		        ->where('staff_id',$assignedStaffId)
+		        ->where('status','reserved')
+		        ->where(function ($q) use ($start,$end) {
+		            $q->where('start_at','<',$end)
+		              ->where('end_at','>',$start);
+		        })
+		        ->lockForUpdate()
+		        ->exists();
+
+		    if ($exists) {
+		        throw new \Exception('この時間は既に予約があります');
+		    }
+
+		    Reservation::create([
+		        'company_id'=>$company->id,
+		        'staff_id'=>$assignedStaffId,
+		        'customer_name'=>$request->customer_name,
+		        'start_at'=>$start,
+		        'end_at'=>$end,
+		        'menu_id'=>$request->menu_id,
+		        'price'=>$price,
+		        'nomination_fee'=>$nominationFee,
+		        'total_price'=>$totalPrice,
+		        'status'=>'reserved',
+		    ]);
+
+		});
 
 	        return response()->json(['success'=>true]);
 
@@ -554,8 +649,5 @@ class ReservationController extends Controller
 
 		return ['status' => '○'];
 	}
-	public function menu()
-	{
-	return $this->belongsTo(Menu::class);
-	}
+
 }

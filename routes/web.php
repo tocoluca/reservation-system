@@ -26,6 +26,8 @@ use App\Http\Controllers\Company\CalendarController;
 use App\Http\Controllers\Company\MenuController;
 use App\Http\Controllers\Company\MenuCategoryController;
 use App\Http\Controllers\Company\MenuSettingController;
+
+use App\Http\Controllers\ReserveController;
 /*
 |--------------------------------------------------------------------------
 | 共通
@@ -306,6 +308,9 @@ Route::delete(
 )->name('company.menu.destroy');
 
 
+Route::post('reservation', [ReservationController::class,'store']);
+
+
 
         });
     });
@@ -333,11 +338,18 @@ Route::prefix('r/{company_code}')
     ->middleware(['company.code'])
     ->group(function () {
 
-        Route::get('/', fn() => view('reserve.top'));
-    });
+        Route::get('/', [ReserveController::class,'index']);
 
-Route::post('reservation', [ReservationController::class,'store']);
+        Route::post('/confirm', [ReserveController::class,'confirm']);
 
+        Route::post('/store', [ReserveController::class,'store']);
+
+        Route::get('/complete', [ReserveController::class,'complete']);
+
+	Route::get('/slots',[ReserveController::class,'slots']);
+
+	Route::get('/cancel/{token}',[ReserveController::class,'cancel']);
+});
 
 
 

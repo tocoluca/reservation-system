@@ -35,7 +35,7 @@ class MyProfileController extends Controller
         |--------------------------------------------------------------------------
         */
 
-Log::debug('LOG1'.$request->hasFile('image'));
+//Log::debug('LOG1'.$request->hasFile('image'));
 
         if ($request->hasFile('image')) {
 
@@ -47,7 +47,7 @@ Log::debug('LOG1'.$request->hasFile('image'));
                 }
             }
 
-Log::debug('LOG2');
+//Log::debug('LOG2');
 
 
             $manager = new ImageManager(new Driver());
@@ -62,7 +62,7 @@ Log::debug('LOG2');
             $relativePath = "uploads/companies/{$companyId}/staff";
             $savePath     = public_path($relativePath);
 
-Log::debug('LOG3');
+//Log::debug('LOG3');
 
             // フォルダがなければ作成
             if (!file_exists($savePath)) {
@@ -74,7 +74,7 @@ Log::debug('LOG3');
 
             // DBには public からの相対パスを保存
             $staff->image_path = $relativePath . '/' . $filename;
-Log::debug('LOG4'.$relativePath.'/'.$filename);
+//Log::debug('LOG4'.$relativePath.'/'.$filename);
 
 
         }

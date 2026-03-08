@@ -294,11 +294,6 @@ class ReservationController extends Controller
 
 	        $totalPrice = $price + $nominationFee;
 
-Log::debug('menu'.$menu);
-Log::debug('$price'.$price);
-Log::debug('$nominationFee'.$nominationFee);
-
-
 	        DB::transaction(function () use (
 	            $request,
 	            $company,

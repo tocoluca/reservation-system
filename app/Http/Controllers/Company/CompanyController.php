@@ -18,14 +18,14 @@ class CompanyController extends Controller
 
 	public function update(Request $request)
 	{
-Log::debug('ログ１');
+//Log::debug('ログ１');
 	    $company = Auth::guard('company')->user()->company;
 	    $current = Auth::guard('company')->user();
 
 	    if ($current->role !== 'master') {
 	        abort(403);
 	    }
-Log::debug('ログ２');
+//Log::debug('ログ２');
 
 	    $validated = $request->validate([
 //		'email' => 'nullable|email',
@@ -39,7 +39,7 @@ Log::debug('ログ２');
 	    ]);
 
 $dayNames = ['日','月','火','水','木','金','土'];
-Log::debug('ログ２－１');
+//Log::debug('ログ２－１');
 		foreach ($validated['open_patterns'] ?? [] as $weekday => $patterns) {
 
 		    foreach ($patterns as $index => $pattern) {
@@ -61,7 +61,7 @@ Log::debug('ログ２－１');
 		        }
 		    }
 		}
-Log::debug('ログ３');
+//Log::debug('ログ３');
 
 		$patterns = collect($request->open_patterns ?? [])
 		    ->map(function ($day) {
@@ -72,7 +72,7 @@ Log::debug('ログ３');
 		    })
 		    ->toArray();
 
-Log::debug('ログ４');
+//Log::debug('ログ４');
 
 
 	    $updateData = [
@@ -88,7 +88,7 @@ Log::debug('ログ４');
 	        'holiday_is_closed' => $request->boolean('holiday_is_closed'),
 	        'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
 	    ];
-Log::debug('ログ５');
+//Log::debug('ログ５');
 
 	    $company->update($updateData);
 

@@ -4,6 +4,9 @@
 
 @php
 $theme = $company->theme_color ?? '#3b82f6';
+
+$totalPrice = $menus->sum('price');
+$staffFee = $staff->nomination_fee ?? 0;
 @endphp
 
 <div class="max-w-md mx-auto p-6">
@@ -12,11 +15,22 @@ $theme = $company->theme_color ?? '#3b82f6';
 予約確認
 </h1>
 
-<div class="bg-white shadow rounded-xl p-5 mb-6 space-y-2">
+<div class="bg-white shadow rounded-xl p-5 mb-6 space-y-3">
 
 <div>
-メニュー  
-<strong>{{ $menu->name }}</strong>
+メニュー
+<div class="font-bold mt-1">
+
+@foreach($menus as $menu)
+<div>
+{{ $menu->name }}
+<span class="text-sm text-gray-500">
+({{ $menu->duration }}分)
+</span>
+</div>
+@endforeach
+
+</div>
 </div>
 
 <div>
@@ -45,7 +59,7 @@ $theme = $company->theme_color ?? '#3b82f6';
 料金  
 
 <strong>
-{{ number_format($menu->price + ($staff->nomination_fee ?? 0)) }}円
+{{ number_format($totalPrice + $staffFee) }}円
 </strong>
 
 </div>
@@ -56,7 +70,10 @@ $theme = $company->theme_color ?? '#3b82f6';
 <form method="POST" action="/r/{{ $company->company_code }}/store">
 @csrf
 
-<input type="hidden" name="menu_id" value="{{ $menu->id }}">
+@foreach($menus as $menu)
+<input type="hidden" name="menu_ids[]" value="{{ $menu->id }}">
+@endforeach
+
 <input type="hidden" name="staff_id" value="{{ $staff->id ?? '' }}">
 <input type="hidden" name="start_at" value="{{ $start_at }}">
 

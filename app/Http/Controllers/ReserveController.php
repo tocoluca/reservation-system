@@ -3,47 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reservation;
-use App\Models\Vacation;
+use App\Models\ReservationMenu;
 use App\Models\Company;
 use App\Models\Menu;
 use App\Models\Staff;
+use App\Models\Vacation;
+use App\Models\StaffShift;
+use App\Models\ShiftPattern;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
-
 
 class ReserveController extends Controller
 {
 
 /*
 |--------------------------------------------------------------------------
-| 予約制御
+| 予約可能期間
 |--------------------------------------------------------------------------
 */
 
 private function getReservationLimits($company)
 {
-    $limitMonth = $company->reservation_month_limit ?? 3;
-    $openDays   = $company->reservation_open_days ?? 0;
-    $closeHours = $company->reservation_close_hours ?? 1;
-
-    $startReservableDate = now()
-        ->addDays($openDays)
-        ->startOfDay();
-
-    $lastReservableDate = now()
-        ->addMonths($limitMonth)
-        ->endOfMonth();
-
-    $closeLimit = now()->addHours($closeHours);
-
     return [
-        'start'=>$startReservableDate,
-        'end'=>$lastReservableDate,
-        'close'=>$closeLimit
+        'start' => now()->addDays($company->reservation_open_days ?? 0)->startOfDay(),
+        'end'   => now()->addMonths($company->reservation_month_limit ?? 3)->endOfMonth(),
+        'close' => now()->addHours($company->reservation_close_hours ?? 1)
     ];
 }
 
@@ -56,95 +43,184 @@ private function getReservationLimits($company)
 public function index($company_code)
 {
 
-$company = Company::where('company_code',$company_code)->firstOrFail();
+    $company = Company::where('company_code',$company_code)->firstOrFail();
 
-/*$menus = Menu::where('company_id',$company->id)->get();*/
-$menus = Menu::with(['tags','category'])
-    ->where('company_id',$company->id)
-    ->where('is_active',1)
-    ->orderByDesc('is_popular')
-    ->orderBy('sort_order')
-    ->get()
-    ->groupBy(function($menu){
-        return $menu->category->name ?? 'その他';
-    });
+    $menus = Menu::with(['tags','category'])
+        ->where('company_id',$company->id)
+        ->where('is_active',1)
+        ->orderByDesc('is_popular')
+        ->orderBy('sort_order')
+        ->get()
+        ->groupBy(fn($menu)=>$menu->category->name ?? 'その他');
 
-$staff = Staff::where('company_id',$company->id)
-->where('is_reservable',1)
-->orderBy('priority_order')
-->get()
-->map(function($s){
+    $staff = Staff::where('company_id',$company->id)
+        ->where('is_reservable',1)
+        ->orderBy('priority_order')
+        ->get()
+        ->map(function($s){
 
-$s->image_url = $s->image_path
-? asset($s->image_path)
-: asset('logos/logo.png');
+            $s->image_url = $s->image_path
+                ? asset($s->image_path)
+                : asset('logos/logo.png');
 
-return $s;
+            return $s;
+        });
 
-});
-
-return view('reserve.index',[
-'company'=>$company,
-'menus'=>$menus,
-'staff'=>$staff,
-'step'=>1
-]);
-
+    return view('reserve.index',[
+        'company'=>$company,
+        'menus'=>$menus,
+        'staff'=>$staff,
+        'step'=>1
+    ]);
 }
+
+/*
+|--------------------------------------------------------------------------
+| confirm
+|--------------------------------------------------------------------------
+*/
 
 public function confirm(Request $request,$company_code)
 {
 
-$company = Company::where('company_code',$company_code)->firstOrFail();
+    $company = Company::where('company_code',$company_code)->firstOrFail();
 
-$menu = Menu::where('company_id',$company->id)
-->findOrFail($request->menu_id);
+    $menus = Menu::where('company_id',$company->id)
+        ->whereIn('id',$request->menu_ids ?? [])
+        ->get();
 
-$staff = null;
+    $staff = $request->staff_id
+        ? Staff::find($request->staff_id)
+        : null;
 
-if($request->staff_id){
-
-$staff = Staff::find($request->staff_id);
-
+    return view('reserve.confirm',[
+        'company'=>$company,
+        'menus'=>$menus,
+        'staff'=>$staff,
+        'start_at'=>$request->start_at,
+        'step'=>2
+    ]);
 }
 
-return view('reserve.confirm',[
+/*
+|--------------------------------------------------------------------------
+| store
+|--------------------------------------------------------------------------
+*/
 
-'company'=>$company,
-'menu'=>$menu,
-'staff'=>$staff,
-'start_at'=>$request->start_at,
-'step'=>2
+public function store(Request $request,$company_code)
+{
 
-]);
+    $company = Company::where('company_code',$company_code)->firstOrFail();
 
+    $menus = Menu::where('company_id',$company->id)
+        ->whereIn('id',$request->menu_ids ?? [])
+        ->get();
+
+    if($menus->isEmpty()){
+        return back()->with('error','メニューを選択してください');
+    }
+
+    $start = Carbon::parse($request->start_at);
+
+    $totalPrice = $menus->sum('price');
+    $totalDuration = $menus->sum('duration');
+
+    $end = $start->copy()->addMinutes($totalDuration);
+
+    $limits = $this->getReservationLimits($company);
+
+    if ($start < $limits['start']) {
+        return back()->with('error','この日はまだ予約受付していません');
+    }
+
+    if ($start > $limits['end']) {
+        return back()->with('error','予約可能期間を超えています');
+    }
+
+    if ($start < $limits['close']) {
+        return back()->with('error','予約締切を過ぎています');
+    }
+
+    $staffId = $this->resolveStaff($company,$request->staff_id,$start,$end,$request->menu_ids ?? []);
+
+    if(!$staffId){
+        return back()->with('error','空きスタッフがいません');
+    }
+
+    $staff = Staff::find($staffId);
+
+    $reservation = Reservation::create([
+
+        'company_id'=>$company->id,
+        'staff_id'=>$staffId,
+
+        'customer_name'=>$request->customer_name,
+        'customer_phone'=>$request->customer_phone,
+        'customer_email'=>$request->customer_email,
+
+        'start_at'=>$start,
+        'end_at'=>$end,
+
+        'price'=>$totalPrice,
+        'nomination_fee'=>$staff->nomination_fee,
+        'total_price'=>$totalPrice + $staff->nomination_fee,
+
+        'status'=>'reserved',
+        'cancel_token'=>Str::random(6)
+
+    ]);
+
+    foreach($menus as $menu){
+
+        ReservationMenu::create([
+            'reservation_id'=>$reservation->id,
+            'menu_id'=>$menu->id,
+            'price'=>$menu->price,
+            'duration'=>$menu->duration
+        ]);
+
+    }
+
+    return redirect("/r/".$company_code."/complete?reservation_id=".$reservation->id);
 }
+
+/*
+|--------------------------------------------------------------------------
+| complete
+|--------------------------------------------------------------------------
+*/
 
 public function complete($company_code, Request $request)
 {
-Log::debug('ログ');
 
-$company = Company::where('company_code',$company_code)->firstOrFail();
+    $company = Company::where('company_code',$company_code)->firstOrFail();
 
-$reservation = Reservation::where('id',$request->reservation_id)
-->where('company_id',$company->id)
-->firstOrFail();
+    $reservation = Reservation::where('id',$request->reservation_id)
+        ->where('company_id',$company->id)
+        ->firstOrFail();
 
-$menu = $reservation->menu;
-$staff = $reservation->staff;
+    $menus = \App\Models\ReservationMenu::where('reservation_id',$reservation->id)
+        ->with('menu')
+        ->get();
 
-return view('reserve.complete',[
+    $staff = $reservation->staff;
 
-'company'=>$company,
-'reservation'=>$reservation,
-'menu'=>$menu,
-'staff'=>$staff,
-'step'=>3
-
-]);
+    return view('reserve.complete',[
+        'company'=>$company,
+        'reservation'=>$reservation,
+        'menus'=>$menus,
+        'staff'=>$staff,
+        'step'=>3
+    ]);
 
 }
 
+/*
+|--------------------------------------------------------------------------
+| cancel
+|--------------------------------------------------------------------------
+*/
 public function cancel($token)
 {
 
@@ -162,151 +238,108 @@ return view('reserve.cancel_complete',[
 
 /*
 |--------------------------------------------------------------------------
-| 予約確定
+| スタッフ割当
 |--------------------------------------------------------------------------
 */
 
-public function store(Request $request,$company_code)
+private function resolveStaff($company,$staffId,$start,$end,$menuIds)
 {
 
-$company = Company::where('company_code',$company_code)->firstOrFail();
+    /* ==========================
+       指名スタッフがある場合
+    ========================== */
 
-$menu = Menu::where('company_id',$company->id)
-->findOrFail($request->menu_id);
+    if($staffId){
 
-$start = Carbon::parse($request->start_at);
+        $vacation = Vacation::where('staff_id',$staffId)
+            ->where('status','approved')
+            ->where(function($q) use ($start,$end){
 
-$limits = $this->getReservationLimits($company);
+                $q->where('start_at','<',$end)
+                  ->where('end_at','>',$start);
 
-if ($start < $limits['start']) {
-return back()->with('error','この日はまだ予約受付していません');
+            })
+            ->exists();
+
+        if($vacation){
+            return null;
+        }
+
+        $exists = Reservation::where('company_id',$company->id)
+            ->where('staff_id',$staffId)
+            ->where('status','reserved')
+            ->where(function($q) use ($start,$end){
+
+                $q->where('start_at','<',$end)
+                  ->where('end_at','>',$start);
+
+            })
+            ->exists();
+
+        return $exists ? null : $staffId;
+    }
+
+
+    /* ==========================
+       自動スタッフ割当
+    ========================== */
+
+    $staffList = Staff::where('company_id',$company->id)
+        ->where('is_reservable',true)
+        ->whereHas('menus', function($q) use ($menuIds){
+
+            $q->whereIn('menus.id',$menuIds);
+
+        })
+        ->orderBy('priority_order')
+        ->get();
+
+
+    foreach($staffList as $staff){
+
+        /* ==========================
+           休暇チェック
+        ========================== */
+
+        $vacation = Vacation::where('staff_id',$staff->id)
+            ->where('status','approved')
+            ->where(function($q) use ($start,$end){
+
+                $q->where('start_at','<',$end)
+                  ->where('end_at','>',$start);
+
+            })
+            ->exists();
+
+        if($vacation){
+            continue;
+        }
+
+
+        /* ==========================
+           予約重複チェック
+        ========================== */
+
+        $exists = Reservation::where('company_id',$company->id)
+            ->where('staff_id',$staff->id)
+            ->where('status','reserved')
+            ->where(function($q) use ($start,$end){
+
+                $q->where('start_at','<',$end)
+                  ->where('end_at','>',$start);
+
+            })
+            ->exists();
+
+
+        if(!$exists){
+            return $staff->id;
+        }
+
+    }
+
+    return null;
 }
-
-if ($start > $limits['end']) {
-return back()->with('error','予約可能期間を超えています');
-}
-
-if ($start < $limits['close']) {
-return back()->with('error','予約締切を過ぎています');
-}
-
-$end = $start->copy()->addMinutes($menu->duration);
-
-$staffId = $request->staff_id;
-
-/*
-|--------------------------------------------------------------------------
-| 指名なし自動割当
-|--------------------------------------------------------------------------
-*/
-
-if(!$staffId){
-
-$staffList = Staff::where('company_id',$company->id)
-->where('is_reservable',true)
-->orderBy('priority_order')
-->get();
-
-foreach($staffList as $staff){
-
-$exists = Reservation::where('company_id',$company->id)
-->where('staff_id',$staff->id)
-->where('status','reserved')
-->where(function($q) use ($start,$end){
-
-$q->where('start_at','<',$end)
-->where('end_at','>',$start);
-
-})
-->exists();
-
-if(!$exists){
-
-$staffId = $staff->id;
-break;
-
-}
-
-}
-
-if(!$staffId){
-return back()->with('error','空きスタッフがいません');
-}
-
-}
-
-/*
-|--------------------------------------------------------------------------
-| 重複チェック
-|--------------------------------------------------------------------------
-*/
-
-$exists = Reservation::where('company_id',$company->id)
-->where('staff_id',$staffId)
-->where('status','reserved')
-->where(function($q) use ($start,$end){
-
-$q->where('start_at','<',$end)
-->where('end_at','>',$start);
-
-})
-->exists();
-
-if($exists){
-return back()->with('error','この時間は予約済みです');
-}
-
-/*
-|--------------------------------------------------------------------------
-| 同時予約数
-|--------------------------------------------------------------------------
-*/
-
-$overlapCount = Reservation::where('company_id',$company->id)
-->where('status','reserved')
-->where(function ($q) use ($start,$end) {
-$q->where('start_at','<',$end)
-->where('end_at','>',$start);
-})
-->count();
-
-if ($overlapCount >= $company->max_simultaneous_reservations) {
-return back()->with('error','この時間は予約上限です');
-}
-
-/*
-|--------------------------------------------------------------------------
-| 保存
-|--------------------------------------------------------------------------
-*/
-
-$staff = Staff::find($staffId);
-$reservation = Reservation::create([
-
-'company_id'=>$company->id,
-'staff_id'=>$staffId,
-'menu_id'=>$menu->id,
-
-'customer_name'=>$request->customer_name,
-'customer_phone'=>$request->customer_phone,
-'customer_email'=>$request->customer_email,
-
-'start_at'=>$start,
-'end_at'=>$end,
-
-'price'=>$menu->price,
-'nomination_fee'=>$staff->nomination_fee,
-'total_price'=>$menu->price + $staff->nomination_fee,
-
-'status'=>'reserved',
-'cancel_token'=>Str::random(6)
-
-]);
-
-return redirect("/r/".$company_code."/complete?reservation_id=".$reservation->id);
-
-}
-
 /*
 |--------------------------------------------------------------------------
 | 空き時間
@@ -316,146 +349,153 @@ return redirect("/r/".$company_code."/complete?reservation_id=".$reservation->id
 public function slots(Request $request,$company_code)
 {
 
-$cacheKey = 'slots_'.
-$company_code.'_'.
-$request->date.'_'.
-($request->menu_id ?? 0).'_'.
-($request->staff_id ?? 0);
+	$company = Company::where('company_code',$company_code)->firstOrFail();
 
-return Cache::remember($cacheKey,60,function() use ($request,$company_code){
+	$menuIds = $request->menu_ids ?? [];
 
-$company = Company::where('company_code',$company_code)->firstOrFail();
+	$menus = Menu::whereIn('id',$menuIds)->get();
 
-$date = Carbon::parse($request->date);
+	if($menus->isEmpty()){
+	return [];
+	}
 
-$limits = $this->getReservationLimits($company);
+	$duration = $menus->sum('duration');
 
-if ($date->startOfDay() < $limits['start'] || $date->startOfDay() > $limits['end']) {
-return [];
+	$date = Carbon::parse($request->date);
+
+	$openPatterns = $company->open_patterns ?? [];
+
+	$patterns = $openPatterns[$date->dayOfWeek] ?? [];
+
+	$staffList = Staff::where('company_id',$company->id)
+	->where('is_reservable',true)
+	->whereHas('menus',function($q) use ($menuIds){
+	$q->whereIn('menus.id',$menuIds);
+	})
+	->get();
+
+	$staffIds = $staffList->pluck('id');
+
+	$reservations = Reservation::where('company_id',$company->id)
+	->whereDate('start_at',$date)
+	->where('status','reserved')
+	->get();
+
+	$vacations = Vacation::whereIn('staff_id',$staffIds)
+	->where('status','approved')
+	->whereDate('start_at','<=',$date)
+	->whereDate('end_at','>=',$date)
+	->get();
+
+	$shifts = StaffShift::whereIn('staff_id',$staffIds)
+	->whereDate('date',$date)
+	->get()
+	->keyBy(fn($s)=>$s->staff_id.'_'.$s->date);
+
+	$patternIds = $shifts->pluck('shift_pattern_id');
+
+	$shiftPatterns = ShiftPattern::whereIn('id',$patternIds)
+	->get()
+	->keyBy('id');
+
+	$slots=[];
+
+	foreach($patterns as $p){
+
+	$open = Carbon::parse($date->format('Y-m-d').' '.$p['open']);
+	$close = Carbon::parse($date->format('Y-m-d').' '.$p['close']);
+
+	$time=$open->copy();
+
+	while($time < $close){
+
+	$start=$time->copy();
+	$end=$start->copy()->addMinutes($duration);
+
+	if($end > $close){
+	break;
+	}
+
+	$availableStaff=0;
+
+	foreach($staffList as $staff){
+
+	$key=$staff->id.'_'.$date->format('Y-m-d');
+
+	$shift=$shifts[$key] ?? null;
+
+	if(!$shift || !$shift->is_work){
+	continue;
+	}
+
+	$pattern=$shiftPatterns[$shift->shift_pattern_id] ?? null;
+
+	if($pattern){
+
+	$shiftStart=Carbon::parse($date->format('Y-m-d').' '.$pattern->start_time);
+	$shiftEnd=Carbon::parse($date->format('Y-m-d').' '.$pattern->end_time);
+
+	if($start < $shiftStart || $end > $shiftEnd){
+	continue;
+	}
+
+	}
+
+	$vacation=$vacations->first(function($v) use ($staff,$start,$end){
+	return $v->staff_id==$staff->id &&
+	$v->start_at < $end &&
+	$v->end_at > $start;
+	});
+
+	if($vacation){
+	continue;
+	}
+
+	$current=$reservations->filter(function($r) use ($staff,$start,$end){
+
+	return $r->staff_id==$staff->id &&
+	$r->start_at < $end &&
+	$r->end_at > $start;
+
+	})->count();
+
+	if($current >= ($staff->max_simultaneous ?? 1)){
+	continue;
+	}
+
+	$availableStaff++;
+
+	}
+
+	$slots[]=[
+	'time'=>$start->format('H:i'),
+	'remaining'=>$availableStaff
+	];
+
+	$time->addMinutes($company->slot_minutes);
+
+	}
+
+	}
+
+	return response()->json($slots);
+
 }
 
-$menu = Menu::where('company_id',$company->id)
-->findOrFail($request->menu_id);
+public function staffMenus(Request $request)
+{
+    $company = auth()->guard('company')->user()->company;
 
-$duration = $menu->duration;
+    $staffId = $request->staff_id;
 
-$slotMinutes = $company->slot_minutes;
-
-$staffId = $request->staff_id ?: null;
-
-$weekday = $date->dayOfWeek;
-
-$patterns = (array) ($company->open_patterns ?? []);
-$patterns = $patterns[$weekday] ?? [];
-
-/*
-|--------------------------------------------------------------------------
-| 予約取得
-|--------------------------------------------------------------------------
-*/
-
-$reservations = Reservation::where('company_id',$company->id)
-->whereDate('start_at',$date)
-->where('status','reserved')
-->get();
-
-$staffList = Cache::remember(
-'staff_'.$company->id,
-600,
-function() use ($company){
-    return Staff::where('company_id',$company->id)
-        ->where('is_reservable',true)
+    $menus = Menu::where('company_id',$company->id)
+        ->whereHas('staffs',function($q) use ($staffId){
+            $q->where('staff_id',$staffId);
+        })
+        ->orderBy('sort_order')
         ->get();
-});
 
-$totalStaff = $staffList->count();
-
-$slots = [];
-
-foreach($patterns as $p){
-
-if(empty($p['open']) || empty($p['close'])){
-continue;
+    return response()->json($menus);
 }
 
-$open = Carbon::parse($date->format('Y-m-d').' '.$p['open']);
-$close = Carbon::parse($date->format('Y-m-d').' '.$p['close']);
-
-$time = $open->copy();
-
-while($time < $close){
-
-$start = $time->copy();
-$end = $start->copy()->addMinutes($duration);
-
-if($end > $close){
-break;
-}
-
-$reservedCount = 0;
-
-if(!$staffId){
-
-foreach($staffList as $staff){
-
-$exists = $reservations
-->where('staff_id',$staff->id)
-->first(function($r) use ($start,$end){
-
-return $r->start_at < $end && $r->end_at > $start;
-
-});
-
-if($exists){
-$reservedCount++;
-}
-
-}
-
-}else{
-
-$exists = $reservations
-->where('staff_id',$staffId)
-->first(function($r) use ($start,$end){
-
-return $r->start_at < $end && $r->end_at > $start;
-
-});
-
-$reservedCount = $exists ? 1 : 0;
-$totalStaff = 1;
-
-}
-
-if($reservedCount >= $totalStaff){
-
-$status='×';
-
-}
-elseif($reservedCount>0){
-
-$status='△';
-
-}
-else{
-
-$status='○';
-
-}
-
-$slots[]=[
-'time'=>$start->format('H:i'),
-'status'=>$status
-];
-
-$time->addMinutes($slotMinutes);
-
-}
-
-}
-
-return $slots;
-
-});
-}
 }

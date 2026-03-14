@@ -24,4 +24,8 @@ public function tags()
 {
     return $this->belongsToMany(MenuTag::class,'menu_tag_menu');
 }
+public function staffs()
+{
+    return $this->belongsToMany(Staff::class,'menu_staff');
+}
 }

@@ -39,13 +39,12 @@ STEP1 メニュー
 <label class="block bg-white border rounded-xl p-4 shadow-sm cursor-pointer hover:border-gray-300">
 
 <input
-type="radio"
-name="menu_id"
+type="checkbox"
+name="menu_ids[]"
 value="{{ $menu->id }}"
 data-price="{{ $menu->price }}"
 data-duration="{{ $menu->duration }}"
-class="mr-2"
-required>
+class="mr-2 menu-check">
 
 <div class="flex gap-3">
 
@@ -182,7 +181,7 @@ class="mr-2">
 <div class="flex gap-3">
 
 <img
-src="{{ $s->image_url }}"
+src="{{ $s->image_url ?? asset('images/noimage.png') }}"
 class="w-14 h-14 rounded-full object-cover">
 
 <div class="flex-1">
@@ -276,8 +275,11 @@ class="text-white w-full py-4 rounded-xl text-lg font-bold">
 
 document.addEventListener("DOMContentLoaded", function(){
 
-document.querySelectorAll('[name=menu_id]').forEach(el=>{
-el.addEventListener('change',updatePrice)
+document.querySelectorAll('.menu-check').forEach(el=>{
+el.addEventListener('change',function(){
+updatePrice()
+loadSlots()
+})
 })
 
 document.querySelectorAll('[name=staff_id]').forEach(el=>{
@@ -300,10 +302,15 @@ loadSlots()
 
 function updatePrice(){
 
-let menu = document.querySelector('[name=menu_id]:checked')
+let menus = document.querySelectorAll('.menu-check:checked')
 let staff = document.querySelector('[name=staff_id]:checked')
 
-let menuPrice = menu ? Number(menu.dataset.price || 0) : 0
+let menuPrice = 0
+
+menus.forEach(m=>{
+menuPrice += Number(m.dataset.price || 0)
+})
+
 let staffFee = staff ? Number(staff.dataset.fee || 0) : 0
 
 document.getElementById('price').innerText = menuPrice + staffFee
@@ -316,17 +323,32 @@ let date = document.getElementById('date').value
 if(!date){
 return
 }
-let menuEl = document.querySelector('[name=menu_id]:checked')
 
-if(!menuEl){
+let menuEls = document.querySelectorAll('.menu-check:checked')
+
+if(menuEls.length == 0){
 return
 }
 
-let menu = menuEl.value
+let menuIds = []
+
+menuEls.forEach(m=>{
+menuIds.push(m.value)
+})
+
 let staffEl = document.querySelector('[name=staff_id]:checked')
 let staff = staffEl ? staffEl.value : ''
 
-fetch(`/r/{{ $company->company_code }}/slots?date=${date}&menu_id=${menu}&staff_id=${staff}`)
+let params = new URLSearchParams()
+
+params.append('date',date)
+params.append('staff_id',staff)
+
+menuIds.forEach(id=>{
+params.append('menu_ids[]',id)
+})
+
+fetch(`/r/{{ $company->company_code }}/slots?${params.toString()}`)
 .then(r=>r.json())
 .then(data=>{
 
@@ -334,20 +356,36 @@ let html=''
 
 data.forEach(slot=>{
 
-if(slot.status=='○'){
+let label = ''
+let disabled = false
+
+if(slot.remaining >= 3){
+label = `<span class="text-green-600 font-bold">◎</span>`
+}
+else if(slot.remaining == 2){
+label = `<span class="text-green-500 font-bold">○</span>`
+}
+else if(slot.remaining == 1){
+label = `<span class="text-orange-500 font-bold">△</span>`
+}
+else{
+label = `<span class="text-gray-400">×</span>`
+disabled = true
+}
+
+if(!disabled){
 
 html+=`<button type="button"
 data-time="${slot.time}"
 class="border rounded-lg py-2 text-center hover:bg-gray-100 slot-btn">
-${slot.time}
+${slot.time}<br>${label}
 </button>`
 
 }else{
 
 html+=`<div class="border rounded-lg py-2 text-center text-gray-400">
-${slot.time}
+${slot.time}<br>${label}
 </div>`
-
 }
 
 })
@@ -375,21 +413,26 @@ this.classList.add('text-white')
 
 }
 
+
 document.addEventListener("DOMContentLoaded", function(){
 
 document.querySelector("form").addEventListener("submit",function(e){
 
 let start = document.getElementById("start_at").value
+let menus = document.querySelectorAll('.menu-check:checked')
+
+if(menus.length == 0){
+alert("メニューを選択してください")
+e.preventDefault()
+return
+}
 
 if(!start){
-
 alert("日時を選択してください")
 e.preventDefault()
-
 }
 
 })
 
 })
-
 </script>

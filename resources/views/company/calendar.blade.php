@@ -109,7 +109,7 @@
 <input type="hidden" id="modal_date" name="date">
 <input type="hidden" id="modal_time" name="time">
 <script>
-let currentDate = new Date();
+let currentDate = new Date(getLocalDateStr());
 const mode = "{{ $mode }}";
 
 function getLocalDateStr(date = new Date()) {
@@ -135,7 +135,7 @@ function changeDay(diff) {
 }
 
 function jumpToDate(dateStr) {
-    currentDate = new Date(dateStr);
+    currentDate = new Date(dateStr + "T00:00:00");
     loadDayCalendar();
 }
 
@@ -288,14 +288,13 @@ function loadCalendar() {
         });
 }
 /* ================= DAY ================= */
-/* ================= DAY ================= */
 
 function loadDayCalendar() {
 
     if (mode !== 'day') return;
 
-    let dateStr = currentDate.toISOString().split('T')[0];
-    let todayStr = new Date().toISOString().split('T')[0];
+    let dateStr = getLocalDateStr(currentDate);
+    let todayStr = getLocalDateStr(new Date());
 
     document.getElementById('currentDateLabel').innerText = dateStr;
     document.getElementById('datePicker').value = dateStr;
@@ -410,20 +409,34 @@ function reserve(datetime, staffId) {
     selectedDatetime = datetime;
     selectedStaffId  = staffId;
 
-    const nameInput = document.getElementById('modal_customer_name');
-    const telInput  = document.getElementById('modal_customer_phone');
-    const modal     = document.getElementById('reserveModal');
+    fetch("{{ route('company.calendar.staff-menus') }}?staff_id=" + staffId)
+    .then(res => res.json())
+    .then(menus => {
 
-    if (!modal) return; // モーダル無いページなら終了
+        const select = document.getElementById('modal_menu_id');
+        select.innerHTML = '';
+
+        menus.forEach(menu => {
+
+            select.innerHTML += `
+                <option value="${menu.id}">
+                ${menu.name}（${menu.duration}分）
+                </option>
+            `;
+
+        });
+
+    });
 
     document.getElementById('reserveDatetime').innerText = datetime;
 
-    if (nameInput) nameInput.value = '';
-    if (telInput)  telInput.value  = '';
+    document.getElementById('reserveModal')
+        .classList.remove('hidden');
 
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    document.getElementById('reserveModal')
+        .classList.add('flex');
 }
+
 
 function closeModal() {
     const nameInput = document.getElementById('modal_customer_name');

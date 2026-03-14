@@ -12,7 +12,6 @@ class Reservation extends Model
     protected $fillable = [
         'company_id',
         'staff_id',
-	'menu_id',   // ★追加
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -40,6 +39,14 @@ class Reservation extends Model
 	}
 	    public function menu() // ★追加
 	    {
-	        return $this->belongsTo(\App\Models\Menu::class);
+	        return $this->belongsTo(Menu::class);
 	    }
+	public function reservationMenus()
+	{
+	    return $this->hasMany(ReservationMenu::class);
+	}
+	public function menus()
+	{
+	    return $this->belongsToMany(Menu::class,'reservation_menus');
+	}
 }

@@ -24,8 +24,12 @@ use App\Http\Controllers\Company\CompanyController as CompanyInfoController;
 use App\Http\Controllers\Company\MyProfileController;
 use App\Http\Controllers\Company\CalendarController;
 use App\Http\Controllers\Company\MenuController;
-use App\Http\Controllers\Company\MenuCategoryController;
+use App\Http\Controllers\Company\MenuStaffController;
 use App\Http\Controllers\Company\MenuSettingController;
+use App\Http\Controllers\Company\ShiftPatternController;
+use App\Http\Controllers\Company\StaffDefaultShiftController;
+use App\Http\Controllers\Company\StaffShiftController;
+
 
 use App\Http\Controllers\ReserveController;
 /*
@@ -268,10 +272,6 @@ Route::get('menu/create', [MenuController::class,'create'])
 Route::post('menu', [MenuController::class,'store'])
     ->name('company.menu.store');
 
-Route::post('menu-category', [MenuCategoryController::class,'store'])
-    ->name('company.menu-category.store');
-
-
 
 Route::get('menu/settings',[MenuSettingController::class,'index'])
     ->name('company.menu.settings');
@@ -311,10 +311,67 @@ Route::delete(
 Route::post('reservation', [ReservationController::class,'store']);
 
 
+Route::get('menu-staff', [MenuStaffController::class,'index'])
+    ->name('company.menu-staff.index');
 
-        });
-    });
+Route::post('menu-staff', [MenuStaffController::class,'update'])
+    ->name('company.menu-staff.update');
 
+Route::get(
+    '/company/calendar/staff-menus',
+    [ReservationController::class,'staffMenus'])
+    ->name('company.calendar.staff-menus');
+
+
+Route::get(
+'/staff-default-shifts',
+[StaffDefaultShiftController::class,'index']
+)->name('company.staff-default-shifts');
+
+Route::post(
+'/staff-default-shifts',
+[StaffDefaultShiftController::class,'update']
+)->name('company.staff-default-shifts.update');
+
+Route::get(
+'/shift-patterns',
+[ShiftPatternController::class,'index']
+)->name('company.shift-patterns');
+
+Route::post(
+'/shift-patterns/store',
+[ShiftPatternController::class,'store']
+);
+
+Route::get(
+'/shift-patterns/delete/{id}',
+[ShiftPatternController::class,'delete']
+);
+
+Route::get(
+'staff-shifts',
+[StaffShiftController::class,'index']
+)->name('company.staff-shifts');
+
+Route::post(
+'staff-shifts/generate',
+[StaffShiftController::class,'generate']
+)->name('company.staff-shifts.generate');
+
+
+Route::post(
+'staff-shifts/update',
+[StaffShiftController::class,'update']
+)->name('company.staff-shifts.update');
+
+Route::post(
+'staff-shifts/copy',
+[StaffShiftController::class,'copy']
+)->name('company.staff-shifts.copy');
+
+
+});
+});
 });
 
 //カレンダーの担当者選択時のAJAX処理
@@ -340,7 +397,7 @@ Route::prefix('r/{company_code}')
 
         Route::get('/', [ReserveController::class,'index']);
 
-        Route::post('/confirm', [ReserveController::class,'confirm']);
+        Route::match(['get','post'],'/confirm', [ReserveController::class,'confirm']);
 
         Route::post('/store', [ReserveController::class,'store']);
 

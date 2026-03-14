@@ -37,4 +37,8 @@ class Staff extends Authenticatable
 	{
 	    return $this->belongsToMany(Store::class);
 	}
+	public function menus()
+	{
+	    return $this->belongsToMany(Menu::class,'menu_staff');
+	}
 }

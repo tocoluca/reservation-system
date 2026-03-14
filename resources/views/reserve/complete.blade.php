@@ -21,7 +21,19 @@ $theme = $company->theme_color ?? '#3b82f6';
 
 <div>
 メニュー  
-<strong>{{ $menu->name }}</strong>
+
+<strong>
+
+@foreach($menus as $rm)
+
+<div>
+{{ $rm->menu->name }}
+</div>
+
+@endforeach
+
+</strong>
+
 </div>
 
 <div>
@@ -61,7 +73,7 @@ $theme = $company->theme_color ?? '#3b82f6';
 href="https://calendar.google.com/calendar/render?action=TEMPLATE
 &text={{ urlencode($company->name.' 予約') }}
 &dates={{ \Carbon\Carbon::parse($reservation->start_at)->format('Ymd\THis') }}/{{ \Carbon\Carbon::parse($reservation->end_at)->format('Ymd\THis') }}
-&details={{ urlencode($menu->name) }}"
+&details={{ urlencode($menus->pluck('menu.name')->implode(',')) }}"
 target="_blank"
 class="block text-white py-4 rounded-xl mb-4"
 style="background: {{ $theme }}">

@@ -32,15 +32,11 @@ class DashboardController extends Controller
             ->where('status','reserved')
             ->get();
 
-        $totalReservedMinutes = 0;
-
-        foreach($reservations as $r){
-
-            $totalReservedMinutes +=
-                Carbon::parse($r->start_at)
-                ->diffInMinutes($r->end_at);
-
-        }
+	$totalReservedMinutes = Reservation::where('company_id',$company->id)
+	    ->whereBetween('start_at',[$startOfMonth,$endOfMonth])
+	    ->where('status','reserved')
+	    ->select(DB::raw('SUM(TIMESTAMPDIFF(MINUTE,start_at,end_at)) as total'))
+	    ->value('total');
 
         /* ===============================
            今月の営業時間（分）
@@ -118,7 +114,7 @@ class DashboardController extends Controller
         $todayReservations = Reservation::where('company_id',$company->id)
             ->whereDate('start_at',$now->toDateString())
             ->where('status','reserved')
-            ->with(['staff','menu'])
+            ->with(['staff','menus'])
             ->orderBy('start_at')
             ->get();
 
@@ -223,17 +219,19 @@ DB::raw('SUM(nomination_fee) as nomination_sales')
        人気メニュー
     =============================== */
 
-$menuRanking = (clone $query)
-->whereNotNull('menu_id')
-->select(
-'menu_id',
-DB::raw('COUNT(*) as total')
-)
-->groupBy('menu_id')
-->with('menu')
-->orderByDesc('total')
-->limit(10)
-->get();
+$menuRanking = DB::table('reservation_menus')
+    ->join('reservations','reservations.id','=','reservation_menus.reservation_id')
+    ->join('menus','menus.id','=','reservation_menus.menu_id')
+    ->where('reservations.company_id',$company->id)
+    ->where('reservations.status','reserved')
+    ->select(
+        'menus.name',
+        DB::raw('COUNT(*) as total')
+    )
+    ->groupBy('menus.name')
+    ->orderByDesc('total')
+    ->limit(10)
+    ->get();
 
 
 $totalSales = (clone $query)->sum('total_price');

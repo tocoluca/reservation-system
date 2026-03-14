@@ -130,6 +130,73 @@ MENU
                     メニューの管理・施工時間
                 </div>
             </a>
+            <a href="{{ route('company.menu-staff.index') }}"
+               class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-lime-500">
+
+<div class="text-lime-500 text-xs font-semibold mb-2">
+SKILL
+</div>
+
+                <div class="text-lg sm:text-xl font-bold mb-2">
+                    メニュー対応スタッフ設定
+                </div>
+
+                <div class="text-gray-500 text-sm">
+                    メニューを施工できるスタッフを管理
+                </div>
+            </a>
+{{-- シフトパターン --}}
+<a href="{{ route('company.shift-patterns') }}"
+class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-pink-500">
+
+<div class="text-pink-500 text-xs font-semibold mb-2">
+SHIFT
+</div>
+
+<div class="text-lg sm:text-xl font-bold mb-2">
+シフトパターン
+</div>
+
+<div class="text-gray-500 text-sm">
+早番・遅番・通しなどの勤務パターン設定
+</div>
+
+</a>
+
+
+{{-- 基本シフト --}}
+<a href="{{ route('company.staff-default-shifts') }}"
+class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-rose-500">
+
+<div class="text-rose-500 text-xs font-semibold mb-2">
+SHIFT
+</div>
+
+<div class="text-lg sm:text-xl font-bold mb-2">
+基本シフト
+</div>
+
+<div class="text-gray-500 text-sm">
+曜日ごとの基本シフト設定
+</div>
+
+</a>
+<a href="{{ route('company.staff-shifts') }}"
+class="bg-white shadow hover:shadow-lg transition rounded-xl p-6 border-l-4 border-fuchsia-500">
+
+<div class="text-fuchsia-500 text-xs font-semibold mb-2">
+SHIFT
+</div>
+
+<div class="text-lg font-bold mb-2">
+月シフト
+</div>
+
+<div class="text-gray-500 text-sm">
+月ごとの勤務シフト作成
+</div>
+
+</a>
 @endif
 
 
@@ -284,7 +351,7 @@ MYPAGE
 </td>
 
 <td class="p-3">
-{{ $r->menu->name ?? '-' }}
+{{ $r->menus->pluck('name')->join(', ') ?? '-' }}
 </td>
 
 <td class="p-3">
@@ -450,7 +517,7 @@ MYPAGE
 @foreach($menuRanking as $i=>$row)
 
 <div class="flex justify-between border-b py-2">
-<span>{{ $i+1 }}. {{ $row->menu->name }}</span>
+<span>{{ $i+1 }}. {{ $row->name }}</span>
 <span>{{ $row->total }}回</span>
 </div>
 

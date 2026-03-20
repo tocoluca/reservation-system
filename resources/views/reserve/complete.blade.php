@@ -15,7 +15,7 @@ $theme = $company->theme_color ?? '#3b82f6';
 <div class="bg-white shadow rounded-xl p-5 mb-6 text-left space-y-2">
 
 <div>
-店舗  
+店名  
 <strong>{{ $company->name }}</strong>
 </div>
 
@@ -59,12 +59,14 @@ $theme = $company->theme_color ?? '#3b82f6';
 </div>
 
 <div>
-料金  
+合計料金（目安）
 
 <strong>
-{{ number_format($reservation->total_price) }}円
+{{ number_format($reservation->total_price) }}円～
 </strong>
-
+<p class="text-xs text-gray-500 mt-1">
+※事前に目安料金をご案内しておりますが、当日の施術内容や髪の状態により変動する場合がございます。
+</p>
 </div>
 
 </div>

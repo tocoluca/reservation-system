@@ -11,6 +11,7 @@ use App\Models\CompanyBusinessCalendar;
 use App\Models\Staff;
 use App\Models\StaffShift;
 use App\Models\ShiftPattern;
+use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -22,45 +23,61 @@ class ReservationController extends Controller
 	/* ==========================================================
 	予約制御設定
 	========================================================== */
-	private function getReservationLimits($company)
-	{
-	    $limitMonth = $company->reservation_month_limit ?? 3;
-	    $openDays   = $company->reservation_open_days ?? 0;
-	    $closeHours = $company->reservation_close_hours ?? 1;
+private function getReservationLimits($company)
+{
+    $limitMonth = $company->reservation_month_limit ?? 3;
+    $openDays   = $company->reservation_open_days ?? 0;
 
-	    $startReservableDate = now()
-	        ->addDays($openDays)
-	        ->startOfDay();
+    // 🔥 ここ修正
+    $closeHours = is_numeric($company->reservation_close_hours)
+        ? (int)$company->reservation_close_hours
+        : 1;
 
-	    $lastReservableDate = now()
-	        ->addMonths($limitMonth)
-	        ->endOfMonth();
+    $startReservableDate = now()
+        ->addDays($openDays)
+        ->startOfDay();
 
-	    $closeLimit = now()->addHours($closeHours);
+    $lastReservableDate = now()
+        ->addMonths($limitMonth)
+        ->endOfMonth();
 
-	    return [
-	        'start' => $startReservableDate,
-	        'end'   => $lastReservableDate,
-	        'close' => $closeLimit
-	    ];
-	}
+    $closeLimit = now()->addHours($closeHours);
+
+    return [
+        'start' => $startReservableDate,
+        'end'   => $lastReservableDate,
+        'close' => $closeLimit
+    ];
+}
     /* ==========================================================
        カレンダー表示
     ========================================================== */
-    public function calendar(Request $request)
-    {
+public function calendar(Request $request)
+{
+    try {
+
         $mode = $request->get('mode','week');
 
         $company = auth()->guard('company')->user()->company;
 
-        /* ★追加（メニュー取得） */
-        $menus = Menu::where('company_id',$company->id)->get();
+        $menus = Menu::with('category')
+            ->where('company_id',$company->id)
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy(function($menu){
+                return optional($menu->category)->name ?? 'その他';
+            });
 
         return view('company.calendar',[
             'mode'=>$mode,
             'menus'=>$menus
         ]);
+
+    } catch (\Throwable $e) {
+
+        dd($e->getMessage(), $e->getLine());
     }
+}
 
     /* ==========================================================
        カレンダーデータ
@@ -119,9 +136,11 @@ public function calendarData(Request $request)
 	        ->get();
 
 	    /* シフト */
-	    $shifts = StaffShift::whereIn('staff_id',$staffIds)
-	        ->whereDate('date',$date)
-	        ->get();
+$shifts = StaffShift::whereIn('staff_id',$staffIds)
+    ->get()
+    ->keyBy(function($s){
+        return $s->staff_id.'_'.\Carbon\Carbon::parse($s->date)->toDateString();
+    });
 
 		$patternIds = $shifts->pluck('shift_pattern_id');
 
@@ -193,7 +212,22 @@ public function calendarData(Request $request)
 	                    $slotEnd
 	                );
 
-	                $data[$time->format('H:i')][$staff->id]=$result;
+				$reservation = $reservations
+				    ->where('staff_id',$staff->id)
+				    ->first(function ($r) use ($time,$slotEnd){
+				        return $r->start_at < $slotEnd &&
+				               $r->end_at > $time;
+				    });
+
+				if($reservation){
+				    $data[$time->format('H:i')][$staff->id]=[
+				        'status'=>'×',
+				        'reservation_id'=>$reservation->id,
+				        'customer_name'=>$reservation->customer_name
+				    ];
+				}else{
+				    $data[$time->format('H:i')][$staff->id]=$result;
+				}
 	            }
 
 	            $time->addMinutes($company->slot_minutes);
@@ -207,11 +241,11 @@ public function calendarData(Request $request)
 	}
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | WEEK MODE
-    |--------------------------------------------------------------------------
-    */
+/* ==========================
+   WEEK MODE（完全修正版）
+========================== */
+
+try {
 
     $staffId = $request->staff_id;
 
@@ -241,122 +275,143 @@ public function calendarData(Request $request)
         ->orderBy('priority_order')
         ->get();
 
-    $staffIds=$staffList->pluck('id');
+    $staffIds = $staffList->pluck('id');
 
+    /* ==========================
+       予約
+    ========================== */
     $reservations = Reservation::where('company_id',$company->id)
         ->whereIn('staff_id',$staffIds)
-        ->whereBetween('start_at',[$startDate,$endDate])
+        ->where(function ($q) use ($startDate,$endDate){
+            $q->where('start_at','<',$endDate)
+              ->where('end_at','>',$startDate);
+        })
         ->where('status','reserved')
         ->get();
 
+    /* ==========================
+       休暇
+    ========================== */
     $vacations = Vacation::whereIn('staff_id',$staffIds)
         ->where('status','approved')
-        ->whereBetween('start_at',[$startDate,$endDate])
+        ->where(function ($q) use ($startDate,$endDate){
+            $q->where('start_at','<',$endDate)
+              ->where('end_at','>',$startDate);
+        })
         ->get();
 
+    /* ==========================
+       シフト（最重要修正）
+    ========================== */
     $shifts = StaffShift::whereIn('staff_id',$staffIds)
-        ->whereBetween('date',[$startDate,$endDate])
-        ->get();
+        ->get()
+        ->keyBy(function($s){
+            return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
+        });
 
-    $patternIds = $shifts->pluck('shift_pattern_id');
+    $patternIds = $shifts->pluck('shift_pattern_id')->filter();
 
     $shiftPatterns = ShiftPattern::whereIn('id',$patternIds)
-       ->get()
-       ->keyBy('id');
+        ->get()
+        ->keyBy('id');
 
-    $data=[];
+    $data = [];
+    $minutes = $company->slot_minutes ?? 30;
 
     for($d=0;$d<7;$d++){
 
-        $day=$startDate->copy()->addDays($d);
+        $day = $startDate->copy()->addDays($d);
 
-        if ($day->startOfDay() < $limits['start'] || $day->startOfDay() > $limits['end']) {
-            continue;
+        /* =============================
+           予約可能期間（今日は例外）
+        ============================= */
+        if (
+            $day->startOfDay() < $limits['start'] ||
+            $day->startOfDay() > $limits['end']
+        ) {
+            if (!$day->isToday()) {
+                continue;
+            }
         }
 
-        $weekday=$day->dayOfWeek;
-        $patterns=(array) ($company->open_patterns[$weekday] ?? []);
+        $weekday = $day->dayOfWeek;
 
-        foreach($patterns as $p){
+        $patterns = is_array($company->open_patterns)
+            ? ($company->open_patterns[$weekday] ?? [])
+            : [];
 
-            if(empty($p['open'])||empty($p['close'])) continue;
+        foreach ($patterns as $p){
 
-            $open=Carbon::parse($day->format('Y-m-d').' '.$p['open']);
-            $close=Carbon::parse($day->format('Y-m-d').' '.$p['close']);
+            if(empty($p['open']) || empty($p['close'])) continue;
 
-            $time=$open->copy();
+            $open = Carbon::parse($day->format('Y-m-d').' '.$p['open']);
+            $close = Carbon::parse($day->format('Y-m-d').' '.$p['close']);
 
-		while($time < $close){
+            $time = $open->copy();
 
-		    $slotStart = Carbon::parse($day->format('Y-m-d').' '.$time->format('H:i'));
-		    $slotEnd   = $slotStart->copy()->addMinutes($company->slot_minutes);
+            while($time < $close){
 
-		    $now = Carbon::now();
+                $slotStart = Carbon::parse($day->format('Y-m-d').' '.$time->format('H:i'));
+                $slotEnd   = $slotStart->copy()->addMinutes($minutes);
 
-		    /* 過去日 */
-
-		    if ($day->format('Y-m-d') < $now->format('Y-m-d')) {
-
-		        $data[$time->format('H:i')][$day->format('Y-m-d')] = [
-		            'status'=>'×'
-		        ];
-
-		        $time->addMinutes($company->slot_minutes);
-		        continue;
-		    }
-
-		    /* 当日の過去時間 */
-
-		    if ($day->isToday() && $slotStart < $now) {
-
-		        $data[$time->format('H:i')][$day->format('Y-m-d')] = [
-		            'status'=>'×'
-		        ];
-
-		        $time->addMinutes($company->slot_minutes);
-		        continue;
-		    }
 		/* =============================
-		   ★営業判定追加
+		   今日の過去時間は×
 		============================= */
-
-		$status = $this->getBusinessStatus($company,$slotStart,$slotEnd);
-
-		if($status !== 'open'){
+		if ($day->isToday() && $slotStart < now()) {
 
 		    $data[$time->format('H:i')][$day->format('Y-m-d')] = [
-		        'status'=>'×'
+		        'status' => '×'
 		    ];
 
-		    $time->addMinutes($company->slot_minutes);
+		    $time->addMinutes($minutes);
 		    continue;
-
-		} else {
-
-		        $result = $this->checkAvailability(
-		            $staffList,
-		            $reservations,
-		            $vacations,
-                            $shifts,
-                            $shiftPatterns,
-		            $slotStart,
-		            $slotEnd
-		        );
-
-		        $data[$time->format('H:i')][$day->format('Y-m-d')] = $result;
-		    }
-
-		    $time->addMinutes($company->slot_minutes);
 		}
-        }
+                /* 営業判定 */
+                $status = $this->getBusinessStatus($company,$slotStart,$slotEnd);
 
+                if($status !== 'open'){
+                    $data[$time->format('H:i')][$day->format('Y-m-d')] = [
+                        'status'=>'×'
+                    ];
+                    $time->addMinutes($minutes);
+                    continue;
+                }
+
+                /* 空き判定 */
+                $result = $this->checkAvailability(
+                    $staffList,
+                    $reservations,
+                    $vacations,
+                    $shifts,
+                    $shiftPatterns,
+                    $slotStart,
+                    $slotEnd
+                );
+
+                $data[$time->format('H:i')][$day->format('Y-m-d')] = $result;
+
+                $time->addMinutes($minutes);
+            }
+        }
     }
 
     return response()->json([
         'mode'=>'week',
-        'slots'=>$data
+        'slots'=>$data ?? [],
+        'staffs'=>$staffList
     ]);
+
+} catch (\Throwable $e) {
+
+    \Log::error($e);
+
+    return response()->json([
+        'error'=>$e->getMessage(),
+        'line'=>$e->getLine()
+    ],500);
 }
+}
+
 
     /* ==========================================================
        予約登録
@@ -370,11 +425,32 @@ public function calendarData(Request $request)
 	        $request->validate([
 	            'start_at'      => 'required|date',
 	            'customer_name' => 'required',
-	            'menu_id'       => 'nullable|integer',
+		    'menu_ids'      => 'nullable|array',
+		    'menu_ids.*'    => 'integer',
 	            'staff_id'      => 'nullable|integer'
 	        ]);
 
 	        $start = Carbon::parse($request->start_at);
+
+		/* ==============================
+		   メニュー取得
+		============================== */
+
+		$menus = Menu::whereIn('id', $request->menu_ids ?? [])->get();
+
+		/* ==============================
+		   時間・料金計算
+		============================== */
+
+		$duration = $menus->sum('duration');
+		$price    = $menus->sum('price');
+
+		/* fallback（未選択時） */
+		if ($duration == 0) {
+		    $duration = $company->slot_minutes;
+		}
+
+		$end = $start->copy()->addMinutes($duration);
 
 		/* =================================
 		   予約可能期間チェック
@@ -395,32 +471,14 @@ public function calendarData(Request $request)
 		        'message'=>'予約可能期間を超えています'
 		    ],422);
 		}
-
+/*
 		if ($start < $limits['close']) {
 		    return response()->json([
 		        'success'=>false,
 		        'message'=>'予約締切を過ぎています'
 		    ],422);
 		}
-
-	        /* =================================
-	           所要時間決定
-	        ================================= */
-
-	        if (
-	            $company->menu_time_priority_flag &&
-	            $request->menu_id
-	        ) {
-
-	            $menu = Menu::findOrFail($request->menu_id);
-	            $duration = $menu->duration;
-
-	        } else {
-
-	            $duration = $company->slot_minutes;
-	        }
-
-	        $end = $start->copy()->addMinutes($duration);
+*/
 
 		/* =================================
 		スタッフ決定
@@ -564,17 +622,6 @@ public function calendarData(Request $request)
 	           料金計算
 	        ================================= */
 
-	        $menu = null;
-	        $price = 0;
-
-	        if ($request->menu_id) {
-
-	            $menu = Menu::find($request->menu_id);
-
-	            if ($menu) {
-	                $price = $menu->price;
-	            }
-	        }
 
 	        $nominationFee = $staff->nomination_fee ?? 0;
 
@@ -587,7 +634,7 @@ public function calendarData(Request $request)
 		          ->where('end_at','>',$start);
 		    })
 		    ->count();
-
+/*
 		if ($overlapCount >= $company->max_simultaneous_reservations) {
 
 		    return response()->json([
@@ -595,6 +642,7 @@ public function calendarData(Request $request)
 		        'message'=>'この時間は予約上限です'
 		    ],422);
 		}
+*/
 
 		DB::transaction(function () use (
 		    $request,
@@ -604,8 +652,38 @@ public function calendarData(Request $request)
 		    $assignedStaffId,
 		    $price,
 		    $nominationFee,
-		    $totalPrice
+		    $totalPrice,
+	            $menus
 		) {
+		    /* ==============================
+		       顧客作成 or 取得
+		    ============================== */
+
+		    $customer = Customer::where('company_id', $company->id)
+		        ->where('phone', str_replace('-', '', $request->customer_phone)) // 電話で紐付け
+		        ->first();
+
+		    if ($customer) {
+		        // 既存顧客
+		        $customer->visit_count += 1;
+		        $customer->last_visit = $start;
+		        $customer->name = $request->customer_name; // 最新に更新
+		        $customer->save();
+		    } else {
+		        // 新規顧客
+		        $customer = Customer::create([
+		            'company_id' => $company->id,
+		            'name'       => $request->customer_name,
+		            'phone'      => str_replace('-', '', $request->customer_phone),
+		            'email'      => $request->email ?? null,
+		            'visit_count'=> 1,
+		            'last_visit' => $start,
+		        ]);
+		    }
+
+		    /* ==============================
+		       予約重複チェック
+		    ============================== */
 
 		    $exists = Reservation::where('company_id',$company->id)
 		        ->where('staff_id',$assignedStaffId)
@@ -620,19 +698,40 @@ public function calendarData(Request $request)
 		    if ($exists) {
 		        throw new \Exception('この時間は既に予約があります');
 		    }
-
-		    Reservation::create([
+		    /* ==============================
+		       予約登録
+		    ============================== */
+		    $reservation =Reservation::create([
 		        'company_id'=>$company->id,
 		        'staff_id'=>$assignedStaffId,
 		        'customer_name'=>$request->customer_name,
+			'customer_phone'=>str_replace('-', '', $request->customer_phone),
 		        'start_at'=>$start,
 		        'end_at'=>$end,
-		        'menu_id'=>$request->menu_id,
 		        'price'=>$price,
 		        'nomination_fee'=>$nominationFee,
 		        'total_price'=>$totalPrice,
 		        'status'=>'reserved',
+		        'customer_id'=>$customer->id,
+			'source'=>'staff'
 		    ]);
+
+		    /* ==============================
+		       メニュー紐付け
+		    ============================== */
+
+	            $attachData = [];
+
+	            foreach ($menus as $menu) {
+	                $attachData[$menu->id] = [
+	                    'price'    => $menu->price,
+	                    'duration' => $menu->duration,
+	                    'created_at' => now(),
+	                    'updated_at' => now(),
+	                ];
+	            }
+
+	            $reservation->menus()->attach($attachData);
 
 		});
 
@@ -646,6 +745,8 @@ public function calendarData(Request $request)
 	        ],422);
 	    }
 	}
+
+
     public function cancel($id)
     {
         $company = auth()->guard('company')->user()->company;
@@ -666,7 +767,6 @@ public function calendarData(Request $request)
 
         return response()->json(['success'=>true]);
     }
-
 public function availableStaff(Request $request)
 {
     $companyUser = auth()->guard('company')->user();
@@ -693,14 +793,21 @@ public function availableStaff(Request $request)
 
     $staffIds = $staffList->pluck('id');
 
-    /* シフト取得 */
-
+    /* ======================
+       シフト（★外で取得）
+    ====================== */
     $shifts = StaffShift::whereIn('staff_id',$staffIds)
         ->whereDate('date',$start->format('Y-m-d'))
-        ->get();
+        ->get()
+        ->keyBy(fn($s)=>$s->staff_id.'_'.$s->date);
+
+    $patternIds = $shifts->pluck('shift_pattern_id')->filter();
+
+    $shiftPatterns = ShiftPattern::whereIn('id',$patternIds)
+        ->get()
+        ->keyBy('id');
 
     /* 休暇 */
-
     $vacations = Vacation::whereIn('staff_id',$staffIds)
         ->where('status','approved')
         ->whereDate('start_at','<=',$start)
@@ -711,22 +818,33 @@ public function availableStaff(Request $request)
 
     foreach ($staffList as $staff){
 
-        /* シフト */
+        $key = $staff->id.'_'.$start->format('Y-m-d');
+        $shift = $shifts[$key] ?? null;
 
-	$shifts = StaffShift::whereIn('staff_id',$staffIds)
-	    ->whereDate('date',$start->format('Y-m-d'))
-	    ->get()
-	    ->keyBy(fn($s)=>$s->staff_id.'_'.$s->date);
-
-	$key = $staff->id.'_'.$start->format('Y-m-d');
-	$shift = $shifts[$key] ?? null;
-
+        /* シフトなし or 休み */
         if(!$shift || !$shift->is_work){
             continue;
         }
 
-        /* 休暇 */
+        /* ★シフト時間チェック（これが本命） */
+        $shiftPattern = $shiftPatterns[$shift->shift_pattern_id] ?? null;
 
+        if ($shiftPattern) {
+
+            $shiftStart = Carbon::parse(
+                $start->format('Y-m-d').' '.$shiftPattern->start_time
+            );
+
+            $shiftEnd = Carbon::parse(
+                $start->format('Y-m-d').' '.$shiftPattern->end_time
+            );
+
+            if ($start < $shiftStart || $end > $shiftEnd) {
+                continue;
+            }
+        }
+
+        /* 休暇 */
         $vacation = $vacations->first(function ($v) use ($staff,$start,$end){
             return $v->staff_id == $staff->id &&
                    $v->start_at < $end &&
@@ -738,7 +856,6 @@ public function availableStaff(Request $request)
         }
 
         /* 予約 */
-
         $exists = Reservation::where('company_id',$company->id)
             ->where('staff_id',$staff->id)
             ->where('status','reserved')
@@ -755,6 +872,8 @@ public function availableStaff(Request $request)
 
     return response()->json($availableStaff);
 }
+
+
 
     /* ==========================================================
        営業判定
@@ -818,96 +937,111 @@ public function availableStaff(Request $request)
     /* ==========================================================
        空き判定
     ========================================================== */
-	private function checkAvailability(
-	    $staffList,
-	    $reservations,
-	    $vacations,
-	    $shifts,
-            $shiftPatterns,
-	    $start,
-	    $end
-	){
+private function checkAvailability(
+    $staffList,
+    $reservations,
+    $vacations,
+    $shifts,
+    $shiftPatterns,
+    $start,
+    $end
+){
 
-	    $totalStaff = $staffList->count();
+    $workingStaff = 0;
+    $reservedStaff = 0;
 
-	    $workingStaff = 0;
-	    $reservedStaff = 0;
+    foreach ($staffList as $staff){
 
-	    foreach ($staffList as $staff){
+        $key = $staff->id.'_'.$start->toDateString();
+        $shift = $shifts[$key] ?? null;
 
-	        $shift = $shifts->first(function ($s) use ($staff,$start) {
-	            return $s->staff_id == $staff->id &&
-	                   $s->date == $start->format('Y-m-d');
-	        });
+        // シフトなし or 休み
+        if(!$shift || !$shift->is_work){
+            continue;
+        }
 
-		if(!$shift || !$shift->is_work){
-		    continue;
-		}
+        /* シフト時間チェック */
+        $shiftPattern = $shiftPatterns[$shift->shift_pattern_id] ?? null;
 
-		/* シフトパターン */
+        if($shiftPattern){
 
-		$shiftPattern = $shiftPatterns[$shift->shift_pattern_id] ?? null;
+            $shiftStart = \Carbon\Carbon::parse(
+                $start->format('Y-m-d').' '.$shiftPattern->start_time
+            );
 
-		if($shiftPattern){
+            $shiftEnd = \Carbon\Carbon::parse(
+                $start->format('Y-m-d').' '.$shiftPattern->end_time
+            );
 
-		    $shiftStart = Carbon::parse($start->format('Y-m-d').' '.$shiftPattern->start_time);
-		    $shiftEnd   = Carbon::parse($start->format('Y-m-d').' '.$shiftPattern->end_time);
+            if($start < $shiftStart || $end > $shiftEnd){
+                continue;
+            }
+        }
 
-		    if($start < $shiftStart || $end > $shiftEnd){
-		        continue;
-		    }
-		}
+        /* ここに来たら出勤 */
+        $workingStaff++;
 
+        /* 休暇チェック */
+        $vacation = $vacations->first(function ($v) use ($staff,$start,$end) {
+            return $v->staff_id == $staff->id &&
+                   $v->start_at < $end &&
+                   $v->end_at > $start;
+        });
 
-	        /* 休暇 */
+        if($vacation){
+            $reservedStaff++;
+            continue;
+        }
 
-	        $vacation = $vacations->first(function ($v) use ($staff,$start,$end) {
-	            return $v->staff_id == $staff->id &&
-	                   $v->start_at < $end &&
-	                   $v->end_at > $start;
-	        });
+        /* 予約チェック */
+        $reservation = $reservations
+            ->where('staff_id',$staff->id)
+            ->first(function ($r) use ($start,$end){
+                return $r->start_at < $end &&
+                       $r->end_at > $start;
+            });
 
-	        if($vacation){
-	            $reservedStaff++;
-	            continue;
-	        }
+        if($reservation){
+            $reservedStaff++;
+        }
+    }
 
-	        $workingStaff++;
+    /* ==========================
+       判定
+    ========================== */
 
-	        /* 予約 */
+    if($workingStaff == 0){
+        return [
+            'status'=>'×',
+            'available'=>0,
+            'total'=>0
+        ];
+    }
 
-	        $reservation = $reservations
-	            ->where('staff_id',$staff->id)
-	            ->first(function ($r) use ($start,$end){
-	                return $r->start_at < $end &&
-	                       $r->end_at > $start;
-	            });
+    $available = $workingStaff - $reservedStaff;
 
-	        if($reservation){
-	            $reservedStaff++;
-	        }
-	    }
+    if($available <= 0){
+        return [
+            'status'=>'×',
+            'available'=>0,
+            'total'=>$workingStaff
+        ];
+    }
 
-	    /* 出勤スタッフ0 */
+    if($available == 1){
+        return [
+            'status'=>'△',
+            'available'=>$available,
+            'total'=>$workingStaff
+        ];
+    }
 
-	    if($workingStaff == 0){
-	        return ['status'=>'×'];
-	    }
-
-	    /* 全員埋まり */
-
-	    if($reservedStaff >= $workingStaff){
-	        return ['status'=>'×'];
-	    }
-
-	    /* 一部埋まり */
-
-	    if($reservedStaff > 0){
-	        return ['status'=>'△'];
-	    }
-
-	    return ['status'=>'○'];
-	}
+    return [
+        'status'=>'○',
+        'available'=>$available,
+        'total'=>$workingStaff
+    ];
+}
 
 	public function staffMenus(Request $request)
 	{

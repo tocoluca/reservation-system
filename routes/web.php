@@ -30,6 +30,8 @@ use App\Http\Controllers\Company\ShiftPatternController;
 use App\Http\Controllers\Company\StaffDefaultShiftController;
 use App\Http\Controllers\Company\StaffShiftController;
 
+use App\Http\Controllers\Company\CustomerController;
+
 
 use App\Http\Controllers\ReserveController;
 /*
@@ -368,6 +370,17 @@ Route::post(
 'staff-shifts/copy',
 [StaffShiftController::class,'copy']
 )->name('company.staff-shifts.copy');
+
+
+Route::get('/customers',[CustomerController::class,'index']
+)->name('company.customers');
+Route::get('/customers/{id}',[CustomerController::class,'show']
+)->name('company.customers.show');
+
+Route::post('/customers/{id}/note',[CustomerController::class,'note']
+)->name('company.customers.note');
+Route::post('/customers/{id}/photo',[CustomerController::class,'photo']
+)->name('company.customers.photo');
 
 
 });

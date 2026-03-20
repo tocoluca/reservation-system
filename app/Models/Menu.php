@@ -28,4 +28,8 @@ public function staffs()
 {
     return $this->belongsToMany(Staff::class,'menu_staff');
 }
+public function reservations()
+{
+    return $this->belongsToMany(Reservation::class, 'reservation_menus');
+}
 }

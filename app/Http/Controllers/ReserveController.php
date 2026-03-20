@@ -10,6 +10,7 @@ use App\Models\Staff;
 use App\Models\Vacation;
 use App\Models\StaffShift;
 use App\Models\ShiftPattern;
+use App\Models\Customer;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -113,6 +114,19 @@ public function store(Request $request,$company_code)
 
     $company = Company::where('company_code',$company_code)->firstOrFail();
 
+	$request->validate([
+	    'customer_name' => ['required','max:255'],
+	    'customer_phone' => ['required','regex:/^[0-9\-]+$/'],
+	    'customer_email' => ['nullable','email','max:255']
+	],[
+	    'customer_name.required' => ':attributeを入力してください',
+	    'customer_phone.regex' => ':attributeは半角数字とハイフンのみ入力できます',
+	],[
+	    'customer_name' => 'お名前',
+	    'customer_phone' => '電話番号',
+	    'customer_email' => 'メールアドレス',
+	]);
+
     $menus = Menu::where('company_id',$company->id)
         ->whereIn('id',$request->menu_ids ?? [])
         ->get();
@@ -148,15 +162,30 @@ public function store(Request $request,$company_code)
         return back()->with('error','空きスタッフがいません');
     }
 
+	$customer = Customer::firstOrCreate(
+
+	[
+	'company_id'=>$company->id,
+	'phone'=>str_replace('-', '', $request->customer_phone)
+	],
+
+	[
+	'name'=>$request->customer_name,
+	'email'=>$request->customer_email
+	]
+
+	);
+
     $staff = Staff::find($staffId);
 
     $reservation = Reservation::create([
 
         'company_id'=>$company->id,
+	'customer_id'=>$customer->id,
         'staff_id'=>$staffId,
 
         'customer_name'=>$request->customer_name,
-        'customer_phone'=>$request->customer_phone,
+        'customer_phone'=>str_replace('-', '', $request->customer_phone),
         'customer_email'=>$request->customer_email,
 
         'start_at'=>$start,
@@ -170,6 +199,18 @@ public function store(Request $request,$company_code)
         'cancel_token'=>Str::random(6)
 
     ]);
+
+	$maxCycle = $menus->max('revisit_days');
+
+	if($maxCycle){
+
+	$customer->next_visit_at =
+	Carbon::parse($reservation->start_at)
+	->addDays($maxCycle);
+
+	$customer->save();
+
+	}
 
     foreach($menus as $menu){
 

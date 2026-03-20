@@ -197,7 +197,26 @@ SHIFT
 </div>
 
 </a>
+
+<a href="{{ route('company.customers') }}"
+class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-lime-500">
+
+<div class="text-lime-500 text-xs font-semibold mb-2">
+COSTOMER
+</div>
+
+<div class="text-lg sm:text-xl font-bold mb-2">
+    顧客管理
+</div>
+
+<div class="text-gray-500 text-sm">
+    顧客の管理
+</div>
+</a>
+
+
 @endif
+
 
 
 <a href="{{ route('company.vacation.index') }}"

@@ -18,6 +18,7 @@ class Reservation extends Model
         'start_at',
         'end_at',
         'status',
+        'source',
         'fingerprint',
 	    // 追加
 	    'price',
@@ -37,16 +38,15 @@ class Reservation extends Model
 	{
 	    return $this->belongsTo(\App\Models\Staff::class);
 	}
-	    public function menu() // ★追加
-	    {
-	        return $this->belongsTo(Menu::class);
-	    }
+
 	public function reservationMenus()
 	{
 	    return $this->hasMany(ReservationMenu::class);
 	}
 	public function menus()
 	{
-	    return $this->belongsToMany(Menu::class,'reservation_menus');
+	    return $this->belongsToMany(Menu::class, 'reservation_menus')
+	        ->withPivot('price','duration')
+	        ->withTimestamps();
 	}
 }

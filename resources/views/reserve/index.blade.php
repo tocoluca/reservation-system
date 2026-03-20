@@ -246,8 +246,11 @@ STEP4 時間
 {{-- 料金 --}}
 <div class="mb-6 text-lg font-bold text-center">
 
-合計料金  
-<span id="price">0</span>円
+合計料金（目安）  
+<span id="price">0</span>円～
+<p class="text-xs text-gray-500 mt-1">
+※事前に目安料金をご案内しておりますが、当日の施術内容や髪の状態により変動する場合がございます。
+</p>
 
 </div>
 

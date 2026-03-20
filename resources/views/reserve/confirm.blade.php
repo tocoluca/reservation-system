@@ -56,16 +56,21 @@ $staffFee = $staff->nomination_fee ?? 0;
 </div>
 
 <div>
-料金  
+合計料金（目安）
 
 <strong>
-{{ number_format($totalPrice + $staffFee) }}円
+{{ number_format($totalPrice + $staffFee) }}円～
 </strong>
-
+<p class="text-xs text-gray-500 mt-1">
+※事前に目安料金をご案内しておりますが、当日の施術内容や髪の状態により変動する場合がございます。
+</p>
 </div>
 
 </div>
 
+<div id="errorArea" class="mb-4 hidden">
+    <div class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm"></div>
+</div>
 
 <form method="POST" action="/r/{{ $company->company_code }}/store">
 @csrf
@@ -92,7 +97,10 @@ required>
 type="tel"
 name="customer_phone"
 placeholder="電話番号"
+pattern="[0-9\-]+"
+inputmode="numeric"
 class="border rounded-lg p-3 w-full mb-3"
+oninput="formatTel(this)"
 required>
 
 <input
@@ -120,5 +128,79 @@ class="text-center w-full mt-4 text-blue-500">
 </button>
 
 </div>
+<script>
+function formatTel(input) {
+    input.value = input.value.replace(/[^0-9\-]/g, '');
+}
+function submitReservation() {
+
+    clearErrors(); // 🔥 追加
+
+    const name  = document.getElementById('modal_customer_name').value;
+    const phone = document.getElementById('modal_customer_phone').value;
+
+    fetch('/company/reservation', {
+        method:'POST',
+        headers:{
+            'Content-Type':'application/json',
+            'X-CSRF-TOKEN':'{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            start_at: selectedDatetime,
+            customer_name: name,
+            customer_phone: phone,
+            staff_id: selectedStaffId
+        })
+    })
+    .then(async res => {
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            showErrors(data.errors);
+            return;
+        }
+
+        if(data.success){
+            closeModal();
+            loadCalendar();
+        }
+
+    });
+}
+function showErrors(errors) {
+
+    const area = document.getElementById('errorArea');
+    const box  = area.firstElementChild;
+
+    let html = '';
+
+    Object.keys(errors).forEach(key => {
+
+        errors[key].forEach(msg => {
+            html += `<div>${msg}</div>`;
+        });
+
+        // 🔥 該当input赤くする
+        const input = document.getElementById('modal_' + key.replace('customer_', 'customer_'));
+        if (input) {
+            input.classList.add('border-red-500');
+        }
+    });
+
+    box.innerHTML = html;
+    area.classList.remove('hidden');
+}
+function clearErrors() {
+
+    // エリア消す
+    document.getElementById('errorArea').classList.add('hidden');
+
+    // 赤枠リセット
+    document.querySelectorAll('#reserveModal input').forEach(el => {
+        el.classList.remove('border-red-500');
+    });
+}
+</script>
 
 @endsection

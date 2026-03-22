@@ -1,4 +1,4 @@
-name: Deploy Laravel to Lolipop (Subdomain)
+name: Deploy Laravel to Lolipop (Reserve + Demo)
 
 on:
   push:
@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -21,7 +21,7 @@ jobs:
       - name: Install Composer
         run: composer install --no-dev --optimize-autoloader
 
-      - name: Deploy via FTP
+      - name: Deploy to reserve
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ftp.lolipop.jp
@@ -32,3 +32,19 @@ jobs:
             **/.env
             **/storage/**
             **/.git*
+            **/.github/**
+            **/node_modules/**
+
+      - name: Deploy to demo
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ftp.lolipop.jp
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: demo/laravel/
+          exclude: |
+            **/.env
+            **/storage/**
+            **/.git*
+            **/.github/**
+            **/node_modules/**

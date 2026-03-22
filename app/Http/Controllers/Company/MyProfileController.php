@@ -26,7 +26,7 @@ class MyProfileController extends Controller
         $request->validate([
             'comment'  => 'nullable|string|max:500',
             'password' => 'nullable|min:8|confirmed',
-//            'image'    => 'nullable|image|max:2048'
+            'image'    => 'nullable|image|max:5000'
         ]);
 
         /*
@@ -53,13 +53,13 @@ class MyProfileController extends Controller
             $manager = new ImageManager(new Driver());
             $image   = $manager->read($request->file('image'));
 
-            // 横幅最大400pxに縮小（縦横比維持）
-            $image->scaleDown(width: 400);
+            // 横幅最大800pxに縮小（縦横比維持）
+            $image->scaleDown(width: 800);
 
             $filename = uniqid() . '.webp';
 
             // 保存先ディレクトリ
-            $relativePath = "uploads/companies/{$companyId}/staff";
+            $relativePath = "companies/{$companyId}/staff";
             $savePath     = public_path($relativePath);
 
 //Log::debug('LOG3');

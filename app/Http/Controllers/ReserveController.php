@@ -11,10 +11,12 @@ use App\Models\Vacation;
 use App\Models\StaffShift;
 use App\Models\ShiftPattern;
 use App\Models\Customer;
+use App\Models\Notice;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
 
 class ReserveController extends Controller
@@ -35,16 +37,151 @@ private function getReservationLimits($company)
     ];
 }
 
+private function isLineLoginEnabled($company)
+{
+    return (bool) $company->line_login_enabled
+        && !empty($company->line_channel_id)
+        && !empty($company->line_channel_secret);
+}
+
+private function setupLineConfig($company, $company_code): void
+{
+    abort_unless($this->isLineLoginEnabled($company), 404);
+
+    config([
+        'services.line.client_id' => $company->line_channel_id,
+        'services.line.client_secret' => $company->line_channel_secret,
+        'services.line.redirect' => url('/r/' . $company_code . '/line/callback'),
+    ]);
+}
+
+private function getLineProfileFromSession($company): ?array
+{
+    if ((int) session('reserve_line_company_id') !== (int) $company->id) {
+        return null;
+    }
+
+    $profile = session('reserve_line_profile');
+
+    return is_array($profile) ? $profile : null;
+}
+
+private function getLineCustomerFromSession($company): ?Customer
+{
+    if ((int) session('reserve_line_company_id') !== (int) $company->id) {
+        return null;
+    }
+
+    $customerId = session('reserve_line_customer_id');
+
+    if (!$customerId) {
+        return null;
+    }
+
+    return Customer::where('company_id', $company->id)
+        ->where('id', $customerId)
+        ->first();
+}
+
+/*
+|--------------------------------------------------------------------------
+| LINEログイン
+|--------------------------------------------------------------------------
+*/
+
+public function lineRedirect(Request $request, $company_code)
+{
+    $company = Company::where('company_code', $company_code)->firstOrFail();
+
+    $this->setupLineConfig($company, $company_code);
+
+    session([
+        'reserve_line_company_id' => $company->id,
+        'reserve_line_company_code' => $company_code,
+    ]);
+
+    return Socialite::driver('line')
+        ->scopes(['openid', 'profile'])
+        ->redirect();
+}
+
+public function lineCallback(Request $request, $company_code)
+{
+    $company = Company::where('company_code', $company_code)->firstOrFail();
+
+    $this->setupLineConfig($company, $company_code);
+
+    try {
+        $lineUser = Socialite::driver('line')->user();
+    } catch (\Throwable $e) {
+        return redirect('/r/' . $company_code)
+            ->with('error', 'LINEログインに失敗しました。時間をおいてもう一度お試しください。');
+    }
+
+    $linkedCustomer = Customer::where('company_id', $company->id)
+        ->where('line_user_id', $lineUser->getId())
+        ->first();
+
+    if ($linkedCustomer) {
+        $linkedCustomer->line_name = $lineUser->getName() ?: $linkedCustomer->line_name;
+        $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
+        $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
+        $linkedCustomer->save();
+    }
+
+    session([
+        'reserve_line_company_id' => $company->id,
+        'reserve_line_company_code' => $company_code,
+        'reserve_line_customer_id' => $linkedCustomer?->id,
+        'reserve_line_profile' => [
+            'line_user_id' => $lineUser->getId(),
+            'name' => $lineUser->getName(),
+            'email' => $lineUser->getEmail(),
+            'avatar' => $lineUser->getAvatar(),
+        ],
+    ]);
+
+    return redirect('/r/' . $company_code)->with(
+        'success',
+        $linkedCustomer
+            ? 'LINEでログインしました。前回情報を利用できます。'
+            : 'LINEでログインしました。ご予約時の入力がかんたんになります。'
+    );
+}
+
+public function lineLogout($company_code)
+{
+    $company = Company::where('company_code', $company_code)->firstOrFail();
+
+    if ((int) session('reserve_line_company_id') === (int) $company->id) {
+        session()->forget([
+            'reserve_line_company_id',
+            'reserve_line_company_code',
+            'reserve_line_customer_id',
+            'reserve_line_profile',
+        ]);
+    }
+
+    return redirect('/r/' . $company_code)
+        ->with('success', 'LINEログインを解除しました。');
+}
+
 /*
 |--------------------------------------------------------------------------
 | 予約トップ
 |--------------------------------------------------------------------------
 */
 
+
 public function index($company_code)
 {
 
     $company = Company::where('company_code',$company_code)->firstOrFail();
+
+	$notices = Notice::where('company_id', $company->id)
+	    ->visible()
+	    ->sorted()
+	    ->get();
 
     $menus = Menu::with(['tags','category'])
         ->where('company_id',$company->id)
@@ -67,10 +204,17 @@ public function index($company_code)
             return $s;
         });
 
+    $lineProfile = $this->getLineProfileFromSession($company);
+    $lineCustomer = $this->getLineCustomerFromSession($company);
+
     return view('reserve.index',[
         'company'=>$company,
         'menus'=>$menus,
         'staff'=>$staff,
+    	'notices'=>$notices,
+        'lineLoginEnabled' => $this->isLineLoginEnabled($company),
+        'lineProfile' => $lineProfile,
+        'lineCustomer' => $lineCustomer,
         'step'=>1
     ]);
 }
@@ -94,11 +238,16 @@ public function confirm(Request $request,$company_code)
         ? Staff::find($request->staff_id)
         : null;
 
+    $lineProfile = $this->getLineProfileFromSession($company);
+    $lineCustomer = $this->getLineCustomerFromSession($company);
+
     return view('reserve.confirm',[
         'company'=>$company,
         'menus'=>$menus,
         'staff'=>$staff,
         'start_at'=>$request->start_at,
+        'lineProfile' => $lineProfile,
+        'lineCustomer' => $lineCustomer,
         'step'=>2
     ]);
 }
@@ -162,19 +311,61 @@ public function store(Request $request,$company_code)
         return back()->with('error','空きスタッフがいません');
     }
 
-	$customer = Customer::firstOrCreate(
+    $lineProfile = $this->getLineProfileFromSession($company);
 
-	[
-	'company_id'=>$company->id,
-	'phone'=>str_replace('-', '', $request->customer_phone)
-	],
+    $lineCustomer = null;
+    if ($lineProfile && !empty($lineProfile['line_user_id'])) {
+        $lineCustomer = Customer::where('company_id', $company->id)
+            ->where('line_user_id', $lineProfile['line_user_id'])
+            ->first();
+    }
 
-	[
-	'name'=>$request->customer_name,
-	'email'=>$request->customer_email
-	]
+    if ($lineCustomer) {
+        $customer = $lineCustomer;
+    } else {
+        $customer = Customer::firstOrCreate(
+            [
+                'company_id' => $company->id,
+                'phone' => str_replace('-', '', $request->customer_phone)
+            ],
+            [
+                'name' => $request->customer_name,
+                'email' => $request->customer_email
+            ]
+        );
+    }
 
-	);
+    $customer->name = $request->customer_name;
+    $customer->phone = str_replace('-', '', $request->customer_phone);
+
+    if ($request->filled('customer_email')) {
+        $customer->email = $request->customer_email;
+    } elseif (!$customer->email && $lineProfile && !empty($lineProfile['email'])) {
+        $customer->email = $lineProfile['email'];
+    }
+
+    if ($lineProfile && !empty($lineProfile['line_user_id'])) {
+        $alreadyLinkedOther = Customer::where('company_id', $company->id)
+            ->where('line_user_id', $lineProfile['line_user_id'])
+            ->where('id', '!=', $customer->id)
+            ->exists();
+
+        $canLinkThisCustomer = empty($customer->line_user_id)
+            || $customer->line_user_id === $lineProfile['line_user_id'];
+
+        if (!$alreadyLinkedOther && $canLinkThisCustomer) {
+            $customer->line_user_id = $lineProfile['line_user_id'];
+            $customer->line_name = $lineProfile['name'] ?? $customer->line_name;
+            $customer->line_picture_url = $lineProfile['avatar'] ?? $customer->line_picture_url;
+            $customer->line_linked_at = $customer->line_linked_at ?: now();
+
+            session([
+                'reserve_line_customer_id' => $customer->id
+            ]);
+        }
+    }
+
+    $customer->save();
 
     $staff = Staff::find($staffId);
 
@@ -386,141 +577,175 @@ private function resolveStaff($company,$staffId,$start,$end,$menuIds)
 | 空き時間
 |--------------------------------------------------------------------------
 */
-
-public function slots(Request $request,$company_code)
+public function slots(Request $request, $company_code)
 {
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-	$company = Company::where('company_code',$company_code)->firstOrFail();
+    $menuIds = $request->menu_ids ?? [];
+    $menus = Menu::whereIn('id', $menuIds)->get();
 
-	$menuIds = $request->menu_ids ?? [];
+    if ($menus->isEmpty()) {
+        return response()->json([]);
+    }
 
-	$menus = Menu::whereIn('id',$menuIds)->get();
+    $duration = $menus->sum('duration');
+    $date = Carbon::parse($request->date)->startOfDay();
 
-	if($menus->isEmpty()){
-	return [];
-	}
+    // 予約可能期間・締切
+    $limits = $this->getReservationLimits($company);
 
-	$duration = $menus->sum('duration');
+    // 予約開始前の日付、予約可能期間を超えた日付は表示しない
+    if ($date->copy()->endOfDay()->lt($limits['start'])) {
+        return response()->json([]);
+    }
 
-	$date = Carbon::parse($request->date);
+    if ($date->copy()->startOfDay()->gt($limits['end'])) {
+        return response()->json([]);
+    }
 
-	$openPatterns = $company->open_patterns ?? [];
+    $openPatterns = $company->open_patterns ?? [];
+    $patterns = $openPatterns[$date->dayOfWeek] ?? [];
 
-	$patterns = $openPatterns[$date->dayOfWeek] ?? [];
+    if (empty($patterns)) {
+        return response()->json([]);
+    }
 
-	$staffList = Staff::where('company_id',$company->id)
-	->where('is_reservable',true)
-	->whereHas('menus',function($q) use ($menuIds){
-	$q->whereIn('menus.id',$menuIds);
-	})
-	->get();
+    $staffQuery = Staff::where('company_id', $company->id)
+        ->where('is_reservable', true)
+        ->whereHas('menus', function ($q) use ($menuIds) {
+            $q->whereIn('menus.id', $menuIds);
+        });
 
-	$staffIds = $staffList->pluck('id');
+    // 担当者が選ばれている場合はその人だけ
+    if ($request->filled('staff_id')) {
+        $staffQuery->where('id', $request->staff_id);
+    }
 
-	$reservations = Reservation::where('company_id',$company->id)
-	->whereDate('start_at',$date)
-	->where('status','reserved')
-	->get();
+    $staffList = $staffQuery->get();
 
-	$vacations = Vacation::whereIn('staff_id',$staffIds)
-	->where('status','approved')
-	->whereDate('start_at','<=',$date)
-	->whereDate('end_at','>=',$date)
-	->get();
+    if ($staffList->isEmpty()) {
+        return response()->json([]);
+    }
 
-	$shifts = StaffShift::whereIn('staff_id',$staffIds)
-	->whereDate('date',$date)
-	->get()
-	->keyBy(fn($s)=>$s->staff_id.'_'.$s->date);
+    $staffIds = $staffList->pluck('id');
 
-	$patternIds = $shifts->pluck('shift_pattern_id');
+    $reservations = Reservation::where('company_id', $company->id)
+        ->whereDate('start_at', $date->format('Y-m-d'))
+        ->where('status', 'reserved')
+        ->get();
 
-	$shiftPatterns = ShiftPattern::whereIn('id',$patternIds)
-	->get()
-	->keyBy('id');
+    $vacations = Vacation::whereIn('staff_id', $staffIds)
+        ->where('status', 'approved')
+        ->where(function ($q) use ($date) {
+            $q->whereDate('start_at', '<=', $date->format('Y-m-d'))
+              ->whereDate('end_at', '>=', $date->format('Y-m-d'));
+        })
+        ->get();
 
-	$slots=[];
+    $shifts = StaffShift::whereIn('staff_id', $staffIds)
+        ->whereDate('date', $date->format('Y-m-d'))
+        ->get()
+        ->keyBy(fn($s) => $s->staff_id . '_' . Carbon::parse($s->date)->format('Y-m-d'));
 
-	foreach($patterns as $p){
+    $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
 
-	$open = Carbon::parse($date->format('Y-m-d').' '.$p['open']);
-	$close = Carbon::parse($date->format('Y-m-d').' '.$p['close']);
+    $shiftPatterns = ShiftPattern::whereIn('id', $patternIds)
+        ->get()
+        ->keyBy('id');
 
-	$time=$open->copy();
+    $slots = [];
 
-	while($time < $close){
+    foreach ($patterns as $p) {
+        $open = Carbon::parse($date->format('Y-m-d') . ' ' . $p['open']);
+        $close = Carbon::parse($date->format('Y-m-d') . ' ' . $p['close']);
 
-	$start=$time->copy();
-	$end=$start->copy()->addMinutes($duration);
+        $time = $open->copy();
 
-	if($end > $close){
-	break;
-	}
+        while ($time < $close) {
+            $start = $time->copy();
+            $end = $start->copy()->addMinutes($duration);
 
-	$availableStaff=0;
+            if ($end > $close) {
+                break;
+            }
 
-	foreach($staffList as $staff){
+            // 予約締切を過ぎた枠は表示しない
+            // 例: reservation_close_hours = 2 の場合、今から2時間未満の開始時刻は非表示
+            if ($start->lt($limits['close'])) {
+                $time->addMinutes($company->slot_minutes);
+                continue;
+            }
 
-	$key=$staff->id.'_'.$date->format('Y-m-d');
+            // 予約可能開始日より前は非表示
+            if ($start->lt($limits['start'])) {
+                $time->addMinutes($company->slot_minutes);
+                continue;
+            }
 
-	$shift=$shifts[$key] ?? null;
+            // 予約可能期間を超える枠は非表示
+            if ($start->gt($limits['end'])) {
+                $time->addMinutes($company->slot_minutes);
+                continue;
+            }
 
-	if(!$shift || !$shift->is_work){
-	continue;
-	}
+            $availableStaff = 0;
 
-	$pattern=$shiftPatterns[$shift->shift_pattern_id] ?? null;
+            foreach ($staffList as $staff) {
+                $key = $staff->id . '_' . $date->format('Y-m-d');
+                $shift = $shifts[$key] ?? null;
 
-	if($pattern){
+                // シフト未登録 or 休み
+                if (!$shift || !$shift->is_work) {
+                    continue;
+                }
 
-	$shiftStart=Carbon::parse($date->format('Y-m-d').' '.$pattern->start_time);
-	$shiftEnd=Carbon::parse($date->format('Y-m-d').' '.$pattern->end_time);
+                $pattern = null;
+                if (!empty($shift->shift_pattern_id)) {
+                    $pattern = $shiftPatterns[$shift->shift_pattern_id] ?? null;
+                }
 
-	if($start < $shiftStart || $end > $shiftEnd){
-	continue;
-	}
+                if ($pattern) {
+                    $shiftStart = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern->start_time);
+                    $shiftEnd = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern->end_time);
 
-	}
+                    if ($start < $shiftStart || $end > $shiftEnd) {
+                        continue;
+                    }
+                }
 
-	$vacation=$vacations->first(function($v) use ($staff,$start,$end){
-	return $v->staff_id==$staff->id &&
-	$v->start_at < $end &&
-	$v->end_at > $start;
-	});
+                $vacation = $vacations->first(function ($v) use ($staff, $start, $end) {
+                    return (int) $v->staff_id === (int) $staff->id
+                        && Carbon::parse($v->start_at) < $end
+                        && Carbon::parse($v->end_at) > $start;
+                });
 
-	if($vacation){
-	continue;
-	}
+                if ($vacation) {
+                    continue;
+                }
 
-	$current=$reservations->filter(function($r) use ($staff,$start,$end){
+                $current = $reservations->filter(function ($r) use ($staff, $start, $end) {
+                    return (int) $r->staff_id === (int) $staff->id
+                        && Carbon::parse($r->start_at) < $end
+                        && Carbon::parse($r->end_at) > $start;
+                })->count();
 
-	return $r->staff_id==$staff->id &&
-	$r->start_at < $end &&
-	$r->end_at > $start;
+                if ($current >= ($staff->max_simultaneous ?? 1)) {
+                    continue;
+                }
 
-	})->count();
+                $availableStaff++;
+            }
 
-	if($current >= ($staff->max_simultaneous ?? 1)){
-	continue;
-	}
+            $slots[] = [
+                'time' => $start->format('H:i'),
+                'remaining' => $availableStaff,
+            ];
 
-	$availableStaff++;
+            $time->addMinutes($company->slot_minutes);
+        }
+    }
 
-	}
-
-	$slots[]=[
-	'time'=>$start->format('H:i'),
-	'remaining'=>$availableStaff
-	];
-
-	$time->addMinutes($company->slot_minutes);
-
-	}
-
-	}
-
-	return response()->json($slots);
-
+    return response()->json($slots);
 }
 
 public function staffMenus(Request $request)
@@ -538,5 +763,18 @@ public function staffMenus(Request $request)
 
     return response()->json($menus);
 }
+
+public function noticeShow($company_code, $id)
+{
+    $company = Company::where('company_code', $company_code)
+        ->firstOrFail();
+
+    $notice = Notice::where('company_id', $company->id)
+        ->visible()
+        ->findOrFail($id);
+
+    return view('reserve.notice_show', compact('notice','company'));
+}
+
 
 }

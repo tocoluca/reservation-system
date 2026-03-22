@@ -27,7 +27,6 @@ $main = $colors[$theme] ?? '#3b82f6';
 @endphp
 
 <style>
-
 .theme-bg{
 background: {{ $main }};
 }
@@ -39,9 +38,9 @@ color: {{ $main }};
 .theme-border{
 border-color: {{ $main }};
 }
-
 </style>
 
+@stack('styles')
 </head>
 
 <body class="bg-gray-100 text-gray-800">
@@ -65,93 +64,60 @@ border-color: {{ $main }};
 </div>
 </header>
 
-
-
 {{-- ステップ --}}
 <div class="bg-gray-50 border-b">
-
 <div class="max-w-3xl mx-auto px-4 py-4">
-
 <div class="flex justify-between text-xs sm:text-sm">
 
-{{-- STEP1 --}}
 <div class="flex flex-col items-center">
-
 <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs
 {{ ($step ?? 1) == 1 ? 'theme-bg text-white' : 'bg-gray-300 text-white' }}">
 1
 </div>
-
 <div class="{{ ($step ?? 1) == 1 ? 'theme-text font-bold' : '' }}">
 予約
 </div>
-
 </div>
 
-{{-- STEP2 --}}
 <div class="flex flex-col items-center">
-
 <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs
 {{ ($step ?? 1) == 2 ? 'theme-bg text-white' : 'bg-gray-300 text-white' }}">
 2
 </div>
-
 <div class="{{ ($step ?? 1) == 2 ? 'theme-text font-bold' : '' }}">
 確認
 </div>
-
 </div>
 
-{{-- STEP3 --}}
 <div class="flex flex-col items-center">
-
 <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs
 {{ ($step ?? 1) == 3 ? 'theme-bg text-white' : 'bg-gray-300 text-white' }}">
 3
 </div>
-
 <div class="{{ ($step ?? 1) == 3 ? 'theme-text font-bold' : '' }}">
 完了
 </div>
-
 </div>
 
 </div>
-
 </div>
-
 </div>
 
 {{-- コンテンツ --}}
 <main class="py-6 sm:py-10 px-3">
-
 <div class="max-w-3xl mx-auto">
-
 @yield('content')
-
 </div>
-
 </main>
-
-
 
 {{-- フッター --}}
 <footer class="mt-10 border-t bg-white">
-
 <div class="max-w-4xl mx-auto px-4 py-6 text-center text-xs sm:text-sm text-gray-500">
-
 © {{ date('Y') }}
 {{ $company->name ?? 'Reservation System' }}
-
 </div>
-
 </footer>
 
-
-{{-- JSはここに置く --}}
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ja.js"></script>
-
+@stack('scripts')
 </body>
-
 </html>

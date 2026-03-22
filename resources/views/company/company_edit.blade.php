@@ -120,6 +120,48 @@ class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
 </div>
 
+@if((int) $company->line_login_enabled === 1)
+    <div class="md:col-span-2">
+        <div class="rounded-xl border border-green-200 bg-green-50 p-4">
+            <h3 class="font-bold text-green-800 mb-2">LINEログイン設定</h3>
+            <p class="text-sm text-green-700 leading-6">
+                LINEログインが有効になっているため、Channel ID と Channel Secret を設定できます。
+            </p>
+        </div>
+    </div>
+
+    <div>
+        <label class="block font-semibold mb-2">
+            LINE Channel ID
+        </label>
+
+        <input type="text"
+               name="line_channel_id"
+               value="{{ old('line_channel_id', $company->line_channel_id) }}"
+               class="w-full border rounded-lg p-3 focus:ring-2"
+               style="--tw-ring-color: {{ $theme }}">
+
+        @error('line_channel_id')
+            <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+
+    <div>
+        <label class="block font-semibold mb-2">
+            LINE Channel Secret
+        </label>
+
+        <input type="text"
+               name="line_channel_secret"
+               value="{{ old('line_channel_secret', $company->line_channel_secret) }}"
+               class="w-full border rounded-lg p-3 focus:ring-2"
+               style="--tw-ring-color: {{ $theme }}">
+
+        @error('line_channel_secret')
+            <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+        @enderror
+    </div>
+@endif
 
 <div>
 <label class="block font-semibold mb-2">
@@ -128,11 +170,11 @@ style="--tw-ring-color: {{ $theme }}">
 <span class="tooltip text-gray-400 text-sm"
 onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
-予約を行う単位時間で基本的には１予約この時間で
+予約を行う単位時間。１つの予約をこの時間で
 予約を受け付けます。またここで設定した時間で
 予約表を作成します。メニューで設定した所要時間で
 予約を受付たい場合は「メニュー所要時間で予約」に
-チェックを入れてください
+チェックを入れてください。
 </span>
 </span>
 </label>
@@ -286,9 +328,10 @@ onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 曜日別に営業時間を設定することができます。
 毎週火曜日が休業日の場合でも祝日は営業する場合は
-設定して下さい。その後、ダッシュボードの営業日カレンダーで
-休業日を設定して下さい。<br>祝日であっても休業する場合は
-設定不要です。
+設定して下さい。ここでは営業する可能性がある曜日について
+営業時間を設定して下さい。年末年始、ＧＷ、その他臨時休業や
+営業時間変更については、ダッシュボードにある営業日カレンダーで
+設定して下さい。
 </span>
 </span>
 </h2>

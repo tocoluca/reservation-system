@@ -48,26 +48,28 @@ public function update(Request $request)
     // WebP変換
     $encoded = $image->toWebp(quality: 85);
 
-    $filename = $company->company_code . '.webp';
+	$filename = uniqid().'.webp';
 
     // 👇 ここが重要
-    $path = public_path('logos');
+    $dir = public_path('companies/'.$company->id.'/logos');
 
-    if (!file_exists($path)) {
-        mkdir($path, 0755, true);
+    if (!file_exists($dir)) {
+        mkdir($dir, 0755, true);
     }
 
-    $fullPath = $path . '/' . $filename;
+    $path = 'companies/'.$company->id.'/logos/'.$filename;
+
+    //画像の保存
+    file_put_contents($path, $encoded);
 
     // 既存削除（任意）
-    if (file_exists($fullPath)) {
-        unlink($fullPath);
+    if ($request->hasFile('logo') && file_exists(public_path($company->logo_path))) {
+        unlink(public_path($company->logo_path));
+
     }
 
-    file_put_contents($fullPath, $encoded);
-
     $company->update([
-        'logo_path' => 'logos/' . $filename
+        'logo_path' => $path
     ]);
 
     return back()->with('success', 'ロゴを更新しました');

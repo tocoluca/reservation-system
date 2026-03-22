@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+//画像圧縮
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+
 
 class StaffController extends Controller
 {
@@ -80,13 +84,23 @@ class StaffController extends Controller
 
 	        $nextNumber = $lastCode ? intval($lastCode) + 1 : 1;
 	        $newCode = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-		$path = null;
+
+			$path = null;
 	        // 画像保存
-	        if ($request->hasFile('image')) {
 
 			if ($request->hasFile('image')) {
 
 			    $file = $request->file('image');
+
+				$manager = new ImageManager(new Driver());
+				$image = $manager->read($file);
+
+				// 最大800pxに縮小
+				$image->scaleDown(width: 800);
+
+				// WebP変換
+				$encoded = $image->toWebp(quality: 85);
+
 
 			    $dir = public_path('companies/'.$company->id.'/staff');
 
@@ -94,12 +108,15 @@ class StaffController extends Controller
 			        mkdir($dir, 0755, true);
 			    }
 
-			    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+			    $filename = uniqid().'.webp';
 
 			    $file->move($dir, $filename);
 
 			    $path = 'companies/'.$company->id.'/staff/'.$filename;
-			}
+
+			    //画像の保存
+			    file_put_contents($path, $encoded);
+
 	        }
 
 	        // Staff作成
@@ -138,7 +155,7 @@ class StaffController extends Controller
 	if ($this->roleLevel($staff->role) >
 	    $this->roleLevel($current->role)) {
 
-	return redirect()->route('company.staff.index')->with('error','上位権限は編集できません');
+		return redirect()->route('company.staff.index')->with('error','上位権限は編集できません');
 
 	}
 
@@ -174,20 +191,33 @@ public function update(Request $request, Staff $staff)
         // ✅ ① 新画像アップロード
         if ($request->hasFile('image')) {
 
-	    $file = $request->file('image');
+		    $file = $request->file('image');
 
-	    $dir = public_path('companies/'.$staff->company_id.'/staff');
+			$manager = new ImageManager(new Driver());
+			$image = $manager->read($file);
 
-	    if (!file_exists($dir)) {
-	        mkdir($dir, 0755, true);
-	    }
+			// 最大800pxに縮小
+			$image->scaleDown(width: 800);
 
-	    $filename = uniqid().'.'.$file->getClientOriginalExtension();
+			// WebP変換
+			$encoded = $image->toWebp(quality: 85);
 
-	    $file->move($dir, $filename);
+		    $dir = public_path('companies/'.$staff->company_id.'/staff');
 
-	    $newImagePath = 'companies/'.$staff->company_id.'/staff/'.$filename;
-	}
+		    if (!file_exists($dir)) {
+		        mkdir($dir, 0755, true);
+		    }
+
+		    $filename = uniqid().'.webp';
+
+		    $file->move($dir, $filename);
+
+		    $newImagePath = 'companies/'.$staff->company_id.'/staff/'.$filename;
+
+		    file_put_contents($path, $encoded);
+
+
+		}
 
         // ✅ ② DB更新
         $staff->update([
@@ -201,9 +231,9 @@ public function update(Request $request, Staff $staff)
 
         // ✅ ③ DB成功後に旧画像削除
         if ($request->hasFile('image') && $oldImagePath) {
-		if ($oldImagePath && file_exists(public_path($oldImagePath))) {
-		    unlink(public_path($oldImagePath));
-		}
+			if ($oldImagePath && file_exists(public_path($oldImagePath))) {
+			    unlink(public_path($oldImagePath));
+			}
         }
     });
 

@@ -50,6 +50,15 @@
 
     <div class="p-6">
 
+        {{-- 説明 --}}
+        <div class="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <p class="text-sm text-gray-600 leading-6">
+                カテゴリーは、メニューを大きく分けるためのグループです。
+                たとえば「カット」「カラー」「パーマ」のように、
+                種類ごとに整理したいときに使います。
+            </p>
+        </div>
+
         {{-- 追加フォーム --}}
         <form method="POST"
               action="{{ route('company.menu.category.store') }}"
@@ -142,6 +151,15 @@
     </div>
 
     <div class="p-6">
+
+        {{-- 説明 --}}
+        <div class="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+            <p class="text-sm text-gray-600 leading-6">
+                タグは、メニューの特徴をわかりやすく伝えるための目印です。
+                「人気」「おすすめ」「新規向け」など、よく使う言葉を登録しておくことで、
+                統一した表現で管理できます。
+            </p>
+        </div>
 
         {{-- 追加フォーム --}}
         <form method="POST"

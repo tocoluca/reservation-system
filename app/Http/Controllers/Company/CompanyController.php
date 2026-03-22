@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
-
 class CompanyController extends Controller
 {
     public function edit()
@@ -16,93 +15,95 @@ class CompanyController extends Controller
         return view('company.company_edit', compact('company'));
     }
 
-	public function update(Request $request)
-	{
-//Log::debug('ログ１');
-	    $company = Auth::guard('company')->user()->company;
-	    $current = Auth::guard('company')->user();
+    public function update(Request $request)
+    {
+        $company = Auth::guard('company')->user()->company;
+        $current = Auth::guard('company')->user();
 
-	    if ($current->role !== 'master') {
-	        abort(403);
-	    }
-//Log::debug('ログ２');
+        if ($current->role !== 'master') {
+            abort(403);
+        }
 
-	    $validated = $request->validate([
-//		'email' => 'nullable|email',
-	        'email' => 'nullable|email:rfc,dns',
-	        'homepage' => 'nullable|url',
-	        'theme_color' => 'required',
-		'address' => 'nullable|string|max:255',
-		'phone' => 'nullable|string|max:30',
-	        'slot_minutes' => 'required|integer|min:5|max:120',
-	        'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
-	        'open_patterns' => 'nullable|array',
-	        'regular_holidays' => 'nullable|array',
-		'reservation_month_limit' => 'nullable|integer|min:1|max:12',
-		'reservation_open_days' => 'nullable|integer|min:0|max:30',
-		'reservation_close_hours' => 'nullable|integer|min:0|max:48',
-	    ]);
+        $rules = [
+            'email' => 'nullable|email:rfc,dns',
+            'homepage' => 'nullable|url',
+            'theme_color' => 'required',
+            'address' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:30',
+            'slot_minutes' => 'required|integer|min:5|max:120',
+            'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
+            'open_patterns' => 'nullable|array',
+            'regular_holidays' => 'nullable|array',
+            'reservation_month_limit' => 'nullable|integer|min:1|max:12',
+            'reservation_open_days' => 'nullable|integer|min:0|max:30',
+            'reservation_close_hours' => 'nullable|integer|min:0|max:48',
+        ];
 
-$dayNames = ['日','月','火','水','木','金','土'];
-//Log::debug('ログ２－１');
-		foreach ($validated['open_patterns'] ?? [] as $weekday => $patterns) {
+        if ((int) $company->line_login_enabled === 1) {
+            $rules['line_channel_id'] = 'nullable|string|max:255';
+            $rules['line_channel_secret'] = 'nullable|string|max:255';
+        }
 
-		    foreach ($patterns as $index => $pattern) {
+        $validated = $request->validate($rules, [
+            'line_channel_id.max' => 'LINE Channel ID は255文字以内で入力してください。',
+            'line_channel_secret.max' => 'LINE Channel Secret は255文字以内で入力してください。',
+        ]);
 
-		        if (!empty($pattern['open']) && !empty($pattern['close'])) {
+        $dayNames = ['日','月','火','水','木','金','土'];
 
-		            if ($pattern['open'] >= $pattern['close']) {
+        foreach ($validated['open_patterns'] ?? [] as $weekday => $patterns) {
+            foreach ($patterns as $index => $pattern) {
+                if (!empty($pattern['open']) && !empty($pattern['close'])) {
+                    if ($pattern['open'] >= $pattern['close']) {
+                        $dayLabel = $dayNames[$weekday] ?? $weekday;
+                        $slotNumber = $index + 1;
 
-		                $dayLabel = $dayNames[$weekday] ?? $weekday;
-		                $slotNumber = $index + 1;
+                        return back()
+                            ->withErrors([
+                                "open_patterns.$weekday.$index.open" =>
+                                    "{$dayLabel}曜日 {$slotNumber}枠目：開始時間は終了時間より前にしてください"
+                            ])
+                            ->withInput();
+                    }
+                }
+            }
+        }
 
-		                return back()
-		                    ->withErrors([
-		                        "open_patterns.$weekday.$index.open" =>
-		                            "{$dayLabel}曜日 {$slotNumber}枠目：開始時間は終了時間より前にしてください"
-		                    ])
-		                    ->withInput();
-		            }
-		        }
-		    }
-		}
-//Log::debug('ログ３');
+        $patterns = collect($request->open_patterns ?? [])
+            ->map(function ($day) {
+                return collect($day)
+                    ->filter(fn($p) => !empty($p['open']) && !empty($p['close']))
+                    ->values()
+                    ->toArray();
+            })
+            ->toArray();
 
-		$patterns = collect($request->open_patterns ?? [])
-		    ->map(function ($day) {
-		        return collect($day)
-		            ->filter(fn($p) => !empty($p['open']) && !empty($p['close']))
-		            ->values()
-		            ->toArray();
-		    })
-		    ->toArray();
+        $updateData = [
+            'email' => $validated['email'] ?? null,
+            'homepage' => $validated['homepage'] ?? null,
+            'theme_color' => $validated['theme_color'],
+            'address' => $validated['address'] ?? null,
+            'phone' => $validated['phone'] ?? null,
+            'reservation_month_limit' => $validated['reservation_month_limit'] ?? 3,
+            'reservation_open_days' => $validated['reservation_open_days'] ?? 0,
+            'reservation_close_hours' => $validated['reservation_close_hours'] ?? 1,
+            'slot_minutes' => $validated['slot_minutes'],
+            'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],
+            'open_patterns' => $patterns,
+            'regular_holidays' => $validated['regular_holidays'] ?? [],
+            'holiday_is_closed' => $request->boolean('holiday_is_closed'),
+            'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
+        ];
 
-//Log::debug('ログ４');
+        if ((int) $company->line_login_enabled === 1) {
+            $updateData['line_channel_id'] = $validated['line_channel_id'] ?? null;
+            $updateData['line_channel_secret'] = $validated['line_channel_secret'] ?? null;
+        }
 
+        $company->update($updateData);
 
-	    $updateData = [
-	        'email' => $validated['email'] ?? null,
-	        'homepage' => $validated['homepage'] ?? null,
-	        'theme_color' => $validated['theme_color'],
-		'address' => $validated['address'] ?? null,
-		'phone' => $validated['phone'] ?? null,
-		'reservation_month_limit' => $validated['reservation_month_limit'] ?? 3,
-		'reservation_open_days' => $validated['reservation_open_days'] ?? 0,
-		'reservation_close_hours' => $validated['reservation_close_hours'] ?? 1,
-	        'slot_minutes' => $validated['slot_minutes'],
-	        'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],
-	        'open_patterns' => $patterns,
-	        'regular_holidays' => $validated['regular_holidays'] ?? [],
-	        'holiday_is_closed' => $request->boolean('holiday_is_closed'),
-	        'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag')
-	    ];
-//Log::debug('ログ５');
-
-	    $company->update($updateData);
-
-		return redirect()
-		    ->route('company.info.edit')
-		    ->with('success', '会社情報を更新しました');
-
-	}
+        return redirect()
+            ->route('company.info.edit')
+            ->with('success', '会社情報を更新しました');
+    }
 }

@@ -105,15 +105,26 @@ class="text-white px-6 py-2 rounded-lg mt-3">
 
 @forelse($customer->notes as $note)
 
-<div class="border rounded-lg p-3 bg-gray-50">
+<div class="border rounded-lg p-3 bg-gray-50 flex justify-between items-start">
 
-<div>
-{{ $note->note }}
-</div>
+    <div>
+        <div>{{ $note->note }}</div>
+        <div class="text-xs text-gray-500 mt-1">
+            {{ $note->created_at->format('Y-m-d H:i') }}
+        </div>
+    </div>
 
-<div class="text-xs text-gray-500 mt-1">
-{{ $note->created_at->format('Y-m-d H:i') }}
-</div>
+    {{-- 削除ボタン --}}
+    <form method="POST"
+          action="{{ route('company.customers.note.delete', $note->id) }}"
+          onsubmit="return confirm('削除しますか？')">
+        @csrf
+        @method('DELETE')
+
+        <button class="text-red-500 text-sm">
+            削除
+        </button>
+    </form>
 
 </div>
 
@@ -163,9 +174,26 @@ class="text-white px-6 py-2 rounded-lg ml-3">
 
 @forelse($customer->photos as $photo)
 
-<img
-src="{{ asset('storage/'.$photo->path) }}"
-class="rounded-lg shadow w-full">
+<div class="relative">
+
+    <img
+    src="{{ asset($photo->path) }}"
+    class="rounded-lg shadow w-full">
+
+    {{-- 削除ボタン --}}
+    <form method="POST"
+          action="{{ route('company.customers.photo.delete', $photo->id) }}"
+          onsubmit="return confirm('削除しますか？')"
+          class="absolute top-2 right-2">
+        @csrf
+        @method('DELETE')
+
+        <button class="bg-black/50 text-white px-2 py-1 text-xs rounded">
+            ✕
+        </button>
+    </form>
+
+</div>
 
 @empty
 

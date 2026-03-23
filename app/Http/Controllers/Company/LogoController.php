@@ -62,10 +62,13 @@ public function update(Request $request)
     //画像の保存
     file_put_contents($path, $encoded);
 
-    // 既存削除（任意）
-    if ($request->hasFile('logo') && file_exists(public_path($company->logo_path))) {
-        unlink(public_path($company->logo_path));
+    // 旧ロゴ削除
+    if (!empty($company->logo)) {
+        $oldPath = public_path($company->logo);
 
+        if (is_file($oldPath) && file_exists($oldPath)) {
+            unlink($oldPath);
+        }
     }
 
     $company->update([

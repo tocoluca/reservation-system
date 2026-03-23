@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+	'demo_reset_enabled' => env('DEMO_RESET_ENABLED', false),
+
 ];

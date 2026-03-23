@@ -31,7 +31,6 @@ class DemoExportSeedCommand extends Command
         }
 
         $schema = DB::getSchemaBuilder();
-
         $exportData = [];
 
         foreach ($tables as $table) {
@@ -173,7 +172,7 @@ PHP;
 
     private function isAssoc(array $array): bool
     {
-        if ([] === $array) {
+        if ($array === []) {
             return false;
         }
 
@@ -183,11 +182,9 @@ PHP;
     private function indent(string $text, int $level): string
     {
         $pad = str_repeat('    ', $level);
+
         return collect(explode("\n", $text))
             ->map(fn ($line) => $line === '' ? $line : $pad . $line)
             ->implode("\n");
-    }
-}
-PHP;
     }
 }

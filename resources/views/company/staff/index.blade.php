@@ -14,21 +14,13 @@
         <h1 class="text-2xl sm:text-3xl font-bold">
             担当者一覧
         </h1>
-<a href="{{ route('company.dashboard') }}"
-   class="px-3 py-1 text-sm rounded-lg border hover:bg-gray-50 transition"
-   style="border-color: {{ $theme }}; color: {{ $theme }}">
-    ← ダッシュボード
-</a>
 
+        <a href="{{ route('company.dashboard') }}"
+           class="px-3 py-1 text-sm rounded-lg border hover:bg-gray-50 transition"
+           style="border-color: {{ $theme }}; color: {{ $theme }}">
+            ← ダッシュボード
+        </a>
     </div>
-
-    {{-- メッセージ --}}
-    @if(session('success'))
-        <div class="bg-green-100 text-green-700 p-3 mb-6 rounded-lg">
-            {{ session('success') }}
-        </div>
-    @endif
-
 
     {{-- ========================= --}}
     {{-- PC表示：テーブル --}}
@@ -36,7 +28,6 @@
     <div class="hidden md:block bg-white shadow rounded-xl overflow-hidden">
 
         <table class="w-full text-sm">
-
             <thead style="background: {{ $theme }}20;">
                 <tr class="text-left">
                     <th class="p-3">コード</th>
@@ -61,12 +52,27 @@
                     </td>
                     <td>{{ $s->priority_order }}</td>
 
-                    <td class="text-right pr-4 space-x-2">
-                        <a href="{{ route('company.staff.edit',$s->id) }}"
-                           class="px-3 py-1 text-sm rounded-lg text-white shadow"
-                           style="background: {{ $theme }}">
-                            編集
-                        </a>
+                    <td class="pr-4">
+                        <div class="flex justify-end items-center gap-2 whitespace-nowrap">
+                            <a href="{{ route('company.staff.edit',$s->id) }}"
+                               class="px-3 py-1 text-sm rounded-lg text-white shadow inline-block"
+                               style="background: {{ $theme }}">
+                                編集
+                            </a>
+
+                            @if(auth()->guard('company')->user()->role !== 'staff')
+                            <form method="POST"
+                                  action="{{ route('company.staff.reset-password',$s->id) }}"
+                                  class="m-0">
+                                @csrf
+                                <button type="submit"
+                                        onclick="return confirm('パスワードを初期化しますか？')"
+                                        class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg shadow whitespace-nowrap">
+                                    PW初期化
+                                </button>
+                            </form>
+                            @endif
+                        </div>
                     </td>
                 </tr>
             @endforeach
@@ -74,7 +80,6 @@
         </table>
 
     </div>
-
 
     {{-- ========================= --}}
     {{-- スマホ表示：カード --}}
@@ -135,18 +140,13 @@
 
     </div>
 
-
-    {{-- 戻る --}}
+    {{-- 新規登録 --}}
     <div class="mt-10 text-center sm:text-left">
-@php
-    $theme = auth()->guard('company')->user()->company->theme_color ?? '#3b82f6';
-@endphp
         <a href="{{ route('company.staff.create') }}"
-           class="w-full sm:w-auto text-center text-white px-4 py-3 rounded-lg shadow hover:opacity-90 transition"
+           class="w-full sm:w-auto inline-block text-center text-white px-4 py-3 rounded-lg shadow hover:opacity-90 transition"
            style="background: {{ $theme }}">
             ＋ 新規登録
         </a>
-
     </div>
 
 </div>

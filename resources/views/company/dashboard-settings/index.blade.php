@@ -20,12 +20,6 @@
         </a>
     </div>
 
-    @if(session('success'))
-        <div class="mb-6 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-green-700">
-            {{ session('success') }}
-        </div>
-    @endif
-
     @php
         $orderedPermissionKeys = [
             'dashboard.manage',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Company;
 use App\Models\Staff;
+use App\Models\CompanyDashboardPermission;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -110,6 +111,9 @@ class AdminApplicationController extends Controller
                 'industry_type' => $application->industry_type,
             ]);
 
+            // 新規企業作成時に、役職ごとの初期ダッシュボード権限を自動作成
+            CompanyDashboardPermission::seedForCompany($company->id);
+
             $initialPassword = Str::random(10);
             $staffCode = 'MASTER01';
             $loginUrl = url('/company/login');
@@ -147,13 +151,13 @@ class AdminApplicationController extends Controller
 初回ログイン後、必要に応じてパスワード変更をお願いいたします。",
                     function ($message) use ($application) {
                         $message->to($application->email)
-                                ->subject('【予約システム】申請承認のお知らせ');
+                                ->subject('【予約システム】ご利用開始情報のお知らせ');
                     }
                 );
             }
         });
 
-        return back()->with('success', '申請を承認し、企業アカウントを作成しました。');
+        return back()->with('success', 'お申し込みを受け付け、企業アカウントを作成しました。');
     }
 
     public function reject(Request $request, $id)

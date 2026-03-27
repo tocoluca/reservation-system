@@ -170,7 +170,36 @@
                             <span class="text-xs text-gray-400">MENU</span>
                         </div>
 
+                        <div id="menuErrorBox"
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+                        </div>
+
                         @foreach($menus as $categoryName => $categoryMenus)
+                            @php
+                                $categoryImageMap = [
+                                    'カット' => asset('images/menu-icons/cut.jpg'),
+                                    'カラー' => asset('images/menu-icons/color.jpg'),
+                                    '白髪染め' => asset('images/menu-icons/graycolor.jpg'),
+                                    'リタッチ' => asset('images/menu-icons/retouch.jpg'),
+                                    'パーマ' => asset('images/menu-icons/perm.jpg'),
+                                    '縮毛矯正' => asset('images/menu-icons/straight.jpg'),
+                                    'コンディショナー' => asset('images/menu-icons/conditioner.jpg'),
+                                    'トリートメント' => asset('images/menu-icons/treatment.jpg'),
+                                    'ヘッドスパ' => asset('images/menu-icons/headspa.jpg'),
+                                    'セット・ヘアアレンジ' => asset('images/menu-icons/hairset.jpg'),
+                                    'メンズ' => asset('images/menu-icons/mens.jpg'),
+                                    '前髪カット' => asset('images/menu-icons/bangcut.jpg'),
+                                    '着付け' => asset('images/menu-icons/kitsuke.jpg'),
+                                    'まつげ' => asset('images/menu-icons/eyelash_brow.jpg'),
+                                    '眉' => asset('images/menu-icons/eyelash_brow.jpg'),
+                                    'フェイシャル' => asset('images/menu-icons/facial.jpg'),
+                                    'キッズ' => asset('images/menu-icons/kids.jpg'),
+                                    'その他' => asset('images/menu-icons/other.jpg'),
+                                ];
+
+                                $menuImage = $categoryImageMap[$categoryName] ?? asset('images/menu-icons/other.jpg');
+                            @endphp
+
                             <div class="{{ !$loop->first ? 'mt-8' : '' }}">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="flex items-center gap-3">
@@ -199,8 +228,12 @@
 
                                             <div class="menu-card relative z-10 rounded-[1.4rem] border border-gray-200 bg-white p-4 sm:p-5 transition duration-200 hover:border-gray-300 hover:shadow-md">
                                                 <div class="flex gap-4">
-                                                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] menu-accent text-white flex items-center justify-center text-xl sm:text-2xl shrink-0 shadow-sm">
-                                                        ✂
+                                                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] overflow-hidden shrink-0 shadow-sm border border-gray-100 bg-white soft-shine">
+                                                        <img
+                                                            src="{{ $menuImage }}"
+                                                            alt="{{ $categoryName }}"
+                                                            class="w-full h-full object-cover"
+                                                            onerror="this.onerror=null;this.src='{{ asset('images/menu-icons/other.jpg') }}';">
                                                     </div>
 
                                                     <div class="flex-1 min-w-0">
@@ -275,6 +308,10 @@
                             <span class="text-xs text-gray-400">STAFF</span>
                         </div>
 
+                        <div id="staffErrorBox"
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
+                        </div>
+
                         <div class="space-y-3">
                             <label class="block cursor-pointer">
                                 <input type="radio"
@@ -346,6 +383,10 @@
                                 STEP3・4 日時を選ぶ
                             </h2>
                             <span class="text-xs text-gray-400">DATE & TIME</span>
+                        </div>
+
+                        <div id="datetimeErrorBox"
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
                         </div>
 
                         <div class="mb-5">
@@ -427,8 +468,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div id="errorBox" class="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"></div>
 
                         <button
                             type="submit"
@@ -615,21 +654,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (menus.length === 0) {
             e.preventDefault();
-            showError("メニューを選択してください。");
+            showFieldError('menuErrorBox', 'メニューを選択してください。');
             scrollToStep('stepMenuTitle');
             return;
         }
 
         if (!staff) {
             e.preventDefault();
-            showError("担当者を選択してください。");
+            showFieldError('staffErrorBox', '担当者を選択してください。');
             scrollToStep('stepStaffTitle');
             return;
         }
 
         if (!start) {
             e.preventDefault();
-            showError("日時を選択してください。");
+            showFieldError('datetimeErrorBox', '日時を選択してください。');
             scrollToStep('stepDatetimeTitle');
             return;
         }
@@ -831,16 +870,22 @@ function loadSlots() {
         });
 }
 
-function showError(message) {
-    const box = document.getElementById('errorBox');
+function showFieldError(id, message) {
+    const box = document.getElementById(id);
+    if (!box) return;
+
     box.innerHTML = message;
     box.classList.remove('hidden');
 }
 
 function clearErrors() {
-    const box = document.getElementById('errorBox');
-    box.classList.add('hidden');
-    box.innerHTML = '';
+    ['menuErrorBox', 'staffErrorBox', 'datetimeErrorBox'].forEach(id => {
+        const box = document.getElementById(id);
+        if (!box) return;
+
+        box.classList.add('hidden');
+        box.innerHTML = '';
+    });
 }
 
 function submitReserveForm() {

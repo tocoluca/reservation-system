@@ -286,7 +286,7 @@ public function update(Request $request, Staff $staff)
 	    }
 
 		//初期パスワード
-	    $staff->password = Hash::make('12345678');
+	    $staff->password = Hash::make('123123123');
 	    $staff->force_password_change = true;
 	    $staff->save();
 

@@ -68,7 +68,7 @@
                                 <button type="submit"
                                         onclick="return confirm('パスワードを初期化しますか？')"
                                         class="px-3 py-1 text-sm bg-red-500 text-white rounded-lg shadow whitespace-nowrap">
-                                    PW初期化
+                                    PW初期化　(初期PW：123123123)
                                 </button>
                             </form>
                             @endif
@@ -127,7 +127,7 @@
                     <button type="submit"
                             onclick="return confirm('パスワードを初期化しますか？')"
                             class="w-full bg-red-500 text-white py-2 rounded-lg shadow">
-                        PW初期化
+                        PW初期化　(初期PW：123123123)
                     </button>
                 </form>
                 @endif

@@ -145,7 +145,7 @@
                                     </div>
                                 </div>
                             </label>
-
+{{-- いったん非表示 
                             <label class="block cursor-pointer">
                                 <input type="radio"
                                        name="industry_type"
@@ -162,6 +162,7 @@
                                     </div>
                                 </div>
                             </label>
+いったん非表示　--}}
                         </div>
                     </div>
 

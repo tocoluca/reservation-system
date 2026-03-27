@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Reservation;
 use App\Models\Staff;
 use App\Models\Menu;
@@ -11,6 +10,8 @@ use App\Models\CompanyDashboardNotice;
 use App\Models\ShiftPattern;
 use App\Models\StaffDefaultShift;
 use App\Models\StaffShift;
+use App\Models\CompanyBusinessCalendar;
+use App\Models\CompanyDashboardPermission;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,83 +22,79 @@ class DashboardController extends Controller
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
 
+        $dashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
+
         $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
-		/* ===============================
-		   初期設定ガイド表示判定
-		=============================== */
+        /* ===============================
+           初期設定ガイド表示判定
+        =============================== */
 
-		$openPatterns = $company->open_patterns ?? [];
-		$hasOpenPattern = false;
+        $openPatterns = $company->open_patterns ?? [];
+        $hasOpenPattern = false;
 
-		if (is_array($openPatterns)) {
-		    foreach ($openPatterns as $weekdayPatterns) {
-		        if (!is_array($weekdayPatterns)) {
-		            continue;
-		        }
+        if (is_array($openPatterns)) {
+            foreach ($openPatterns as $weekdayPatterns) {
+                if (!is_array($weekdayPatterns)) {
+                    continue;
+                }
 
-		        foreach ($weekdayPatterns as $pattern) {
-		            if (!empty($pattern['open']) && !empty($pattern['close'])) {
-		                $hasOpenPattern = true;
-		                break 2;
-		            }
-		        }
-		    }
-		}
+                foreach ($weekdayPatterns as $pattern) {
+                    if (
+                        (!empty($pattern['open']) && !empty($pattern['close'])) ||
+                        (!empty($pattern['open_time']) && !empty($pattern['close_time']))
+                    ) {
+                        $hasOpenPattern = true;
+                        break 2;
+                    }
+                }
+            }
+        }
 
-		$setupCompanyInfoDone =
-		    !empty($company->slot_minutes) &&
-		    $hasOpenPattern;
+        $setupCompanyInfoDone =
+            !empty($company->slot_minutes) &&
+            $hasOpenPattern;
 
-		$setupStaffDone = Staff::where('company_id', $company->id)->exists();
-		$setupMenuDone = Menu::where('company_id', $company->id)->exists();
+        $setupStaffDone = Staff::where('company_id', $company->id)->exists();
+        $setupMenuDone = Menu::where('company_id', $company->id)->exists();
 
-		$setupShiftPatternDone = ShiftPattern::where('company_id', $company->id)->exists();
-		$setupStaffIds = Staff::where('company_id', $company->id)->pluck('id');
+        $setupShiftPatternDone = ShiftPattern::where('company_id', $company->id)->exists();
+        $setupStaffIds = Staff::where('company_id', $company->id)->pluck('id');
 
-		$setupDefaultShiftDone = false;
-		$setupMonthlyShiftDone = false;
+        $setupDefaultShiftDone = false;
+        $setupMonthlyShiftDone = false;
 
-		if ($setupStaffIds->isNotEmpty()) {
-		    $setupDefaultShiftDone = StaffDefaultShift::whereIn('staff_id', $setupStaffIds)
-		        ->where('is_work', 1)
-		        ->exists();
+        if ($setupStaffIds->isNotEmpty()) {
+            $setupDefaultShiftDone = StaffDefaultShift::whereIn('staff_id', $setupStaffIds)
+                ->where('is_work', 1)
+                ->exists();
 
-		    $setupMonthlyShiftDone = StaffShift::whereIn('staff_id', $setupStaffIds)
-		        ->exists();
-		}
+            $setupMonthlyShiftDone = StaffShift::whereIn('staff_id', $setupStaffIds)
+                ->exists();
+        }
 
-		$setupShiftDone = $setupShiftPatternDone && ($setupDefaultShiftDone || $setupMonthlyShiftDone);
-		$setupReserveDone = $setupCompanyInfoDone && $setupStaffDone && $setupMenuDone && $setupShiftDone;
+        $setupShiftDone = $setupShiftPatternDone && ($setupDefaultShiftDone || $setupMonthlyShiftDone);
+        $setupReserveDone = $setupCompanyInfoDone && $setupStaffDone && $setupMenuDone && $setupShiftDone;
 
-		$setupStatusList = [
-		    [
-		        'label' => '担当者',
-		        'done'  => $setupStaffDone,
-		    ],
-		    [
-		        'label' => '企業情報',
-		        'done'  => $setupCompanyInfoDone,
-		    ],
-		    [
-		        'label' => 'メニュー',
-		        'done'  => $setupMenuDone,
-		    ],
-		    [
-		        'label' => 'シフト',
-		        'done'  => $setupShiftDone,
-		    ],
-		    [
-		        'label' => '予約確認',
-		        'done'  => $setupReserveDone,
-		    ],
-		];
+        $setupStatusList = [
+            ['label' => '担当者', 'done' => $setupStaffDone],
+            ['label' => '企業情報', 'done' => $setupCompanyInfoDone],
+            ['label' => 'メニュー', 'done' => $setupMenuDone],
+            ['label' => 'シフト', 'done' => $setupShiftDone],
+            ['label' => '予約確認', 'done' => $setupReserveDone],
+        ];
 
-		$setupDoneCount = collect($setupStatusList)->where('done', true)->count();
-		$setupTotalCount = count($setupStatusList);
-		$showSetupGuide = $setupDoneCount < $setupTotalCount;
+        $setupDoneCount = collect($setupStatusList)->where('done', true)->count();
+        $setupTotalCount = count($setupStatusList);
+        $showSetupGuide = $setupDoneCount < $setupTotalCount;
+
+        /* ===============================
+           営業日カレンダー / 月シフト 警告集計
+        =============================== */
+
+        $settingWarnings = $this->buildReservationSettingWarnings($company);
 
         /* ===============================
            今月の予約時間（分）
@@ -127,12 +124,15 @@ class DashboardController extends Controller
             $dayPatterns = $patterns[$weekday] ?? [];
 
             foreach ($dayPatterns as $pattern) {
-                if (empty($pattern['open']) || empty($pattern['close'])) {
+                $openTime = $pattern['open'] ?? $pattern['open_time'] ?? null;
+                $closeTime = $pattern['close'] ?? $pattern['close_time'] ?? null;
+
+                if (empty($openTime) || empty($closeTime)) {
                     continue;
                 }
 
-                $open = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['open']);
-                $close = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['close']);
+                $open = Carbon::parse($date->format('Y-m-d') . ' ' . $openTime);
+                $close = Carbon::parse($date->format('Y-m-d') . ' ' . $closeTime);
 
                 $totalAvailableMinutes += $open->diffInMinutes($close) * $staffCount;
             }
@@ -256,10 +256,7 @@ class DashboardController extends Controller
         =============================== */
 
         $staffRanking = (clone $query)
-            ->select(
-                'staff_id',
-                DB::raw('SUM(total_price) as total')
-            )
+            ->select('staff_id', DB::raw('SUM(total_price) as total'))
             ->groupBy('staff_id')
             ->with('staff')
             ->orderByDesc('total')
@@ -288,10 +285,7 @@ class DashboardController extends Controller
             ->join('menus', 'menus.id', '=', 'reservation_menus.menu_id')
             ->where('reservations.company_id', $company->id)
             ->where('reservations.status', 'reserved')
-            ->select(
-                'menus.name',
-                DB::raw('COUNT(*) as total')
-            )
+            ->select('menus.name', DB::raw('COUNT(*) as total'))
             ->groupBy('menus.name')
             ->orderByDesc('total')
             ->limit(10)
@@ -345,7 +339,68 @@ class DashboardController extends Controller
             'setupTotalCount',
             'subscriptionStatusLabel',
             'subscriptionAvailable',
-            'billingWarning'
+            'billingWarning',
+            'settingWarnings',
+            'dashboardPermissions'
         ));
+    }
+
+    private function buildReservationSettingWarnings($company): array
+    {
+        $today = now()->startOfDay();
+
+        $reservationMonthLimit = max((int)($company->reservation_month_limit ?? 0), 0);
+
+        $alertEnd = $today->copy()
+            ->addMonthsNoOverflow($reservationMonthLimit)
+            ->endOfMonth();
+
+        $warningEnd = $today->copy()
+            ->addMonthsNoOverflow($reservationMonthLimit + 1)
+            ->endOfMonth();
+
+        $businessLastDate = CompanyBusinessCalendar::where('company_id', $company->id)
+            ->max('date');
+
+        $reservableStaffIds = Staff::where('company_id', $company->id)
+            ->where('is_reservable', 1)
+            ->pluck('id');
+
+        $shiftLastDate = null;
+        if ($reservableStaffIds->isNotEmpty()) {
+            $shiftLastDate = StaffShift::whereIn('staff_id', $reservableStaffIds)
+                ->max('date');
+        }
+
+        return [
+            'reservation_month_limit' => $reservationMonthLimit,
+            'today' => $today->format('Y-m-d'),
+            'alert_end' => $alertEnd->format('Y-m-d'),
+            'warning_end' => $warningEnd->format('Y-m-d'),
+            'business_calendar' => $this->buildSingleTableWarningData($businessLastDate, $alertEnd, $warningEnd),
+            'staff_shifts' => $this->buildSingleTableWarningData($shiftLastDate, $alertEnd, $warningEnd),
+        ];
+    }
+
+    private function buildSingleTableWarningData($lastDate, Carbon $alertEnd, Carbon $warningEnd): array
+    {
+        $lastDateCarbon = $lastDate ? Carbon::parse($lastDate)->startOfDay() : null;
+
+        $hasAlert = false;
+        $hasWarning = false;
+
+        if (!$lastDateCarbon) {
+            $hasAlert = true;
+        } elseif ($lastDateCarbon->lte($alertEnd)) {
+            $hasAlert = true;
+        } elseif ($lastDateCarbon->lt($warningEnd)) {
+            $hasWarning = true;
+        }
+
+        return [
+            'last_date' => $lastDateCarbon?->format('Y-m-d'),
+            'has_alert' => $hasAlert,
+            'has_warning' => $hasWarning,
+        ];
     }
 }

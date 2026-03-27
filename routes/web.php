@@ -31,6 +31,8 @@ use App\Http\Controllers\Company\StaffShiftController;
 use App\Http\Controllers\Company\CustomerController;
 use App\Http\Controllers\Company\NoticeController;
 use App\Http\Controllers\Company\DashboardNoticeController;
+use App\Http\Controllers\Company\DashboardSettingController;
+
 
 use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\ReserveController;
@@ -408,6 +410,16 @@ Route::prefix('company')->group(function () {
             // =====================
             Route::resource('notices', NoticeController::class)
                 ->names('company.notices');
+
+            // =====================
+            // ダッシュボード管理
+            // =====================
+			Route::get('/dashboard-settings', [DashboardSettingController::class, 'index'])
+			    ->name('company.dashboard-settings.index');
+
+			Route::post('/dashboard-settings', [DashboardSettingController::class, 'update'])
+			    ->name('company.dashboard-settings.update');
+
         });
     });
 });

@@ -5,6 +5,26 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+
+    $imageCategories = [
+        'カット',
+        'メンズ',
+        'キッズ',
+        '前髪カット',
+        'カラー',
+        '白髪染め',
+        'リタッチ',
+        'パーマ',
+        '縮毛矯正',
+        'コンディショナー',
+        'トリートメント',
+        'ヘッドスパ',
+        'ヘアアレンジ',
+        '着付け',
+        'まつげ',
+        '眉',
+        'フェイシャル',
+    ];
 @endphp
 
 <div class="max-w-5xl mx-auto space-y-8">
@@ -40,7 +60,6 @@
 @endif
 
 
-
 {{-- カテゴリー管理 --}}
 <div class="bg-white rounded-xl shadow">
 
@@ -51,12 +70,46 @@
     <div class="p-6">
 
         {{-- 説明 --}}
-        <div class="mb-5 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-            <p class="text-sm text-gray-600 leading-6">
-                カテゴリーは、メニューを大きく分けるためのグループです。
-                たとえば「カット」「カラー」「パーマ」のように、
-                種類ごとに整理したいときに使います。
-            </p>
+        <div class="mb-5 rounded-xl border px-4 py-4"
+             style="border-color: {{ $theme }}22; background-color: #fffdf8;">
+
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
+                     style="background: {{ $theme }}15; color: {{ $theme }};">
+                    📁
+                </div>
+
+                <div class="flex-1">
+                    <h3 class="font-bold text-gray-800">カテゴリーとは</h3>
+
+                    <p class="text-sm text-gray-600 leading-7 mt-1">
+                        カテゴリーは、メニューを大きな種類ごとに整理するためのグループです。<br>
+                        たとえば「カット」「カラー」「パーマ」のように分けておくと、
+                        メニュー管理画面でも予約画面でも見やすくなり、お客様が内容を選びやすくなります。
+                    </p>
+
+                    <p class="text-sm text-gray-600 leading-7 mt-3">
+                        また、下記のカテゴリーを設定したメニューは、
+                        <span class="font-semibold text-gray-800">予約画面でカテゴリーごとの固定イメージ画像</span>
+                        を表示できます。見た目で内容が伝わりやすくなるため、該当するメニューにはカテゴリー設定をおすすめします。
+                    </p>
+
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        @foreach($imageCategories as $imageCategory)
+                            <span class="px-3 py-1.5 text-xs rounded-full border bg-white text-gray-700"
+                                  style="border-color: {{ $theme }}33;">
+                                {{ $imageCategory }}
+                            </span>
+                        @endforeach
+                    </div>
+
+                    <p class="text-xs text-gray-500 mt-4 leading-6">
+                        例：カットメニューは「カット」、白髪染めメニューは「白髪染め」、
+                        ヘッドスパメニューは「ヘッドスパ」のように設定しておくと、
+                        予約画面で内容に合った画像を自動表示しやすくなります。
+                    </p>
+                </div>
+            </div>
         </div>
 
         {{-- 追加フォーム --}}
@@ -140,7 +193,6 @@
     </div>
 
 </div>
-
 
 
 {{-- タグ管理 --}}

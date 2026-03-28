@@ -440,35 +440,29 @@ Route::get('/company/staff/list', function () {
 | 公開予約
 |--------------------------------------------------------------------------
 */
-
 Route::prefix('r/{company_code}')
     ->middleware(['company.code'])
     ->group(function () {
-
-		Route::get('/line/callback', [ReserveController::class, 'lineCallbackCommon']);
 
         Route::get('/', [ReserveController::class, 'index']);
 
         Route::get('/line/redirect', [ReserveController::class, 'lineRedirect'])
             ->name('reserve.line.redirect');
 
-        Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
-            ->name('reserve.line.callback');
-
         Route::get('/line/logout', [ReserveController::class, 'lineLogout'])
             ->name('reserve.line.logout');
 
         Route::match(['get', 'post'], '/confirm', [ReserveController::class, 'confirm']);
-
         Route::post('/store', [ReserveController::class, 'store']);
-
         Route::get('/complete', [ReserveController::class, 'complete']);
-
         Route::get('/slots', [ReserveController::class, 'slots']);
 
         Route::get('/notice/{id}', [ReserveController::class, 'noticeShow'])
             ->name('reserve.notice.show');
     });
+
+Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
+    ->name('reserve.line.callback');
 
 Route::get('/cancel/{token}', [ReserveController::class, 'cancel']);
 

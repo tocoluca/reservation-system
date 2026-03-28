@@ -44,15 +44,15 @@ private function isLineLoginEnabled($company)
         && !empty($company->line_channel_secret);
 }
 
-private function setupLineConfig($company, $company_code): void
+private function setupLineConfig($company): void
 {
     abort_unless($this->isLineLoginEnabled($company), 404);
 
-	config([
-	    'services.line.client_id' => $company->line_channel_id,
-	    'services.line.client_secret' => $company->line_channel_secret,
-	    'services.line.redirect' => url('/line/callback'),
-	]);
+    config([
+        'services.line.client_id' => $company->line_channel_id,
+        'services.line.client_secret' => $company->line_channel_secret,
+        'services.line.redirect' => url('/line/callback'),
+    ]);
 }
 
 private function getLineProfileFromSession($company): ?array
@@ -91,25 +91,33 @@ private function getLineCustomerFromSession($company): ?Customer
 
 public function lineRedirect(Request $request, $company_code)
 {
-    $company = Company::where('company_code', $company_code)->firstOrFail();
+    $company = Company::where('company_code', $company_code)
+        ->where('is_active', 1)
+        ->firstOrFail();
 
-    $this->setupLineConfig($company, $company_code);
+    $this->setupLineConfig($company);
 
     session([
-        'reserve_line_company_id' => $company->id,
+        'line_login_company_code'   => $company_code,
         'reserve_line_company_code' => $company_code,
     ]);
 
-    return Socialite::driver('line')
-        ->scopes(['openid', 'profile'])
-        ->redirect();
+    return Socialite::driver('line')->redirect();
 }
 
-public function lineCallback(Request $request, $company_code)
+public function lineCallback(Request $request)
 {
-    $company = Company::where('company_code', $company_code)->firstOrFail();
+    $company_code = session('line_login_company_code');
 
-    $this->setupLineConfig($company, $company_code);
+    if (!$company_code) {
+        abort(404, 'company_code がセッションにありません。');
+    }
+
+    $company = Company::where('company_code', $company_code)
+        ->where('is_active', 1)
+        ->firstOrFail();
+
+    $this->setupLineConfig($company);
 
     try {
         $lineUser = Socialite::driver('line')->user();
@@ -130,16 +138,18 @@ public function lineCallback(Request $request, $company_code)
     }
 
     session([
-        'reserve_line_company_id' => $company->id,
+        'reserve_line_company_id'   => $company->id,
         'reserve_line_company_code' => $company_code,
-        'reserve_line_customer_id' => $linkedCustomer?->id,
-        'reserve_line_profile' => [
+        'reserve_line_customer_id'  => $linkedCustomer?->id,
+        'reserve_line_profile'      => [
             'line_user_id' => $lineUser->getId(),
-            'name' => $lineUser->getName(),
-            'email' => $lineUser->getEmail(),
-            'avatar' => $lineUser->getAvatar(),
+            'name'         => $lineUser->getName(),
+            'email'        => $lineUser->getEmail(),
+            'avatar'       => $lineUser->getAvatar(),
         ],
     ]);
+
+    session()->forget('line_login_company_code');
 
     return redirect('/r/' . $company_code)->with(
         'success',
@@ -172,31 +182,28 @@ public function lineLogout($company_code)
 |--------------------------------------------------------------------------
 */
 
-
 public function index($company_code)
 {
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    $company = Company::where('company_code',$company_code)->firstOrFail();
+    $notices = Notice::where('company_id', $company->id)
+        ->visible()
+        ->sorted()
+        ->get();
 
-	$notices = Notice::where('company_id', $company->id)
-	    ->visible()
-	    ->sorted()
-	    ->get();
-
-    $menus = Menu::with(['tags','category'])
-        ->where('company_id',$company->id)
-        ->where('is_active',1)
+    $menus = Menu::with(['tags', 'category'])
+        ->where('company_id', $company->id)
+        ->where('is_active', 1)
         ->orderByDesc('is_popular')
         ->orderBy('sort_order')
         ->get()
-        ->groupBy(fn($menu)=>$menu->category->name ?? 'その他');
+        ->groupBy(fn($menu) => $menu->category->name ?? 'その他');
 
-    $staff = Staff::where('company_id',$company->id)
-        ->where('is_reservable',1)
+    $staff = Staff::where('company_id', $company->id)
+        ->where('is_reservable', 1)
         ->orderBy('priority_order')
         ->get()
-        ->map(function($s){
-
+        ->map(function ($s) {
             $s->image_url = $s->image_path
                 ? asset($s->image_path)
                 : asset('logos/logo.png');
@@ -207,15 +214,15 @@ public function index($company_code)
     $lineProfile = $this->getLineProfileFromSession($company);
     $lineCustomer = $this->getLineCustomerFromSession($company);
 
-    return view('reserve.index',[
-        'company'=>$company,
-        'menus'=>$menus,
-        'staff'=>$staff,
-    	'notices'=>$notices,
+    return view('reserve.index', [
+        'company'          => $company,
+        'menus'            => $menus,
+        'staff'            => $staff,
+        'notices'          => $notices,
         'lineLoginEnabled' => $this->isLineLoginEnabled($company),
-        'lineProfile' => $lineProfile,
-        'lineCustomer' => $lineCustomer,
-        'step'=>1
+        'lineProfile'      => $lineProfile,
+        'lineCustomer'     => $lineCustomer,
+        'step'             => 1
     ]);
 }
 
@@ -225,13 +232,12 @@ public function index($company_code)
 |--------------------------------------------------------------------------
 */
 
-public function confirm(Request $request,$company_code)
+public function confirm(Request $request, $company_code)
 {
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    $company = Company::where('company_code',$company_code)->firstOrFail();
-
-    $menus = Menu::where('company_id',$company->id)
-        ->whereIn('id',$request->menu_ids ?? [])
+    $menus = Menu::where('company_id', $company->id)
+        ->whereIn('id', $request->menu_ids ?? [])
         ->get();
 
     $staff = $request->staff_id
@@ -241,14 +247,14 @@ public function confirm(Request $request,$company_code)
     $lineProfile = $this->getLineProfileFromSession($company);
     $lineCustomer = $this->getLineCustomerFromSession($company);
 
-    return view('reserve.confirm',[
-        'company'=>$company,
-        'menus'=>$menus,
-        'staff'=>$staff,
-        'start_at'=>$request->start_at,
-        'lineProfile' => $lineProfile,
+    return view('reserve.confirm', [
+        'company'      => $company,
+        'menus'        => $menus,
+        'staff'        => $staff,
+        'start_at'     => $request->start_at,
+        'lineProfile'  => $lineProfile,
         'lineCustomer' => $lineCustomer,
-        'step'=>2
+        'step'         => 2
     ]);
 }
 
@@ -258,30 +264,29 @@ public function confirm(Request $request,$company_code)
 |--------------------------------------------------------------------------
 */
 
-public function store(Request $request,$company_code)
+public function store(Request $request, $company_code)
 {
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    $company = Company::where('company_code',$company_code)->firstOrFail();
+    $request->validate([
+        'customer_name'  => ['required', 'max:255'],
+        'customer_phone' => ['required', 'regex:/^[0-9\-]+$/'],
+        'customer_email' => ['nullable', 'email', 'max:255']
+    ], [
+        'customer_name.required' => ':attributeを入力してください',
+        'customer_phone.regex'   => ':attributeは半角数字とハイフンのみ入力できます',
+    ], [
+        'customer_name'  => 'お名前',
+        'customer_phone' => '電話番号',
+        'customer_email' => 'メールアドレス',
+    ]);
 
-	$request->validate([
-	    'customer_name' => ['required','max:255'],
-	    'customer_phone' => ['required','regex:/^[0-9\-]+$/'],
-	    'customer_email' => ['nullable','email','max:255']
-	],[
-	    'customer_name.required' => ':attributeを入力してください',
-	    'customer_phone.regex' => ':attributeは半角数字とハイフンのみ入力できます',
-	],[
-	    'customer_name' => 'お名前',
-	    'customer_phone' => '電話番号',
-	    'customer_email' => 'メールアドレス',
-	]);
-
-    $menus = Menu::where('company_id',$company->id)
-        ->whereIn('id',$request->menu_ids ?? [])
+    $menus = Menu::where('company_id', $company->id)
+        ->whereIn('id', $request->menu_ids ?? [])
         ->get();
 
-    if($menus->isEmpty()){
-        return back()->with('error','メニューを選択してください');
+    if ($menus->isEmpty()) {
+        return back()->with('error', 'メニューを選択してください');
     }
 
     $start = Carbon::parse($request->start_at);
@@ -294,21 +299,21 @@ public function store(Request $request,$company_code)
     $limits = $this->getReservationLimits($company);
 
     if ($start < $limits['start']) {
-        return back()->with('error','この日はまだ予約受付していません');
+        return back()->with('error', 'この日はまだ予約受付していません');
     }
 
     if ($start > $limits['end']) {
-        return back()->with('error','予約可能期間を超えています');
+        return back()->with('error', '予約可能期間を超えています');
     }
 
     if ($start < $limits['close']) {
-        return back()->with('error','予約締切を過ぎています');
+        return back()->with('error', '予約締切を過ぎています');
     }
 
-    $staffId = $this->resolveStaff($company,$request->staff_id,$start,$end,$request->menu_ids ?? []);
+    $staffId = $this->resolveStaff($company, $request->staff_id, $start, $end, $request->menu_ids ?? []);
 
-    if(!$staffId){
-        return back()->with('error','空きスタッフがいません');
+    if (!$staffId) {
+        return back()->with('error', '空きスタッフがいません');
     }
 
     $lineProfile = $this->getLineProfileFromSession($company);
@@ -326,10 +331,10 @@ public function store(Request $request,$company_code)
         $customer = Customer::firstOrCreate(
             [
                 'company_id' => $company->id,
-                'phone' => str_replace('-', '', $request->customer_phone)
+                'phone'      => str_replace('-', '', $request->customer_phone)
             ],
             [
-                'name' => $request->customer_name,
+                'name'  => $request->customer_name,
                 'email' => $request->customer_email
             ]
         );
@@ -370,51 +375,42 @@ public function store(Request $request,$company_code)
     $staff = Staff::find($staffId);
 
     $reservation = Reservation::create([
+        'company_id'      => $company->id,
+        'customer_id'     => $customer->id,
+        'staff_id'        => $staffId,
 
-        'company_id'=>$company->id,
-	'customer_id'=>$customer->id,
-        'staff_id'=>$staffId,
+        'customer_name'   => $request->customer_name,
+        'customer_phone'  => str_replace('-', '', $request->customer_phone),
+        'customer_email'  => $request->customer_email,
 
-        'customer_name'=>$request->customer_name,
-        'customer_phone'=>str_replace('-', '', $request->customer_phone),
-        'customer_email'=>$request->customer_email,
+        'start_at'        => $start,
+        'end_at'          => $end,
 
-        'start_at'=>$start,
-        'end_at'=>$end,
+        'price'           => $totalPrice,
+        'nomination_fee'  => $staff->nomination_fee,
+        'total_price'     => $totalPrice + $staff->nomination_fee,
 
-        'price'=>$totalPrice,
-        'nomination_fee'=>$staff->nomination_fee,
-        'total_price'=>$totalPrice + $staff->nomination_fee,
-
-        'status'=>'reserved',
-        'cancel_token'=>Str::random(6)
-
+        'status'          => 'reserved',
+        'cancel_token'    => Str::random(6)
     ]);
 
-	$maxCycle = $menus->max('revisit_days');
+    $maxCycle = $menus->max('revisit_days');
 
-	if($maxCycle){
-
-	$customer->next_visit_at =
-	Carbon::parse($reservation->start_at)
-	->addDays($maxCycle);
-
-	$customer->save();
-
-	}
-
-    foreach($menus as $menu){
-
-        ReservationMenu::create([
-            'reservation_id'=>$reservation->id,
-            'menu_id'=>$menu->id,
-            'price'=>$menu->price,
-            'duration'=>$menu->duration
-        ]);
-
+    if ($maxCycle) {
+        $customer->next_visit_at = Carbon::parse($reservation->start_at)->addDays($maxCycle);
+        $customer->save();
     }
 
-    return redirect("/r/".$company_code."/complete?reservation_id=".$reservation->id);
+    foreach ($menus as $menu) {
+        ReservationMenu::create([
+            'reservation_id' => $reservation->id,
+            'menu_id'        => $menu->id,
+            'price'          => $menu->price,
+            'duration'       => $menu->duration
+        ]);
+    }
+
+    return redirect("/r/" . $company_code . "/complete?reservation_id=" . $reservation->id);
 }
 
 /*
@@ -425,27 +421,25 @@ public function store(Request $request,$company_code)
 
 public function complete($company_code, Request $request)
 {
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    $company = Company::where('company_code',$company_code)->firstOrFail();
-
-    $reservation = Reservation::where('id',$request->reservation_id)
-        ->where('company_id',$company->id)
+    $reservation = Reservation::where('id', $request->reservation_id)
+        ->where('company_id', $company->id)
         ->firstOrFail();
 
-    $menus = \App\Models\ReservationMenu::where('reservation_id',$reservation->id)
+    $menus = \App\Models\ReservationMenu::where('reservation_id', $reservation->id)
         ->with('menu')
         ->get();
 
     $staff = $reservation->staff;
 
-    return view('reserve.complete',[
-        'company'=>$company,
-        'reservation'=>$reservation,
-        'menus'=>$menus,
-        'staff'=>$staff,
-        'step'=>3
+    return view('reserve.complete', [
+        'company'     => $company,
+        'reservation' => $reservation,
+        'menus'       => $menus,
+        'staff'       => $staff,
+        'step'        => 3
     ]);
-
 }
 
 /*
@@ -455,17 +449,15 @@ public function complete($company_code, Request $request)
 */
 public function cancel($token)
 {
+    $reservation = Reservation::where('cancel_token', $token)
+        ->firstOrFail();
 
-$reservation = Reservation::where('cancel_token',$token)
-->firstOrFail();
+    $reservation->status = 'cancelled';
+    $reservation->save();
 
-$reservation->status = 'cancelled';
-$reservation->save();
-
-return view('reserve.cancel_complete',[
-'reservation'=>$reservation
-]);
-
+    return view('reserve.cancel_complete', [
+        'reservation' => $reservation
+    ]);
 }
 
 /*
@@ -474,104 +466,87 @@ return view('reserve.cancel_complete',[
 |--------------------------------------------------------------------------
 */
 
-private function resolveStaff($company,$staffId,$start,$end,$menuIds)
+private function resolveStaff($company, $staffId, $start, $end, $menuIds)
 {
-
     /* ==========================
        指名スタッフがある場合
     ========================== */
 
-    if($staffId){
-
-        $vacation = Vacation::where('staff_id',$staffId)
-            ->where('status','approved')
-            ->where(function($q) use ($start,$end){
-
-                $q->where('start_at','<',$end)
-                  ->where('end_at','>',$start);
-
+    if ($staffId) {
+        $vacation = Vacation::where('staff_id', $staffId)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
             })
             ->exists();
 
-        if($vacation){
+        if ($vacation) {
             return null;
         }
 
-        $exists = Reservation::where('company_id',$company->id)
-            ->where('staff_id',$staffId)
-            ->where('status','reserved')
-            ->where(function($q) use ($start,$end){
-
-                $q->where('start_at','<',$end)
-                  ->where('end_at','>',$start);
-
+        $exists = Reservation::where('company_id', $company->id)
+            ->where('staff_id', $staffId)
+            ->where('status', 'reserved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
             })
             ->exists();
 
         return $exists ? null : $staffId;
     }
 
-
     /* ==========================
        自動スタッフ割当
     ========================== */
 
-    $staffList = Staff::where('company_id',$company->id)
-        ->where('is_reservable',true)
-        ->whereHas('menus', function($q) use ($menuIds){
-
-            $q->whereIn('menus.id',$menuIds);
-
+    $staffList = Staff::where('company_id', $company->id)
+        ->where('is_reservable', true)
+        ->whereHas('menus', function ($q) use ($menuIds) {
+            $q->whereIn('menus.id', $menuIds);
         })
         ->orderBy('priority_order')
         ->get();
 
-
-    foreach($staffList as $staff){
-
+    foreach ($staffList as $staff) {
         /* ==========================
            休暇チェック
         ========================== */
 
-        $vacation = Vacation::where('staff_id',$staff->id)
-            ->where('status','approved')
-            ->where(function($q) use ($start,$end){
-
-                $q->where('start_at','<',$end)
-                  ->where('end_at','>',$start);
-
+        $vacation = Vacation::where('staff_id', $staff->id)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
             })
             ->exists();
 
-        if($vacation){
+        if ($vacation) {
             continue;
         }
-
 
         /* ==========================
            予約重複チェック
         ========================== */
 
-        $exists = Reservation::where('company_id',$company->id)
-            ->where('staff_id',$staff->id)
-            ->where('status','reserved')
-            ->where(function($q) use ($start,$end){
-
-                $q->where('start_at','<',$end)
-                  ->where('end_at','>',$start);
-
+        $exists = Reservation::where('company_id', $company->id)
+            ->where('staff_id', $staff->id)
+            ->where('status', 'reserved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
             })
             ->exists();
 
-
-        if(!$exists){
+        if (!$exists) {
             return $staff->id;
         }
-
     }
 
     return null;
 }
+
 /*
 |--------------------------------------------------------------------------
 | 空き時間
@@ -591,10 +566,8 @@ public function slots(Request $request, $company_code)
     $duration = $menus->sum('duration');
     $date = Carbon::parse($request->date)->startOfDay();
 
-    // 予約可能期間・締切
     $limits = $this->getReservationLimits($company);
 
-    // 予約開始前の日付、予約可能期間を超えた日付は表示しない
     if ($date->copy()->endOfDay()->lt($limits['start'])) {
         return response()->json([]);
     }
@@ -616,7 +589,6 @@ public function slots(Request $request, $company_code)
             $q->whereIn('menus.id', $menuIds);
         });
 
-    // 担当者が選ばれている場合はその人だけ
     if ($request->filled('staff_id')) {
         $staffQuery->where('id', $request->staff_id);
     }
@@ -669,20 +641,16 @@ public function slots(Request $request, $company_code)
                 break;
             }
 
-            // 予約締切を過ぎた枠は表示しない
-            // 例: reservation_close_hours = 2 の場合、今から2時間未満の開始時刻は非表示
             if ($start->lt($limits['close'])) {
                 $time->addMinutes($company->slot_minutes);
                 continue;
             }
 
-            // 予約可能開始日より前は非表示
             if ($start->lt($limits['start'])) {
                 $time->addMinutes($company->slot_minutes);
                 continue;
             }
 
-            // 予約可能期間を超える枠は非表示
             if ($start->gt($limits['end'])) {
                 $time->addMinutes($company->slot_minutes);
                 continue;
@@ -694,7 +662,6 @@ public function slots(Request $request, $company_code)
                 $key = $staff->id . '_' . $date->format('Y-m-d');
                 $shift = $shifts[$key] ?? null;
 
-                // シフト未登録 or 休み
                 if (!$shift || !$shift->is_work) {
                     continue;
                 }
@@ -737,7 +704,7 @@ public function slots(Request $request, $company_code)
             }
 
             $slots[] = [
-                'time' => $start->format('H:i'),
+                'time'      => $start->format('H:i'),
                 'remaining' => $availableStaff,
             ];
 
@@ -754,9 +721,9 @@ public function staffMenus(Request $request)
 
     $staffId = $request->staff_id;
 
-    $menus = Menu::where('company_id',$company->id)
-        ->whereHas('staffs',function($q) use ($staffId){
-            $q->where('staff_id',$staffId);
+    $menus = Menu::where('company_id', $company->id)
+        ->whereHas('staffs', function ($q) use ($staffId) {
+            $q->where('staff_id', $staffId);
         })
         ->orderBy('sort_order')
         ->get();
@@ -773,19 +740,7 @@ public function noticeShow($company_code, $id)
         ->visible()
         ->findOrFail($id);
 
-    return view('reserve.notice_show', compact('notice','company'));
+    return view('reserve.notice_show', compact('notice', 'company'));
 }
-
-public function lineCallbackCommon(Request $request)
-{
-    $company_code = session('reserve_line_company_code');
-
-    if (!$company_code) {
-        abort(404);
-    }
-
-    return $this->lineCallback($request, $company_code);
-}
-
 
 }

@@ -48,11 +48,11 @@ private function setupLineConfig($company, $company_code): void
 {
     abort_unless($this->isLineLoginEnabled($company), 404);
 
-    config([
-        'services.line.client_id' => $company->line_channel_id,
-        'services.line.client_secret' => $company->line_channel_secret,
-        'services.line.redirect' => url('/r/' . $company_code . '/line/callback'),
-    ]);
+	config([
+	    'services.line.client_id' => $company->line_channel_id,
+	    'services.line.client_secret' => $company->line_channel_secret,
+	    'services.line.redirect' => url('/line/callback'),
+	]);
 }
 
 private function getLineProfileFromSession($company): ?array
@@ -774,6 +774,17 @@ public function noticeShow($company_code, $id)
         ->findOrFail($id);
 
     return view('reserve.notice_show', compact('notice','company'));
+}
+
+public function lineCallbackCommon(Request $request)
+{
+    $company_code = session('reserve_line_company_code');
+
+    if (!$company_code) {
+        abort(404);
+    }
+
+    return $this->lineCallback($request, $company_code);
 }
 
 

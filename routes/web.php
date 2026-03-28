@@ -445,6 +445,8 @@ Route::prefix('r/{company_code}')
     ->middleware(['company.code'])
     ->group(function () {
 
+		Route::get('/line/callback', [ReserveController::class, 'lineCallbackCommon']);
+
         Route::get('/', [ReserveController::class, 'index']);
 
         Route::get('/line/redirect', [ReserveController::class, 'lineRedirect'])

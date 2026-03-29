@@ -49,4 +49,9 @@ class Reservation extends Model
 	        ->withPivot('price','duration')
 	        ->withTimestamps();
 	}
+	public function company()
+	{
+	    return $this->belongsTo(\App\Models\Company::class);
+	}
+
 }

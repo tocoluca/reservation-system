@@ -36,6 +36,8 @@ use App\Http\Controllers\Company\DashboardSettingController;
 
 use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\ReserveController;
+use App\Http\Controllers\ReserveCancelController;
+
 
 use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\StripeWebhookController;
@@ -465,6 +467,10 @@ Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
     ->name('reserve.line.callback');
 
 Route::get('/cancel/{token}', [ReserveController::class, 'cancel']);
+
+Route::get('/cancel/{token}', [ReserveCancelController::class, 'show'])->name('reserve.cancel.show');
+Route::post('/cancel/{token}', [ReserveCancelController::class, 'cancel'])->name('reserve.cancel.execute');
+Route::get('/cancel/{token}/complete', [ReserveCancelController::class, 'complete'])->name('reserve.cancel.complete');
 
 
 /*

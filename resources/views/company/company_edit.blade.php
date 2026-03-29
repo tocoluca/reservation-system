@@ -32,7 +32,6 @@ transition:.2s;
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6">
 
-{{-- タイトル --}}
 <div class="flex justify-between items-center mb-8">
 <div>
 <h1 class="text-2xl font-bold">企業情報設定</h1>
@@ -46,49 +45,32 @@ style="border-color: {{ $theme }}; color: {{ $theme }}">
 </a>
 </div>
 
-
 <form method="POST" action="{{ route('company.info.update') }}">
 @csrf
 
 <div class="bg-white shadow rounded-2xl p-6 sm:p-8 space-y-12">
 
-
-{{-- ================= 基本情報 ================= --}}
 <div>
-
-<h2 class="text-lg font-bold mb-6 border-l-4 pl-3"
-style="border-color: {{ $theme }}">
+<h2 class="text-lg font-bold mb-6 border-l-4 pl-3" style="border-color: {{ $theme }}">
 基本情報
 </h2>
-
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
 <div>
-<label class="block text-sm text-gray-500 mb-1">
-企業コード
-</label>
-
-<div class="font-semibold">
-{{ $company->company_code }}
+<label class="block text-sm text-gray-500 mb-1">企業コード</label>
+<div class="font-semibold">{{ $company->company_code }}</div>
 </div>
-</div>
-
 
 <div>
 <label class="block font-semibold mb-2 flex items-center gap-2">
 メールアドレス
-
-<span class="tooltip text-gray-400 text-sm"
-onclick="toggleTooltip(this)">❓
-
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 企業の連絡用メールです。<br>
 ログイン用ではありません。
 </span>
-
 </span>
-
 </label>
 
 <input type="email"
@@ -96,28 +78,36 @@ name="email"
 value="{{ old('email',$company->email) }}"
 class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
-</div>
 
+@error('email')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
 
 <div>
 <label class="block font-semibold mb-2">電話番号</label>
-
 <input type="text"
 name="phone"
 value="{{ old('phone',$company->phone) }}"
 class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
-</div>
 
+@error('phone')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
 
 <div>
 <label class="block font-semibold mb-2">住所</label>
-
 <input type="text"
 name="address"
 value="{{ old('address',$company->address) }}"
 class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
+
+@error('address')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
 @if((int) $company->line_login_enabled === 1)
@@ -131,32 +121,24 @@ style="--tw-ring-color: {{ $theme }}">
     </div>
 
     <div>
-        <label class="block font-semibold mb-2">
-            LINE Channel ID
-        </label>
-
+        <label class="block font-semibold mb-2">LINE Channel ID</label>
         <input type="text"
                name="line_channel_id"
                value="{{ old('line_channel_id', $company->line_channel_id) }}"
                class="w-full border rounded-lg p-3 focus:ring-2"
                style="--tw-ring-color: {{ $theme }}">
-
         @error('line_channel_id')
             <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
         @enderror
     </div>
 
     <div>
-        <label class="block font-semibold mb-2">
-            LINE Channel Secret
-        </label>
-
+        <label class="block font-semibold mb-2">LINE Channel Secret</label>
         <input type="text"
                name="line_channel_secret"
                value="{{ old('line_channel_secret', $company->line_channel_secret) }}"
                class="w-full border rounded-lg p-3 focus:ring-2"
                style="--tw-ring-color: {{ $theme }}">
-
         @error('line_channel_secret')
             <p class="text-sm text-red-500 mt-1">{{ $message }}</p>
         @enderror
@@ -166,9 +148,7 @@ style="--tw-ring-color: {{ $theme }}">
 <div>
 <label class="block font-semibold mb-2">
 時間刻み（分）
-
-<span class="tooltip text-gray-400 text-sm"
-onclick="toggleTooltip(this)">❓
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 予約を行う単位時間。１つの予約をこの時間で
 予約を受け付けます。またここで設定した時間で
@@ -183,14 +163,16 @@ name="slot_minutes"
 value="{{ old('slot_minutes',$company->slot_minutes) }}"
 class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
+
+@error('slot_minutes')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
 <div>
 <label class="block font-semibold mb-2">
 メニュー所要時間で予約（分）
-
-<span class="tooltip text-gray-400 text-sm"
-onclick="toggleTooltip(this)">❓
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 メニューで設定した所要時間で予約を行う場合
 チェックしてください。チェックしない場合は
@@ -201,18 +183,14 @@ onclick="toggleTooltip(this)">❓
 <input type="checkbox"
 name="menu_time_priority_flag"
 value="1"
-{{ $company->menu_time_priority_flag ? 'checked' : '' }}>
-<span class="text-sm">
-メニューの所要時間を予約時間にする
-</span>
+{{ old('menu_time_priority_flag', $company->menu_time_priority_flag) ? 'checked' : '' }}>
+<span class="text-sm">メニューの所要時間を予約時間にする</span>
 </div>
-
 
 <div>
 <label class="block font-semibold mb-2">
 同時予約数
-<span class="tooltip text-gray-400 text-sm"
-onclick="toggleTooltip(this)">❓
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 １人当たり重複していくつ予約を受けるかを設定する項目です。
 同一時間帯で受け付ける予約数を記載して下さい。
@@ -226,105 +204,117 @@ name="max_simultaneous_reservations"
 value="{{ old('max_simultaneous_reservations',$company->max_simultaneous_reservations) }}"
 class="w-full border rounded-lg p-3 focus:ring-2"
 style="--tw-ring-color: {{ $theme }}">
+
+@error('max_simultaneous_reservations')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
-
 </div>
 </div>
 
-{{-- ================= 予約設定 ================= --}}
 <div>
-
-<h2 class="text-lg font-bold mb-6 border-l-4 pl-3"
-style="border-color: {{ $theme }}">
+<h2 class="text-lg font-bold mb-6 border-l-4 pl-3" style="border-color: {{ $theme }}">
 予約設定
 </h2>
 
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-{{-- 予約可能期間 --}}
 <div>
-<label class="block font-semibold mb-2">
-予約可能期間（月）
-</label>
-
-<select name="reservation_month_limit"
-class="w-full border rounded-lg p-3">
-
-<option value="1" {{ $company->reservation_month_limit==1?'selected':'' }}>1ヶ月</option>
-<option value="2" {{ $company->reservation_month_limit==2?'selected':'' }}>2ヶ月</option>
-<option value="3" {{ $company->reservation_month_limit==3?'selected':'' }}>3ヶ月</option>
-<option value="4" {{ $company->reservation_month_limit==4?'selected':'' }}>4ヶ月</option>
-<option value="5" {{ $company->reservation_month_limit==5?'selected':'' }}>5ヶ月</option>
-<option value="6" {{ $company->reservation_month_limit==6?'selected':'' }}>6ヶ月</option>
-<option value="7" {{ $company->reservation_month_limit==7?'selected':'' }}>7ヶ月</option>
-<option value="8" {{ $company->reservation_month_limit==8?'selected':'' }}>8ヶ月</option>
-<option value="9" {{ $company->reservation_month_limit==9?'selected':'' }}>9ヶ月</option>
-<option value="10" {{ $company->reservation_month_limit==10?'selected':'' }}>10ヶ月</option>
-<option value="11" {{ $company->reservation_month_limit==11?'selected':'' }}>11ヶ月</option>
-<option value="12" {{ $company->reservation_month_limit==12?'selected':'' }}>12ヶ月</option>
-
+<label class="block font-semibold mb-2">予約可能期間（月）</label>
+<select name="reservation_month_limit" class="w-full border rounded-lg p-3">
+<option value="1" {{ old('reservation_month_limit', $company->reservation_month_limit)==1?'selected':'' }}>1ヶ月</option>
+<option value="2" {{ old('reservation_month_limit', $company->reservation_month_limit)==2?'selected':'' }}>2ヶ月</option>
+<option value="3" {{ old('reservation_month_limit', $company->reservation_month_limit)==3?'selected':'' }}>3ヶ月</option>
+<option value="4" {{ old('reservation_month_limit', $company->reservation_month_limit)==4?'selected':'' }}>4ヶ月</option>
+<option value="5" {{ old('reservation_month_limit', $company->reservation_month_limit)==5?'selected':'' }}>5ヶ月</option>
+<option value="6" {{ old('reservation_month_limit', $company->reservation_month_limit)==6?'selected':'' }}>6ヶ月</option>
+<option value="7" {{ old('reservation_month_limit', $company->reservation_month_limit)==7?'selected':'' }}>7ヶ月</option>
+<option value="8" {{ old('reservation_month_limit', $company->reservation_month_limit)==8?'selected':'' }}>8ヶ月</option>
+<option value="9" {{ old('reservation_month_limit', $company->reservation_month_limit)==9?'selected':'' }}>9ヶ月</option>
+<option value="10" {{ old('reservation_month_limit', $company->reservation_month_limit)==10?'selected':'' }}>10ヶ月</option>
+<option value="11" {{ old('reservation_month_limit', $company->reservation_month_limit)==11?'selected':'' }}>11ヶ月</option>
+<option value="12" {{ old('reservation_month_limit', $company->reservation_month_limit)==12?'selected':'' }}>12ヶ月</option>
 </select>
-
-<p class="text-xs text-gray-500 mt-1">
-指定した月数の月末まで予約可能
-</p>
-
+<p class="text-xs text-gray-500 mt-1">指定した月数の月末まで予約可能</p>
+@error('reservation_month_limit')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
-
-{{-- 予約受付開始 --}}
 <div>
-<label class="block font-semibold mb-2">
-予約受付開始（日）
-</label>
-
+<label class="block font-semibold mb-2">予約受付開始（日）</label>
 <input type="number"
 name="reservation_open_days"
 value="{{ old('reservation_open_days',$company->reservation_open_days) }}"
 class="w-full border rounded-lg p-3">
-
-<p class="text-xs text-gray-500 mt-1">
-例：0 → 当日予約可能、1 → 翌日分から予約可能
-</p>
-
+<p class="text-xs text-gray-500 mt-1">例：0 → 当日予約可能、1 → 翌日分から予約可能</p>
+@error('reservation_open_days')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
-
-{{-- 予約締切 --}}
 <div>
-<label class="block font-semibold mb-2">
-予約締切（時間前）
-</label>
-
+<label class="block font-semibold mb-2">予約締切（時間前）</label>
 <input type="number"
 name="reservation_close_hours"
 value="{{ old('reservation_close_hours',$company->reservation_close_hours) }}"
 class="w-full border rounded-lg p-3">
+<p class="text-xs text-gray-500 mt-1">例：2 → 2時間前まで予約可能</p>
+@error('reservation_close_hours')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
+
+<div>
+<label class="block font-semibold mb-2">再来店促進メール送信日数</label>
+<input type="number"
+name="revisit_reminder_days"
+value="{{ old('revisit_reminder_days', $company->revisit_reminder_days ?? 45) }}"
+class="w-full border rounded-lg p-3">
+<p class="text-xs text-gray-500 mt-1">例：45 → 最終来店日から45日後に案内対象</p>
+@error('revisit_reminder_days')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
+
+<div>
+<label class="block font-semibold mb-2">
+Webキャンセル締切（時間前）
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
+<span class="tooltip-text">
+予約時間の何時間前まで、予約完了メールからキャンセルできるかを設定します。
+それ以降はお電話でのキャンセル案内に切り替わります。
+</span>
+</span>
+</label>
+
+<input type="number"
+name="web_cancel_deadline_hours"
+value="{{ old('web_cancel_deadline_hours', $company->web_cancel_deadline_hours ?? 24) }}"
+class="w-full border rounded-lg p-3">
 
 <p class="text-xs text-gray-500 mt-1">
-例：2 → 2時間前まで予約可能
+例：24 → 24時間前までWebでキャンセル可能
 </p>
 
+@error('web_cancel_deadline_hours')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 </div>
 
 </div>
-
 </div>
 
-{{-- ================= 曜日別営業時間 ================= --}}
 @php
-$days=[0=>'日',1=>'月',2=>'火',3=>'水',4=>'木',5=>'金',6=>'土'];
-$patterns=old('open_patterns',$company->open_patterns ?? []);
+$days = [0=>'日',1=>'月',2=>'火',3=>'水',4=>'木',5=>'金',6=>'土'];
+$patterns = old('open_patterns', $company->open_patterns ?? []);
 @endphp
 
 <div>
-
-<h2 class="text-lg font-bold mb-6 border-l-4 pl-3"
-style="border-color: {{ $theme }}">
+<h2 class="text-lg font-bold mb-6 border-l-4 pl-3" style="border-color: {{ $theme }}">
 曜日別営業時間
-<span class="tooltip text-gray-400 text-sm"
-onclick="toggleTooltip(this)">❓
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
 <span class="tooltip-text">
 曜日別に営業時間を設定することができます。
 毎週火曜日が休業日の場合でも祝日は営業する場合は
@@ -336,35 +326,23 @@ onclick="toggleTooltip(this)">❓
 </span>
 </h2>
 
-
 <div class="space-y-6">
-
 @foreach($days as $weekday=>$label)
-
 <div class="border rounded-xl p-4">
-
 <div class="flex justify-between items-center mb-4">
-
 <div class="font-bold">{{ $label }}</div>
-
 <button type="button"
 onclick="addTimeSlot({{ $weekday }})"
 class="text-sm px-3 py-1 rounded text-white"
 style="background: {{ $theme }}">
 ＋枠追加
 </button>
-
 </div>
 
-
 <div id="day-{{ $weekday }}" class="space-y-3">
-
 @if(!empty($patterns[$weekday]))
-
 @foreach($patterns[$weekday] as $i=>$pattern)
-
 <div class="flex flex-col sm:flex-row gap-3 sm:items-center time-row">
-
 <input type="time"
 name="open_patterns[{{ $weekday }}][{{ $i }}][open]"
 value="{{ $pattern['open'] ?? '' }}"
@@ -382,63 +360,47 @@ onclick="removeTimeSlot(this)"
 class="text-red-500 text-sm">
 削除
 </button>
-
 </div>
 
+@error("open_patterns.$weekday.$i.open")
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
 @endforeach
-
 @endif
-
 </div>
-
 </div>
-
 @endforeach
-
+</div>
 </div>
 
-</div>
-
-
-{{-- 保存ボタン --}}
 <div class="flex flex-col sm:flex-row justify-between gap-4 pt-6 border-t">
-
 <button type="submit"
 class="w-full sm:w-auto text-white px-6 py-3 rounded-lg shadow"
 style="background: {{ $theme }}">
 保存する
 </button>
+</div>
 
 </div>
 
-
-</div>
-
-<input type="hidden"
-name="theme_color"
-value="{{ $company->theme_color }}">
-
+<input type="hidden" name="theme_color" value="{{ $company->theme_color }}">
 </form>
 
 </div>
 
-
 <script>
-
 function toggleTooltip(el){
-el.classList.toggle('active')
+    el.classList.toggle('active')
 }
 
 function addTimeSlot(weekday){
+    const container = document.getElementById('day-' + weekday)
+    const index = container.children.length
+    const row = document.createElement('div')
 
-const container=document.getElementById('day-'+weekday)
-const index=container.children.length
+    row.className = 'flex flex-col sm:flex-row gap-3 sm:items-center time-row'
 
-const row=document.createElement('div')
-
-row.className='flex flex-col sm:flex-row gap-3 sm:items-center time-row'
-
-row.innerHTML=`
+    row.innerHTML = `
 <input type="time"
 name="open_patterns[${weekday}][${index}][open]"
 class="border rounded-lg p-2 w-full sm:w-auto">
@@ -456,14 +418,12 @@ class="text-red-500 text-sm">
 </button>
 `
 
-container.appendChild(row)
-
+    container.appendChild(row)
 }
 
 function removeTimeSlot(btn){
-btn.closest('.time-row').remove()
+    btn.closest('.time-row').remove()
 }
-
 </script>
 
 @endsection

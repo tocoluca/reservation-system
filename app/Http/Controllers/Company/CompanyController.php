@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class CompanyController extends Controller
 {
@@ -37,6 +36,8 @@ class CompanyController extends Controller
             'reservation_month_limit' => 'nullable|integer|min:1|max:12',
             'reservation_open_days' => 'nullable|integer|min:0|max:30',
             'reservation_close_hours' => 'nullable|integer|min:0|max:48',
+            'revisit_reminder_days' => 'nullable|integer|min:1|max:365',
+            'web_cancel_deadline_hours' => 'nullable|integer|min:0|max:168',
         ];
 
         if ((int) $company->line_login_enabled === 1) {
@@ -47,9 +48,15 @@ class CompanyController extends Controller
         $validated = $request->validate($rules, [
             'line_channel_id.max' => 'LINE Channel ID は255文字以内で入力してください。',
             'line_channel_secret.max' => 'LINE Channel Secret は255文字以内で入力してください。',
+            'revisit_reminder_days.integer' => '再来店促進メール送信日数は数字で入力してください。',
+            'revisit_reminder_days.min' => '再来店促進メール送信日数は1日以上で入力してください。',
+            'revisit_reminder_days.max' => '再来店促進メール送信日数は365日以内で入力してください。',
+            'web_cancel_deadline_hours.integer' => 'Webキャンセル締切時間は数字で入力してください。',
+            'web_cancel_deadline_hours.min' => 'Webキャンセル締切時間は0時間以上で入力してください。',
+            'web_cancel_deadline_hours.max' => 'Webキャンセル締切時間は168時間以内で入力してください。',
         ]);
 
-        $dayNames = ['日','月','火','水','木','金','土'];
+        $dayNames = ['日', '月', '火', '水', '木', '金', '土'];
 
         foreach ($validated['open_patterns'] ?? [] as $weekday => $patterns) {
             foreach ($patterns as $index => $pattern) {
@@ -87,6 +94,8 @@ class CompanyController extends Controller
             'reservation_month_limit' => $validated['reservation_month_limit'] ?? 3,
             'reservation_open_days' => $validated['reservation_open_days'] ?? 0,
             'reservation_close_hours' => $validated['reservation_close_hours'] ?? 1,
+            'revisit_reminder_days' => $validated['revisit_reminder_days'] ?? 45,
+            'web_cancel_deadline_hours' => $validated['web_cancel_deadline_hours'] ?? 24,
             'slot_minutes' => $validated['slot_minutes'],
             'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],
             'open_patterns' => $patterns,

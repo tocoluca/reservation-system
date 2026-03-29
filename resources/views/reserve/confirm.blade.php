@@ -7,6 +7,7 @@
     $totalPrice = $menus->sum('price');
     $staffFee = $staff->nomination_fee ?? 0;
     $finalPrice = $totalPrice + $staffFee;
+    $cancelHours = $company->web_cancel_deadline_hours ?? 24;
 @endphp
 
 <div class="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -27,7 +28,6 @@
             </p>
         </div>
 
-        {{-- 入力エラー --}}
         @if($errors->any())
             <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700">
                 <div class="font-semibold mb-2 text-sm">入力内容を確認してください</div>
@@ -39,7 +39,6 @@
             </div>
         @endif
 
-        {{-- 予約内容 --}}
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-6">
             <div class="px-6 sm:px-8 py-6 text-white"
                  style="background: linear-gradient(135deg, {{ $theme }}, #111827)">
@@ -126,7 +125,6 @@
             </div>
         @endif
 
-        {{-- 入力フォーム --}}
         <form method="POST" action="/r/{{ $company->company_code }}/store" class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-8 space-y-6" id="confirmForm">
             @csrf
 
@@ -180,9 +178,35 @@
                 </p>
             </div>
 
+            <div class="rounded-2xl border p-4 sm:p-5"
+                 style="background: {{ $theme }}10; border-color: {{ $theme }}33;">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+                         style="background: {{ $theme }}">
+                        ✉
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-900 mb-1">
+                            メールアドレスを入力すると、あとでキャンセル手続きがしやすくなります
+                        </div>
+                        <div class="text-sm text-gray-700 leading-7">
+                            予約完了メールから、そのままキャンセルのお手続きができます。<br>
+                            予約内容の確認にも便利です。<br>
+                            <span class="text-gray-500">
+                                ※ Webでのキャンセルはご予約時間の{{ $cancelHours }}時間前まで可能です。<br>
+                                それ以降のキャンセル・変更は、お手数ですがお電話でのご連絡をお願いいたします。
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
                     メールアドレス
+                    <span class="ml-2 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600">
+                        任意
+                    </span>
                 </label>
                 <input
                     type="email"
@@ -191,8 +215,8 @@
                     placeholder="example@example.com"
                     class="border border-gray-300 rounded-2xl p-3.5 w-full focus:outline-none focus:ring-2 focus:border-transparent"
                     style="--tw-ring-color: {{ $theme }}33;">
-                <p class="text-xs text-gray-400 mt-2">
-                    任意入力です。予約確認やご連絡に使用する場合があります
+                <p class="text-xs mt-2" style="color: {{ $theme }}">
+                    入力しておくと、予約完了メールからキャンセル手続きができます
                 </p>
             </div>
 

@@ -31,6 +31,8 @@ class Company extends Model
         'reservation_month_limit',
         'reservation_open_days',
         'reservation_close_hours',
+        'revisit_reminder_days',
+        'web_cancel_deadline_hours',
         'is_initialized',
         'open_patterns',
 

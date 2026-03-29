@@ -13,11 +13,16 @@ use App\Models\ShiftPattern;
 use App\Models\Customer;
 use App\Models\Notice;
 
+use App\Mail\ReservationCompleteMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+
 use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
+
 
 class ReserveController extends Controller
 {
@@ -381,7 +386,7 @@ public function store(Request $request, $company_code)
 
         'customer_name'   => $request->customer_name,
         'customer_phone'  => str_replace('-', '', $request->customer_phone),
-        'customer_email'  => $request->customer_email,
+        'customer_email'  => $request->customer_email ?: $customer->email,
 
         'start_at'        => $start,
         'end_at'          => $end,
@@ -393,6 +398,25 @@ public function store(Request $request, $company_code)
         'status'          => 'reserved',
         'cancel_token'    => Str::random(6)
     ]);
+
+	if (!empty($reservation->customer_email)) {
+	    try {
+	        Mail::to($reservation->customer_email)->send(
+	            new ReservationCompleteMail($company, $reservation->load('staff'))
+	        );
+
+	        Log::info('予約完了メール送信成功', [
+	            'reservation_id' => $reservation->id,
+	            'email' => $reservation->customer_email,
+	        ]);
+	    } catch (\Throwable $e) {
+	        Log::error('予約完了メール送信失敗', [
+	            'reservation_id' => $reservation->id,
+	            'email' => $reservation->customer_email,
+	            'error' => $e->getMessage(),
+	        ]);
+	    }
+	}
 
     $maxCycle = $menus->max('revisit_days');
 

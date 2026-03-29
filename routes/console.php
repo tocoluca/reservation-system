@@ -7,7 +7,7 @@ use App\Console\Commands\DemoResetCommand;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('mail:send-revisit-reminders')
-    ->dailyAt('20:55');
+    ->everyMinute();
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());

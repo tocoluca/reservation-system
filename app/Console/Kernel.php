@@ -19,6 +19,12 @@ class Kernel extends ConsoleKernel
         $schedule->command('demo:reset')
             ->dailyAt('03:00')
             ->withoutOverlapping();
+
+		Schedule::command('mail:send-revisit-reminders')
+		    ->dailyAt('12:15');
+
+        $schedule->command('customers:reflect-visits')->everyMinute();
+
     }
 
     protected function commands(): void

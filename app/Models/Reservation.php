@@ -11,6 +11,7 @@ class Reservation extends Model
 
     protected $fillable = [
         'company_id',
+        'customer_id',
         'staff_id',
         'customer_name',
         'customer_email',
@@ -18,40 +19,47 @@ class Reservation extends Model
         'start_at',
         'end_at',
         'status',
+        'visit_reflected_at',
         'source',
         'fingerprint',
-	    // 追加
-	    'price',
-	    'nomination_fee',
-	    'total_price',
-	'cancel_token'
+        'price',
+        'nomination_fee',
+        'total_price',
+        'cancel_token',
     ];
 
-    protected $dates = ['start_at','end_at'];
+    protected $dates = ['start_at', 'end_at', 'visit_reflected_at'];
 
-	protected $casts = [
-	    'start_at' => 'datetime',
-	    'end_at'   => 'datetime',
-	];
+    protected $casts = [
+        'start_at'           => 'datetime',
+        'end_at'             => 'datetime',
+        'visit_reflected_at' => 'datetime',
+    ];
 
-	public function staff()
-	{
-	    return $this->belongsTo(\App\Models\Staff::class);
-	}
+    public function customer()
+    {
+        return $this->belongsTo(\App\Models\Customer::class);
+    }
 
-	public function reservationMenus()
-	{
-	    return $this->hasMany(ReservationMenu::class);
-	}
-	public function menus()
-	{
-	    return $this->belongsToMany(Menu::class, 'reservation_menus')
-	        ->withPivot('price','duration')
-	        ->withTimestamps();
-	}
-	public function company()
-	{
-	    return $this->belongsTo(\App\Models\Company::class);
-	}
+    public function staff()
+    {
+        return $this->belongsTo(\App\Models\Staff::class);
+    }
 
+    public function reservationMenus()
+    {
+        return $this->hasMany(ReservationMenu::class);
+    }
+
+    public function menus()
+    {
+        return $this->belongsToMany(Menu::class, 'reservation_menus')
+            ->withPivot('price', 'duration')
+            ->withTimestamps();
+    }
+
+    public function company()
+    {
+        return $this->belongsTo(\App\Models\Company::class);
+    }
 }

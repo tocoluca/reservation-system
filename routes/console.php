@@ -9,3 +9,15 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Schedule::command('mail:send-revisit-reminders')
+    ->dailyAt('12:15')
+    ->withoutOverlapping();
+
+Schedule::command('customers:reflect-visits')
+    ->everyMinute()
+    ->withoutOverlapping();
+
+Schedule::command('mail:send-reservation-reminders')
+    ->everyMinute()
+    ->withoutOverlapping();

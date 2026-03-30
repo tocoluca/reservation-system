@@ -26,6 +26,7 @@ class Reservation extends Model
         'nomination_fee',
         'total_price',
         'cancel_token',
+        'reminder_sent_at',
     ];
 
     protected $dates = ['start_at', 'end_at', 'visit_reflected_at'];
@@ -34,6 +35,7 @@ class Reservation extends Model
         'start_at'           => 'datetime',
         'end_at'             => 'datetime',
         'visit_reflected_at' => 'datetime',
+        'reminder_sent_at'   => 'datetime',
     ];
 
     public function customer()

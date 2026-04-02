@@ -11,11 +11,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('mail:send-revisit-reminders')
-    ->everyMinute()
-    ->withoutOverlapping();
-
-Schedule::command('customers:reflect-visits')
-    ->everyMinute()
+    ->dailyAt('12:10')
     ->withoutOverlapping();
 
 Schedule::command('mail:send-reservation-reminders')

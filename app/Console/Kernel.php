@@ -19,6 +19,10 @@ class Kernel extends ConsoleKernel
         $schedule->command('demo:reset')
             ->dailyAt('03:00')
             ->withoutOverlapping();
+
+        $schedule->command('mail:send-reservation-reminders')
+            ->everyMinute()
+            ->withoutOverlapping();
     }
 
     protected function commands(): void

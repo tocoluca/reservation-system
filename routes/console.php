@@ -17,3 +17,12 @@ Schedule::command('mail:send-revisit-reminders')
 Schedule::command('customers:reflect-visits')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('mail:send-reservation-reminders')
+    ->dailyAt('12:10')
+    ->withoutOverlapping();
+
+Schedule::command('demo:reset')
+    ->dailyAt('03:00')
+    ->withoutOverlapping();
+

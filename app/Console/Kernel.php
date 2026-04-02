@@ -21,7 +21,7 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping();
 
         $schedule->command('mail:send-reservation-reminders')
-            ->everyMinute()
+            ->dailyAt('12:10')
             ->withoutOverlapping();
     }
 

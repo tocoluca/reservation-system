@@ -17,7 +17,3 @@ Schedule::command('mail:send-revisit-reminders')
 Schedule::command('customers:reflect-visits')
     ->everyMinute()
     ->withoutOverlapping();
-
-Schedule::command('mail:send-reservation-reminders')
-    ->everyMinute()
-    ->withoutOverlapping();

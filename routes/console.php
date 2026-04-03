@@ -11,11 +11,11 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('mail:send-revisit-reminders')
-    ->dailyAt('09:00')
+    ->dailyAt('12:10')
     ->withoutOverlapping();
 
 Schedule::command('mail:send-reservation-reminders')
-    ->dailyAt('09:00')
+    ->dailyAt('12:10')
     ->withoutOverlapping();
 
 Schedule::command('demo:reset')

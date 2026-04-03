@@ -32,12 +32,12 @@ use App\Http\Controllers\Company\CustomerController;
 use App\Http\Controllers\Company\NoticeController;
 use App\Http\Controllers\Company\DashboardNoticeController;
 use App\Http\Controllers\Company\DashboardSettingController;
-
+use App\Http\Controllers\Company\ReviewController as CompanyReviewController;
 
 use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\ReserveController;
 use App\Http\Controllers\ReserveCancelController;
-
+use App\Http\Controllers\ReviewController;
 
 use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\StripeWebhookController;
@@ -79,7 +79,6 @@ Route::prefix('admin')->group(function () {
         Route::post('logout', [AuthController::class, 'logout'])
             ->name('admin.logout');
 
-        // 企業申請管理
         Route::get('applications', [AdminApplicationController::class, 'index'])
             ->name('admin.applications');
 
@@ -95,7 +94,6 @@ Route::prefix('admin')->group(function () {
         Route::post('applications/pending/{id}', [AdminApplicationController::class, 'pending'])
             ->name('admin.applications.pending');
 
-        // 企業管理
         Route::resource('company-dashboard-notices', AdminCompanyDashboardNoticeController::class)
             ->names('admin.company-dashboard-notices');
 
@@ -143,32 +141,18 @@ Route::prefix('company')->group(function () {
         Route::post('logout', [CompanyAuth::class, 'logout'])
             ->name('company.logout');
 
-        /*
-        |--------------------------------------------------------------------------
-        | 初回導線
-        |--------------------------------------------------------------------------
-        */
-
-        // 初回パスワード変更
         Route::get('password-change', [PasswordController::class, 'edit'])
             ->name('company.password.change');
 
         Route::post('password-change', [PasswordController::class, 'update'])
             ->name('company.password.change.update');
 
-        // はじめての設定ガイド
         Route::get('setup', [SetupController::class, 'index'])
             ->name('company.setup');
 
         Route::post('setup/complete', [SetupController::class, 'complete'])
             ->name('company.setup.complete');
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | 通常機能
-        |--------------------------------------------------------------------------
-        */
         Route::middleware('company.init')->group(function () {
 
             Route::get('dashboard', [CompanyDash::class, 'index'])
@@ -194,24 +178,15 @@ Route::prefix('company')->group(function () {
             Route::post('logo', [LogoController::class, 'update'])
                 ->name('company.logo.update');
 
-            // =====================
-            // Adminからのお知らせ情報
-            // =====================
             Route::get('dashboard-notices/{dashboardNotice}', [DashboardNoticeController::class, 'show'])
                 ->name('company.dashboard-notices.show');
 
-            // =====================
-            // 企業情報編集
-            // =====================
             Route::get('company-info', [CompanyInfoController::class, 'edit'])
                 ->name('company.info.edit');
 
             Route::post('company-info', [CompanyInfoController::class, 'update'])
                 ->name('company.info.update');
 
-            // =====================
-            // 担当者管理
-            // =====================
             Route::get('staff', [StaffController::class, 'index'])
                 ->name('company.staff.index');
 
@@ -233,9 +208,6 @@ Route::prefix('company')->group(function () {
             Route::post('staff/{id}/reset-password', [StaffController::class, 'resetPassword'])
                 ->name('company.staff.reset-password');
 
-            // =====================
-            // 休暇管理
-            // =====================
             Route::get('vacation/apply', [VacationController::class, 'create']);
             Route::post('vacation/apply', [VacationController::class, 'store']);
 
@@ -260,18 +232,12 @@ Route::prefix('company')->group(function () {
             Route::delete('vacation/{vacation}', [VacationController::class, 'destroy'])
                 ->name('company.vacation.destroy');
 
-            // =====================
-            // マイプロフィール
-            // =====================
             Route::get('my-profile', [MyProfileController::class, 'edit'])
                 ->name('company.my-profile');
 
             Route::post('my-profile', [MyProfileController::class, 'update'])
                 ->name('company.my-profile.update');
 
-            // =====================
-            // 予約管理（企業ダッシュボード側）
-            // =====================
             Route::post('reservation', [ReservationController::class, 'store'])
                 ->name('company.reservation.store');
 
@@ -281,9 +247,6 @@ Route::prefix('company')->group(function () {
             Route::delete('reservation/{id}', [ReservationController::class, 'destroy'])
                 ->name('company.reservation.destroy');
 
-            // =====================
-            // 営業日カレンダー
-            // =====================
             Route::get('calendar', [CalendarController::class, 'index'])
                 ->name('company.calendar.index');
 
@@ -314,9 +277,6 @@ Route::prefix('company')->group(function () {
             Route::get('calendar/staff-menus', [ReservationController::class, 'staffMenus'])
                 ->name('company.calendar.staff-menus');
 
-            // =====================
-            // メニュー管理
-            // =====================
             Route::get('menu', [MenuController::class, 'index'])
                 ->name('company.menu.index');
 
@@ -356,15 +316,6 @@ Route::prefix('company')->group(function () {
             Route::post('menu-staff', [MenuStaffController::class, 'update'])
                 ->name('company.menu-staff.update');
 
-            // =====================
-            // デフォルトシフト・パターン・月シフト
-            // =====================
-            Route::get('staff-default-shifts', [StaffDefaultShiftController::class, 'index'])
-                ->name('company.staff-default-shifts');
-
-            Route::post('staff-default-shifts', [StaffDefaultShiftController::class, 'update'])
-                ->name('company.staff-default-shifts.update');
-
             Route::get('shift-patterns', [ShiftPatternController::class, 'index'])
                 ->name('company.shift-patterns');
 
@@ -373,6 +324,12 @@ Route::prefix('company')->group(function () {
 
             Route::get('shift-patterns/delete/{id}', [ShiftPatternController::class, 'delete'])
                 ->name('company.shift-patterns.delete');
+
+            Route::get('staff-default-shifts', [StaffDefaultShiftController::class, 'index'])
+                ->name('company.staff-default-shifts');
+
+            Route::post('staff-default-shifts', [StaffDefaultShiftController::class, 'update'])
+                ->name('company.staff-default-shifts.update');
 
             Route::get('staff-shifts', [StaffShiftController::class, 'index'])
                 ->name('company.staff-shifts');
@@ -386,9 +343,6 @@ Route::prefix('company')->group(function () {
             Route::post('staff-shifts/copy', [StaffShiftController::class, 'copy'])
                 ->name('company.staff-shifts.copy');
 
-            // =====================
-            // 顧客管理
-            // =====================
             Route::get('customers', [CustomerController::class, 'index'])
                 ->name('company.customers');
 
@@ -407,26 +361,35 @@ Route::prefix('company')->group(function () {
             Route::delete('customers/photo/{id}', [CustomerController::class, 'deletePhoto'])
                 ->name('company.customers.photo.delete');
 
-            // =====================
-            // お知らせ管理
-            // =====================
             Route::resource('notices', NoticeController::class)
                 ->names('company.notices');
 
-            // =====================
-            // ダッシュボード管理
-            // =====================
-			Route::get('/dashboard-settings', [DashboardSettingController::class, 'index'])
-			    ->name('company.dashboard-settings.index');
+            Route::get('/dashboard-settings', [DashboardSettingController::class, 'index'])
+                ->name('company.dashboard-settings.index');
 
-			Route::post('/dashboard-settings', [DashboardSettingController::class, 'update'])
-			    ->name('company.dashboard-settings.update');
+            Route::post('/dashboard-settings', [DashboardSettingController::class, 'update'])
+                ->name('company.dashboard-settings.update');
+
+            // 口コミ管理
+            Route::get('reviews', [CompanyReviewController::class, 'index'])
+                ->name('company.reviews.index');
+
+            Route::get('reviews/{review}', [CompanyReviewController::class, 'show'])
+                ->name('company.reviews.show');
+
+            Route::post('reviews/{review}/approve', [CompanyReviewController::class, 'approve'])
+                ->name('company.reviews.approve');
+
+            Route::post('reviews/{review}/reject', [CompanyReviewController::class, 'reject'])
+                ->name('company.reviews.reject');
+
+            Route::post('reviews/{review}/reply', [CompanyReviewController::class, 'reply'])
+                ->name('company.reviews.reply');
 
         });
     });
 });
 
-// カレンダーの担当者選択時のAJAX処理
 Route::get('/company/staff/list', function () {
     $company = auth()->guard('company')->user()->company;
 
@@ -465,6 +428,15 @@ Route::prefix('r/{company_code}')
 
 Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
     ->name('reserve.line.callback');
+
+Route::get('/review/{token}', [ReviewController::class, 'create'])
+    ->name('reviews.create');
+
+Route::post('/review/{token}', [ReviewController::class, 'store'])
+    ->name('reviews.store');
+
+Route::get('/review/{token}/complete', [ReviewController::class, 'complete'])
+    ->name('reviews.complete');
 
 Route::get('/cancel/{token}', [ReserveController::class, 'cancel']);
 

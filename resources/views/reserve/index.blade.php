@@ -480,6 +480,49 @@
                 </div>
             </div>
         </form>
+
+        @if(($reviewCount ?? 0) > 0)
+            <section class="max-w-5xl mx-auto px-0 mt-10">
+                <div class="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 md:p-8">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-stone-800">お客様の口コミ</h2>
+                            <p class="text-stone-500 text-sm mt-1">実際にご来店いただいたお客様のご感想です。</p>
+                        </div>
+
+                        <div class="text-right">
+                            <div class="text-sm text-stone-500">平均評価</div>
+                            <div class="text-2xl font-bold text-amber-500">
+                                ★{{ number_format((float) $averageRating, 1) }}
+                            </div>
+                            <div class="text-sm text-stone-500">{{ $reviewCount }}件</div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        @foreach($publicReviews as $review)
+                            <div class="rounded-xl border border-stone-200 p-4 bg-stone-50">
+                                <div class="flex items-center justify-between gap-3 mb-2">
+                                    <div class="font-semibold text-stone-800">{{ $review->nickname ?: 'お客様' }}</div>
+                                    <div class="text-amber-500 font-bold">★{{ $review->rating }}</div>
+                                </div>
+
+                                @if($review->comment)
+                                    <div class="text-stone-700 leading-relaxed whitespace-pre-wrap">{{ $review->comment }}</div>
+                                @endif
+
+                                @if($review->owner_reply)
+                                    <div class="mt-4 rounded-lg bg-white border border-stone-200 p-3">
+                                        <div class="text-sm font-semibold text-stone-700 mb-1">店舗からの返信</div>
+                                        <div class="text-sm text-stone-600 whitespace-pre-wrap">{{ $review->owner_reply }}</div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        @endif
     </div>
 </div>
 

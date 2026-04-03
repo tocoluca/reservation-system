@@ -12,6 +12,7 @@ use App\Models\StaffShift;
 use App\Models\ShiftPattern;
 use App\Models\Customer;
 use App\Models\Notice;
+use App\Models\Review;
 
 use App\Mail\ReservationCompleteMail;
 use Illuminate\Http\Request;
@@ -22,7 +23,6 @@ use Illuminate\Support\Facades\Mail;
 
 use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
-
 
 class ReserveController extends Controller
 {
@@ -216,6 +216,23 @@ public function index($company_code)
             return $s;
         });
 
+    $publicReviews = Review::where('company_id', $company->id)
+        ->where('is_public', true)
+        ->where('status', 'approved')
+        ->latest()
+        ->take(5)
+        ->get();
+
+    $reviewCount = Review::where('company_id', $company->id)
+        ->where('is_public', true)
+        ->where('status', 'approved')
+        ->count();
+
+    $averageRating = Review::where('company_id', $company->id)
+        ->where('is_public', true)
+        ->where('status', 'approved')
+        ->avg('rating');
+
     $lineProfile = $this->getLineProfileFromSession($company);
     $lineCustomer = $this->getLineCustomerFromSession($company);
 
@@ -224,6 +241,9 @@ public function index($company_code)
         'menus'            => $menus,
         'staff'            => $staff,
         'notices'          => $notices,
+        'publicReviews'    => $publicReviews,
+        'reviewCount'      => $reviewCount,
+        'averageRating'    => $averageRating,
         'lineLoginEnabled' => $this->isLineLoginEnabled($company),
         'lineProfile'      => $lineProfile,
         'lineCustomer'     => $lineCustomer,
@@ -396,27 +416,28 @@ public function store(Request $request, $company_code)
         'total_price'     => $totalPrice + $staff->nomination_fee,
 
         'status'          => 'reserved',
-        'cancel_token'    => Str::random(6)
+        'cancel_token'    => Str::random(6),
+        'review_token'    => Str::random(40),
     ]);
 
-	if (!empty($reservation->customer_email)) {
-	    try {
-	        Mail::to($reservation->customer_email)->send(
-	            new ReservationCompleteMail($company, $reservation->load('staff'))
-	        );
+    if (!empty($reservation->customer_email)) {
+        try {
+            Mail::to($reservation->customer_email)->send(
+                new ReservationCompleteMail($company, $reservation->load('staff'))
+            );
 
-	        Log::info('予約完了メール送信成功', [
-	            'reservation_id' => $reservation->id,
-	            'email' => $reservation->customer_email,
-	        ]);
-	    } catch (\Throwable $e) {
-	        Log::error('予約完了メール送信失敗', [
-	            'reservation_id' => $reservation->id,
-	            'email' => $reservation->customer_email,
-	            'error' => $e->getMessage(),
-	        ]);
-	    }
-	}
+            Log::info('予約完了メール送信成功', [
+                'reservation_id' => $reservation->id,
+                'email' => $reservation->customer_email,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('予約完了メール送信失敗', [
+                'reservation_id' => $reservation->id,
+                'email' => $reservation->customer_email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 
     $maxCycle = $menus->max('revisit_days');
 
@@ -492,10 +513,6 @@ public function cancel($token)
 
 private function resolveStaff($company, $staffId, $start, $end, $menuIds)
 {
-    /* ==========================
-       指名スタッフがある場合
-    ========================== */
-
     if ($staffId) {
         $vacation = Vacation::where('staff_id', $staffId)
             ->where('status', 'approved')
@@ -521,10 +538,6 @@ private function resolveStaff($company, $staffId, $start, $end, $menuIds)
         return $exists ? null : $staffId;
     }
 
-    /* ==========================
-       自動スタッフ割当
-    ========================== */
-
     $staffList = Staff::where('company_id', $company->id)
         ->where('is_reservable', true)
         ->whereHas('menus', function ($q) use ($menuIds) {
@@ -534,10 +547,6 @@ private function resolveStaff($company, $staffId, $start, $end, $menuIds)
         ->get();
 
     foreach ($staffList as $staff) {
-        /* ==========================
-           休暇チェック
-        ========================== */
-
         $vacation = Vacation::where('staff_id', $staff->id)
             ->where('status', 'approved')
             ->where(function ($q) use ($start, $end) {
@@ -549,10 +558,6 @@ private function resolveStaff($company, $staffId, $start, $end, $menuIds)
         if ($vacation) {
             continue;
         }
-
-        /* ==========================
-           予約重複チェック
-        ========================== */
 
         $exists = Reservation::where('company_id', $company->id)
             ->where('staff_id', $staff->id)

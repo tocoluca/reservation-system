@@ -96,4 +96,10 @@ class Company extends Model
             default => '未契約',
         };
     }
+
+	public function reviews()
+	{
+	    return $this->hasMany(\App\Models\Review::class);
+	}
+
 }

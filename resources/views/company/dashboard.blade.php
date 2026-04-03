@@ -366,6 +366,15 @@
             </a>
         @endif
 
+		@if($dashboardPermissions['card.reviews'] ?? true)
+		    <a href="{{ route('company.reviews.index') }}"
+		       class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-amber-500">
+		        <div class="text-amber-500 text-xs font-semibold mb-2">REVIEW</div>
+		        <div class="text-lg sm:text-xl font-bold mb-2">口コミ管理</div>
+		        <div class="text-gray-500 text-sm">口コミの確認・公開・返信</div>
+		    </a>
+		@endif
+
         @if($dashboardPermissions['card.notices'] ?? false)
             <a href="{{ route('company.notices.index') }}"
                class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-emerald-500">

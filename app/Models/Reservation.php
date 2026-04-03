@@ -27,6 +27,9 @@ class Reservation extends Model
         'total_price',
         'cancel_token',
         'reminder_sent_at',
+		'review_token',
+		'review_requested_at',
+		'review_submitted_at',
     ];
 
     protected $dates = ['start_at', 'end_at', 'visit_reflected_at'];
@@ -36,6 +39,8 @@ class Reservation extends Model
         'end_at'             => 'datetime',
         'visit_reflected_at' => 'datetime',
         'reminder_sent_at'   => 'datetime',
+		'review_requested_at' => 'datetime',
+		'review_submitted_at' => 'datetime',
     ];
 
     public function customer()
@@ -64,4 +69,8 @@ class Reservation extends Model
     {
         return $this->belongsTo(\App\Models\Company::class);
     }
+	public function review()
+	{
+	    return $this->hasOne(\App\Models\Review::class);
+	}
 }

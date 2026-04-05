@@ -20,7 +20,11 @@ public function index(Request $request)
 
 $company = auth()->guard('company')->user()->company;
 
-$query = Customer::where('company_id',$company->id);
+$query = Customer::where('company_id', $company->id)
+    ->with(['photos' => function ($q) {
+        $q->latest('id');
+    }]);
+
 
 if($request->filled('keyword')){
 
@@ -134,13 +138,13 @@ $path = null;
 
 	}
 
-
 CustomerPhoto::create([
 
 'customer_id'=>$customer->id,
 'path'=>$path
 
 ]);
+
 
 return back()->with('success','写真を追加しました');
 

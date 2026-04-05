@@ -414,6 +414,9 @@ Route::prefix('company')->group(function () {
 	        Route::post('/reservation-change-notices/items/{item}/update-note', [ReservationChangeNoticeController::class, 'updateNote'])
 	            ->name('company.reservation_change_notices.items.update_note');
 
+	        Route::get('/calendar/assignment-candidates', [CalendarController::class, 'assignmentCandidates'])
+    	        ->name('company.calendar.assignment-candidates');
+
 
         });
     });

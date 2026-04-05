@@ -184,8 +184,8 @@
                         <th class="px-4 py-3 font-semibold w-[160px]">予約日時</th>
                         <th class="px-4 py-3 font-semibold w-[140px]">顧客名</th>
                         <th class="px-4 py-3 font-semibold w-[140px]">電話番号</th>
-                        <th class="px-4 py-3 font-semibold w-[120px]">担当者</th>
-                        <th class="px-4 py-3 font-semibold">メニュー</th>
+                        <th class="px-4 py-3 font-semibold w-[120px]">主担当</th>
+                        <th class="px-4 py-3 font-semibold">施術・担当内訳</th>
                         <th class="px-4 py-3 font-semibold w-[110px]">状態</th>
                         <th class="px-4 py-3 font-semibold w-[110px]">操作</th>
                     </tr>
@@ -197,6 +197,31 @@
                             $displayPhone = $reservation->customer_phone ?: optional($reservation->customer)->phone ?: '－';
                             $menuNames = $reservation->menus->pluck('name')->filter()->values();
                             $menuText = $menuNames->isNotEmpty() ? $menuNames->join('、') : '－';
+
+                            $detailRows = $reservation->details
+                                ->filter(fn($detail) => $detail->menu || $detail->staff)
+                                ->map(function ($detail) {
+                                    $menuName = optional($detail->menu)->name ?: 'メニュー未設定';
+                                    $staffName = optional($detail->staff)->name ?: '担当未設定';
+                                    $timeText = '';
+
+                                    if ($detail->start_at && $detail->end_at) {
+                                        $timeText = $detail->start_at->format('H:i') . '〜' . $detail->end_at->format('H:i');
+                                    }
+
+                                    return [
+                                        'menu_name' => $menuName,
+                                        'staff_name' => $staffName,
+                                        'time_text' => $timeText,
+                                    ];
+                                })
+                                ->values();
+
+                            $confirmDetailText = $detailRows->isNotEmpty()
+                                ? $detailRows->map(function ($row) {
+                                    return $row['menu_name'] . '：' . $row['staff_name'];
+                                })->join(' / ')
+                                : $menuText;
                         @endphp
 
                         <tr class="border-b border-stone-100 hover:bg-stone-50/70 transition align-top">
@@ -217,9 +242,29 @@
                             </td>
 
                             <td class="px-4 py-4 text-stone-700">
-                                <div class="whitespace-normal break-words leading-6">
-                                    {{ $menuText }}
-                                </div>
+                                @if($detailRows->isNotEmpty())
+                                    <div class="space-y-2">
+                                        @foreach($detailRows as $row)
+                                            <div class="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                                                <div class="flex flex-col gap-1">
+                                                    <div class="font-medium text-stone-800 break-words">
+                                                        {{ $row['menu_name'] }}
+                                                    </div>
+                                                    <div class="text-xs text-stone-500">
+                                                        担当：{{ $row['staff_name'] }}
+                                                        @if($row['time_text'] !== '')
+                                                            <span class="ml-2">({{ $row['time_text'] }})</span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="whitespace-normal break-words leading-6">
+                                        {{ $menuText }}
+                                    </div>
+                                @endif
                             </td>
 
                             <td class="px-4 py-4">
@@ -242,7 +287,7 @@
                                 @if($reservation->status === 'reserved')
                                     <form method="POST"
                                           action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                          onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n担当者：{{ optional($reservation->staff)->name ?: '未指定' }}\nメニュー：{{ $menuText }}');">
+                                          onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
                                         @csrf
                                         <button type="submit"
                                                 class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-white text-xs font-semibold hover:opacity-90 transition"
@@ -274,6 +319,31 @@
                     $displayPhone = $reservation->customer_phone ?: optional($reservation->customer)->phone ?: '－';
                     $menuNames = $reservation->menus->pluck('name')->filter()->values();
                     $menuText = $menuNames->isNotEmpty() ? $menuNames->join('、') : '－';
+
+                    $detailRows = $reservation->details
+                        ->filter(fn($detail) => $detail->menu || $detail->staff)
+                        ->map(function ($detail) {
+                            $menuName = optional($detail->menu)->name ?: 'メニュー未設定';
+                            $staffName = optional($detail->staff)->name ?: '担当未設定';
+                            $timeText = '';
+
+                            if ($detail->start_at && $detail->end_at) {
+                                $timeText = $detail->start_at->format('H:i') . '〜' . $detail->end_at->format('H:i');
+                            }
+
+                            return [
+                                'menu_name' => $menuName,
+                                'staff_name' => $staffName,
+                                'time_text' => $timeText,
+                            ];
+                        })
+                        ->values();
+
+                    $confirmDetailText = $detailRows->isNotEmpty()
+                        ? $detailRows->map(function ($row) {
+                            return $row['menu_name'] . '：' . $row['staff_name'];
+                        })->join(' / ')
+                        : $menuText;
                 @endphp
 
                 <div class="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm space-y-3">
@@ -314,13 +384,32 @@
                         </div>
 
                         <div>
-                            <div class="text-xs text-stone-500">担当者</div>
+                            <div class="text-xs text-stone-500">主担当</div>
                             <div class="text-stone-700">{{ optional($reservation->staff)->name ?: '未指定' }}</div>
                         </div>
 
                         <div class="sm:col-span-2">
-                            <div class="text-xs text-stone-500">メニュー</div>
-                            <div class="text-stone-700 break-words leading-6">{{ $menuText }}</div>
+                            <div class="text-xs text-stone-500">施術・担当内訳</div>
+
+                            @if($detailRows->isNotEmpty())
+                                <div class="mt-2 space-y-2">
+                                    @foreach($detailRows as $row)
+                                        <div class="rounded-xl border border-stone-200 bg-stone-50 px-3 py-2">
+                                            <div class="font-medium text-stone-800 break-words">
+                                                {{ $row['menu_name'] }}
+                                            </div>
+                                            <div class="text-xs text-stone-500 mt-1">
+                                                担当：{{ $row['staff_name'] }}
+                                                @if($row['time_text'] !== '')
+                                                    <span class="ml-2">({{ $row['time_text'] }})</span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="text-stone-700 break-words leading-6">{{ $menuText }}</div>
+                            @endif
                         </div>
                     </div>
 
@@ -328,7 +417,7 @@
                         @if($reservation->status === 'reserved')
                             <form method="POST"
                                   action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                  onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n担当者：{{ optional($reservation->staff)->name ?: '未指定' }}\nメニュー：{{ $menuText }}');">
+                                  onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
                                 @csrf
                                 <button type="submit"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-xl text-white text-sm font-semibold hover:opacity-90 transition"

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Reservation;
+use App\Models\ReservationDetail;
 use App\Models\Vacation;
 use App\Models\Menu;
 use App\Models\CompanyBusinessCalendar;
@@ -29,7 +30,7 @@ class ReservationController extends Controller
         $dateTo   = $request->get('date_to');
         $status   = $request->get('status');
 
-        $query = Reservation::with(['staff', 'customer', 'menus'])
+        $query = Reservation::with(['staff', 'customer', 'menus', 'details.staff', 'details.menu'])
             ->where('company_id', $company->id);
 
         if ($keyword !== '') {
@@ -125,9 +126,6 @@ class ReservationController extends Controller
             ->with('success', '予約をキャンセルしました。');
     }
 
-    /* ==========================================================
-       予約制御設定
-    ========================================================== */
     private function getReservationLimits($company)
     {
         $limitMonth = $company->reservation_month_limit ?? 3;
@@ -154,9 +152,6 @@ class ReservationController extends Controller
         ];
     }
 
-    /* ==========================================================
-       カレンダー表示
-    ========================================================== */
     public function calendar(Request $request)
     {
         try {
@@ -181,9 +176,6 @@ class ReservationController extends Controller
         }
     }
 
-    /* ==========================================================
-       カレンダーデータ
-    ========================================================== */
     public function calendarData(Request $request)
     {
         $company = auth()->guard('company')->user()->company;
@@ -490,37 +482,45 @@ class ReservationController extends Controller
         }
     }
 
-    /* ==========================================================
-       予約登録
-    ========================================================== */
     public function store(Request $request)
     {
         $company = Auth::guard('company')->user()->company;
 
         try {
             $request->validate([
-                'start_at'       => 'required|date',
-                'customer_name'  => 'required|string|max:255',
-                'customer_phone' => 'required|string|max:50',
-                'menu_ids'       => 'nullable|array',
-                'menu_ids.*'     => 'integer',
-                'staff_id'       => 'nullable|integer',
+                'start_at'                  => 'required|date',
+                'customer_name'             => 'required|string|max:255',
+                'customer_phone'            => 'required|string|max:50',
+                'menu_ids'                  => 'required|array|min:1',
+                'menu_ids.*'                => 'integer',
+                'staff_id'                  => 'nullable|integer',
+                'assignments'               => 'nullable|array',
+                'assignments.*.menu_id'     => 'required_with:assignments|integer',
+                'assignments.*.staff_id'    => 'required_with:assignments|integer',
             ]);
 
             $start = Carbon::parse($request->start_at);
 
+            $menuIds = collect($request->menu_ids ?? [])->map(fn ($id) => (int) $id)->values();
+
             $menus = Menu::where('company_id', $company->id)
-                ->whereIn('id', $request->menu_ids ?? [])
-                ->get();
+                ->whereIn('id', $menuIds)
+                ->get()
+                ->keyBy('id');
 
-            $duration = (int) $menus->sum('duration');
-            $price    = (int) $menus->sum('price');
-
-            if ($duration <= 0) {
-                $duration = (int) ($company->slot_minutes ?? 30);
+            if ($menus->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'メニューを選択してください',
+                ], 422);
             }
 
-            $end = $start->copy()->addMinutes($duration);
+            $orderedMenus = $menuIds->map(function ($id) use ($menus) {
+                return $menus->get($id);
+            })->filter()->values();
+
+            $segments = $this->buildMenuSegments($orderedMenus, $start, $company);
+            $end = collect($segments)->last()['end_at'] ?? $start->copy()->addMinutes((int) ($company->slot_minutes ?? 30));
 
             $limits = $this->getReservationLimits($company);
 
@@ -540,6 +540,7 @@ class ReservationController extends Controller
 
             $staffList = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
+                ->with('menus:id')
                 ->orderBy('priority_order')
                 ->get();
 
@@ -552,21 +553,17 @@ class ReservationController extends Controller
 
             $staffIds = $staffList->pluck('id');
 
-            $todayReservations = Reservation::where('company_id', $company->id)
-                ->whereDate('start_at', $start->toDateString())
-                ->where('status', 'reserved')
-                ->select('staff_id', DB::raw('count(*) as total'))
-                ->groupBy('staff_id')
-                ->pluck('total', 'staff_id');
+            $shiftDateFrom = $start->toDateString();
+            $shiftDateTo   = $end->copy()->toDateString();
 
             $shifts = StaffShift::whereIn('staff_id', $staffIds)
-                ->whereDate('date', $start->toDateString())
+                ->whereBetween('date', [$shiftDateFrom, $shiftDateTo])
                 ->get()
                 ->keyBy(function ($s) {
                     return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
                 });
 
-            $patternIds = $shifts->pluck('shift_pattern_id')->filter();
+            $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
 
             $shiftPatterns = ShiftPattern::whereIn('id', $patternIds)
                 ->get()
@@ -580,86 +577,164 @@ class ReservationController extends Controller
                 })
                 ->get();
 
+            $requestedAssignments = collect($request->assignments ?? [])
+                ->map(function ($row) {
+                    return [
+                        'menu_id'  => (int) ($row['menu_id'] ?? 0),
+                        'staff_id' => (int) ($row['staff_id'] ?? 0),
+                    ];
+                })
+                ->values();
+
             $requestedStaffId = $request->staff_id ? (int) $request->staff_id : null;
-            $maxSimultaneous = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
+            $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
 
             DB::transaction(function () use (
                 $request,
                 $company,
                 $start,
                 $end,
-                $price,
-                $menus,
+                $orderedMenus,
+                $segments,
                 $staffList,
-                $todayReservations,
                 $shifts,
                 $shiftPatterns,
                 $vacations,
+                $requestedAssignments,
                 $requestedStaffId,
-                $maxSimultaneous
+                $preferLessCapable
             ) {
-                if ($requestedStaffId) {
-                    $staff = $staffList->firstWhere('id', $requestedStaffId);
+                $finalAssignments = [];
 
-                    if (!$staff) {
-                        throw new \Exception('担当者が見つかりません');
+                if ($preferLessCapable) {
+                    if ($requestedAssignments->isEmpty()) {
+                        throw new \Exception('担当パターンを選択してください');
                     }
 
-                    if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
-                        throw new \Exception('この担当者はその時間に対応できません');
-                    }
+                    foreach ($segments as $segment) {
+                        $menuId = (int) $segment['menu']->id;
+                        $assignment = $requestedAssignments->firstWhere('menu_id', $menuId);
 
-                    $staffOverlapCount = Reservation::where('company_id', $company->id)
-                        ->where('staff_id', $staff->id)
-                        ->where('status', 'reserved')
-                        ->where(function ($q) use ($start, $end) {
-                            $q->where('start_at', '<', $end)
-                              ->where('end_at', '>', $start);
-                        })
-                        ->lockForUpdate()
-                        ->count();
-
-                    if ($staffOverlapCount >= $maxSimultaneous) {
-                        throw new \Exception('この担当者の同時予約上限に達しています');
-                    }
-
-                    $assignedStaff = $staff;
-                } else {
-                    $sortedStaffList = $staffList->sortBy(function ($staff) use ($todayReservations) {
-                        return (int) ($todayReservations[$staff->id] ?? 0);
-                    });
-
-                    $assignedStaff = null;
-
-                    foreach ($sortedStaffList as $staff) {
-                        if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
-                            continue;
+                        if (!$assignment) {
+                            throw new \Exception('担当パターンが不正です');
                         }
 
-                        $staffOverlapCount = Reservation::where('company_id', $company->id)
-                            ->where('staff_id', $staff->id)
-                            ->where('status', 'reserved')
-                            ->where(function ($q) use ($start, $end) {
-                                $q->where('start_at', '<', $end)
-                                  ->where('end_at', '>', $start);
-                            })
-                            ->lockForUpdate()
-                            ->count();
+                        $staff = $staffList->firstWhere('id', (int) $assignment['staff_id']);
 
-                        if ($staffOverlapCount >= $maxSimultaneous) {
-                            continue;
+                        if (!$staff) {
+                            throw new \Exception('担当者が見つかりません');
+                        }
+
+                        if (!$staff->menus->contains('id', $menuId)) {
+                            throw new \Exception('担当者とメニューの組み合わせが不正です');
+                        }
+
+                        if (!$this->isSegmentReservableForStaff(
+                            $company,
+                            $staff,
+                            $segment['start_at'],
+                            $segment['end_at'],
+                            $shifts,
+                            $shiftPatterns,
+                            $vacations
+                        )) {
+                            throw new \Exception("{$staff->name} さんは {$segment['menu']->name} をその時間に担当できません");
+                        }
+
+                        $finalAssignments[] = [
+                            'menu'      => $segment['menu'],
+                            'staff'     => $staff,
+                            'start_at'  => $segment['start_at'],
+                            'end_at'    => $segment['end_at'],
+                            'duration'  => $segment['duration'],
+                        ];
+                    }
+                } else {
+                    $assignedStaff = null;
+
+                    if ($requestedStaffId) {
+                        $staff = $staffList->firstWhere('id', $requestedStaffId);
+
+                        if (!$staff) {
+                            throw new \Exception('担当者が見つかりません');
+                        }
+
+                        foreach ($segments as $segment) {
+                            if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                                throw new \Exception('この担当者は選択メニューすべてに対応していません');
+                            }
+
+                            if (!$this->isSegmentReservableForStaff(
+                                $company,
+                                $staff,
+                                $segment['start_at'],
+                                $segment['end_at'],
+                                $shifts,
+                                $shiftPatterns,
+                                $vacations
+                            )) {
+                                throw new \Exception('この担当者はその時間に対応できません');
+                            }
                         }
 
                         $assignedStaff = $staff;
-                        break;
+                    } else {
+                        $candidateStaff = $staffList->filter(function ($staff) use ($segments, $company, $shifts, $shiftPatterns, $vacations) {
+                            foreach ($segments as $segment) {
+                                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                                    return false;
+                                }
+
+                                if (!$this->isSegmentReservableForStaff(
+                                    $company,
+                                    $staff,
+                                    $segment['start_at'],
+                                    $segment['end_at'],
+                                    $shifts,
+                                    $shiftPatterns,
+                                    $vacations
+                                )) {
+                                    return false;
+                                }
+                            }
+
+                            return true;
+                        })->sortBy('priority_order')->values();
+
+                        $assignedStaff = $candidateStaff->first();
+
+                        if (!$assignedStaff) {
+                            throw new \Exception('空いているスタッフがいません');
+                        }
                     }
 
-                    if (!$assignedStaff) {
-                        throw new \Exception('空いているスタッフがいません');
+                    foreach ($segments as $segment) {
+                        $finalAssignments[] = [
+                            'menu'      => $segment['menu'],
+                            'staff'     => $assignedStaff,
+                            'start_at'  => $segment['start_at'],
+                            'end_at'    => $segment['end_at'],
+                            'duration'  => $segment['duration'],
+                        ];
                     }
                 }
 
-                $nominationFee = (int) ($assignedStaff->nomination_fee ?? 0);
+                $price = collect($finalAssignments)->sum(function ($row) {
+                    return (int) ($row['menu']->price ?? 0);
+                });
+
+                $mainStaffGroup = collect($finalAssignments)
+                    ->groupBy(fn ($row) => $row['staff']->id)
+                    ->sortByDesc(fn ($rows) => $rows->count())
+                    ->first();
+
+                $mainStaff = $mainStaffGroup ? collect($mainStaffGroup)->first()['staff'] : null;
+
+                if (!$mainStaff) {
+                    throw new \Exception('担当者の割当ができませんでした');
+                }
+
+                $nominationFee = (int) ($mainStaff->nomination_fee ?? 0);
                 $totalPrice = (int) $price + $nominationFee;
 
                 $normalizedPhone = str_replace('-', '', $request->customer_phone);
@@ -687,7 +762,7 @@ class ReservationController extends Controller
 
                 $reservation = Reservation::create([
                     'company_id'     => $company->id,
-                    'staff_id'       => $assignedStaff->id,
+                    'staff_id'       => $mainStaff->id,
                     'customer_name'  => $request->customer_name,
                     'customer_phone' => $normalizedPhone,
                     'start_at'       => $start,
@@ -702,13 +777,27 @@ class ReservationController extends Controller
 
                 $attachData = [];
 
-                foreach ($menus as $menu) {
+                foreach ($finalAssignments as $index => $row) {
+                    $menu = $row['menu'];
+                    $staff = $row['staff'];
+
                     $attachData[$menu->id] = [
                         'price'      => $menu->price,
-                        'duration'   => $menu->duration,
+                        'duration'   => $row['duration'],
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
+
+                    ReservationDetail::create([
+                        'reservation_id' => $reservation->id,
+                        'menu_id'        => $menu->id,
+                        'staff_id'       => $staff->id,
+                        'start_at'       => $row['start_at'],
+                        'end_at'         => $row['end_at'],
+                        'duration'       => $row['duration'],
+                        'price'          => (int) ($menu->price ?? 0),
+                        'sort_order'     => $index + 1,
+                    ]);
                 }
 
                 if (!empty($attachData)) {
@@ -828,9 +917,104 @@ class ReservationController extends Controller
         return response()->json($availableStaff);
     }
 
-    /* ==========================================================
-       営業判定
-    ========================================================== */
+    public function assignmentCandidates(Request $request)
+    {
+        $companyUser = auth()->guard('company')->user();
+
+        if (!$companyUser) {
+            return response()->json([], 401);
+        }
+
+        $company = $companyUser->company;
+
+        $request->validate([
+            'datetime'   => 'required|date',
+            'menu_ids'   => 'required|array|min:1',
+            'menu_ids.*' => 'integer',
+        ]);
+
+        $start = Carbon::parse($request->datetime);
+
+        $menuIds = collect($request->menu_ids ?? [])->map(fn ($id) => (int) $id)->values();
+
+        $menus = Menu::where('company_id', $company->id)
+            ->whereIn('id', $menuIds)
+            ->get()
+            ->keyBy('id');
+
+        $orderedMenus = $menuIds->map(function ($id) use ($menus) {
+            return $menus->get($id);
+        })->filter()->values();
+
+        if ($orderedMenus->isEmpty()) {
+            return response()->json([]);
+        }
+
+        $segments = $this->buildMenuSegments($orderedMenus, $start, $company);
+        $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
+
+        $staffList = Staff::where('company_id', $company->id)
+            ->where('is_reservable', true)
+            ->with('menus:id')
+            ->orderBy('priority_order')
+            ->get();
+
+        $staffIds = $staffList->pluck('id');
+
+        $end = collect($segments)->last()['end_at'] ?? $start->copy();
+
+        $shifts = StaffShift::whereIn('staff_id', $staffIds)
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy(function ($s) {
+                return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+            });
+
+        $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
+
+        $shiftPatterns = ShiftPattern::whereIn('id', $patternIds)
+            ->get()
+            ->keyBy('id');
+
+        $vacations = Vacation::whereIn('staff_id', $staffIds)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
+            })
+            ->get();
+
+        if ($preferLessCapable) {
+            $candidates = $this->buildMultiStaffAssignmentCandidates(
+                $company,
+                $segments,
+                $staffList,
+                $shifts,
+                $shiftPatterns,
+                $vacations
+            );
+
+            return response()->json([
+                'mode' => 'multi',
+                'candidates' => $candidates,
+            ]);
+        }
+
+        $candidates = $this->buildSingleStaffAssignmentCandidates(
+            $company,
+            $segments,
+            $staffList,
+            $shifts,
+            $shiftPatterns,
+            $vacations
+        );
+
+        return response()->json([
+            'mode' => 'single',
+            'candidates' => $candidates,
+        ]);
+    }
+
     private function getBusinessStatus($company, $start, $end)
     {
         $dateKey = $start->format('Y-m-d');
@@ -886,9 +1070,6 @@ class ReservationController extends Controller
         return 'out';
     }
 
-    /* ==========================================================
-       スタッフがその時間に対応可能か
-    ========================================================== */
     private function isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations): bool
     {
         $key = $staff->id . '_' . $start->toDateString();
@@ -922,9 +1103,6 @@ class ReservationController extends Controller
         return true;
     }
 
-    /* ==========================================================
-       空き判定
-    ========================================================== */
     private function checkAvailability(
         $company,
         $staffList,
@@ -982,6 +1160,220 @@ class ReservationController extends Controller
             'available' => $available,
             'total' => $total,
         ];
+    }
+
+    private function buildMenuSegments($orderedMenus, Carbon $reservationStart, $company): array
+    {
+        $segments = [];
+        $cursor = $reservationStart->copy();
+
+        foreach ($orderedMenus as $menu) {
+            $duration = (int) ($menu->duration ?? 0);
+            if ($duration <= 0) {
+                $duration = (int) ($company->slot_minutes ?? 30);
+            }
+
+            $segmentStart = $cursor->copy();
+            $segmentEnd   = $cursor->copy()->addMinutes($duration);
+
+            $segments[] = [
+                'menu'      => $menu,
+                'start_at'  => $segmentStart,
+                'end_at'    => $segmentEnd,
+                'duration'  => $duration,
+            ];
+
+            $cursor = $segmentEnd->copy();
+        }
+
+        return $segments;
+    }
+
+    private function isSegmentReservableForStaff($company, $staff, Carbon $start, Carbon $end, $shifts, $shiftPatterns, $vacations): bool
+    {
+        if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+            return false;
+        }
+
+        $status = $this->getBusinessStatus($company, $start, $end);
+        if ($status !== 'open') {
+            return false;
+        }
+
+        $maxSimultaneous = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
+
+        $overlapCount = Reservation::where('company_id', $company->id)
+            ->where('staff_id', $staff->id)
+            ->where('status', 'reserved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
+            })
+            ->count();
+
+        return $overlapCount < $maxSimultaneous;
+    }
+
+    private function buildSingleStaffAssignmentCandidates($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): array
+    {
+        $rows = [];
+
+        foreach ($staffList as $staff) {
+            $ok = true;
+
+            foreach ($segments as $segment) {
+                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                    $ok = false;
+                    break;
+                }
+
+                if (!$this->isSegmentReservableForStaff(
+                    $company,
+                    $staff,
+                    $segment['start_at'],
+                    $segment['end_at'],
+                    $shifts,
+                    $shiftPatterns,
+                    $vacations
+                )) {
+                    $ok = false;
+                    break;
+                }
+            }
+
+            if (!$ok) {
+                continue;
+            }
+
+            $assignments = [];
+            foreach ($segments as $segment) {
+                $assignments[] = [
+                    'menu_id'    => $segment['menu']->id,
+                    'menu_name'  => $segment['menu']->name,
+                    'staff_id'   => $staff->id,
+                    'staff_name' => $staff->name,
+                    'duration'   => $segment['duration'],
+                    'start_at'   => $segment['start_at']->format('Y-m-d H:i:s'),
+                    'end_at'     => $segment['end_at']->format('Y-m-d H:i:s'),
+                ];
+            }
+
+            $rows[] = [
+                'rank' => count($rows) + 1,
+                'label' => $staff->name . ' さんが全メニューを担当',
+                'assignments' => $assignments,
+            ];
+        }
+
+        return array_slice($rows, 0, 10);
+    }
+
+    private function buildMultiStaffAssignmentCandidates($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): array
+    {
+        $segmentCandidates = [];
+
+        foreach ($segments as $segment) {
+            $candidates = $staffList->filter(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
+                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                    return false;
+                }
+
+                return $this->isSegmentReservableForStaff(
+                    $company,
+                    $staff,
+                    $segment['start_at'],
+                    $segment['end_at'],
+                    $shifts,
+                    $shiftPatterns,
+                    $vacations
+                );
+            })->values();
+
+            if ($candidates->isEmpty()) {
+                return [];
+            }
+
+            $segmentCandidates[] = [
+                'segment' => $segment,
+                'staffs'  => $candidates,
+            ];
+        }
+
+        $patterns = [];
+        $current  = [];
+
+        $walk = function ($index) use (&$walk, &$patterns, &$current, $segmentCandidates) {
+            if ($index >= count($segmentCandidates)) {
+                $patterns[] = $current;
+                return;
+            }
+
+            $entry = $segmentCandidates[$index];
+
+            foreach ($entry['staffs'] as $staff) {
+                $current[] = [
+                    'menu_id'          => $entry['segment']['menu']->id,
+                    'menu_name'        => $entry['segment']['menu']->name,
+                    'staff_id'         => $staff->id,
+                    'staff_name'       => $staff->name,
+                    'staff_menu_count' => $staff->menus->count(),
+                    'duration'         => $entry['segment']['duration'],
+                    'start_at'         => $entry['segment']['start_at']->format('Y-m-d H:i:s'),
+                    'end_at'           => $entry['segment']['end_at']->format('Y-m-d H:i:s'),
+                ];
+                $walk($index + 1);
+                array_pop($current);
+            }
+        };
+
+        $walk(0);
+
+        foreach ($patterns as &$pattern) {
+            $pattern['_score'] = $this->scoreAssignmentPattern($pattern);
+        }
+        unset($pattern);
+
+        usort($patterns, function ($a, $b) {
+            return ($a['_score'] ?? 0) <=> ($b['_score'] ?? 0);
+        });
+
+        $result = [];
+        foreach (array_slice($patterns, 0, 10) as $i => $pattern) {
+            unset($pattern['_score']);
+
+            $uniqueStaffCount = collect($pattern)->pluck('staff_id')->unique()->count();
+
+            $result[] = [
+                'rank' => $i + 1,
+                'label' => $uniqueStaffCount >= 2
+                    ? '分担優先パターン'
+                    : '同一担当パターン',
+                'assignments' => array_values($pattern),
+            ];
+        }
+
+        return $result;
+    }
+
+    private function scoreAssignmentPattern(array $pattern): int
+    {
+        $staffUseCounts = [];
+        $capabilityScore = 0;
+
+        foreach ($pattern as $row) {
+            $staffId = (int) $row['staff_id'];
+            $staffUseCounts[$staffId] = ($staffUseCounts[$staffId] ?? 0) + 1;
+            $capabilityScore += (int) ($row['staff_menu_count'] ?? 999);
+        }
+
+        $duplicatePenalty = 0;
+        foreach ($staffUseCounts as $count) {
+            if ($count > 1) {
+                $duplicatePenalty += ($count - 1) * 100;
+            }
+        }
+
+        return $capabilityScore + $duplicatePenalty;
     }
 
     public function staffMenus(Request $request)

@@ -8,7 +8,6 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    {{-- ヘッダー --}}
     <div class="mb-6">
         <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
             <div>
@@ -46,7 +45,6 @@
         </div>
     </div>
 
-    {{-- 使い方ガイド --}}
     <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-5 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
@@ -58,7 +56,7 @@
                     <span class="text-stone-300">→</span>
                     <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">3. メニューを選ぶ</span>
                     <span class="text-stone-300">→</span>
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">4. 担当者を選ぶ</span>
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">4. 担当パターンを選ぶ</span>
                     <span class="text-stone-300">→</span>
                     <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">5. 予約確定</span>
                 </div>
@@ -81,7 +79,6 @@
         </div>
     </div>
 
-    {{-- 操作パネル --}}
     <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-stone-200">
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
             <div class="xl:col-span-5">
@@ -210,12 +207,33 @@ let selectedMenuIds = [];
 let availableStaffCache = [];
 let selectedMenuDuration = 0;
 let selectedMenuPrice = 0;
+let selectedAssignments = [];
+let assignmentCandidatesCache = [];
+let assignmentMode = 'single';
+let preferLessCapableStaffForMenuAssignment = @json((bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false));
 
 function getLocalDateStr(date = new Date()) {
     const y = date.getFullYear();
     const m = ('0' + (date.getMonth() + 1)).slice(-2);
     const d = ('0' + date.getDate()).slice(-2);
     return `${y}-${m}-${d}`;
+}
+function toList(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') return Object.values(value);
+    return [];
+}
+
+function safeText(value, fallback = '') {
+    if (value === null || value === undefined) return fallback;
+    const text = String(value).trim();
+    return text === '' ? fallback : text;
+}
+
+function toList(value) {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') return Object.values(value);
+    return [];
 }
 
 function formatDateLabel(dateStr) {
@@ -577,9 +595,12 @@ function startReservationFlow(datetime) {
     selectedDatetime = datetime;
     selectedStaffId = null;
     selectedMenuIds = [];
+    selectedAssignments = [];
+    assignmentCandidatesCache = [];
     availableStaffCache = [];
     selectedMenuDuration = 0;
     selectedMenuPrice = 0;
+    assignmentMode = preferLessCapableStaffForMenuAssignment ? 'multi' : 'single';
 
     resetMenuStep();
     document.getElementById('menuStepDatetime').innerText = datetime;
@@ -598,6 +619,9 @@ function resetMenuStep() {
     });
     document.getElementById('stepTotalDuration').innerText = 0;
     document.getElementById('stepTotalPrice').innerText = 0;
+    selectedAssignments = [];
+    selectedStaffId = null;
+    assignmentCandidatesCache = [];
 }
 
 document.addEventListener('change', function(e){
@@ -615,8 +639,85 @@ document.addEventListener('change', function(e){
     document.getElementById('stepTotalPrice').innerText = totalPrice.toLocaleString();
 });
 
+
+function normalizeAssignmentCandidates(data) {
+    let normalizedMode = data.mode || 'single';
+    let candidates = [];
+
+    const rawCandidates = toList(data.candidates);
+    if (rawCandidates.length > 0) {
+        candidates = rawCandidates.map((candidate, index) => {
+            const assignments = toList(candidate.assignments).map((row, rowIndex) => ({
+                menu_id: row.menu_id ?? null,
+                menu_name: safeText(row.menu_name, `メニュー${rowIndex + 1}`),
+                staff_id: row.staff_id ?? null,
+                staff_name: safeText(row.staff_name, safeText(row.staff?.name, '担当者'))
+            }));
+
+            return {
+                rank: candidate.rank ?? (index + 1),
+                label: safeText(
+                    candidate.label,
+                    selectedMenuIds.length <= 1
+                        ? '担当者候補'
+                        : (assignments.length > 1 ? '複数担当' : '単独担当')
+                ),
+                assignments
+            };
+        });
+
+        return { mode: normalizedMode, candidates };
+    }
+
+    const rawPatterns = toList(data.patterns);
+    if (rawPatterns.length > 0) {
+        candidates = rawPatterns.map((pattern, index) => {
+            const assignments = toList(pattern).map((row, rowIndex) => ({
+                menu_id: row.menu_id ?? null,
+                menu_name: safeText(row.menu_name, `メニュー${rowIndex + 1}`),
+                staff_id: row.staff_id ?? null,
+                staff_name: safeText(row.staff_name, safeText(row.staff?.name, '担当者'))
+            }));
+
+            return {
+                rank: index + 1,
+                label: selectedMenuIds.length <= 1
+                    ? '担当者候補'
+                    : (assignments.length > 1 ? '複数担当' : '単独担当'),
+                assignments
+            };
+        });
+
+        if (selectedMenuIds.length <= 1) {
+            normalizedMode = 'single';
+        } else if (!data.mode) {
+            normalizedMode = 'multi';
+        }
+
+        return { mode: normalizedMode, candidates };
+    }
+
+    const rawStaff = toList(data.staff);
+    if (rawStaff.length > 0) {
+        candidates = rawStaff.map((staff, index) => ({
+            rank: index + 1,
+            label: '担当者候補',
+            assignments: [{
+                menu_id: selectedMenuIds[0] ?? null,
+                menu_name: '選択メニュー',
+                staff_id: staff.id ?? null,
+                staff_name: safeText(staff.name, '担当者')
+            }]
+        }));
+
+        return { mode: 'single', candidates };
+    }
+
+    return { mode: normalizedMode, candidates: [] };
+}
+
 function proceedToStaffSelection() {
-    selectedMenuIds = Array.from(document.querySelectorAll('.step-menu-checkbox:checked')).map(el => el.value);
+    selectedMenuIds = Array.from(document.querySelectorAll('.step-menu-checkbox:checked')).map(el => parseInt(el.value));
 
     if (selectedMenuIds.length === 0) {
         alert('メニューを選択してください');
@@ -635,36 +736,54 @@ function proceedToStaffSelection() {
     params.append('datetime', selectedDatetime);
     selectedMenuIds.forEach(id => params.append('menu_ids[]', id));
 
-    fetch(`/company/calendar/available-staff?${params.toString()}`)
+    fetch(`/company/calendar/assignment-candidates?${params.toString()}`)
         .then(res => res.json())
         .then(data => {
-            availableStaffCache = data || [];
             const area = document.getElementById('stepStaffListArea');
             area.innerHTML = '';
 
-            if (!availableStaffCache.length) {
+            const normalized = normalizeAssignmentCandidates(data);
+            assignmentMode = normalized.mode || 'single';
+            const candidates = normalized.candidates || [];
+
+            assignmentCandidatesCache = candidates;
+
+            if (!candidates.length) {
                 area.innerHTML = `
                     <div class="text-sm text-stone-500 bg-stone-50 border border-stone-200 rounded-xl p-4">
-                        このメニュー内容で対応できる担当者が見つかりませんでした。
+                        このメニュー内容で対応できる担当パターンが見つかりませんでした。
                     </div>
                 `;
             } else {
-                const BASE_URL = "{{ url('/') }}";
-                const NO_IMAGE = "{{ asset('logos/logo.png') }}";
+				candidates.forEach((candidate, index) => {
+				    const rows = toList(candidate.assignments).map(row => `
+				        <div class="flex items-center justify-between py-1.5 border-b border-stone-100 last:border-b-0">
+				            <span class="text-sm text-stone-700">${safeText(row.menu_name, '選択メニュー')}</span>
+				            <span class="text-sm font-semibold text-stone-800">${safeText(row.staff_name, '担当者')}</span>
+				        </div>
+				    `).join('');
 
-                availableStaffCache.forEach(staff => {
-                    area.innerHTML += `
-                        <div onclick="selectStaffForReservation(${staff.id})"
-                             class="flex items-center gap-3 p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
-                            <img src="${staff.image_path && staff.image_path.trim() !== '' ? BASE_URL + '/' + staff.image_path : NO_IMAGE}"
-                                 class="w-12 h-12 rounded-full object-cover border border-stone-200">
-                            <div>
-                                <div class="font-semibold text-stone-800">${staff.name}</div>
-                                <div class="text-xs text-stone-500">この担当者で予約する</div>
-                            </div>
-                        </div>
-                    `;
-                });
+				    const titleText = (
+				        toList(candidate.assignments).length === 1
+				            ? safeText(candidate.assignments[0]?.staff_name, `第${candidate.rank}候補`)
+				            : `第${candidate.rank}候補`
+				    );
+
+				    area.innerHTML += `
+				        <div onclick="selectAssignmentPatternByIndex(${index})"
+				             class="p-4 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
+				            <div class="flex items-center justify-between mb-2">
+				                <div class="font-semibold text-stone-800">${titleText}</div>
+				                <div class="text-xs px-2 py-1 rounded-full bg-stone-100 text-stone-600">
+				                    ${safeText(candidate.label, '担当者候補')}
+				                </div>
+				            </div>
+				            <div class="space-y-1">
+				                ${rows}
+				            </div>
+				        </div>
+				    `;
+				});
             }
 
             document.getElementById('stepStaffDatetime').innerText = selectedDatetime;
@@ -674,6 +793,9 @@ function proceedToStaffSelection() {
             closeMenuStepModal();
             document.getElementById('staffStepModal').classList.remove('hidden');
             document.getElementById('staffStepModal').classList.add('flex');
+        })
+        .catch(() => {
+            alert('担当候補の取得に失敗しました');
         });
 }
 
@@ -682,8 +804,23 @@ function closeStaffStepModal() {
     document.getElementById('staffStepModal').classList.remove('flex');
 }
 
-function selectStaffForReservation(staffId) {
-    selectedStaffId = staffId;
+function selectAssignmentPatternByIndex(index) {
+    const candidate = assignmentCandidatesCache[index];
+
+    if (!candidate) {
+        alert('担当候補の選択に失敗しました');
+        return;
+    }
+
+    assignmentMode = (selectedMenuIds.length <= 1) ? 'single' : (assignmentMode || 'single');
+    selectedAssignments = toList(candidate.assignments);
+
+    if (assignmentMode === 'single' && selectedAssignments.length > 0) {
+        selectedStaffId = selectedAssignments[0].staff_id;
+    } else {
+        selectedStaffId = null;
+    }
+
     closeStaffStepModal();
     openFinalReservationModal();
 }
@@ -692,6 +829,26 @@ function openFinalReservationModal() {
     document.getElementById('reserveDatetime').innerText = selectedDatetime;
     document.getElementById('finalTotalDuration').innerText = selectedMenuDuration;
     document.getElementById('finalTotalPrice').innerText = selectedMenuPrice.toLocaleString();
+
+    const area = document.getElementById('finalAssignmentArea');
+
+    if (area) {
+        if (!Array.isArray(selectedAssignments) || selectedAssignments.length === 0) {
+            area.innerHTML = `
+                <div class="text-sm text-stone-500 bg-stone-50 border border-stone-200 rounded-xl p-3">
+                    担当が未選択です
+                </div>
+            `;
+        } else {
+            area.innerHTML = selectedAssignments.map(row => `
+                <div class="flex items-center justify-between py-2 border-b border-stone-100 last:border-b-0">
+                    <span class="text-sm text-stone-700">${row.menu_name ?? '選択メニュー'}</span>
+                    <span class="text-sm font-semibold text-stone-800">${row.staff_name}</span>
+                </div>
+            `).join('');
+        }
+    }
+
     document.getElementById('reserveModal').classList.remove('hidden');
     document.getElementById('reserveModal').classList.add('flex');
 }
@@ -712,7 +869,7 @@ function closeModal() {
 
 function submitReservation() {
     const name = document.getElementById('modal_customer_name').value;
-    const phone  = document.getElementById('modal_customer_phone').value;
+    const phone = document.getElementById('modal_customer_phone').value;
     const phonePattern = /^[0-9\-]*$/;
 
     if (!name) {
@@ -730,14 +887,30 @@ function submitReservation() {
         return;
     }
 
-    if (!selectedStaffId) {
-        alert('担当者を選択してください');
-        return;
-    }
-
     if (!selectedMenuIds.length) {
         alert('メニューを選択してください');
         return;
+    }
+
+    if (!selectedAssignments.length && !selectedStaffId) {
+        alert('担当パターンを選択してください');
+        return;
+    }
+
+    const payload = {
+        start_at: selectedDatetime,
+        customer_name: name,
+        customer_phone: phone,
+        menu_ids: selectedMenuIds
+    };
+
+    if (assignmentMode === 'multi') {
+        payload.assignments = selectedAssignments.map(row => ({
+            menu_id: row.menu_id,
+            staff_id: row.staff_id
+        }));
+    } else {
+        payload.staff_id = selectedStaffId || (selectedAssignments[0] ? selectedAssignments[0].staff_id : null);
     }
 
     fetch('/company/reservation', {
@@ -746,13 +919,7 @@ function submitReservation() {
             'Content-Type':'application/json',
             'X-CSRF-TOKEN':'{{ csrf_token() }}'
         },
-        body: JSON.stringify({
-            start_at: selectedDatetime,
-            customer_name: name,
-            customer_phone: phone,
-            staff_id: selectedStaffId,
-            menu_ids: selectedMenuIds
-        })
+        body: JSON.stringify(payload)
     })
     .then(res => res.json())
     .then(result => {
@@ -762,15 +929,20 @@ function submitReservation() {
             document.getElementById('modal_customer_name').value = '';
             document.getElementById('modal_customer_phone').value = '';
             selectedMenuIds = [];
+            selectedAssignments = [];
             selectedStaffId = null;
+            assignmentCandidatesCache = [];
             selectedMenuDuration = 0;
             selectedMenuPrice = 0;
 
             if (mode === 'week') loadCalendar();
             if (mode === 'day') loadDayCalendar();
         } else {
-            alert(result.message);
+            alert(result.message || '予約登録に失敗しました');
         }
+    })
+    .catch(() => {
+        alert('通信エラーが発生しました');
     });
 }
 
@@ -833,7 +1005,6 @@ function formatTel(input) {
 }
 </script>
 
-{{-- メニュー選択ステップ --}}
 <div id="menuStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 class="text-lg font-bold text-stone-800 mb-2">メニュー選択</h2>
@@ -887,16 +1058,15 @@ function formatTel(input) {
             <button onclick="proceedToStaffSelection()"
                     class="px-4 py-3 text-sm text-white rounded-xl hover:opacity-90 transition"
                     style="background: {{ $theme }};">
-                担当者を選ぶ
+                担当パターンを選ぶ
             </button>
         </div>
     </div>
 </div>
 
-{{-- 担当者選択ステップ --}}
 <div id="staffStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-        <h2 class="text-lg font-bold text-stone-800 mb-2">担当者を選択</h2>
+        <h2 class="text-lg font-bold text-stone-800 mb-2">担当パターンを選択</h2>
         <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4 text-sm">
             <div class="text-stone-500">予約日時</div>
             <div id="stepStaffDatetime" class="font-semibold text-stone-800 mb-2"></div>
@@ -917,7 +1087,6 @@ function formatTel(input) {
     </div>
 </div>
 
-{{-- キャンセル確認モーダル --}}
 <div id="cancelConfirmModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
@@ -963,7 +1132,6 @@ function formatTel(input) {
     </div>
 </div>
 
-{{-- 最終予約確認モーダル --}}
 <div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
 
@@ -989,6 +1157,11 @@ function formatTel(input) {
                    class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
                    placeholder="例：090-1234-5678"
                    oninput="formatTel(this)">
+        </div>
+
+        <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4">
+            <div class="text-sm font-semibold text-stone-700 mb-2">担当割り当て</div>
+            <div id="finalAssignmentArea" class="space-y-1"></div>
         </div>
 
         <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">

@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ReservationDetail extends Model
 {
@@ -20,21 +19,24 @@ class ReservationDetail extends Model
 
     protected $casts = [
         'start_at' => 'datetime',
-        'end_at'   => 'datetime',
+        'end_at' => 'datetime',
+        'duration' => 'integer',
+        'price' => 'integer',
+        'sort_order' => 'integer',
     ];
 
-    public function reservation(): BelongsTo
+    public function reservation()
     {
-        return $this->belongsTo(Reservation::class);
+        return $this->belongsTo(\App\Models\Reservation::class);
     }
 
-    public function menu(): BelongsTo
+    public function menu()
     {
-        return $this->belongsTo(Menu::class);
+        return $this->belongsTo(\App\Models\Menu::class);
     }
 
-    public function staff(): BelongsTo
+    public function staff()
     {
-        return $this->belongsTo(Staff::class);
+        return $this->belongsTo(\App\Models\Staff::class);
     }
 }

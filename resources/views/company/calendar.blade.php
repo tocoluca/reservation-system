@@ -17,7 +17,7 @@
 	        </div>
 
 	        <h1 class="text-2xl font-bold text-stone-800 mt-3">予約カレンダー</h1>
-	        <p class="text-gray-500 text-sm mt-1">予約状況の確認・登録</p>
+	        <p class="text-gray-500 text-sm mt-1">予約について週/日単位、担当者単位で確認と登録ができます</p>
 	    </div>
 
 	    <div class="flex flex-wrap items-center gap-3">

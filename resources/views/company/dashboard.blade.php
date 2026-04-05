@@ -271,8 +271,8 @@
                     </svg>
                     <div class="text-blue-500 text-xs font-semibold mb-2">RESERVATION</div>
                 </div>
-                <div class="text-lg font-bold mb-2">予約カレンダー</div>
-                <div class="text-gray-500 text-sm">予約の確認・登録・管理</div>
+                <div class="text-lg font-bold mb-2">予約管理</div>
+                <div class="text-gray-500 text-sm">予約の登録・確認・キャンセル・検索</div>
             </a>
         @endif
 
@@ -280,7 +280,7 @@
             <a href="{{ route('company.calendar.index') }}"
                class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-emerald-500">
                 <div class="text-emerald-500 text-xs font-semibold mb-2">BUSINESS</div>
-                <div class="text-lg font-bold mb-2">営業日カレンダー</div>
+                <div class="text-lg font-bold mb-2">営業日管理</div>
                 <div class="text-gray-500 text-sm">営業日の確認・登録・管理</div>
             </a>
         @endif
@@ -357,7 +357,7 @@
             </a>
         @endif
 
-		@if($dashboardPermissions['card.reviews'] ?? true)
+		@if(($dashboardPermissions['card.reviews'] ?? true) && ($company->review_enabled ?? false))
 		    <a href="{{ route('company.reviews.index') }}"
 		       class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-amber-500">
 		        <div class="text-amber-500 text-xs font-semibold mb-2">REVIEW</div>

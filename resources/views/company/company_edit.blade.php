@@ -110,6 +110,40 @@ style="--tw-ring-color: {{ $theme }}">
 @enderror
 </div>
 
+<div class="md:col-span-2">
+<label class="block font-semibold mb-2 flex items-center gap-2">
+口コミ機能
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
+<span class="tooltip-text">
+ONにすると、口コミ投稿・口コミ管理機能を利用できます。<br>
+OFFにすると、企業管理画面の口コミ管理メニューや口コミ画面は表示されません。
+</span>
+</span>
+</label>
+
+<div class="rounded-xl border border-stone-200 bg-stone-50 p-4">
+    <label class="flex items-start gap-3">
+        <input type="hidden" name="review_enabled" value="0">
+        <input type="checkbox"
+               name="review_enabled"
+               value="1"
+               class="mt-1 h-5 w-5 rounded border-stone-300"
+               {{ old('review_enabled', $company->review_enabled ?? false) ? 'checked' : '' }}>
+        <div>
+            <div class="font-semibold text-stone-800">口コミ機能を利用する</div>
+            <div class="text-sm text-stone-500 mt-1 leading-6">
+                ON にすると、口コミ投稿の受付や口コミ管理が利用できます。<br>
+                OFF にすると、口コミ関連機能は非表示になります。
+            </div>
+        </div>
+    </label>
+</div>
+
+@error('review_enabled')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
+
 @if((int) $company->line_login_enabled === 1)
     <div class="md:col-span-2">
         <div class="rounded-xl border border-green-200 bg-green-50 p-4">
@@ -212,6 +246,7 @@ style="--tw-ring-color: {{ $theme }}">
 
 </div>
 </div>
+
 
 <div>
 <h2 class="text-lg font-bold mb-6 border-l-4 pl-3" style="border-color: {{ $theme }}">

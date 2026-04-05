@@ -10,10 +10,11 @@ class ReviewController extends Controller
 {
     public function index(Request $request)
     {
-        $companyId = auth()->user()->company_id ?? null;
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureReviewEnabled($company);
 
         $query = Review::with(['reservation', 'customer'])
-            ->where('company_id', $companyId)
+            ->where('company_id', $company->id)
             ->latest();
 
         if ($request->filled('status')) {
@@ -27,7 +28,10 @@ class ReviewController extends Controller
 
     public function show(Review $review)
     {
-        $this->authorizeCompanyReview($review);
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureReviewEnabled($company);
+
+        $this->authorizeCompanyReview($review, $company->id);
 
         $review->load(['reservation', 'customer', 'company']);
 
@@ -36,7 +40,10 @@ class ReviewController extends Controller
 
     public function approve(Review $review)
     {
-        $this->authorizeCompanyReview($review);
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureReviewEnabled($company);
+
+        $this->authorizeCompanyReview($review, $company->id);
 
         $review->update([
             'status' => 'approved',
@@ -48,7 +55,10 @@ class ReviewController extends Controller
 
     public function reject(Review $review)
     {
-        $this->authorizeCompanyReview($review);
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureReviewEnabled($company);
+
+        $this->authorizeCompanyReview($review, $company->id);
 
         $review->update([
             'status' => 'rejected',
@@ -60,7 +70,10 @@ class ReviewController extends Controller
 
     public function reply(Request $request, Review $review)
     {
-        $this->authorizeCompanyReview($review);
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureReviewEnabled($company);
+
+        $this->authorizeCompanyReview($review, $company->id);
 
         $validated = $request->validate([
             'owner_reply' => ['nullable', 'string', 'max:2000'],
@@ -76,10 +89,13 @@ class ReviewController extends Controller
         return back()->with('success', '返信を保存しました。');
     }
 
-    private function authorizeCompanyReview(Review $review): void
+    private function authorizeCompanyReview(Review $review, int $companyId): void
     {
-        $companyId = auth()->user()->company_id ?? null;
-
         abort_if($review->company_id !== $companyId, 403);
+    }
+
+    private function ensureReviewEnabled($company): void
+    {
+        abort_unless((bool)($company->review_enabled ?? false), 404);
     }
 }

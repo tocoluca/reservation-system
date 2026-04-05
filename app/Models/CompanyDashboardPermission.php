@@ -33,8 +33,8 @@ class CompanyDashboardPermission extends Model
             'dashboard.manage'        => 'ダッシュボード管理',
             'dashboard.sales'         => '売上ダッシュボード',
 
-            'card.reserve'            => '予約カレンダー',
-            'card.business_calendar'  => '営業日カレンダー',
+            'card.reserve'            => '予約管理',
+            'card.business_calendar'  => '営業日管理',
             'card.staff'              => '担当者管理',
             'card.menu_category_tag'  => 'カテゴリー・タグ管理',
             'card.menu'               => 'メニュー管理',

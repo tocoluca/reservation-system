@@ -20,10 +20,9 @@ class Company extends Model
         'slot_minutes',
         'theme_color',
         'max_simultaneous_reservations',
-        // 'open_time',
-        // 'close_time',
         'regular_holidays',
         'holiday_is_closed',
+        'review_enabled',
         'line_login_enabled',
         'line_channel_id',
         'line_channel_secret',
@@ -36,7 +35,6 @@ class Company extends Model
         'is_initialized',
         'open_patterns',
 
-        // Stripe / 契約管理
         'is_active',
         'grace_until',
         'stripe_customer_id',
@@ -51,6 +49,7 @@ class Company extends Model
         'open_patterns' => 'array',
         'regular_holidays' => 'array',
         'holiday_is_closed' => 'boolean',
+        'review_enabled' => 'boolean',
         'menu_time_priority_flag' => 'boolean',
         'is_initialized' => 'boolean',
         'is_active' => 'boolean',
@@ -97,9 +96,8 @@ class Company extends Model
         };
     }
 
-	public function reviews()
-	{
-	    return $this->hasMany(\App\Models\Review::class);
-	}
-
+    public function reviews()
+    {
+        return $this->hasMany(\App\Models\Review::class);
+    }
 }

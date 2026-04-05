@@ -16,7 +16,7 @@
 
             <h1 class="text-2xl sm:text-3xl font-bold text-stone-800 mt-3">予約一覧</h1>
             <p class="text-stone-500 mt-2 text-sm">
-                全顧客の予約を確認できます。顧客名・電話番号・日付で絞り込み可能です。
+                全顧客の予約を確認とキャンセルができます。顧客名・電話番号・日付で絞り込み可能です。
             </p>
         </div>
 

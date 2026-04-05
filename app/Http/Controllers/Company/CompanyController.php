@@ -38,6 +38,7 @@ class CompanyController extends Controller
             'reservation_close_hours' => 'nullable|integer|min:0|max:48',
             'revisit_reminder_days' => 'nullable|integer|min:1|max:365',
             'web_cancel_deadline_hours' => 'nullable|integer|min:0|max:168',
+            'review_enabled' => 'nullable|boolean',
         ];
 
         if ((int) $company->line_login_enabled === 1) {
@@ -102,6 +103,7 @@ class CompanyController extends Controller
             'regular_holidays' => $validated['regular_holidays'] ?? [],
             'holiday_is_closed' => $request->boolean('holiday_is_closed'),
             'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
+            'review_enabled' => (bool) $request->input('review_enabled', 0),
         ];
 
         if ((int) $company->line_login_enabled === 1) {

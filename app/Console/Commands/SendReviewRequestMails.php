@@ -21,7 +21,10 @@ class SendReviewRequestMails extends Command
             ->whereNotNull('review_token')
             ->whereNull('review_requested_at')
             ->whereNull('review_submitted_at')
-            ->where('start_at', '<=', now()->subHours(3));
+            ->where('start_at', '<=', now()->subHours(3))
+            ->whereHas('company', function ($q) {
+                $q->where('review_enabled', true);
+            });
 
         if ($companyId = $this->option('company_id')) {
             $query->where('company_id', $companyId);
@@ -37,6 +40,10 @@ class SendReviewRequestMails extends Command
         foreach ($reservations as $reservation) {
             try {
                 if (!$reservation->company) {
+                    continue;
+                }
+
+                if (!(bool) ($reservation->company->review_enabled ?? false)) {
                     continue;
                 }
 

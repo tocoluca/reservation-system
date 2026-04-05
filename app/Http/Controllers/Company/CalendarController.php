@@ -397,15 +397,6 @@ public function assignmentCandidates(Request $request)
             ->filter(function ($staff) use ($startAt, $menus, $menuId, $company) {
                 $duration = (int) ($menus[$menuId]->duration ?: $company->slot_minutes ?: 30);
                 $ok = $this->isStaffAvailable($staff, $startAt, $duration);
-
-                Log::info('assignmentCandidates availability', [
-                    'menu_id' => $menuId,
-                    'staff_id' => $staff->id,
-                    'staff_name' => $staff->name,
-                    'duration' => $duration,
-                    'ok' => $ok,
-                ]);
-
                 return $ok;
             })
             ->values();
@@ -466,15 +457,6 @@ public function assignmentCandidates(Request $request)
             ];
         })
         ->all();
-
-    Log::info('assignmentCandidates result', [
-        'datetime' => $datetime,
-        'menu_ids' => $menuIds->values()->all(),
-        'available_staff_ids' => $allAvailableStaff->unique('id')->pluck('id')->values()->all(),
-        'available_staff_names' => $allAvailableStaff->unique('id')->pluck('name')->values()->all(),
-        'candidates_count' => count($candidates),
-        'candidates' => $candidates,
-    ]);
 
     return response()->json([
         'ok' => true,
@@ -542,30 +524,9 @@ protected function isStaffAvailable($staff, $startAt, int $durationMinutes): boo
                 $shiftEnd   = \Carbon\Carbon::parse($start->toDateString() . ' ' . $pattern->end_time);
 
                 if ($start < $shiftStart || $end > $shiftEnd) {
-                    \Log::info('isStaffAvailable NG: out of shift time', [
-                        'staff_id' => $staff->id,
-                        'staff_name' => $staff->name,
-                        'reservation_start' => $start->format('Y-m-d H:i:s'),
-                        'reservation_end' => $end->format('Y-m-d H:i:s'),
-                        'shift_start' => $shiftStart->format('Y-m-d H:i:s'),
-                        'shift_end' => $shiftEnd->format('Y-m-d H:i:s'),
-                    ]);
                     return false;
                 }
-            } else {
-                \Log::warning('isStaffAvailable WARN: shift pattern not found, skipped time check', [
-                    'staff_id' => $staff->id,
-                    'staff_name' => $staff->name,
-                    'shift_pattern_id' => $shift->shift_pattern_id,
-                    'target_date' => $start->toDateString(),
-                ]);
             }
-        } else {
-            \Log::warning('isStaffAvailable WARN: no shift_pattern_id, skipped time check', [
-                'staff_id' => $staff->id,
-                'staff_name' => $staff->name,
-                'target_date' => $start->toDateString(),
-            ]);
         }
     }
 

@@ -223,7 +223,125 @@ function toList(value) {
     if (value && typeof value === 'object') return Object.values(value);
     return [];
 }
+function getCandidateTitle(candidate) {
+    const assignments = toList(candidate.assignments);
 
+    if (assignments.length === 1) {
+        return safeText(assignments[0]?.staff_name, `第${candidate.rank}候補`);
+    }
+
+    const uniqueStaffNames = [...new Set(
+        assignments.map(row => safeText(row.staff_name, '')).filter(Boolean)
+    )];
+
+    if (uniqueStaffNames.length === 1) {
+        return uniqueStaffNames[0];
+    }
+
+    return `組み合わせ候補 ${candidate.rank}`;
+}
+
+function getCandidateSubLabel(candidate) {
+    if ((candidate.rank ?? 999) === 1) {
+        return 'おすすめ';
+    }
+
+    return safeText(candidate.label, '担当者候補');
+}
+
+function renderCandidateCard(candidate, index) {
+    const assignments = toList(candidate.assignments);
+    const title = getCandidateTitle(candidate);
+    const subLabel = getCandidateSubLabel(candidate);
+
+    const rows = assignments.map(row => `
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-stone-100 last:border-b-0">
+            <span class="text-sm text-stone-600">${safeText(row.menu_name, '選択メニュー')}</span>
+            <span class="text-sm font-semibold text-stone-800 text-right">${safeText(row.staff_name, '担当者')}</span>
+        </div>
+    `).join('');
+
+    const badgeClass = (candidate.rank ?? 999) === 1
+        ? 'bg-amber-50 text-amber-700'
+        : 'bg-stone-100 text-stone-600';
+
+    return `
+        <button type="button"
+                id="assignment-candidate-${index}"
+                onclick="selectAssignmentPatternByIndex(${index})"
+                class="w-full text-left rounded-2xl border border-stone-200 bg-white p-4 shadow-sm hover:border-stone-300 hover:bg-stone-50 transition">
+            <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="text-base font-bold text-stone-800 truncate">${title}</div>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}">
+                            ${subLabel}
+                        </span>
+                        <span class="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2.5 py-1 text-xs font-semibold">
+                            第${candidate.rank ?? (index + 1)}候補
+                        </span>
+                        <span class="inline-flex items-center rounded-full bg-stone-100 text-stone-600 px-2.5 py-1 text-xs font-semibold">
+                            ${assignments.length}件の割り当て
+                        </span>
+                    </div>
+                </div>
+
+                <div class="shrink-0">
+                    <span class="inline-flex items-center rounded-xl px-3 py-2 text-sm font-semibold text-white"
+                          style="background: {{ $theme }};">
+                        選択する
+                    </span>
+                </div>
+            </div>
+
+            <div class="mt-4 rounded-xl bg-stone-50 border border-stone-200 p-3">
+                ${rows}
+            </div>
+        </button>
+    `;
+}
+
+function renderAssignmentCandidates(area, candidates) {
+    const topCandidates = candidates.slice(0, 3);
+    const otherCandidates = candidates.slice(3);
+
+    area.innerHTML = `
+        <div class="space-y-3">
+            ${topCandidates.map((candidate, index) => renderCandidateCard(candidate, index)).join('')}
+        </div>
+        ${
+            otherCandidates.length > 0
+                ? `
+                <details class="mt-4">
+                    <summary class="cursor-pointer list-none rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-100 transition">
+                        他の候補を表示（${otherCandidates.length}件）
+                    </summary>
+                    <div class="mt-3 space-y-3">
+                        ${otherCandidates.map((candidate, offset) => renderCandidateCard(candidate, offset + 3)).join('')}
+                    </div>
+                </details>
+                `
+                : ''
+        }
+    `;
+}
+
+function highlightSelectedCandidate(index) {
+    document.querySelectorAll('[id^="assignment-candidate-"]').forEach(el => {
+        el.classList.remove('border-2');
+        el.classList.remove('shadow-md');
+        el.style.borderColor = '';
+        el.style.backgroundColor = '';
+    });
+
+    const active = document.getElementById(`assignment-candidate-${index}`);
+    if (!active) return;
+
+    active.classList.add('border-2');
+    active.classList.add('shadow-md');
+    active.style.borderColor = '{{ $theme }}';
+    active.style.backgroundColor = '{{ $theme }}08';
+}
 function safeText(value, fallback = '') {
     if (value === null || value === undefined) return fallback;
     const text = String(value).trim();
@@ -755,35 +873,7 @@ function proceedToStaffSelection() {
                     </div>
                 `;
             } else {
-				candidates.forEach((candidate, index) => {
-				    const rows = toList(candidate.assignments).map(row => `
-				        <div class="flex items-center justify-between py-1.5 border-b border-stone-100 last:border-b-0">
-				            <span class="text-sm text-stone-700">${safeText(row.menu_name, '選択メニュー')}</span>
-				            <span class="text-sm font-semibold text-stone-800">${safeText(row.staff_name, '担当者')}</span>
-				        </div>
-				    `).join('');
-
-				    const titleText = (
-				        toList(candidate.assignments).length === 1
-				            ? safeText(candidate.assignments[0]?.staff_name, `第${candidate.rank}候補`)
-				            : `第${candidate.rank}候補`
-				    );
-
-				    area.innerHTML += `
-				        <div onclick="selectAssignmentPatternByIndex(${index})"
-				             class="p-4 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
-				            <div class="flex items-center justify-between mb-2">
-				                <div class="font-semibold text-stone-800">${titleText}</div>
-				                <div class="text-xs px-2 py-1 rounded-full bg-stone-100 text-stone-600">
-				                    ${safeText(candidate.label, '担当者候補')}
-				                </div>
-				            </div>
-				            <div class="space-y-1">
-				                ${rows}
-				            </div>
-				        </div>
-				    `;
-				});
+                renderAssignmentCandidates(area, candidates);
             }
 
             document.getElementById('stepStaffDatetime').innerText = selectedDatetime;
@@ -799,6 +889,7 @@ function proceedToStaffSelection() {
         });
 }
 
+
 function closeStaffStepModal() {
     document.getElementById('staffStepModal').classList.add('hidden');
     document.getElementById('staffStepModal').classList.remove('flex');
@@ -812,6 +903,8 @@ function selectAssignmentPatternByIndex(index) {
         return;
     }
 
+    highlightSelectedCandidate(index);
+
     assignmentMode = (selectedMenuIds.length <= 1) ? 'single' : (assignmentMode || 'single');
     selectedAssignments = toList(candidate.assignments);
 
@@ -821,8 +914,10 @@ function selectAssignmentPatternByIndex(index) {
         selectedStaffId = null;
     }
 
-    closeStaffStepModal();
-    openFinalReservationModal();
+    setTimeout(() => {
+        closeStaffStepModal();
+        openFinalReservationModal();
+    }, 120);
 }
 
 function openFinalReservationModal() {
@@ -1065,8 +1160,11 @@ function formatTel(input) {
 </div>
 
 <div id="staffStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
         <h2 class="text-lg font-bold text-stone-800 mb-2">担当パターンを選択</h2>
+		<p class="text-sm text-stone-500 mb-4">
+		    上位のおすすめ候補を先に表示しています。気になる担当を選んでください。
+		</p>
         <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4 text-sm">
             <div class="text-stone-500">予約日時</div>
             <div id="stepStaffDatetime" class="font-semibold text-stone-800 mb-2"></div>

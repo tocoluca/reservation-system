@@ -669,6 +669,15 @@
                         </a>
                     @endif
 
+                    @if($dashboardPermissions['card.business_calendar'] ?? false)
+                        <a href="{{ route('company.calendar.index') }}"
+                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
+                            <div class="text-emerald-500 text-xs font-semibold">BUSINESS</div>
+                            <div class="text-lg font-bold mt-2 text-gray-900">営業日管理</div>
+                            <div class="text-sm text-gray-500 mt-2">営業日の確認・登録・管理</div>
+                        </a>
+                    @endif
+
                     @if($dashboardPermissions['card.staff'] ?? false)
                         <a href="{{ route('company.staff.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
@@ -687,14 +696,6 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.theme'] ?? false)
-                        <a href="{{ route('company.theme') }}"
-                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
-                            <div class="text-purple-500 text-xs font-semibold">DESIGN</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">テーマ設定</div>
-                            <div class="text-sm text-gray-500 mt-2">顧客画面のカラー変更</div>
-                        </a>
-                    @endif
                 </div>
             </div>
 
@@ -728,14 +729,6 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.notices'] ?? false)
-                        <a href="{{ route('company.notices.index') }}"
-                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
-                            <div class="text-emerald-500 text-xs font-semibold">INFORMATION</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">お知らせ情報管理</div>
-                            <div class="text-sm text-gray-500 mt-2">WEB予約画面に表示するお知らせ</div>
-                        </a>
-                    @endif
                 </div>
             </div>
 
@@ -760,15 +753,6 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.business_calendar'] ?? false)
-                        <a href="{{ route('company.calendar.index') }}"
-                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
-                            <div class="text-emerald-500 text-xs font-semibold">BUSINESS</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">営業日管理</div>
-                            <div class="text-sm text-gray-500 mt-2">営業日の確認・登録・管理</div>
-                        </a>
-                    @endif
-
                     @if($dashboardPermissions['card.month_shift'] ?? false)
                         <a href="{{ route('company.staff-shifts') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
@@ -777,6 +761,16 @@
                             <div class="text-sm text-gray-500 mt-2">従業員の勤怠を管理</div>
                         </a>
                     @endif
+
+                    @if($dashboardPermissions['card.notices'] ?? false)
+                        <a href="{{ route('company.notices.index') }}"
+                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
+                            <div class="text-emerald-500 text-xs font-semibold">INFORMATION</div>
+                            <div class="text-lg font-bold mt-2 text-gray-900">お知らせ情報管理</div>
+                            <div class="text-sm text-gray-500 mt-2">WEB予約画面に表示するお知らせ</div>
+                        </a>
+                    @endif
+
                 </div>
             </div>
 
@@ -800,6 +794,15 @@
                                     {{ $billingWarning }}
                                 </div>
                             @endif
+                        </a>
+                    @endif
+
+                    @if($dashboardPermissions['card.theme'] ?? false)
+                        <a href="{{ route('company.theme') }}"
+                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
+                            <div class="text-purple-500 text-xs font-semibold">DESIGN</div>
+                            <div class="text-lg font-bold mt-2 text-gray-900">テーマ設定</div>
+                            <div class="text-sm text-gray-500 mt-2">顧客画面のカラー変更</div>
                         </a>
                     @endif
 

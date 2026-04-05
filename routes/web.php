@@ -317,6 +317,9 @@ Route::prefix('company')->group(function () {
             Route::post('menu-staff', [MenuStaffController::class, 'update'])
                 ->name('company.menu-staff.update');
 
+			Route::post('shift-patterns/order', [ShiftPatternController::class, 'updateOrder'])
+			    ->name('company.shift-patterns.order');
+
             Route::get('shift-patterns', [ShiftPatternController::class, 'index'])
                 ->name('company.shift-patterns');
 

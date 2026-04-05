@@ -23,6 +23,16 @@ class DashboardController extends Controller
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
 
+        $dashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
+
+        $now = Carbon::now();
+        $today = $now->copy()->startOfDay();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $endOfMonth = $now->copy()->endOfMonth();
+
+        /* ===============================
+           予約変更連絡サマリー
+        =============================== */
         $changeNoticeSummary = ReservationChangeNoticeItem::query()
             ->where('company_id', $company->id)
             ->selectRaw("
@@ -40,16 +50,9 @@ class DashboardController extends Controller
 
         $hasChangeNoticeAlert = $changeNoticePendingCount > 0 || $changeNoticePhonePendingCount > 0;
 
-        $dashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
-
-        $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $endOfMonth = $now->copy()->endOfMonth();
-
         /* ===============================
            初期設定ガイド表示判定
         =============================== */
-
         $openPatterns = $company->open_patterns ?? [];
         $hasOpenPattern = false;
 
@@ -111,14 +114,12 @@ class DashboardController extends Controller
         /* ===============================
            営業日カレンダー / 月シフト 警告集計
         =============================== */
-
         $settingWarnings = $this->buildReservationSettingWarnings($company);
 
         /* ===============================
            今月の予約時間（分）
         =============================== */
-
-        $totalReservedMinutes = Reservation::where('company_id', $company->id)
+        $totalReservedMinutes = (int) Reservation::where('company_id', $company->id)
             ->whereBetween('start_at', [$startOfMonth, $endOfMonth])
             ->where('status', 'reserved')
             ->select(DB::raw('SUM(TIMESTAMPDIFF(MINUTE,start_at,end_at)) as total'))
@@ -127,7 +128,6 @@ class DashboardController extends Controller
         /* ===============================
            今月の営業時間（分）
         =============================== */
-
         $totalAvailableMinutes = 0;
 
         $staffCount = Staff::where('company_id', $company->id)
@@ -141,18 +141,26 @@ class DashboardController extends Controller
             $weekday = $date->dayOfWeek;
             $dayPatterns = $patterns[$weekday] ?? [];
 
-            foreach ($dayPatterns as $pattern) {
-                $openTime = $pattern['open'] ?? $pattern['open_time'] ?? null;
-                $closeTime = $pattern['close'] ?? $pattern['close_time'] ?? null;
+            if (is_array($dayPatterns)) {
+                foreach ($dayPatterns as $pattern) {
+                    if (!is_array($pattern)) {
+                        continue;
+                    }
 
-                if (empty($openTime) || empty($closeTime)) {
-                    continue;
+                    $openTime = $pattern['open'] ?? $pattern['open_time'] ?? null;
+                    $closeTime = $pattern['close'] ?? $pattern['close_time'] ?? null;
+
+                    if (empty($openTime) || empty($closeTime)) {
+                        continue;
+                    }
+
+                    $open = Carbon::parse($date->format('Y-m-d') . ' ' . $openTime);
+                    $close = Carbon::parse($date->format('Y-m-d') . ' ' . $closeTime);
+
+                    if ($close->gt($open)) {
+                        $totalAvailableMinutes += $open->diffInMinutes($close) * $staffCount;
+                    }
                 }
-
-                $open = Carbon::parse($date->format('Y-m-d') . ' ' . $openTime);
-                $close = Carbon::parse($date->format('Y-m-d') . ' ' . $closeTime);
-
-                $totalAvailableMinutes += $open->diffInMinutes($close) * $staffCount;
             }
 
             $date->addDay();
@@ -161,7 +169,6 @@ class DashboardController extends Controller
         /* ===============================
            稼働率
         =============================== */
-
         $utilizationRate = 0;
 
         if ($totalAvailableMinutes > 0 && $totalReservedMinutes > 0) {
@@ -169,17 +176,12 @@ class DashboardController extends Controller
         }
 
         /* ===============================
-           今日の予約数
+           今日 / 今月 予約数
         =============================== */
-
         $todayCount = Reservation::where('company_id', $company->id)
-            ->whereDate('start_at', $now->toDateString())
+            ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
             ->count();
-
-        /* ===============================
-           今月予約数
-        =============================== */
 
         $monthlyCount = Reservation::where('company_id', $company->id)
             ->whereYear('start_at', $now->year)
@@ -190,9 +192,8 @@ class DashboardController extends Controller
         /* ===============================
            今日の予約一覧
         =============================== */
-
         $todayReservations = Reservation::where('company_id', $company->id)
-            ->whereDate('start_at', $now->toDateString())
+            ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
             ->with(['staff', 'menus'])
             ->orderBy('start_at')
@@ -201,7 +202,6 @@ class DashboardController extends Controller
         /* ===============================
            ダッシュボードお知らせ
         =============================== */
-
         $notices = CompanyDashboardNotice::visibleForCompany($company->id)
             ->orderByDesc('is_important')
             ->orderByDesc('is_new')
@@ -211,17 +211,12 @@ class DashboardController extends Controller
             ->get();
 
         /* ===============================
-           今日の売上
+           今日 / 今月 / 今年の売上
         =============================== */
-
         $todaySales = Reservation::where('company_id', $company->id)
-            ->whereDate('start_at', $now->toDateString())
+            ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
             ->sum('total_price');
-
-        /* ===============================
-           今月の売上
-        =============================== */
 
         $monthlySales = Reservation::where('company_id', $company->id)
             ->whereYear('start_at', $now->year)
@@ -229,18 +224,17 @@ class DashboardController extends Controller
             ->where('status', 'reserved')
             ->sum('total_price');
 
-        /* ===============================
-           今年売上
-        =============================== */
-
         $yearlySales = Reservation::where('company_id', $company->id)
             ->whereYear('start_at', $now->year)
             ->where('status', 'reserved')
             ->sum('total_price');
 
+        /* ===============================
+           売上集計条件
+        =============================== */
         $period = request('period', 'month');
-        $year = request('year', now()->year);
-        $month = request('month', now()->month);
+        $year = (int) request('year', now()->year);
+        $month = (int) request('month', now()->month);
 
         $query = Reservation::where('company_id', $company->id)
             ->where('status', 'reserved');
@@ -255,7 +249,6 @@ class DashboardController extends Controller
         /* ===============================
            月別売上（グラフ用）
         =============================== */
-
         $monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year) {
             $total = Reservation::where('company_id', $company->id)
                 ->whereYear('start_at', $year)
@@ -263,16 +256,15 @@ class DashboardController extends Controller
                 ->where('status', 'reserved')
                 ->sum('total_price');
 
-            return [
+            return (object) [
                 'month' => $chartMonth,
-                'total' => $total,
+                'total' => (int) $total,
             ];
         });
 
         /* ===============================
            スタッフ売上ランキング
         =============================== */
-
         $staffRanking = (clone $query)
             ->select('staff_id', DB::raw('SUM(total_price) as total'))
             ->groupBy('staff_id')
@@ -281,6 +273,9 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        /* ===============================
+           指名ランキング
+        =============================== */
         $nominationRanking = (clone $query)
             ->where('nomination_fee', '>', 0)
             ->select(
@@ -297,7 +292,6 @@ class DashboardController extends Controller
         /* ===============================
            人気メニュー
         =============================== */
-
         $menuRanking = DB::table('reservation_menus')
             ->join('reservations', 'reservations.id', '=', 'reservation_menus.reservation_id')
             ->join('menus', 'menus.id', '=', 'reservation_menus.menu_id')
@@ -319,7 +313,6 @@ class DashboardController extends Controller
         /* ===============================
            契約状態表示用
         =============================== */
-
         $subscriptionStatusLabel = $company->subscription_status_label;
         $subscriptionAvailable = $company->isSubscriptionAvailable();
         $billingWarning = null;
@@ -372,7 +365,7 @@ class DashboardController extends Controller
     {
         $today = now()->startOfDay();
 
-        $reservationMonthLimit = max((int)($company->reservation_month_limit ?? 0), 0);
+        $reservationMonthLimit = max((int) ($company->reservation_month_limit ?? 0), 0);
 
         $alertEnd = $today->copy()
             ->addMonthsNoOverflow($reservationMonthLimit)

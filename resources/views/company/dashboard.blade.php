@@ -700,7 +700,7 @@
             </div>
 
             <div>
-                <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">予約・メニュー設定</h3>
+                <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">メニュー設定</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     @if($dashboardPermissions['card.menu_category_tag'] ?? false)
                         <a href="{{ route('company.menu.settings') }}"
@@ -767,7 +767,7 @@
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-emerald-500 text-xs font-semibold">INFORMATION</div>
                             <div class="text-lg font-bold mt-2 text-gray-900">お知らせ情報管理</div>
-                            <div class="text-sm text-gray-500 mt-2">WEB予約画面に表示するお知らせ</div>
+                            <div class="text-sm text-gray-500 mt-2">予約画面に表示するお知らせ情報を管理</div>
                         </a>
                     @endif
 

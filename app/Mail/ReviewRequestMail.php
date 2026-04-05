@@ -26,6 +26,6 @@ class ReviewRequestMail extends Mailable
     public function build()
     {
         return $this->subject('【ご来店ありがとうございました】口コミのご協力をお願いします')
-            ->text('emails.review_request');
+            ->view('emails.review_request');
     }
 }

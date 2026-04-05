@@ -6,131 +6,199 @@
 @endphp
 
 @section('content')
-<div class="max-w-6xl mx-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    {{-- タイトル --}}
-	<div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
-	    <div>
-	        <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-	             style="background-color: {{ $theme }}15; color: {{ $theme }};">
-	            Reservation Calendar
-	        </div>
+    {{-- ヘッダー --}}
+    <div class="mb-6">
+        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
+                     style="background-color: {{ $theme }}15; color: {{ $theme }};">
+                    Reservation Calendar
+                </div>
 
-	        <h1 class="text-2xl font-bold text-stone-800 mt-3">予約カレンダー</h1>
-	        <p class="text-gray-500 text-sm mt-1">予約について週/日単位、担当者単位で確認と登録ができます</p>
-	    </div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-stone-800 mt-3">予約カレンダー</h1>
+                <p class="text-sm sm:text-base text-gray-500 mt-2">
+                    日付を選んで空き状況を確認し、そのまま予約登録・キャンセルができます
+                </p>
+            </div>
 
-	    <div class="flex flex-wrap items-center gap-3">
-	        <a href="{{ route('company.reservations.index') }}"
-	           class="group inline-flex items-center gap-3 rounded-2xl px-5 py-3 text-white shadow-lg hover:opacity-95 transition"
-	           style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
-	            <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
-	                予
-	            </span>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ route('company.reservations.index') }}"
+                   class="group inline-flex items-center gap-3 rounded-2xl px-5 py-3 text-white shadow-lg hover:opacity-95 transition"
+                   style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
+                        予
+                    </span>
 
-	            <span class="text-left leading-tight">
-	                <span class="block text-sm font-bold">予約一覧</span>
-	                <span class="block text-[11px] text-white/80">
-	                    顧客検索・日付検索はこちら
-	                </span>
-	            </span>
-	        </a>
+                    <span class="text-left leading-tight">
+                        <span class="block text-sm font-bold">予約一覧</span>
+                        <span class="block text-[11px] text-white/80">顧客検索・予約確認はこちら</span>
+                    </span>
+                </a>
 
-	        <a href="{{ route('company.dashboard') }}"
-	           class="inline-flex items-center justify-center px-4 py-3 text-sm rounded-xl border bg-white hover:bg-gray-50 transition"
-	           style="border-color: {{ $theme }}; color: {{ $theme }}">
-	            ← ダッシュボード
-	        </a>
-	    </div>
-	</div>
-    {{-- 表示切替 --}}
-    <div class="flex gap-3 mb-6">
-        <a href="{{ route('company.reserve',['mode'=>'week']) }}"
-           class="px-4 py-2 rounded-lg shadow text-sm font-semibold"
-           style="background:
-           {{ request('mode','week')==='week' ? $theme : '#e5e7eb' }};
-           color:
-           {{ request('mode','week')==='week' ? 'white' : '#374151' }};">
-            週表示
-        </a>
-
-        <a href="{{ route('company.reserve',['mode'=>'day']) }}"
-           class="px-4 py-2 rounded-lg shadow text-sm font-semibold"
-           style="background:
-           {{ request('mode')==='day' ? $theme : '#e5e7eb' }};
-           color:
-           {{ request('mode')==='day' ? 'white' : '#374151' }};">
-            日表示
-        </a>
+                <a href="{{ route('company.dashboard') }}"
+                   class="inline-flex items-center justify-center px-4 py-3 text-sm rounded-xl border bg-white hover:bg-gray-50 transition"
+                   style="border-color: {{ $theme }}; color: {{ $theme }};">
+                    ← ダッシュボード
+                </a>
+            </div>
+        </div>
     </div>
 
-    {{-- 操作バー --}}
-    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <div class="flex flex-wrap gap-4 items-center">
+    {{-- 使い方ガイド --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-5 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <h2 class="text-sm font-bold text-stone-800 mb-2">操作の流れ</h2>
+                <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-stone-600">
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">1. 日付を選ぶ</span>
+                    <span class="text-stone-300">→</span>
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">2. 空き枠を押す</span>
+                    <span class="text-stone-300">→</span>
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">3. メニューを選ぶ</span>
+                    <span class="text-stone-300">→</span>
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">4. 担当者を選ぶ</span>
+                    <span class="text-stone-300">→</span>
+                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">5. 予約確定</span>
+                </div>
+            </div>
 
-            <button onclick="changeWeek(-7)"
-                class="px-4 py-2 rounded-lg text-white shadow hover:opacity-90 transition"
-                style="background: {{ $theme }}">
-                ◀ 前へ
-            </button>
+            <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能（残り枠あり）
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>残りわずか
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり（枠満了）
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
+                </span>
+            </div>
+        </div>
+    </div>
 
-            <button onclick="changeWeek(7)"
-                class="px-4 py-2 rounded-lg text-white shadow hover:opacity-90 transition"
-                style="background: {{ $theme }}">
-                次へ ▶
-            </button>
+    {{-- 操作パネル --}}
+    <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-stone-200">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+            <div class="xl:col-span-5">
+                <div class="text-xs font-semibold text-stone-500 mb-2">日付</div>
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                onclick="navigateCurrent(-1)"
+                                class="px-4 py-2.5 rounded-xl text-white shadow hover:opacity-90 transition"
+                                style="background: {{ $theme }};">
+                            ◀ 前へ
+                        </button>
 
-            <select id="staffSelect"
-                class="border rounded-lg px-3 py-2 shadow"
-                onchange="loadCalendar()">
-                <option value="">全担当者</option>
-                @foreach($company->staff()->where('is_reservable',true)->orderBy('priority_order')->get() as $staff)
-                    <option value="{{ $staff->id }}">{{ $staff->name }}</option>
-                @endforeach
-            </select>
+                        <button type="button"
+                                onclick="goToday()"
+                                class="px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold transition"
+                                style="border-color: {{ $theme }}; color: {{ $theme }};">
+                            今日
+                        </button>
 
+                        <button type="button"
+                                onclick="navigateCurrent(1)"
+                                class="px-4 py-2.5 rounded-xl text-white shadow hover:opacity-90 transition"
+                                style="background: {{ $theme }};">
+                            次へ ▶
+                        </button>
+                    </div>
+
+                    <div class="flex-1">
+                        <input type="date"
+                               id="globalDatePicker"
+                               class="w-full border rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2"
+                               style="border-color: #d6d3d1;"
+                               onchange="jumpByMode(this.value)">
+                    </div>
+                </div>
+
+                <div class="mt-3 rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
+                    <div class="text-xs text-stone-500 mb-1">選択中の日付</div>
+                    <div id="currentDateHero" class="text-lg sm:text-xl font-bold text-stone-800">-</div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-3">
+                <div class="text-xs font-semibold text-stone-500 mb-2">表示方法</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <a href="{{ route('company.reserve',['mode'=>'day']) }}"
+                       class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
+                       style="background: {{ request('mode') === 'day' ? $theme : '#f5f5f4' }};
+                              color: {{ request('mode') === 'day' ? 'white' : '#44403c' }};">
+                        日表示
+                    </a>
+
+                    <a href="{{ route('company.reserve',['mode'=>'week']) }}"
+                       class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
+                       style="background: {{ request('mode','week') === 'week' ? $theme : '#f5f5f4' }};
+                              color: {{ request('mode','week') === 'week' ? 'white' : '#44403c' }};">
+                        週表示
+                    </a>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    日表示は詳細確認向け、週表示は全体把握向けです
+                </p>
+            </div>
+
+            <div class="xl:col-span-4">
+                <div class="text-xs font-semibold text-stone-500 mb-2">担当者で絞り込み</div>
+                <select id="staffSelect"
+                        class="w-full border rounded-xl px-3 py-3 shadow-sm focus:outline-none focus:ring-2"
+                        onchange="reloadByMode()">
+                    <option value="">全担当者を表示</option>
+                    @foreach($company->staff()->where('is_reservable', true)->orderBy('priority_order')->get() as $staff)
+                        <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-gray-500 mt-2">
+                    全体の空き確認なら「全担当者を表示」のままで使えます
+                </p>
+            </div>
         </div>
     </div>
 
     <div id="messageArea" class="mb-6"></div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-6">
-
+    <div class="bg-white rounded-2xl shadow-lg border border-stone-200 p-4 sm:p-6">
         @if($mode === 'day')
-            <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center gap-3">
-                    <button onclick="changeDay(-1)"
-                        class="px-3 py-1 rounded-lg text-white shadow"
-                        style="background: {{ $theme }}">◀</button>
-
-                    <div id="currentDateLabel" class="text-lg font-bold"></div>
-
-                    <button onclick="changeDay(1)"
-                        class="px-3 py-1 rounded-lg text-white shadow"
-                        style="background: {{ $theme }}">▶</button>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-stone-800">日別の空き状況</h2>
+                    <p class="text-sm text-gray-500">空いている枠を押すと、メニュー選択から予約登録へ進みます</p>
                 </div>
-
-                <input type="date"
-                    id="datePicker"
-                    class="border rounded-lg px-3 py-2 shadow"
-                    onchange="jumpToDate(this.value)">
+                <div class="text-xs sm:text-sm text-stone-500">
+                    予約ありの枠は内容確認後にキャンセルできます
+                </div>
             </div>
 
-            <div class="overflow-auto max-h-[600px]">
-                <table class="w-full text-sm text-center border">
+            <div class="overflow-auto rounded-2xl border border-stone-200">
+                <table class="min-w-[720px] w-full text-sm text-center">
                     <thead id="day-head"></thead>
                     <tbody id="day-body"></tbody>
                 </table>
             </div>
         @else
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+                <div>
+                    <h2 class="text-lg font-bold text-stone-800">週別の空き状況</h2>
+                    <p class="text-sm text-gray-500">まずは空きのある日を探したいときに便利です</p>
+                </div>
+                <div class="text-xs sm:text-sm text-stone-500">
+                    「予約可能」「残りわずか」の枠を押すとメニュー選択へ進みます
+                </div>
+            </div>
+
             <div id="calendar"></div>
         @endif
-
     </div>
 </div>
-
-<input type="hidden" id="modal_date" name="date">
-<input type="hidden" id="modal_time" name="time">
 
 <script>
 let currentDate = new Date(getLocalDateStr());
@@ -138,6 +206,10 @@ const mode = "{{ $mode }}";
 let selectedDatetime = null;
 let selectedStaffId = null;
 let cancelReservationId = null;
+let selectedMenuIds = [];
+let availableStaffCache = [];
+let selectedMenuDuration = 0;
+let selectedMenuPrice = 0;
 
 function getLocalDateStr(date = new Date()) {
     const y = date.getFullYear();
@@ -146,131 +218,325 @@ function getLocalDateStr(date = new Date()) {
     return `${y}-${m}-${d}`;
 }
 
+function formatDateLabel(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00');
+    const weekNames = ['日', '月', '火', '水', '木', '金', '土'];
+    const y = date.getFullYear();
+    const m = ('0' + (date.getMonth() + 1)).slice(-2);
+    const d = ('0' + date.getDate()).slice(-2);
+    return `${y}/${m}/${d}（${weekNames[date.getDay()]}）`;
+}
+
+function updateTopDateLabel() {
+    const dateStr = getLocalDateStr(currentDate);
+    const hero = document.getElementById('currentDateHero');
+    const picker = document.getElementById('globalDatePicker');
+
+    if (hero) hero.innerText = formatDateLabel(dateStr);
+    if (picker) picker.value = dateStr;
+}
+
 document.addEventListener("DOMContentLoaded", function () {
+    updateTopDateLabel();
+
     if (mode === 'week') loadCalendar();
     if (mode === 'day') loadDayCalendar();
 });
 
-function changeWeek(days) {
-    currentDate.setDate(currentDate.getDate() + days);
-    if (mode === 'week') loadCalendar();
+function goToday() {
+    currentDate = new Date(getLocalDateStr() + "T00:00:00");
+    updateTopDateLabel();
+    reloadByMode();
 }
 
-function changeDay(diff) {
-    currentDate.setDate(currentDate.getDate() + diff);
-    loadDayCalendar();
+function navigateCurrent(diff) {
+    if (mode === 'week') {
+        currentDate.setDate(currentDate.getDate() + (diff * 7));
+    } else {
+        currentDate.setDate(currentDate.getDate() + diff);
+    }
+
+    updateTopDateLabel();
+    reloadByMode();
 }
 
-function jumpToDate(dateStr) {
+function jumpByMode(dateStr) {
     currentDate = new Date(dateStr + "T00:00:00");
-    loadDayCalendar();
+    updateTopDateLabel();
+    reloadByMode();
 }
 
-/* ================= WEEK ================= */
+function reloadByMode() {
+    if (mode === 'week') loadCalendar();
+    if (mode === 'day') loadDayCalendar();
+}
+
+function getStatusBadge(cell) {
+    if (!cell) {
+        return `
+            <div class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">
+                -
+            </div>
+        `;
+    }
+
+    if (cell.status === '○') {
+        return `
+            <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-green-50 text-green-700 border border-green-200 min-w-[96px] shadow-sm">
+                <span class="text-xs font-bold">予約可能</span>
+                <span class="text-[11px] mt-0.5">空き ${cell.available}/${cell.total}</span>
+            </div>
+        `;
+    }
+
+    if (cell.status === '△') {
+        return `
+            <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 min-w-[96px] shadow-sm">
+                <span class="text-xs font-bold">残りわずか</span>
+                <span class="text-[11px] mt-0.5">空き ${cell.available}/${cell.total}</span>
+            </div>
+        `;
+    }
+
+    const reason = (cell.total > 0)
+        ? 'この時間帯の受付枠が埋まっています'
+        : '営業時間外・休業日・シフト外などで受付できません';
+
+    const label = (cell.total > 0) ? '予約あり' : '受付不可';
+
+    return `
+        <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[96px] opacity-90"
+             title="${reason}">
+            <span class="text-xs font-bold">${label}</span>
+            <span class="text-[11px] mt-0.5">${Math.max(0, (cell.total ?? 0) - (cell.available ?? 0))}/${cell.total ?? 0}</span>
+        </div>
+    `;
+}
 
 function loadCalendar() {
-
     if (mode !== 'week') return;
+
+    updateTopDateLabel();
 
     let dateStr = getLocalDateStr(currentDate);
     let staffId = document.getElementById('staffSelect').value;
 
     fetch(`/company/reserve/data?mode=week&date=${dateStr}&staff_id=${staffId}`)
-    .then(res => res.json())
-    .then(data => {
-        if (!data || !data.slots) {
-            console.error('APIエラー', data);
-            return;
-        }
+        .then(res => res.json())
+        .then(data => {
+            if (!data || !data.slots) {
+                console.error('APIエラー', data);
+                return;
+            }
 
-        let slots = data.slots;
+            let slots = data.slots;
+            let firstTimeKey = Object.keys(slots)[0];
+            let dates = firstTimeKey ? Object.keys(slots[firstTimeKey] || {}) : [];
+            let times = Object.keys(slots);
 
-        let dates = Object.keys(slots[Object.keys(slots)[0]] || {});
-        let times = Object.keys(slots);
-
-        let html = `
-<div class="overflow-auto max-h-[600px]">
-<table class="min-w-full text-sm border">
-<thead>
-<tr>
-    <th class="sticky top-0 left-0 bg-white z-20 p-3 border">時間</th>
-`;
-
-        dates.forEach(d => {
-            let day = new Date(d).getDay();
-            let w = ['日','月','火','水','木','金','土'][day];
-
-            html += `
-                <th class="sticky top-0 bg-white z-10 p-3 border">
-                    ${d}<br>${w}
-                </th>`;
-        });
-
-        html += "</tr></thead><tbody>";
-
-        times.forEach(time => {
-
-            html += `<tr>
-                <td class="sticky left-0 bg-white p-3 border font-bold">${time}</td>
+            let html = `
+                <div class="overflow-auto rounded-2xl border border-stone-200">
+                    <table class="min-w-[960px] w-full text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-stone-50">
+                                <th class="sticky top-0 left-0 z-20 p-3 border-b border-r bg-stone-50 text-left font-bold text-stone-700 min-w-[90px]">
+                                    時間
+                                </th>
             `;
 
             dates.forEach(d => {
-
-                let cell = slots[time][d];
-
-                if (!cell) {
-                    html += `<td class="border p-2 text-gray-300">-</td>`;
-                    return;
-                }
-
-                let display = '';
-                let color = '';
-
-                if (cell.status === '○' || cell.status === '△') {
-                    display = `空き ${cell.available}/${cell.total}`;
-                    color = cell.status === '○' ? 'text-green-600' : 'text-yellow-600';
-                } else {
-                    display = '×';
-                    color = 'text-red-500';
-                }
-
-                let clickable = cell.status !== '×';
+                let day = new Date(d + 'T00:00:00').getDay();
+                let w = ['日','月','火','水','木','金','土'][day];
+                let dayClass = day === 0 ? 'text-red-500' : (day === 6 ? 'text-blue-500' : 'text-stone-700');
 
                 html += `
-                <td class="border p-2 text-center ${color} ${clickable ? 'cursor-pointer hover:bg-gray-50' : 'bg-gray-100 text-gray-400'}"
-                    ${clickable ? `onclick="openStaffSelector('${d} ${time}')"` : ''}>
-                    ${display}
-                </td>`;
+                    <th class="sticky top-0 z-10 p-3 border-b bg-white text-center min-w-[140px]">
+                        <div class="text-sm font-bold ${dayClass}">${d}</div>
+                        <div class="text-xs ${dayClass} mt-1">${w}</div>
+                    </th>
+                `;
             });
 
-            html += "</tr>";
+            html += `</tr></thead><tbody>`;
+
+            times.forEach(time => {
+                html += `
+                    <tr class="hover:bg-stone-50/70 transition">
+                        <td class="sticky left-0 z-10 bg-white p-3 border-b border-r font-bold text-stone-700">
+                            ${time}
+                        </td>
+                `;
+
+                dates.forEach(d => {
+                    let cell = slots[time][d];
+
+                    if (!cell) {
+                        html += `
+                            <td class="border-b p-3 text-center bg-stone-50">
+                                <div class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">-</div>
+                            </td>
+                        `;
+                        return;
+                    }
+
+                    let clickable = cell.status !== '×';
+                    let wrapperClass = clickable ? 'cursor-pointer hover:scale-[1.02] transition' : 'cursor-not-allowed';
+
+                    html += `
+                        <td class="border-b p-3 text-center ${clickable ? 'bg-white' : 'bg-stone-50'}">
+                            <div class="${wrapperClass}"
+                                 ${clickable ? `onclick="startReservationFlow('${d} ${time}')"` : ''}>
+                                ${getStatusBadge(cell)}
+                            </div>
+                        </td>
+                    `;
+                });
+
+                html += `</tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+
+            document.getElementById('calendar').innerHTML = html;
+        })
+        .catch(err => {
+            console.error('通信エラー', err);
         });
-
-        html += "</tbody></table></div>";
-
-        document.getElementById('calendar').innerHTML = html;
-    })
-    .catch(err => {
-        console.error('通信エラー', err);
-    });
 }
 
-/* ================= DAY ================= */
+function getDayCellContent(cell, dateStr, time, staff) {
+    let now = new Date();
+    let cellTime = new Date(`${dateStr}T${time}:00`);
+    let isPast = cellTime < now;
+
+    if (!cell) {
+        return `
+            <td class="p-3 sm:p-4 text-center bg-stone-50">
+                <div class="mx-auto inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">
+                    -
+                </div>
+            </td>
+        `;
+    }
+
+    const total = parseInt(cell.total ?? 0);
+    const available = parseInt(cell.available ?? 0);
+    const used = Math.max(0, total - available);
+
+    if (cell.status === '×') {
+        if (isPast) {
+            return `
+                <td class="p-3 sm:p-4 text-center bg-stone-50">
+                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px]"
+                         title="過去の時間のため受付できません">
+                        <span class="text-xs font-bold">受付終了</span>
+                        <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                    </div>
+                </td>
+            `;
+        }
+
+        if (cell.reservation_id) {
+            return `
+                <td class="p-3 sm:p-4 text-center">
+                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-red-50 text-red-700 border border-red-200 min-w-[104px] shadow-sm cursor-pointer hover:bg-red-100 transition"
+                         data-id="${cell.reservation_id}"
+                         data-datetime="${cell.reservation_start ?? `${dateStr} ${time}`}"
+                         data-customer-name="${cell.customer_name ?? ''}"
+                         data-customer-phone="${cell.customer_phone ?? ''}"
+                         data-staff-name="${cell.staff_name ?? staff.name}"
+                         onclick="handleCancelClick(this)"
+                         title="この担当者の同時予約枠が埋まっています。クリックでキャンセル確認">
+                        <span class="text-xs font-bold">予約あり</span>
+                        <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                    </div>
+                </td>
+            `;
+        }
+
+        const label = (total > 0) ? '予約あり' : '受付不可';
+        const title = (total > 0)
+            ? 'この担当者の同時予約枠が埋まっています'
+            : '営業時間外・休業日・シフト外などで受付できません';
+
+        return `
+            <td class="p-3 sm:p-4 text-center bg-stone-50">
+                <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px] cursor-not-allowed"
+                     title="${title}">
+                    <span class="text-xs font-bold">${label}</span>
+                    <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                </div>
+            </td>
+        `;
+    }
+
+    if (cell.status === '△') {
+        if (isPast) {
+            return `
+                <td class="p-3 sm:p-4 text-center bg-stone-50">
+                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px]">
+                        <span class="text-xs font-bold">受付終了</span>
+                        <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                    </div>
+                </td>
+            `;
+        }
+
+        return `
+            <td class="p-3 sm:p-4 text-center">
+                <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 min-w-[104px] shadow-sm cursor-pointer hover:bg-amber-100 transition"
+                     onclick="startReservationFlow('${dateStr} ${time}')"
+                     title="この担当者は残り ${available} 枠です">
+                    <span class="text-xs font-bold">残りわずか</span>
+                    <span class="text-[11px] mt-0.5">残り ${available}/${total || 0}</span>
+                </div>
+            </td>
+        `;
+    }
+
+    if (cell.status === '○') {
+        if (isPast) {
+            return `
+                <td class="p-3 sm:p-4 text-center bg-stone-50">
+                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px]">
+                        <span class="text-xs font-bold">受付終了</span>
+                        <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                    </div>
+                </td>
+            `;
+        }
+
+        return `
+            <td class="p-3 sm:p-4 text-center">
+                <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 text-white min-w-[104px] shadow-sm cursor-pointer hover:opacity-90 transition"
+                     style="background: {{ $theme }}"
+                     onclick="startReservationFlow('${dateStr} ${time}')"
+                     title="この担当者は残り ${available} 枠です">
+                    <span class="text-xs font-bold">予約可能</span>
+                    <span class="text-[11px] mt-0.5 text-white/90">残り ${available}/${total || 0}</span>
+                </div>
+            </td>
+        `;
+    }
+
+    return `
+        <td class="p-3 sm:p-4 text-center bg-stone-50">
+            <div class="mx-auto inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">
+                -
+            </div>
+        </td>
+    `;
+}
 
 function loadDayCalendar() {
-
     if (mode !== 'day') return;
 
     let dateStr = getLocalDateStr(currentDate);
-    let todayStr = getLocalDateStr(new Date());
-
-    document.getElementById('currentDateLabel').innerText = dateStr;
-    document.getElementById('datePicker').value = dateStr;
+    updateTopDateLabel();
 
     fetch(`/company/reserve/data?mode=day&date=${dateStr}`)
         .then(res => res.json())
         .then(data => {
-
             const head = document.getElementById("day-head");
             const body = document.getElementById("day-body");
 
@@ -278,15 +544,13 @@ function loadDayCalendar() {
             body.innerHTML = "";
 
             let headerRow = `
-            <tr>
-                <th class="p-4 bg-gray-50 sticky top-0 left-0 z-20 text-left">
-                    時間
-                </th>`;
+                <tr class="bg-stone-50">
+                    <th class="p-4 sticky top-0 left-0 z-20 text-left border-b border-r bg-stone-50 text-stone-700 min-w-[90px]">時間</th>`;
 
             data.staffs.forEach(staff => {
                 headerRow += `
-                    <th class="p-4 border-b text-center sticky top-0 bg-white z-10">
-                        <div class="font-semibold">${staff.name}</div>
+                    <th class="p-4 border-b text-center sticky top-0 bg-white z-10 min-w-[120px]">
+                        <div class="font-semibold text-stone-800">${staff.name}</div>
                     </th>`;
             });
 
@@ -294,108 +558,13 @@ function loadDayCalendar() {
             head.innerHTML = headerRow;
 
             Object.keys(data.slots).forEach(time => {
-
                 let row = `
-                    <tr class="hover:bg-gray-50 transition">
-                        <td class="p-4 font-medium bg-gray-50 sticky left-0 text-center align-middle">
-                            ${time}
-                        </td>`;
+                    <tr class="hover:bg-stone-50 transition">
+                        <td class="p-4 font-bold bg-white sticky left-0 z-10 text-center align-middle border-b border-r text-stone-700">${time}</td>`;
 
                 data.staffs.forEach(staff => {
-
                     let cell = data.slots[time][staff.id];
-
-                    let now = new Date();
-                    let cellTime = new Date(`${dateStr}T${time}:00`);
-                    let isPast = cellTime < now;
-
-                    if (!cell) {
-                        row += `<td class="p-4 text-gray-200 text-center">-</td>`;
-                        return;
-                    }
-
-                    if (cell.status === '×') {
-
-                        if (isPast || !cell.reservation_id) {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
-                                                rounded-full bg-gray-200 text-gray-400
-                                                shadow cursor-not-allowed">
-                                        ×
-                                    </div>
-                                </td>`;
-
-                        } else {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-8 h-8 flex items-center justify-center
-                                                rounded-full bg-red-100 text-red-600
-                                                shadow cursor-pointer hover:bg-red-200 transition"
-                                        data-id="${cell.reservation_id}"
-                                        data-datetime="${cell.reservation_start ?? `${dateStr} ${time}`}"
-                                        data-customer-name="${cell.customer_name ?? ''}"
-                                        data-customer-phone="${cell.customer_phone ?? ''}"
-                                        data-staff-name="${cell.staff_name ?? staff.name}"
-                                        onclick="handleCancelClick(this)">
-                                        ×
-                                    </div>
-                                </td>`;
-                        }
-
-                    } else if (cell.status === '△') {
-
-                        if (isPast) {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-9 h-9 flex items-center justify-center
-                                                rounded-full bg-gray-200 text-gray-400 shadow cursor-not-allowed">
-                                        △
-                                    </div>
-                                </td>`;
-
-                        } else {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-9 h-9 flex items-center justify-center
-                                                rounded-full bg-yellow-100 text-yellow-600 shadow
-                                                cursor-pointer hover:bg-yellow-200 transition"
-                                        onclick="reserve('${dateStr} ${time}', ${staff.id})">
-                                        △
-                                    </div>
-                                </td>`;
-                        }
-
-                    } else if (cell.status === '○') {
-
-                        if (isPast) {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-9 h-9 flex items-center justify-center
-                                                rounded-full bg-gray-200 text-gray-400 shadow cursor-not-allowed">
-                                        ○
-                                    </div>
-                                </td>`;
-
-                        } else {
-
-                            row += `
-                                <td class="p-4 text-center">
-                                    <div class="mx-auto w-9 h-9 flex items-center justify-center
-                                                rounded-full text-white shadow
-                                                cursor-pointer hover:opacity-90 transition"
-                                        style="background: {{ $theme }}"
-                                        onclick="reserve('${dateStr} ${time}', ${staff.id})">
-                                        ○
-                                    </div>
-                                </td>`;
-                        }
-                    }
+                    row += getDayCellContent(cell, dateStr, time, staff);
                 });
 
                 row += "</tr>";
@@ -404,35 +573,125 @@ function loadDayCalendar() {
         });
 }
 
-function reserve(datetime, staffId) {
-
+function startReservationFlow(datetime) {
     selectedDatetime = datetime;
-    selectedStaffId  = staffId;
+    selectedStaffId = null;
+    selectedMenuIds = [];
+    availableStaffCache = [];
+    selectedMenuDuration = 0;
+    selectedMenuPrice = 0;
 
-    resetReserveModal();
+    resetMenuStep();
+    document.getElementById('menuStepDatetime').innerText = datetime;
+    document.getElementById('menuStepModal').classList.remove('hidden');
+    document.getElementById('menuStepModal').classList.add('flex');
+}
 
-    fetch("{{ route('company.calendar.staff-menus') }}?staff_id=" + staffId)
-    .then(res => res.json())
-    .then(menus => {
+function closeMenuStepModal() {
+    document.getElementById('menuStepModal').classList.add('hidden');
+    document.getElementById('menuStepModal').classList.remove('flex');
+}
 
-        const select = document.getElementById('modal_menu_ids');
-        if (select) {
-            select.innerHTML = '';
-        }
+function resetMenuStep() {
+    document.querySelectorAll('.step-menu-checkbox').forEach(el => {
+        el.checked = false;
+    });
+    document.getElementById('stepTotalDuration').innerText = 0;
+    document.getElementById('stepTotalPrice').innerText = 0;
+}
 
-        menus.forEach(menu => {
-            if (select) {
-                select.innerHTML += `
-                    <option value="${menu.id}">
-                    ${menu.name}（${menu.duration}分）
-                    </option>
-                `;
-            }
-        });
+document.addEventListener('change', function(e){
+    if (!e.target.classList.contains('step-menu-checkbox')) return;
+
+    let totalTime = 0;
+    let totalPrice = 0;
+
+    document.querySelectorAll('.step-menu-checkbox:checked').forEach(el => {
+        totalTime += parseInt(el.dataset.duration || 0);
+        totalPrice += parseInt(el.dataset.price || 0);
     });
 
-    document.getElementById('reserveDatetime').innerText = datetime;
+    document.getElementById('stepTotalDuration').innerText = totalTime;
+    document.getElementById('stepTotalPrice').innerText = totalPrice.toLocaleString();
+});
 
+function proceedToStaffSelection() {
+    selectedMenuIds = Array.from(document.querySelectorAll('.step-menu-checkbox:checked')).map(el => el.value);
+
+    if (selectedMenuIds.length === 0) {
+        alert('メニューを選択してください');
+        return;
+    }
+
+    selectedMenuDuration = 0;
+    selectedMenuPrice = 0;
+
+    document.querySelectorAll('.step-menu-checkbox:checked').forEach(el => {
+        selectedMenuDuration += parseInt(el.dataset.duration || 0);
+        selectedMenuPrice += parseInt(el.dataset.price || 0);
+    });
+
+    const params = new URLSearchParams();
+    params.append('datetime', selectedDatetime);
+    selectedMenuIds.forEach(id => params.append('menu_ids[]', id));
+
+    fetch(`/company/calendar/available-staff?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+            availableStaffCache = data || [];
+            const area = document.getElementById('stepStaffListArea');
+            area.innerHTML = '';
+
+            if (!availableStaffCache.length) {
+                area.innerHTML = `
+                    <div class="text-sm text-stone-500 bg-stone-50 border border-stone-200 rounded-xl p-4">
+                        このメニュー内容で対応できる担当者が見つかりませんでした。
+                    </div>
+                `;
+            } else {
+                const BASE_URL = "{{ url('/') }}";
+                const NO_IMAGE = "{{ asset('logos/logo.png') }}";
+
+                availableStaffCache.forEach(staff => {
+                    area.innerHTML += `
+                        <div onclick="selectStaffForReservation(${staff.id})"
+                             class="flex items-center gap-3 p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
+                            <img src="${staff.image_path && staff.image_path.trim() !== '' ? BASE_URL + '/' + staff.image_path : NO_IMAGE}"
+                                 class="w-12 h-12 rounded-full object-cover border border-stone-200">
+                            <div>
+                                <div class="font-semibold text-stone-800">${staff.name}</div>
+                                <div class="text-xs text-stone-500">この担当者で予約する</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            document.getElementById('stepStaffDatetime').innerText = selectedDatetime;
+            document.getElementById('stepStaffDuration').innerText = selectedMenuDuration;
+            document.getElementById('stepStaffPrice').innerText = selectedMenuPrice.toLocaleString();
+
+            closeMenuStepModal();
+            document.getElementById('staffStepModal').classList.remove('hidden');
+            document.getElementById('staffStepModal').classList.add('flex');
+        });
+}
+
+function closeStaffStepModal() {
+    document.getElementById('staffStepModal').classList.add('hidden');
+    document.getElementById('staffStepModal').classList.remove('flex');
+}
+
+function selectStaffForReservation(staffId) {
+    selectedStaffId = staffId;
+    closeStaffStepModal();
+    openFinalReservationModal();
+}
+
+function openFinalReservationModal() {
+    document.getElementById('reserveDatetime').innerText = selectedDatetime;
+    document.getElementById('finalTotalDuration').innerText = selectedMenuDuration;
+    document.getElementById('finalTotalPrice').innerText = selectedMenuPrice.toLocaleString();
     document.getElementById('reserveModal').classList.remove('hidden');
     document.getElementById('reserveModal').classList.add('flex');
 }
@@ -452,13 +711,9 @@ function closeModal() {
 }
 
 function submitReservation() {
-
     const name = document.getElementById('modal_customer_name').value;
     const phone  = document.getElementById('modal_customer_phone').value;
     const phonePattern = /^[0-9\-]*$/;
-    const menuIds = Array.from(
-        document.querySelectorAll('.menu-checkbox:checked')
-    ).map(el => el.value);
 
     if (!name) {
         alert('お名前を入力してください');
@@ -475,6 +730,16 @@ function submitReservation() {
         return;
     }
 
+    if (!selectedStaffId) {
+        alert('担当者を選択してください');
+        return;
+    }
+
+    if (!selectedMenuIds.length) {
+        alert('メニューを選択してください');
+        return;
+    }
+
     fetch('/company/reservation', {
         method:'POST',
         headers:{
@@ -486,18 +751,23 @@ function submitReservation() {
             customer_name: name,
             customer_phone: phone,
             staff_id: selectedStaffId,
-            menu_ids: menuIds
+            menu_ids: selectedMenuIds
         })
     })
     .then(res => res.json())
     .then(result => {
         if(result.success){
-
             closeModal();
+
+            document.getElementById('modal_customer_name').value = '';
+            document.getElementById('modal_customer_phone').value = '';
+            selectedMenuIds = [];
+            selectedStaffId = null;
+            selectedMenuDuration = 0;
+            selectedMenuPrice = 0;
 
             if (mode === 'week') loadCalendar();
             if (mode === 'day') loadDayCalendar();
-
         } else {
             alert(result.message);
         }
@@ -514,17 +784,10 @@ function handleCancelClick(el) {
 
     cancelReservationId = reservationId;
 
-    document.getElementById('cancelReservationDatetime').innerText =
-        el.dataset.datetime || '-';
-
-    document.getElementById('cancelCustomerName').innerText =
-        el.dataset.customerName || '-';
-
-    document.getElementById('cancelCustomerPhone').innerText =
-        el.dataset.customerPhone || '-';
-
-    document.getElementById('cancelStaffName').innerText =
-        el.dataset.staffName || '-';
+    document.getElementById('cancelReservationDatetime').innerText = el.dataset.datetime || '-';
+    document.getElementById('cancelCustomerName').innerText = el.dataset.customerName || '-';
+    document.getElementById('cancelCustomerPhone').innerText = el.dataset.customerPhone || '-';
+    document.getElementById('cancelStaffName').innerText = el.dataset.staffName || '-';
 
     document.getElementById('cancelConfirmModal').classList.remove('hidden');
     document.getElementById('cancelConfirmModal').classList.add('flex');
@@ -551,188 +814,148 @@ function executeCancelReservation() {
     })
     .then(res => res.json())
     .then(result => {
-
         if (result.success) {
-
             closeCancelConfirmModal();
 
             if (mode === 'week') loadCalendar();
             if (mode === 'day') loadDayCalendar();
-
         } else {
             alert(result.message || 'キャンセルに失敗しました');
         }
-
     })
     .catch(() => {
         alert('通信エラーが発生しました');
     });
 }
 
-function openStaffSelector(datetime) {
-
-    const BASE_URL = "{{ url('/') }}";
-    const NO_IMAGE = "{{ asset('logos/logo.png') }}";
-
-    selectedDatetime = datetime;
-
-    fetch(`/company/calendar/available-staff?datetime=${datetime}`)
-        .then(res => res.json())
-        .then(data => {
-
-            const area = document.getElementById('staffListArea');
-            area.innerHTML = '';
-            data.forEach(staff => {
-                area.innerHTML += `
-                    <div onclick="reserveWithStaff(${staff.id})"
-                        class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <img src="${staff.image_path && staff.image_path.trim() !== '' ? BASE_URL + '/' + staff.image_path : NO_IMAGE}"
-                             class="w-10 h-10 rounded-full object-cover">
-                        <div>${staff.name}</div>
-                    </div>
-                `;
-            });
-            document.getElementById('staffModal').classList.remove('hidden');
-            document.getElementById('staffModal').classList.add('flex');
-        });
-}
-
-function closeStaffModal() {
-    document.getElementById('staffModal').classList.add('hidden');
-    document.getElementById('staffModal').classList.remove('flex');
-}
-
-function reserveWithStaff(staffId) {
-    closeStaffModal();
-    reserve(selectedDatetime, staffId);
-}
-
-function openReservationList(reservations) {
-
-    let html = '';
-
-    reservations.forEach(r => {
-        html += `
-            <div class="flex justify-between items-center border p-3 rounded-lg">
-                <div>
-                    <div class="font-semibold">${r.staff_name}</div>
-                    <div class="text-xs text-gray-500">${r.customer_name}</div>
-                </div>
-                <button onclick="cancelReservation(${r.id})"
-                        class="text-red-500 text-sm hover:underline">
-                    キャンセル
-                </button>
-            </div>`;
-    });
-
-    document.getElementById('reservationListArea').innerHTML = html;
-    document.getElementById('reservationModal').classList.remove('hidden');
-    document.getElementById('reservationModal').classList.add('flex');
-}
-
-function closeReservationModal() {
-    document.getElementById('reservationModal').classList.add('hidden');
-    document.getElementById('reservationModal').classList.remove('flex');
-}
-
 function formatTel(input) {
     input.value = input.value.replace(/[^0-9\-]/g, '');
 }
-
-document.addEventListener('change', function(e){
-
-    if (!e.target.classList.contains('menu-checkbox')) return;
-
-    let totalTime = 0;
-    let totalPrice = 0;
-
-    document.querySelectorAll('.menu-checkbox:checked').forEach(el=>{
-        totalTime += parseInt(el.dataset.duration || 0);
-        totalPrice += parseInt(el.dataset.price || 0);
-    });
-
-    document.getElementById('totalDuration').innerText = totalTime;
-    document.getElementById('totalPrice').innerText = totalPrice.toLocaleString();
-
-});
-
-function resetReserveModal() {
-
-    document.getElementById('modal_customer_name').value = '';
-    document.getElementById('modal_customer_phone').value = '';
-
-    document.querySelectorAll('.menu-checkbox').forEach(el => {
-        el.checked = false;
-    });
-
-    document.getElementById('totalDuration').innerText = 0;
-    document.getElementById('totalPrice').innerText = 0;
-}
 </script>
 
-<div id="staffModal" class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl w-96 p-6">
-        <h2 class="text-lg font-bold mb-4">担当者を選択</h2>
-        <div id="staffListArea" class="space-y-3"></div>
-        <button onclick="closeStaffModal()" class="mt-4 text-sm text-gray-500">
-            閉じる
+{{-- メニュー選択ステップ --}}
+<div id="menuStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-lg font-bold text-stone-800 mb-2">メニュー選択</h2>
+
+        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
+            <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
+            <div id="menuStepDatetime" class="font-bold text-stone-800"></div>
+        </div>
+
+        <div class="space-y-4 max-h-80 overflow-y-auto border border-stone-200 rounded-2xl p-4 bg-white">
+            @foreach($menus as $category => $menuList)
+                <div>
+                    <div class="font-bold text-sm mb-2 text-stone-700">{{ $category }}</div>
+                    <div class="space-y-2">
+                        @foreach($menuList as $menu)
+                            <label class="flex items-start gap-3 p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
+                                <input type="checkbox"
+                                       class="step-menu-checkbox mt-1"
+                                       value="{{ $menu->id }}"
+                                       data-price="{{ $menu->price }}"
+                                       data-duration="{{ $menu->duration }}">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-stone-800">{{ $menu->name }}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        {{ $menu->duration }}分 / ¥{{ number_format($menu->price) }}
+                                    </div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">
+            <div class="flex items-center justify-between">
+                <span>合計時間</span>
+                <span><span id="stepTotalDuration">0</span>分</span>
+            </div>
+            <div class="flex items-center justify-between mt-2 font-semibold">
+                <span>合計料金</span>
+                <span>¥<span id="stepTotalPrice">0</span></span>
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row justify-end gap-2 mt-5">
+            <button onclick="closeMenuStepModal()"
+                    class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
+                キャンセル
+            </button>
+            <button onclick="proceedToStaffSelection()"
+                    class="px-4 py-3 text-sm text-white rounded-xl hover:opacity-90 transition"
+                    style="background: {{ $theme }};">
+                担当者を選ぶ
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- 担当者選択ステップ --}}
+<div id="staffStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+        <h2 class="text-lg font-bold text-stone-800 mb-2">担当者を選択</h2>
+        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4 text-sm">
+            <div class="text-stone-500">予約日時</div>
+            <div id="stepStaffDatetime" class="font-semibold text-stone-800 mb-2"></div>
+            <div class="flex justify-between text-stone-700">
+                <span>合計時間</span>
+                <span><span id="stepStaffDuration">0</span>分</span>
+            </div>
+            <div class="flex justify-between text-stone-700 mt-1">
+                <span>合計料金</span>
+                <span>¥<span id="stepStaffPrice">0</span></span>
+            </div>
+        </div>
+        <div id="stepStaffListArea" class="space-y-3"></div>
+        <button onclick="closeStaffStepModal()"
+                class="mt-5 w-full px-4 py-3 rounded-xl bg-stone-100 text-stone-700 hover:bg-stone-200 transition">
+            戻る
         </button>
     </div>
 </div>
 
-<div id="reservationModal"
-     class="fixed inset-0 bg-black bg-opacity-40 hidden items-center justify-center z-50">
-    <div class="bg-white rounded-xl shadow-xl w-96 p-6">
-        <h2 class="text-lg font-bold mb-4">予約一覧（キャンセルする担当者を選択）</h2>
-        <div id="reservationListArea" class="space-y-2"></div>
-        <button onclick="closeReservationModal()"
-                class="mt-4 text-sm text-gray-500">
-            閉じる
-        </button>
-    </div>
-</div>
-
+{{-- キャンセル確認モーダル --}}
 <div id="cancelConfirmModal"
-     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
-        <h2 class="text-lg font-bold mb-4">予約キャンセル確認</h2>
+        <h2 class="text-lg font-bold mb-4 text-stone-800">予約キャンセル確認</h2>
 
         <p class="text-sm text-gray-500 mb-4">
             以下の予約をキャンセルします。内容にお間違いがないかご確認ください。
         </p>
 
-        <div class="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3 text-sm">
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-3 text-sm">
             <div>
                 <div class="text-stone-500">予約日時</div>
                 <div id="cancelReservationDatetime" class="font-semibold text-stone-800">-</div>
             </div>
-
             <div>
                 <div class="text-stone-500">顧客名</div>
                 <div id="cancelCustomerName" class="font-semibold text-stone-800">-</div>
             </div>
-
             <div>
                 <div class="text-stone-500">電話番号</div>
                 <div id="cancelCustomerPhone" class="font-semibold text-stone-800">-</div>
             </div>
-
             <div>
                 <div class="text-stone-500">担当者</div>
                 <div id="cancelStaffName" class="font-semibold text-stone-800">-</div>
             </div>
         </div>
 
-        <div class="flex justify-end gap-2 mt-6">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 mt-6">
             <button type="button"
                     onclick="closeCancelConfirmModal()"
-                    class="px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300 transition">
+                    class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
                 戻る
             </button>
 
             <button type="button"
                     onclick="executeCancelReservation()"
-                    class="px-4 py-2 text-sm text-white rounded-lg hover:opacity-90 transition"
+                    class="px-4 py-3 text-sm text-white rounded-xl hover:opacity-90 transition"
                     style="background: {{ $theme }};">
                 この予約をキャンセルする
             </button>
@@ -740,79 +963,55 @@ function resetReserveModal() {
     </div>
 </div>
 
-<!-- 予約モーダル -->
-<div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50">
-    <div class="bg-white w-full max-w-md rounded-xl shadow-xl p-6">
+{{-- 最終予約確認モーダル --}}
+<div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
 
-        <h2 class="text-lg font-bold mb-4">予約確認</h2>
+        <h2 class="text-lg font-bold text-stone-800 mb-2">予約確定</h2>
 
-        <p class="mb-3 text-sm text-gray-600">
-            <span id="reserveDatetime"></span>
-        </p>
+        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
+            <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
+            <div id="reserveDatetime" class="font-bold text-stone-800"></div>
+        </div>
 
         <div class="mb-3">
-            <label class="block text-sm mb-1">お名前</label>
-            <input type="text" id="modal_customer_name"
-                   class="border rounded-lg p-2 w-full">
+            <label class="block text-sm font-semibold text-stone-700 mb-1">お名前</label>
+            <input type="text"
+                   id="modal_customer_name"
+                   class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                   placeholder="例：山田 花子">
         </div>
 
         <div class="mb-4">
-            <label class="block text-sm mb-1">電話番号（数字と‐のみ入力可）</label>
+            <label class="block text-sm font-semibold text-stone-700 mb-1">電話番号（数字と-のみ）</label>
             <input type="text"
                    id="modal_customer_phone"
-                   class="border rounded-lg p-2 w-full"
+                   class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                   placeholder="例：090-1234-5678"
                    oninput="formatTel(this)">
         </div>
 
-        <div id="menuArea" class="space-y-4 max-h-64 overflow-y-auto border rounded-lg p-3">
-
-            @foreach($menus as $category => $menuList)
-
-                <div>
-                    <div class="font-bold text-sm mb-2 text-gray-600">
-                        {{ $category }}
-                    </div>
-
-                    <div class="space-y-2">
-                        @foreach($menuList as $menu)
-
-                            <label class="flex items-center gap-3 p-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                                <input type="checkbox"
-                                       class="menu-checkbox"
-                                       value="{{ $menu->id }}"
-                                       data-price="{{ $menu->price }}"
-                                       data-duration="{{ $menu->duration }}">
-
-                                <div class="flex-1">
-                                    <div class="font-semibold">{{ $menu->name }}</div>
-                                    <div class="text-xs text-gray-500">
-                                        {{ $menu->duration }}分 / ¥{{ number_format($menu->price) }}
-                                    </div>
-                                </div>
-                            </label>
-
-                        @endforeach
-                    </div>
-                </div>
-
-            @endforeach
-
+        <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">
+            <div class="flex items-center justify-between">
+                <span>合計時間</span>
+                <span><span id="finalTotalDuration">0</span>分</span>
+            </div>
+            <div class="flex items-center justify-between mt-2 font-semibold">
+                <span>合計料金</span>
+                <span>¥<span id="finalTotalPrice">0</span></span>
+            </div>
         </div>
 
-        <div class="mt-3 text-sm text-gray-600">
-            合計時間：<span id="totalDuration">0</span>分<br>
-            合計料金：¥<span id="totalPrice">0</span>
-        </div>
-
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-col sm:flex-row justify-end gap-2 mt-5">
             <button onclick="closeModal()"
-                    class="px-4 py-2 text-sm bg-gray-200 rounded-lg">
+                    class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
                 キャンセル
             </button>
 
             <button onclick="submitReservation()"
-                    class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg">
-                予約する
+                    class="px-4 py-3 text-sm text-white rounded-xl hover:opacity-90 transition"
+                    style="background: {{ $theme }};">
+                この内容で予約する
             </button>
         </div>
 

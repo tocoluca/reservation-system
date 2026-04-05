@@ -409,6 +409,21 @@
                                 メニュー・担当者・日付を選ぶと、空いている時間が表示されます
                             </div>
 
+                            <div class="mb-3 flex flex-wrap gap-2 text-xs">
+                                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-700 px-3 py-1">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>余裕あり
+                                </span>
+                                <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
+                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>予約可能
+                                </span>
+                                <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
+                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>残りわずか
+                                </span>
+                                <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-500 px-3 py-1">
+                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>満席
+                                </span>
+                            </div>
+
                             <div id="slots" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
                         </div>
                     </section>
@@ -732,8 +747,8 @@ function updatePrice() {
     const staffFee = staff ? Number(staff.dataset.fee || 0) : 0;
     const total = menuPrice + staffFee;
 
-    document.getElementById('price').innerText = total;
-    document.getElementById('bottomPrice').innerText = total;
+    document.getElementById('price').innerText = total.toLocaleString();
+    document.getElementById('bottomPrice').innerText = total.toLocaleString();
 }
 
 function updateSummary() {
@@ -852,22 +867,30 @@ function loadSlots() {
             guide.innerText = 'ご希望の時間を選択してください';
 
             data.forEach(slot => {
-                let statusText = '';
-                let disabled = false;
-                let statusClass = '';
+                const remaining = Number(slot.remaining || 0);
+                const total = Number(slot.total || 0);
 
-                if (slot.remaining >= 3) {
+                let statusText = '';
+                let statusClass = '';
+                let disabled = false;
+                let labelText = '';
+
+                if (remaining >= 3) {
                     statusText = '◎';
                     statusClass = 'text-emerald-600';
-                } else if (slot.remaining == 2) {
+                    labelText = `残り ${remaining}/${total}`;
+                } else if (remaining === 2) {
                     statusText = '○';
                     statusClass = 'text-green-600';
-                } else if (slot.remaining == 1) {
+                    labelText = `残り ${remaining}/${total}`;
+                } else if (remaining === 1) {
                     statusText = '△';
                     statusClass = 'text-amber-500';
+                    labelText = `残り ${remaining}/${total}`;
                 } else {
                     statusText = '×';
                     statusClass = 'text-gray-400';
+                    labelText = `${total - remaining}/${total}`;
                     disabled = true;
                 }
 
@@ -878,6 +901,7 @@ function loadSlots() {
                                 class="slot-btn border border-gray-200 rounded-2xl px-3 py-3 text-center bg-white hover:bg-gray-50 transition">
                             <div class="font-semibold text-gray-800">${slot.time}</div>
                             <div class="text-xs mt-1 ${statusClass} font-bold">${statusText}</div>
+                            <div class="text-[11px] mt-1 text-gray-500">${labelText}</div>
                         </button>
                     `;
                 } else {
@@ -885,6 +909,7 @@ function loadSlots() {
                         <div class="border border-gray-100 rounded-2xl px-3 py-3 text-center bg-gray-50">
                             <div class="font-semibold text-gray-400">${slot.time}</div>
                             <div class="text-xs mt-1 ${statusClass} font-bold">${statusText}</div>
+                            <div class="text-[11px] mt-1 text-gray-400">${labelText}</div>
                         </div>
                     `;
                 }

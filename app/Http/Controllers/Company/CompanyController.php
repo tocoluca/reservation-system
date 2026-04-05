@@ -39,6 +39,7 @@ class CompanyController extends Controller
             'revisit_reminder_days' => 'nullable|integer|min:1|max:365',
             'web_cancel_deadline_hours' => 'nullable|integer|min:0|max:168',
             'review_enabled' => 'nullable|boolean',
+            'prefer_less_capable_staff_for_menu_assignment' => 'nullable|boolean',
         ];
 
         if ((int) $company->line_login_enabled === 1) {
@@ -80,7 +81,7 @@ class CompanyController extends Controller
         $patterns = collect($request->open_patterns ?? [])
             ->map(function ($day) {
                 return collect($day)
-                    ->filter(fn($p) => !empty($p['open']) && !empty($p['close']))
+                    ->filter(fn ($p) => !empty($p['open']) && !empty($p['close']))
                     ->values()
                     ->toArray();
             })
@@ -104,6 +105,7 @@ class CompanyController extends Controller
             'holiday_is_closed' => $request->boolean('holiday_is_closed'),
             'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
             'review_enabled' => (bool) $request->input('review_enabled', 0),
+            'prefer_less_capable_staff_for_menu_assignment' => $request->boolean('prefer_less_capable_staff_for_menu_assignment'),
         ];
 
         if ((int) $company->line_login_enabled === 1) {

@@ -24,6 +24,6 @@ class ReservationCompleteMail extends Mailable
     public function build()
     {
         return $this->subject('【' . $this->company->name . '】ご予約ありがとうございます')
-            ->text('emails.reservation_complete');
+            ->view('emails.reservation_complete');
     }
 }

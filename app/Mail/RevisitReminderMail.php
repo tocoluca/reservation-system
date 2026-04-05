@@ -24,6 +24,6 @@ class RevisitReminderMail extends Mailable
     public function build()
     {
         return $this->subject('【' . $this->company->name . '】そろそろ次回ご予約のおすすめです')
-            ->text('emails.revisit_reminder');
+            ->view('emails.revisit_reminder');
     }
 }

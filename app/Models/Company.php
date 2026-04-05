@@ -43,6 +43,7 @@ class Company extends Model
         'subscription_status',
         'subscription_started_at',
         'subscription_ends_at',
+        'prefer_less_capable_staff_for_menu_assignment',
     ];
 
     protected $casts = [
@@ -56,6 +57,7 @@ class Company extends Model
         'grace_until' => 'datetime',
         'subscription_started_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
+        'prefer_less_capable_staff_for_menu_assignment' => 'boolean',
     ];
 
     public function staff()

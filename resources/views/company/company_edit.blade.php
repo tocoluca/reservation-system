@@ -144,6 +144,40 @@ OFFにすると、企業管理画面の口コミ管理メニューや口コミ�
 @enderror
 </div>
 
+<div class="md:col-span-2">
+<label class="block font-semibold mb-2 flex items-center gap-2">
+複数メニュー予約時の担当自動割当
+<span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
+<span class="tooltip-text">
+ONにすると、複数メニュー予約時に担当できるメニュー数が少ないスタッフを優先して自動割当します。<br>
+多くのメニューを担当できるスタッフは後順位になります。
+</span>
+</span>
+</label>
+
+<div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+    <label class="flex items-start gap-3">
+        <input type="hidden" name="prefer_less_capable_staff_for_menu_assignment" value="0">
+        <input type="checkbox"
+               name="prefer_less_capable_staff_for_menu_assignment"
+               value="1"
+               class="mt-1 h-5 w-5 rounded border-amber-300"
+               {{ old('prefer_less_capable_staff_for_menu_assignment', $company->prefer_less_capable_staff_for_menu_assignment ?? false) ? 'checked' : '' }}>
+        <div>
+            <div class="font-semibold text-amber-900">担当可能メニュー数が少ないスタッフを優先して自動割当する</div>
+            <div class="text-sm text-amber-700 mt-1 leading-6">
+                ON にすると、複数メニュー予約時に、担当できるメニューが少ないスタッフを優先して自動割当します。<br>
+                たとえば、特定メニューしか対応できないスタッフを先に活かし、幅広く対応できるスタッフは後順位にします。
+            </div>
+        </div>
+    </label>
+</div>
+
+@error('prefer_less_capable_staff_for_menu_assignment')
+<p class="text-sm text-red-500 mt-1">{{ $message }}</p>
+@enderror
+</div>
+
 @if((int) $company->line_login_enabled === 1)
     <div class="md:col-span-2">
         <div class="rounded-xl border border-green-200 bg-green-50 p-4">

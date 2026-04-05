@@ -23,6 +23,6 @@ class ReservationReminderMail extends Mailable
         $companyName = $this->reservation->company->name ?? 'ご予約店舗';
 
         return $this->subject("【{$companyName}】ご予約前日のお知らせ")
-            ->view('emails.reservation_reminder');
+            ->text('emails.reservation_reminder');
     }
 }

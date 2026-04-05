@@ -29,6 +29,6 @@ class MasterCreatedMail extends Mailable
     public function build()
     {
         return $this->subject('【予約システム】アカウント発行のお知らせ')
-            ->view('emails.master-created');
+            ->text('emails.master-created');
     }
 }

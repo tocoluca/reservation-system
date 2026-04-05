@@ -386,6 +386,12 @@ Route::prefix('company')->group(function () {
             Route::post('reviews/{review}/reply', [CompanyReviewController::class, 'reply'])
                 ->name('company.reviews.reply');
 
+			Route::get('/company/reservations', [\App\Http\Controllers\Company\ReservationController::class, 'index'])
+			    ->name('company.reservations.index');
+
+			Route::post('/company/reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
+			    ->name('company.reservations.cancel');
+
         });
     });
 });

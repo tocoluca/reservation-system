@@ -389,13 +389,13 @@ class DashboardController extends Controller
         $hasAlert = false;
         $hasWarning = false;
 
-        if (!$lastDateCarbon) {
-            $hasAlert = true;
-        } elseif ($lastDateCarbon->lte($alertEnd)) {
-            $hasAlert = true;
-        } elseif ($lastDateCarbon->lt($warningEnd)) {
-            $hasWarning = true;
-        }
+		if (!$lastDateCarbon) {
+		    $hasAlert = true;
+		} elseif ($lastDateCarbon->lt($alertEnd)) {
+		    $hasAlert = true;
+		} elseif ($lastDateCarbon->lt($warningEnd)) {
+		    $hasWarning = true;
+		}
 
         return [
             'last_date' => $lastDateCarbon?->format('Y-m-d'),

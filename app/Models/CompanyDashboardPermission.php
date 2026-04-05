@@ -43,6 +43,7 @@ class CompanyDashboardPermission extends Model
             'card.default_shift'      => '基本シフト',
             'card.month_shift'        => '月シフト',
             'card.customers'          => '顧客管理',
+            'card.reviews'    	      => '口コミ管理',
             'card.notices'            => 'お知らせ情報管理',
             'card.vacation'           => '休暇管理',
             'card.theme'              => 'テーマ設定',

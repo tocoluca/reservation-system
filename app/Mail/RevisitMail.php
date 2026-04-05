@@ -20,7 +20,7 @@ public function build()
 {
 
 return $this->subject('そろそろご来店の時期です')
-->view('emails.revisit');
+->text('emails.revisit');
 
 }
 

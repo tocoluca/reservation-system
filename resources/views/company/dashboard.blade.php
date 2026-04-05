@@ -20,15 +20,6 @@
         </p>
     </div>
 
-    @if($dashboardPermissions['dashboard.manage'] ?? false)
-        <div class="shrink-0">
-            <a href="{{ route('company.dashboard-settings.index') }}"
-               class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-white font-bold shadow hover:opacity-90 transition"
-               style="background: {{ $theme }};">
-                ダッシュボード管理
-            </a>
-        </div>
-    @endif
 </div>
 
 @if($showSetupGuide)

@@ -20,6 +20,112 @@ use Illuminate\Support\Facades\Log;
 
 class ReservationController extends Controller
 {
+
+public function index(Request $request)
+{
+    $company = auth()->guard('company')->user()->company;
+
+    $keyword  = trim((string) $request->get('keyword'));
+    $dateFrom = $request->get('date_from');
+    $dateTo   = $request->get('date_to');
+    $status   = $request->get('status');
+
+    $query = Reservation::with(['staff', 'customer', 'menus'])
+        ->where('company_id', $company->id);
+
+    if ($keyword !== '') {
+        $normalizedKeyword = str_replace(['-', 'ー', ' '], '', $keyword);
+
+        $query->where(function ($q) use ($keyword, $normalizedKeyword) {
+            $q->where('customer_name', 'like', '%' . $keyword . '%')
+              ->orWhere('customer_phone', 'like', '%' . $normalizedKeyword . '%')
+              ->orWhereHas('customer', function ($customerQuery) use ($keyword, $normalizedKeyword) {
+                  $customerQuery->where('name', 'like', '%' . $keyword . '%')
+                                ->orWhere('phone', 'like', '%' . $normalizedKeyword . '%');
+              });
+        });
+    }
+
+    if (!empty($dateFrom)) {
+        $query->whereDate('start_at', '>=', $dateFrom);
+    }
+
+    if (!empty($dateTo)) {
+        $query->whereDate('start_at', '<=', $dateTo);
+    }
+
+    if (!empty($status)) {
+        $query->where('status', $status);
+    }
+
+    $reservations = $query
+        ->orderBy('start_at', 'desc')
+        ->paginate(20)
+        ->withQueryString();
+
+    $today = now()->toDateString();
+    $tomorrow = now()->addDay()->toDateString();
+    $dayAfterTomorrow = now()->addDays(2)->toDateString();
+
+    $todayReservedCount = Reservation::where('company_id', $company->id)
+        ->whereDate('start_at', $today)
+        ->where('status', 'reserved')
+        ->count();
+
+    $tomorrowReservedCount = Reservation::where('company_id', $company->id)
+        ->whereDate('start_at', $tomorrow)
+        ->where('status', 'reserved')
+        ->count();
+
+    $dayAfterTomorrowReservedCount = Reservation::where('company_id', $company->id)
+        ->whereDate('start_at', $dayAfterTomorrow)
+        ->where('status', 'reserved')
+        ->count();
+
+    return view('company.reservations.index', [
+        'company' => $company,
+        'reservations' => $reservations,
+        'keyword' => $keyword,
+        'dateFrom' => $dateFrom,
+        'dateTo' => $dateTo,
+        'status' => $status,
+        'todayReservedCount' => $todayReservedCount,
+        'tomorrowReservedCount' => $tomorrowReservedCount,
+        'dayAfterTomorrowReservedCount' => $dayAfterTomorrowReservedCount,
+        'today' => $today,
+        'tomorrow' => $tomorrow,
+        'dayAfterTomorrow' => $dayAfterTomorrow,
+    ]);
+}
+
+public function cancelFromList($id)
+{
+    $company = auth()->guard('company')->user()->company;
+
+    $reservation = Reservation::where('id', $id)
+        ->where('company_id', $company->id)
+        ->first();
+
+    if (!$reservation) {
+        return redirect()
+            ->route('company.reservations.index')
+            ->withErrors(['reservation' => '予約が見つかりません。']);
+    }
+
+    if ($reservation->status === 'cancelled') {
+        return redirect()
+            ->route('company.reservations.index')
+            ->with('success', 'この予約はすでにキャンセル済みです。');
+    }
+
+    $reservation->status = 'cancelled';
+    $reservation->save();
+
+    return redirect()
+        ->route('company.reservations.index')
+        ->with('success', '予約をキャンセルしました。');
+}
+
 	/* ==========================================================
 	予約制御設定
 	========================================================== */
@@ -221,9 +327,12 @@ $shifts = StaffShift::whereIn('staff_id',$staffIds)
 
 				if($reservation){
 				    $data[$time->format('H:i')][$staff->id]=[
-				        'status'=>'×',
-				        'reservation_id'=>$reservation->id,
-				        'customer_name'=>$reservation->customer_name
+				        'status'            => '×',
+				        'reservation_id'    => $reservation->id,
+				        'customer_name'     => $reservation->customer_name,
+				        'customer_phone'    => $reservation->customer_phone,
+				        'staff_name'        => $staff->name,
+				        'reservation_start' => optional($reservation->start_at)->format('Y-m-d H:i'),
 				    ];
 				}else{
 				    $data[$time->format('H:i')][$staff->id]=$result;

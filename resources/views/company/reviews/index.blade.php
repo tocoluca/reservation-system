@@ -1,75 +1,137 @@
 @extends('layouts.company')
 
 @section('content')
-<div class="max-w-6xl mx-auto px-4 py-8">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+
+@php
+    $company = auth()->guard('company')->user()->company;
+    $theme = $company->theme_color ?? '#3b82f6';
+@endphp
+
+<div class="max-w-6xl mx-auto space-y-8">
+
+    {{-- タイトル --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
             <h1 class="text-2xl font-bold text-stone-800">口コミ管理</h1>
-            <p class="text-sm text-stone-500">投稿された口コミの確認・公開設定ができます。</p>
+            <p class="text-sm text-stone-500 mt-1">
+                投稿された口コミの確認・公開設定ができます。
+            </p>
         </div>
 
-        <form method="GET" class="flex gap-2">
-            <select name="status" class="rounded-lg border border-stone-300 px-3 py-2">
-                <option value="">すべて</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>確認待ち</option>
-                <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>公開中</option>
-                <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>非公開</option>
-            </select>
-            <button class="rounded-lg bg-stone-900 text-white px-4 py-2">絞り込む</button>
-        </form>
+        <a href="{{ route('company.dashboard') }}"
+           class="inline-flex items-center justify-center px-4 py-2 text-sm rounded-lg border bg-white hover:bg-gray-50 transition"
+           style="border-color: {{ $theme }}; color: {{ $theme }};">
+            ← ダッシュボード
+        </a>
     </div>
 
     @if (session('success'))
-        <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-emerald-700">
+        <div class="rounded-xl border px-4 py-3 text-sm"
+             style="background-color: #ecfdf5; border-color: #a7f3d0; color: #047857;">
             {{ session('success') }}
         </div>
     @endif
 
-    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+    {{-- 口コミ一覧カード --}}
+    <div class="bg-white rounded-xl shadow overflow-hidden border border-stone-200">
+
+        {{-- ヘッダー --}}
+        <div class="p-6 border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h2 class="font-bold text-lg text-stone-800">口コミ一覧</h2>
+                <p class="text-sm text-stone-500 mt-1">
+                    状態ごとに絞り込みながら確認できます。
+                </p>
+            </div>
+        </div>
+
+        {{-- フィルター --}}
+        <div class="p-6 border-b bg-stone-50/60">
+            <form method="GET" class="flex flex-wrap gap-3 items-center">
+                <select name="status"
+                        class="border border-stone-300 rounded-lg px-3 py-2 bg-white text-sm">
+                    <option value="">すべて</option>
+                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>確認待ち</option>
+                    <option value="approved" {{ request('status') === 'approved' ? 'selected' : '' }}>公開中</option>
+                    <option value="rejected" {{ request('status') === 'rejected' ? 'selected' : '' }}>非公開</option>
+                </select>
+
+                <button type="submit"
+                        class="text-white px-4 py-2 rounded-lg text-sm transition"
+                        style="background: {{ $theme }};">
+                    絞り込む
+                </button>
+
+                @if(request()->filled('status'))
+                    <a href="{{ route('company.reviews.index') }}"
+                       class="px-4 py-2 rounded-lg border border-stone-300 text-sm text-stone-700 hover:bg-white transition">
+                        条件をクリア
+                    </a>
+                @endif
+            </form>
+        </div>
+
+        {{-- テーブル --}}
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-stone-50">
+            <table class="w-full text-sm border-collapse">
+                <thead class="bg-gray-50">
                     <tr class="text-left text-stone-600">
-                        <th class="px-4 py-3">投稿日</th>
-                        <th class="px-4 py-3">評価</th>
-                        <th class="px-4 py-3">ニックネーム</th>
-                        <th class="px-4 py-3">本文</th>
-                        <th class="px-4 py-3">状態</th>
-                        <th class="px-4 py-3"></th>
+                        <th class="border-b border-stone-200 px-4 py-3 whitespace-nowrap">投稿日</th>
+                        <th class="border-b border-stone-200 px-4 py-3 whitespace-nowrap">評価</th>
+                        <th class="border-b border-stone-200 px-4 py-3 whitespace-nowrap">ニックネーム</th>
+                        <th class="border-b border-stone-200 px-4 py-3">本文</th>
+                        <th class="border-b border-stone-200 px-4 py-3 whitespace-nowrap">状態</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-center whitespace-nowrap">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($reviews as $review)
-                        <tr class="border-t border-stone-100">
-                            <td class="px-4 py-3 whitespace-nowrap">
+                        <tr class="hover:bg-stone-50 transition">
+                            <td class="border-b border-stone-100 px-4 py-4 whitespace-nowrap text-stone-700">
                                 {{ optional($review->created_at)->format('Y/m/d H:i') }}
                             </td>
-                            <td class="px-4 py-3">★{{ $review->rating }}</td>
-                            <td class="px-4 py-3">{{ $review->nickname ?: 'お客様' }}</td>
-                            <td class="px-4 py-3">
-                                <div class="max-w-md line-clamp-2 text-stone-700">
+
+                            <td class="border-b border-stone-100 px-4 py-4 whitespace-nowrap font-medium text-amber-500">
+                                ★{{ $review->rating }}
+                            </td>
+
+                            <td class="border-b border-stone-100 px-4 py-4 whitespace-nowrap text-stone-800">
+                                {{ $review->nickname ?: 'お客様' }}
+                            </td>
+
+                            <td class="border-b border-stone-100 px-4 py-4 text-stone-700">
+                                <div class="max-w-md line-clamp-2 leading-relaxed">
                                     {{ $review->comment }}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+
+                            <td class="border-b border-stone-100 px-4 py-4 whitespace-nowrap">
                                 @if ($review->status === 'pending')
-                                    <span class="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs">確認待ち</span>
+                                    <span class="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-medium">
+                                        確認待ち
+                                    </span>
                                 @elseif ($review->status === 'approved')
-                                    <span class="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs">公開中</span>
+                                    <span class="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-medium">
+                                        公開中
+                                    </span>
                                 @else
-                                    <span class="inline-flex rounded-full bg-stone-200 text-stone-700 px-3 py-1 text-xs">非公開</span>
+                                    <span class="inline-flex rounded-full bg-stone-200 text-stone-700 px-3 py-1 text-xs font-medium">
+                                        非公開
+                                    </span>
                                 @endif
                             </td>
-                            <td class="px-4 py-3 text-right">
+
+                            <td class="border-b border-stone-100 px-4 py-4 text-center">
                                 <a href="{{ route('company.reviews.show', $review) }}"
-                                   class="inline-flex rounded-lg border border-stone-300 px-3 py-2 hover:bg-stone-50">
+                                   class="inline-flex items-center rounded-lg border px-3 py-2 text-sm hover:bg-gray-50 transition"
+                                   style="border-color: {{ $theme }}; color: {{ $theme }};">
                                     詳細
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-4 py-10 text-center text-stone-500">
+                            <td colspan="6" class="px-4 py-12 text-center text-stone-400">
                                 口コミはまだありません。
                             </td>
                         </tr>
@@ -78,7 +140,8 @@
             </table>
         </div>
 
-        <div class="p-4">
+        {{-- ページネーション --}}
+        <div class="p-4 border-t border-stone-100 bg-white">
             {{ $reviews->links() }}
         </div>
     </div>

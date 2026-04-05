@@ -33,6 +33,8 @@ use App\Http\Controllers\Company\NoticeController;
 use App\Http\Controllers\Company\DashboardNoticeController;
 use App\Http\Controllers\Company\DashboardSettingController;
 use App\Http\Controllers\Company\ReviewController as CompanyReviewController;
+use App\Http\Controllers\ReservationNoticeResponseController;
+use App\Http\Controllers\Company\ReservationChangeNoticeController;
 
 use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\ReserveController;
@@ -56,7 +58,6 @@ Route::post('/apply', [CompanyApplicationController::class, 'store'])
 
 Route::get('/apply/complete', [CompanyApplicationController::class, 'complete'])
     ->name('company.application.complete');
-
 
 /*
 |--------------------------------------------------------------------------
@@ -392,6 +393,25 @@ Route::prefix('company')->group(function () {
 			Route::post('/company/reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
 			    ->name('company.reservations.cancel');
 
+	        Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
+	            ->name('company.reservation_change_notices.index');
+
+	        Route::get('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'show'])
+	            ->name('company.reservation_change_notices.show');
+
+	        Route::post('/reservation-change-notices/create-from-closed-date', [ReservationChangeNoticeController::class, 'createFromClosedDate'])
+	            ->name('company.reservation_change_notices.create_from_closed_date');
+
+	        Route::post('/reservation-change-notices/{notice}/send-mails', [ReservationChangeNoticeController::class, 'sendMails'])
+	            ->name('company.reservation_change_notices.send_mails');
+
+	        Route::post('/reservation-change-notices/items/{item}/phone-confirmed', [ReservationChangeNoticeController::class, 'markPhoneConfirmed'])
+	            ->name('company.reservation_change_notices.items.phone_confirmed');
+
+	        Route::post('/reservation-change-notices/items/{item}/update-note', [ReservationChangeNoticeController::class, 'updateNote'])
+	            ->name('company.reservation_change_notices.items.update_note');
+
+
         });
     });
 });
@@ -449,6 +469,12 @@ Route::get('/cancel/{token}', [ReserveController::class, 'cancel']);
 Route::get('/cancel/{token}', [ReserveCancelController::class, 'show'])->name('reserve.cancel.show');
 Route::post('/cancel/{token}', [ReserveCancelController::class, 'cancel'])->name('reserve.cancel.execute');
 Route::get('/cancel/{token}/complete', [ReserveCancelController::class, 'complete'])->name('reserve.cancel.complete');
+
+Route::get('/notice-response/{token}', [ReservationNoticeResponseController::class, 'show'])
+    ->name('reservation.notice.response.show');
+
+Route::post('/notice-response/{token}/confirm', [ReservationNoticeResponseController::class, 'confirm'])
+    ->name('reservation.notice.response.confirm');
 
 
 /*

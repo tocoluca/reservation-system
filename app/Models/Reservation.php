@@ -19,6 +19,9 @@ class Reservation extends Model
         'start_at',
         'end_at',
         'status',
+        'cancelled_at',
+        'cancelled_type',
+        'cancelled_reason',
         'visit_reflected_at',
         'source',
         'fingerprint',
@@ -37,6 +40,7 @@ class Reservation extends Model
     protected $casts = [
         'start_at'           => 'datetime',
         'end_at'             => 'datetime',
+        'cancelled_at' => 'datetime',
         'visit_reflected_at' => 'datetime',
         'reminder_sent_at'   => 'datetime',
 		'review_requested_at' => 'datetime',
@@ -73,4 +77,8 @@ class Reservation extends Model
 	{
 	    return $this->hasOne(\App\Models\Review::class);
 	}
+    public function changeNoticeItems()
+    {
+        return $this->hasMany(ReservationChangeNoticeItem::class);
+    }
 }

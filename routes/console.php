@@ -27,6 +27,10 @@ Schedule::command('mail:send-reservation-reminders')
     ->dailyAt('12:10')
     ->withoutOverlapping();
 
+Schedule::command('mail:send-reservation-change-reminders')
+    ->dailyAt('12:10')
+    ->withoutOverlapping();
+
 Schedule::command('demo:reset')
     ->dailyAt('03:00')
     ->withoutOverlapping();

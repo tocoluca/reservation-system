@@ -12,6 +12,7 @@ use App\Models\StaffDefaultShift;
 use App\Models\StaffShift;
 use App\Models\CompanyBusinessCalendar;
 use App\Models\CompanyDashboardPermission;
+use App\Models\ReservationChangeNoticeItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +22,23 @@ class DashboardController extends Controller
     {
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
+
+        $changeNoticeSummary = ReservationChangeNoticeItem::query()
+            ->where('company_id', $company->id)
+            ->selectRaw("
+                COUNT(*) as total_count,
+                SUM(CASE WHEN response_status IN ('waiting', 'mail_sent', 'no_response') THEN 1 ELSE 0 END) as pending_count,
+                SUM(CASE WHEN contact_type = 'phone' AND response_status NOT IN ('closed', 'confirmed', 'phone_confirmed') THEN 1 ELSE 0 END) as phone_pending_count,
+                SUM(CASE WHEN response_status IN ('closed', 'confirmed', 'phone_confirmed') THEN 1 ELSE 0 END) as confirmed_count
+            ")
+            ->first();
+
+        $changeNoticePendingCount = (int) ($changeNoticeSummary->pending_count ?? 0);
+        $changeNoticePhonePendingCount = (int) ($changeNoticeSummary->phone_pending_count ?? 0);
+        $changeNoticeConfirmedCount = (int) ($changeNoticeSummary->confirmed_count ?? 0);
+        $changeNoticeTotalCount = (int) ($changeNoticeSummary->total_count ?? 0);
+
+        $hasChangeNoticeAlert = $changeNoticePendingCount > 0 || $changeNoticePhonePendingCount > 0;
 
         $dashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
 
@@ -341,7 +359,12 @@ class DashboardController extends Controller
             'subscriptionAvailable',
             'billingWarning',
             'settingWarnings',
-            'dashboardPermissions'
+            'dashboardPermissions',
+            'changeNoticePendingCount',
+            'changeNoticePhonePendingCount',
+            'changeNoticeConfirmedCount',
+            'changeNoticeTotalCount',
+            'hasChangeNoticeAlert'
         ));
     }
 
@@ -389,13 +412,13 @@ class DashboardController extends Controller
         $hasAlert = false;
         $hasWarning = false;
 
-		if (!$lastDateCarbon) {
-		    $hasAlert = true;
-		} elseif ($lastDateCarbon->lt($alertEnd)) {
-		    $hasAlert = true;
-		} elseif ($lastDateCarbon->lt($warningEnd)) {
-		    $hasWarning = true;
-		}
+        if (!$lastDateCarbon) {
+            $hasAlert = true;
+        } elseif ($lastDateCarbon->lt($alertEnd)) {
+            $hasAlert = true;
+        } elseif ($lastDateCarbon->lt($warningEnd)) {
+            $hasWarning = true;
+        }
 
         return [
             'last_date' => $lastDateCarbon?->format('Y-m-d'),

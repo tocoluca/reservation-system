@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Vacation;
+use App\Services\ReservationChangeNoticeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,6 +12,11 @@ use Carbon\Carbon;
 
 class VacationController extends Controller
 {
+    public function __construct(
+        protected ReservationChangeNoticeService $changeNoticeService
+    ) {
+    }
+
     /* ==========================
        権限レベル定義
     ========================== */
@@ -37,104 +43,99 @@ class VacationController extends Controller
     {
         $current = Auth::guard('company')->user();
 
-//全員に見せる
-            $vacations = Vacation::whereHas('staff', function($q) use ($current) {
-                $q->where('company_id', $current->company_id);
-            })->latest()->get();
+        $vacations = Vacation::whereHas('staff', function ($q) use ($current) {
+            $q->where('company_id', $current->company_id);
+        })->latest()->get();
 
-//        if ($this->isLeaderOrAbove()) {
-            // 上位権限は自社全体表示
-//            $vacations = Vacation::whereHas('staff', function($q) use ($current) {
-//                $q->where('company_id', $current->company_id);
-//            })->latest()->get();
-//        } else {
-            // 一般メンバーは自分のみ
-//            $vacations = Vacation::where('staff_id', $current->id)
-//                ->latest()->get();
-//        }
-
-        return view('company.vacation.index', compact('vacations','current'));
+        return view('company.vacation.index', compact('vacations', 'current'));
     }
 
     /* ==========================
        申請画面
     ========================== */
-	public function create()
-	{
-	    $staff = auth()->guard('company')->user();
+    public function create()
+    {
+        $staff = auth()->guard('company')->user();
 
-	    return view('company.vacation.create', compact('staff'));
-	}
+        return view('company.vacation.create', compact('staff'));
+    }
 
     /* ==========================
        申請保存
     ========================== */
-	    // 🔵 選択された担当者を取得
-//	    $staff = \App\Models\Staff::where('company_id', $company->id)
-//	        ->findOrFail($request->staff_id);
-	public function store(Request $request)
-	{
-	    $company = auth()->guard('company')->user()->company;
-	    $staff   = auth()->guard('company')->user();
+    public function store(Request $request)
+    {
+        $staff = auth()->guard('company')->user();
 
-	    $isFullDay = $request->boolean('is_full_day');
+        $isFullDay = $request->boolean('is_full_day');
 
-	    if ($isFullDay) {
+        if ($isFullDay) {
+            $request->validate([
+                'vacation_date' => 'required|date',
+            ]);
 
-	        $request->validate([
-	            'vacation_date' => 'required|date'
-	        ]);
+            $start = Carbon::parse($request->vacation_date)->startOfDay();
+            $end   = Carbon::parse($request->vacation_date)->endOfDay();
+        } else {
+            $request->validate([
+                'start_date' => 'required|date',
+                'start_time' => 'required',
+                'end_date'   => 'required|date',
+                'end_time'   => 'required',
+            ]);
 
-	        $start = Carbon::parse($request->vacation_date)->startOfDay();
-	        $end   = Carbon::parse($request->vacation_date)->endOfDay();
+            $start = Carbon::parse($request->start_date . ' ' . $request->start_time);
+            $end   = Carbon::parse($request->end_date . ' ' . $request->end_time);
 
-	    } else {
+            if ($start >= $end) {
+                return back()->withErrors([
+                    'end_time' => '終了は開始より後にしてください'
+                ])->withInput();
+            }
+        }
 
-	        $request->validate([
-	            'start_date' => 'required|date',
-	            'start_time' => 'required',
-	            'end_date'   => 'required|date',
-	            'end_time'   => 'required',
-	        ]);
+        DB::transaction(function () use ($staff, $start, $end, $isFullDay) {
+            Vacation::create([
+                'staff_id'    => $staff->id,
+                'start_at'    => $start,
+                'end_at'      => $end,
+                'status'      => 'pending',
+                'is_full_day' => $isFullDay,
+            ]);
+        });
 
-	        $start = Carbon::parse($request->start_date.' '.$request->start_time);
-	        $end   = Carbon::parse($request->end_date.' '.$request->end_time);
+        return redirect()->route('company.vacation.index')
+            ->with('success', '休暇申請を送信しました');
+    }
 
-	        if ($start >= $end) {
-	            return back()->withErrors([
-	                'end_time' => '終了は開始より後にしてください'
-	            ]);
-	        }
-	    }
-
-	    DB::transaction(function () use ($staff, $start, $end, $isFullDay) {
-
-	        Vacation::create([
-	            'staff_id'   => $staff->id,
-	            'start_at'   => $start,
-	            'end_at'     => $end,
-	            'status'     => 'pending',
-	            'is_full_day'=> $isFullDay
-	        ]);
-	    });
-
-	    return redirect()->route('company.vacation.index')
-	        ->with('success', '休暇申請を送信しました');
-	}
-/* ==========================
-承認
-========================== */
+    /* ==========================
+       承認
+    ========================== */
     public function approve(Vacation $vacation)
     {
         if (!$this->isLeaderOrAbove()) {
             abort(403, '承認権限がありません');
         }
 
+        $current = auth()->guard('company')->user();
+
+        if ($vacation->staff->company_id !== $current->company_id) {
+            abort(403);
+        }
+
         $vacation->update([
-            'status' => 'approved'
+            'status' => 'approved',
         ]);
 
-        return back()->with('success','承認しました');
+        $this->changeNoticeService->createForStaffVacation(
+            company: $current->company,
+            staff: $vacation->staff,
+            startAt: Carbon::parse($vacation->start_at),
+            endAt: Carbon::parse($vacation->end_at),
+            reasonText: $vacation->staff->name . ' の休暇承認により、ご予約内容の変更をお願いしております。'
+        );
+
+        return back()->with('success', '承認しました');
     }
 
     /* ==========================
@@ -146,11 +147,17 @@ class VacationController extends Controller
             abort(403);
         }
 
+        $current = auth()->guard('company')->user();
+
+        if ($vacation->staff->company_id !== $current->company_id) {
+            abort(403);
+        }
+
         $vacation->update([
-            'status' => 'rejected'
+            'status' => 'rejected',
         ]);
 
-        return back()->with('success','却下しました');
+        return back()->with('success', '却下しました');
     }
 
     /* ==========================
@@ -160,44 +167,44 @@ class VacationController extends Controller
     {
         $current = Auth::guard('company')->user();
 
-        if ($vacation->staff_id !== $current->id &&
-            !$this->isLeaderOrAbove()) {
+        if ($vacation->staff_id !== $current->id && !$this->isLeaderOrAbove()) {
+            abort(403);
+        }
 
+        if ($vacation->staff->company_id !== $current->company_id) {
             abort(403);
         }
 
         $vacation->delete();
 
-        return back()->with('success','削除しました');
+        return back()->with('success', '削除しました');
     }
 
     /* ==========================
        承認済み➡取り消し
     ========================== */
+    public function cancel(Vacation $vacation)
+    {
+        $current = auth()->guard('company')->user();
 
-	public function cancel(Vacation $vacation)
-	{
-	    $current = auth()->guard('company')->user();
+        if (!in_array($current->role, ['leader', 'area_leader', 'master'])) {
+            abort(403);
+        }
 
-	    // 🔴 リーダー以上のみ
-	    if (!in_array($current->role, ['leader','area_leader','master'])) {
-	        abort(403);
-	    }
+        if ($vacation->status !== 'approved') {
+            return back()->withErrors([
+                'status' => '承認済の休暇のみ取消できます'
+            ]);
+        }
 
-	    // 🔴 承認済のみ取消可能
-	    if ($vacation->status !== 'approved') {
-	        return back()->withErrors(['status' => '承認済の休暇のみ取消できます']);
-	    }
+        if ($vacation->staff->company_id !== $current->company_id) {
+            abort(403);
+        }
 
-	    // 🔴 同一企業チェック（重要）
-	    if ($vacation->staff->company_id !== $current->company_id) {
-	        abort(403);
-	    }
+        $vacation->update([
+            'status' => 'cancelled',
+        ]);
 
-	    $vacation->update([
-	        'status' => 'cancelled'
-	    ]);
-
-	    return back()->with('success', '休暇を取り消しました');
-	}
+        return back()->with('success', '休暇を取り消しました');
+    }
 }

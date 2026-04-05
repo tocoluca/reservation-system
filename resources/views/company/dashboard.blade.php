@@ -221,6 +221,55 @@
     @endif
 @endif
 
+@if($hasChangeNoticeAlert ?? false)
+    <div class="mb-8 rounded-3xl border border-rose-200 bg-rose-50 shadow-sm p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-11 h-11 rounded-full bg-rose-500 text-white flex items-center justify-center font-bold text-lg">!</div>
+                    <div>
+                        <h2 class="text-xl font-bold text-rose-900">予約変更連絡の未対応があります</h2>
+                        <p class="text-sm text-rose-800 mt-1">
+                            店都合で変更が必要な予約のうち、まだ確認や連絡が完了していないものがあります。
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
+                    <div class="rounded-2xl bg-white border border-rose-100 px-4 py-3">
+                        <div class="text-xs text-gray-500">確認待ち</div>
+                        <div class="mt-1 text-2xl font-bold text-rose-700">
+                            {{ number_format($changeNoticePendingCount ?? 0) }}件
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-white border border-amber-100 px-4 py-3">
+                        <div class="text-xs text-gray-500">電話対応待ち</div>
+                        <div class="mt-1 text-2xl font-bold text-amber-700">
+                            {{ number_format($changeNoticePhonePendingCount ?? 0) }}件
+                        </div>
+                    </div>
+
+                    <div class="rounded-2xl bg-white border border-green-100 px-4 py-3">
+                        <div class="text-xs text-gray-500">確認済み</div>
+                        <div class="mt-1 text-2xl font-bold text-green-700">
+                            {{ number_format($changeNoticeConfirmedCount ?? 0) }}件
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="shrink-0">
+                <a href="{{ route('company.reservation_change_notices.index') }}"
+                   class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
+                   style="background: {{ $theme }};">
+                    予約変更連絡管理を開く
+                </a>
+            </div>
+        </div>
+    </div>
+@endif
+
 <div class="bg-white shadow-lg rounded-2xl p-6 mb-12">
     <div class="flex items-center justify-between mb-5">
         <h2 class="text-lg sm:text-xl font-bold">企業向けお知らせ</h2>
@@ -282,6 +331,47 @@
                 <div class="text-emerald-500 text-xs font-semibold mb-2">BUSINESS</div>
                 <div class="text-lg font-bold mb-2">営業日管理</div>
                 <div class="text-gray-500 text-sm">営業日の確認・登録・管理</div>
+            </a>
+        @endif
+
+        @if($dashboardPermissions['card.reservation_change_notices'] ?? true)
+            <a href="{{ route('company.reservation_change_notices.index') }}"
+               class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-rose-500">
+                <div class="flex items-start justify-between gap-3 mb-2">
+                    <div>
+                        <div class="text-rose-500 text-xs font-semibold mb-2">CHANGE NOTICE</div>
+                        <div class="text-lg sm:text-xl font-bold mb-2">予約変更連絡管理</div>
+                    </div>
+
+                    @if(($changeNoticePendingCount ?? 0) > 0 || ($changeNoticePhonePendingCount ?? 0) > 0)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 whitespace-nowrap">
+                            要対応
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 whitespace-nowrap">
+                            対応中なし
+                        </span>
+                    @endif
+                </div>
+
+                <div class="text-gray-500 text-sm leading-6">
+                    店都合の休業・営業時間変更・担当者休みなどで発生した予約変更連絡を管理します。
+                </div>
+
+                <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div class="rounded-xl bg-rose-50 px-3 py-2">
+                        <div class="text-[11px] text-gray-500">確認待ち</div>
+                        <div class="text-base font-bold text-rose-700">{{ number_format($changeNoticePendingCount ?? 0) }}</div>
+                    </div>
+                    <div class="rounded-xl bg-amber-50 px-3 py-2">
+                        <div class="text-[11px] text-gray-500">電話待ち</div>
+                        <div class="text-base font-bold text-amber-700">{{ number_format($changeNoticePhonePendingCount ?? 0) }}</div>
+                    </div>
+                    <div class="rounded-xl bg-green-50 px-3 py-2">
+                        <div class="text-[11px] text-gray-500">確認済み</div>
+                        <div class="text-base font-bold text-green-700">{{ number_format($changeNoticeConfirmedCount ?? 0) }}</div>
+                    </div>
+                </div>
             </a>
         @endif
 
@@ -357,14 +447,14 @@
             </a>
         @endif
 
-		@if(($dashboardPermissions['card.reviews'] ?? true) && ($company->review_enabled ?? false))
-		    <a href="{{ route('company.reviews.index') }}"
-		       class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-amber-500">
-		        <div class="text-amber-500 text-xs font-semibold mb-2">REVIEW</div>
-		        <div class="text-lg sm:text-xl font-bold mb-2">口コミ管理</div>
-		        <div class="text-gray-500 text-sm">口コミの確認・公開・返信</div>
-		    </a>
-		@endif
+        @if(($dashboardPermissions['card.reviews'] ?? true) && ($company->review_enabled ?? false))
+            <a href="{{ route('company.reviews.index') }}"
+               class="bg-white shadow hover:shadow-lg active:scale-95 transition rounded-xl p-6 border-l-4 border-amber-500">
+                <div class="text-amber-500 text-xs font-semibold mb-2">REVIEW</div>
+                <div class="text-lg sm:text-xl font-bold mb-2">口コミ管理</div>
+                <div class="text-gray-500 text-sm">口コミの確認・公開・返信</div>
+            </a>
+        @endif
 
         @if($dashboardPermissions['card.notices'] ?? false)
             <a href="{{ route('company.notices.index') }}"

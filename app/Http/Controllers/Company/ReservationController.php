@@ -287,31 +287,32 @@ class ReservationController extends Controller
                             $slotEnd
                         );
 
-                        $reservation = $reservations
-                            ->where('staff_id', $staff->id)
-                            ->first(function ($r) use ($slotStart, $slotEnd) {
-                                return $r->start_at < $slotEnd &&
-                                       $r->end_at > $slotStart;
-                            });
+                        $overlapDetail = $this->firstOverlappingReservationDetail(
+                            $company,
+                            (int) $staff->id,
+                            $slotStart,
+                            $slotEnd
+                        );
 
-                        $staffReservedCount = $reservations
-                            ->where('staff_id', $staff->id)
-                            ->filter(function ($r) use ($slotStart, $slotEnd) {
-                                return $r->start_at < $slotEnd &&
-                                       $r->end_at > $slotStart;
-                            })
-                            ->count();
+                        $staffReservedCount = $this->countReservationDetailOverlaps(
+                            $company,
+                            (int) $staff->id,
+                            $slotStart,
+                            $slotEnd
+                        );
 
                         $perStaffLimit = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
 
-                        if ($reservation && $staffReservedCount >= $perStaffLimit) {
+                        if ($overlapDetail && $staffReservedCount >= $perStaffLimit) {
+                            $reservation = $overlapDetail->reservation;
+
                             $data[$slotStart->format('H:i')][$staff->id] = [
                                 'status'            => '×',
-                                'reservation_id'    => $reservation->id,
-                                'customer_name'     => $reservation->customer_name,
-                                'customer_phone'    => $reservation->customer_phone,
+                                'reservation_id'    => $reservation?->id,
+                                'customer_name'     => $reservation?->customer_name,
+                                'customer_phone'    => $reservation?->customer_phone,
                                 'staff_name'        => $staff->name,
-                                'reservation_start' => optional($reservation->start_at)->format('Y-m-d H:i'),
+                                'reservation_start' => optional($reservation?->start_at)->format('Y-m-d H:i'),
                                 'available'         => 0,
                                 'total'             => $perStaffLimit,
                             ];
@@ -491,6 +492,7 @@ class ReservationController extends Controller
                 'start_at'                  => 'required|date',
                 'customer_name'             => 'required|string|max:255',
                 'customer_phone'            => 'required|string|max:50',
+                'customer_email'            => 'nullable|email|max:255',
                 'menu_ids'                  => 'required|array|min:1',
                 'menu_ids.*'                => 'integer',
                 'staff_id'                  => 'nullable|integer',
@@ -748,13 +750,16 @@ class ReservationController extends Controller
                     $customer->visit_count = (int) $customer->visit_count + 1;
                     $customer->last_visit = $start;
                     $customer->name = $request->customer_name;
+                    if ($request->filled('customer_email')) {
+                        $customer->email = $request->customer_email;
+                    }
                     $customer->save();
                 } else {
                     $customer = Customer::create([
                         'company_id'  => $company->id,
                         'name'        => $request->customer_name,
                         'phone'       => $normalizedPhone,
-                        'email'       => $request->email ?? null,
+                        'email'       => $request->customer_email ?? null,
                         'visit_count' => 1,
                         'last_visit'  => $start,
                     ]);
@@ -765,6 +770,7 @@ class ReservationController extends Controller
                     'staff_id'       => $mainStaff->id,
                     'customer_name'  => $request->customer_name,
                     'customer_phone' => $normalizedPhone,
+                    'customer_email' => $request->customer_email ?? null,
                     'start_at'       => $start,
                     'end_at'         => $end,
                     'price'          => $price,
@@ -812,6 +818,266 @@ class ReservationController extends Controller
                 'message' => $e->getMessage(),
             ], 422);
         }
+    }
+
+    public function assignmentCandidates(Request $request)
+    {
+        $companyUser = auth()->guard('company')->user();
+
+        if (!$companyUser) {
+            return response()->json([], 401);
+        }
+
+        $company = $companyUser->company;
+
+        $request->validate([
+            'datetime'   => 'required|date',
+            'menu_ids'   => 'required|array|min:1',
+            'menu_ids.*' => 'integer',
+        ]);
+
+        $start = Carbon::parse($request->datetime);
+
+        $menuIds = collect($request->menu_ids ?? [])->map(fn ($id) => (int) $id)->values();
+
+        $menus = Menu::where('company_id', $company->id)
+            ->whereIn('id', $menuIds)
+            ->get()
+            ->keyBy('id');
+
+        $orderedMenus = $menuIds->map(function ($id) use ($menus) {
+            return $menus->get($id);
+        })->filter()->values();
+
+        if ($orderedMenus->isEmpty()) {
+            Log::info('assignmentCandidates: orderedMenus empty', [
+                'company_id' => $company->id,
+                'menu_ids' => $menuIds->all(),
+            ]);
+
+            return response()->json([
+                'mode' => 'single',
+                'candidates' => [],
+                'message' => '対象メニューが見つかりませんでした。',
+                'split_possible' => false,
+                'reasons' => [],
+            ]);
+        }
+
+        $segments = $this->buildMenuSegments($orderedMenus, $start, $company);
+        $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
+
+        $staffList = Staff::where('company_id', $company->id)
+            ->where('is_reservable', true)
+            ->with('menus:id')
+            ->orderBy('priority_order')
+            ->get();
+
+        $staffIds = $staffList->pluck('id');
+
+        $end = collect($segments)->last()['end_at'] ?? $start->copy();
+
+        $shifts = StaffShift::whereIn('staff_id', $staffIds)
+            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->keyBy(function ($s) {
+                return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+            });
+
+        $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
+
+        $shiftPatterns = ShiftPattern::whereIn('id', $patternIds)
+            ->get()
+            ->keyBy('id');
+
+        $vacations = Vacation::whereIn('staff_id', $staffIds)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->where('start_at', '<', $end)
+                  ->where('end_at', '>', $start);
+            })
+            ->get();
+
+        if ($preferLessCapable) {
+            $candidates = $this->buildMultiStaffAssignmentCandidates(
+                $company,
+                $segments,
+                $staffList,
+                $shifts,
+                $shiftPatterns,
+                $vacations
+            );
+
+            if (empty($candidates)) {
+                $reasons = $this->buildNoCandidateSummary(
+                    $company,
+                    $segments,
+                    $staffList,
+                    $shifts,
+                    $shiftPatterns,
+                    $vacations
+                );
+
+                Log::warning('assignmentCandidates: no multi candidates', [
+                    'company_id' => $company->id,
+                    'datetime' => $start->format('Y-m-d H:i:s'),
+                    'menu_ids' => $menuIds->all(),
+                    'reasons' => $reasons,
+                ]);
+
+                return response()->json([
+                    'mode' => 'multi',
+                    'candidates' => [],
+                    'message' => 'このメニュー内容で対応できる担当パターンが見つかりませんでした。',
+                    'split_possible' => false,
+                    'reasons' => $reasons,
+                ]);
+            }
+
+            return response()->json([
+                'mode' => 'multi',
+                'candidates' => $candidates,
+            ]);
+        }
+
+        $candidates = $this->buildSingleStaffAssignmentCandidates(
+            $company,
+            $segments,
+            $staffList,
+            $shifts,
+            $shiftPatterns,
+            $vacations
+        );
+
+        if (empty($candidates)) {
+            $reasons = $this->buildNoCandidateSummary(
+                $company,
+                $segments,
+                $staffList,
+                $shifts,
+                $shiftPatterns,
+                $vacations
+            );
+
+            $splitPossible = $this->canBeHandledBySplitAssignments(
+                $company,
+                $segments,
+                $staffList,
+                $shifts,
+                $shiftPatterns,
+                $vacations
+            );
+
+            Log::warning('assignmentCandidates: no single candidates', [
+                'company_id' => $company->id,
+                'datetime' => $start->format('Y-m-d H:i:s'),
+                'menu_ids' => $menuIds->all(),
+                'split_possible' => $splitPossible,
+                'reasons' => $reasons,
+            ]);
+
+            return response()->json([
+                'mode' => 'single',
+                'candidates' => [],
+                'message' => $splitPossible
+                    ? '単独担当では対応できませんが、分担予約なら受付できる可能性があります。'
+                    : 'このメニュー内容で対応できる担当パターンが見つかりませんでした。',
+                'split_possible' => $splitPossible,
+                'reasons' => $reasons,
+            ]);
+        }
+
+        return response()->json([
+            'mode' => 'single',
+            'candidates' => $candidates,
+        ]);
+    }
+
+    private function buildMultiStaffAssignmentCandidates($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): array
+    {
+        $segmentCandidates = [];
+
+        foreach ($segments as $segment) {
+            $candidates = $staffList->filter(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
+                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                    return false;
+                }
+
+                return $this->isSegmentReservableForStaff(
+                    $company,
+                    $staff,
+                    $segment['start_at'],
+                    $segment['end_at'],
+                    $shifts,
+                    $shiftPatterns,
+                    $vacations
+                );
+            })->values();
+
+            if ($candidates->isEmpty()) {
+                return [];
+            }
+
+            $segmentCandidates[] = [
+                'segment' => $segment,
+                'staffs'  => $candidates,
+            ];
+        }
+
+        $patterns = [];
+        $current  = [];
+
+        $walk = function ($index) use (&$walk, &$patterns, &$current, $segmentCandidates) {
+            if ($index >= count($segmentCandidates)) {
+                $patterns[] = $current;
+                return;
+            }
+
+            $entry = $segmentCandidates[$index];
+
+            foreach ($entry['staffs'] as $staff) {
+                $current[] = [
+                    'menu_id'          => $entry['segment']['menu']->id,
+                    'menu_name'        => $entry['segment']['menu']->name,
+                    'staff_id'         => $staff->id,
+                    'staff_name'       => $staff->name,
+                    'staff_menu_count' => $staff->menus->count(),
+                    'duration'         => $entry['segment']['duration'],
+                    'start_at'         => $entry['segment']['start_at']->format('Y-m-d H:i:s'),
+                    'end_at'           => $entry['segment']['end_at']->format('Y-m-d H:i:s'),
+                ];
+                $walk($index + 1);
+                array_pop($current);
+            }
+        };
+
+        $walk(0);
+
+        foreach ($patterns as &$pattern) {
+            $pattern['_score'] = $this->scoreAssignmentPattern($pattern);
+        }
+        unset($pattern);
+
+        usort($patterns, function ($a, $b) {
+            return ($a['_score'] ?? 0) <=> ($b['_score'] ?? 0);
+        });
+
+        $result = [];
+        foreach (array_slice($patterns, 0, 10) as $i => $pattern) {
+            unset($pattern['_score']);
+
+            $uniqueStaffCount = collect($pattern)->pluck('staff_id')->unique()->count();
+
+            $result[] = [
+                'rank' => $i + 1,
+                'label' => $uniqueStaffCount >= 2
+                    ? '分担優先パターン'
+                    : '同一担当パターン',
+                'assignments' => array_values($pattern),
+            ];
+        }
+
+        return $result;
     }
 
     public function cancel($id)
@@ -900,14 +1166,7 @@ class ReservationController extends Controller
                 continue;
             }
 
-            $overlapCount = Reservation::where('company_id', $company->id)
-                ->where('staff_id', $staff->id)
-                ->where('status', 'reserved')
-                ->where(function ($q) use ($start, $end) {
-                    $q->where('start_at', '<', $end)
-                      ->where('end_at', '>', $start);
-                })
-                ->count();
+            $overlapCount = $this->countReservationDetailOverlaps($company, (int) $staff->id, $start, $end);
 
             if ($overlapCount < $maxSimultaneous) {
                 $availableStaff[] = $staff;
@@ -915,104 +1174,6 @@ class ReservationController extends Controller
         }
 
         return response()->json($availableStaff);
-    }
-
-    public function assignmentCandidates(Request $request)
-    {
-        $companyUser = auth()->guard('company')->user();
-
-        if (!$companyUser) {
-            return response()->json([], 401);
-        }
-
-        $company = $companyUser->company;
-
-        $request->validate([
-            'datetime'   => 'required|date',
-            'menu_ids'   => 'required|array|min:1',
-            'menu_ids.*' => 'integer',
-        ]);
-
-        $start = Carbon::parse($request->datetime);
-
-        $menuIds = collect($request->menu_ids ?? [])->map(fn ($id) => (int) $id)->values();
-
-        $menus = Menu::where('company_id', $company->id)
-            ->whereIn('id', $menuIds)
-            ->get()
-            ->keyBy('id');
-
-        $orderedMenus = $menuIds->map(function ($id) use ($menus) {
-            return $menus->get($id);
-        })->filter()->values();
-
-        if ($orderedMenus->isEmpty()) {
-            return response()->json([]);
-        }
-
-        $segments = $this->buildMenuSegments($orderedMenus, $start, $company);
-        $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
-
-        $staffList = Staff::where('company_id', $company->id)
-            ->where('is_reservable', true)
-            ->with('menus:id')
-            ->orderBy('priority_order')
-            ->get();
-
-        $staffIds = $staffList->pluck('id');
-
-        $end = collect($segments)->last()['end_at'] ?? $start->copy();
-
-        $shifts = StaffShift::whereIn('staff_id', $staffIds)
-            ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
-            ->get()
-            ->keyBy(function ($s) {
-                return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
-            });
-
-        $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
-
-        $shiftPatterns = ShiftPattern::whereIn('id', $patternIds)
-            ->get()
-            ->keyBy('id');
-
-        $vacations = Vacation::whereIn('staff_id', $staffIds)
-            ->where('status', 'approved')
-            ->where(function ($q) use ($start, $end) {
-                $q->where('start_at', '<', $end)
-                  ->where('end_at', '>', $start);
-            })
-            ->get();
-
-        if ($preferLessCapable) {
-            $candidates = $this->buildMultiStaffAssignmentCandidates(
-                $company,
-                $segments,
-                $staffList,
-                $shifts,
-                $shiftPatterns,
-                $vacations
-            );
-
-            return response()->json([
-                'mode' => 'multi',
-                'candidates' => $candidates,
-            ]);
-        }
-
-        $candidates = $this->buildSingleStaffAssignmentCandidates(
-            $company,
-            $segments,
-            $staffList,
-            $shifts,
-            $shiftPatterns,
-            $vacations
-        );
-
-        return response()->json([
-            'mode' => 'single',
-            'candidates' => $candidates,
-        ]);
     }
 
     private function getBusinessStatus($company, $start, $end)
@@ -1103,6 +1264,31 @@ class ReservationController extends Controller
         return true;
     }
 
+    private function reservationDetailOverlapQuery($company, int $staffId, Carbon $start, Carbon $end)
+    {
+        return ReservationDetail::query()
+            ->where('staff_id', $staffId)
+            ->where('start_at', '<', $end)
+            ->where('end_at', '>', $start)
+            ->whereHas('reservation', function ($q) use ($company) {
+                $q->where('company_id', $company->id)
+                  ->where('status', 'reserved');
+            });
+    }
+
+    private function countReservationDetailOverlaps($company, int $staffId, Carbon $start, Carbon $end): int
+    {
+        return $this->reservationDetailOverlapQuery($company, $staffId, $start, $end)->count();
+    }
+
+    private function firstOverlappingReservationDetail($company, int $staffId, Carbon $start, Carbon $end): ?ReservationDetail
+    {
+        return $this->reservationDetailOverlapQuery($company, $staffId, $start, $end)
+            ->with('reservation')
+            ->orderBy('start_at')
+            ->first();
+    }
+
     private function checkAvailability(
         $company,
         $staffList,
@@ -1125,13 +1311,12 @@ class ReservationController extends Controller
 
             $workingStaff++;
 
-            $staffReservedCount = $reservations
-                ->where('staff_id', $staff->id)
-                ->filter(function ($r) use ($start, $end) {
-                    return $r->start_at < $end &&
-                           $r->end_at > $start;
-                })
-                ->count();
+            $staffReservedCount = $this->countReservationDetailOverlaps(
+                $company,
+                (int) $staff->id,
+                $start,
+                $end
+            );
 
             $staffRemaining = max(0, $maxSimultaneous - $staffReservedCount);
             $available += $staffRemaining;
@@ -1202,14 +1387,12 @@ class ReservationController extends Controller
 
         $maxSimultaneous = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
 
-        $overlapCount = Reservation::where('company_id', $company->id)
-            ->where('staff_id', $staff->id)
-            ->where('status', 'reserved')
-            ->where(function ($q) use ($start, $end) {
-                $q->where('start_at', '<', $end)
-                  ->where('end_at', '>', $start);
-            })
-            ->count();
+        $overlapCount = $this->countReservationDetailOverlaps(
+            $company,
+            (int) $staff->id,
+            $start,
+            $end
+        );
 
         return $overlapCount < $maxSimultaneous;
     }
@@ -1268,12 +1451,96 @@ class ReservationController extends Controller
         return array_slice($rows, 0, 10);
     }
 
-    private function buildMultiStaffAssignmentCandidates($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): array
+    private function buildNoCandidateSummary($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): array
     {
-        $segmentCandidates = [];
+        $summary = [];
 
         foreach ($segments as $segment) {
-            $candidates = $staffList->filter(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
+            $rows = [];
+
+            foreach ($staffList as $staff) {
+                $hasMenu = $staff->menus->contains('id', $segment['menu']->id);
+
+                $schedulable = false;
+                $businessOpen = false;
+                $overlapCount = null;
+                $reservable = false;
+
+                if ($hasMenu) {
+                    $schedulable = $this->isStaffSchedulable(
+                        $staff,
+                        $segment['start_at'],
+                        $segment['end_at'],
+                        $shifts,
+                        $shiftPatterns,
+                        $vacations
+                    );
+
+                    $businessOpen = $this->getBusinessStatus(
+                        $company,
+                        $segment['start_at'],
+                        $segment['end_at']
+                    ) === 'open';
+
+                    if ($schedulable && $businessOpen) {
+                        $overlapCount = $this->countReservationDetailOverlaps(
+                            $company,
+                            (int) $staff->id,
+                            $segment['start_at'],
+                            $segment['end_at']
+                        );
+                    }
+
+                    $reservable = $this->isSegmentReservableForStaff(
+                        $company,
+                        $staff,
+                        $segment['start_at'],
+                        $segment['end_at'],
+                        $shifts,
+                        $shiftPatterns,
+                        $vacations
+                    );
+                }
+
+                $reason = null;
+
+                if (!$hasMenu) {
+                    $reason = 'menu_not_supported';
+                } elseif (!$schedulable) {
+                    $reason = 'not_schedulable';
+                } elseif (!$businessOpen) {
+                    $reason = 'outside_business_hours';
+                } elseif (($overlapCount ?? 0) >= max(1, (int) ($company->max_simultaneous_reservations ?? 1))) {
+                    $reason = 'already_booked';
+                } elseif (!$reservable) {
+                    $reason = 'not_reservable';
+                } else {
+                    $reason = 'ok';
+                }
+
+                $rows[] = [
+                    'staff_id' => $staff->id,
+                    'staff_name' => $staff->name,
+                    'reason' => $reason,
+                ];
+            }
+
+            $summary[] = [
+                'menu_id' => $segment['menu']->id,
+                'menu_name' => $segment['menu']->name,
+                'start_at' => $segment['start_at']->format('Y-m-d H:i:s'),
+                'end_at' => $segment['end_at']->format('Y-m-d H:i:s'),
+                'staff_reasons' => $rows,
+            ];
+        }
+
+        return $summary;
+    }
+
+    private function canBeHandledBySplitAssignments($company, array $segments, $staffList, $shifts, $shiftPatterns, $vacations): bool
+    {
+        foreach ($segments as $segment) {
+            $exists = $staffList->contains(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
                 if (!$staff->menus->contains('id', $segment['menu']->id)) {
                     return false;
                 }
@@ -1287,72 +1554,14 @@ class ReservationController extends Controller
                     $shiftPatterns,
                     $vacations
                 );
-            })->values();
+            });
 
-            if ($candidates->isEmpty()) {
-                return [];
+            if (!$exists) {
+                return false;
             }
-
-            $segmentCandidates[] = [
-                'segment' => $segment,
-                'staffs'  => $candidates,
-            ];
         }
 
-        $patterns = [];
-        $current  = [];
-
-        $walk = function ($index) use (&$walk, &$patterns, &$current, $segmentCandidates) {
-            if ($index >= count($segmentCandidates)) {
-                $patterns[] = $current;
-                return;
-            }
-
-            $entry = $segmentCandidates[$index];
-
-            foreach ($entry['staffs'] as $staff) {
-                $current[] = [
-                    'menu_id'          => $entry['segment']['menu']->id,
-                    'menu_name'        => $entry['segment']['menu']->name,
-                    'staff_id'         => $staff->id,
-                    'staff_name'       => $staff->name,
-                    'staff_menu_count' => $staff->menus->count(),
-                    'duration'         => $entry['segment']['duration'],
-                    'start_at'         => $entry['segment']['start_at']->format('Y-m-d H:i:s'),
-                    'end_at'           => $entry['segment']['end_at']->format('Y-m-d H:i:s'),
-                ];
-                $walk($index + 1);
-                array_pop($current);
-            }
-        };
-
-        $walk(0);
-
-        foreach ($patterns as &$pattern) {
-            $pattern['_score'] = $this->scoreAssignmentPattern($pattern);
-        }
-        unset($pattern);
-
-        usort($patterns, function ($a, $b) {
-            return ($a['_score'] ?? 0) <=> ($b['_score'] ?? 0);
-        });
-
-        $result = [];
-        foreach (array_slice($patterns, 0, 10) as $i => $pattern) {
-            unset($pattern['_score']);
-
-            $uniqueStaffCount = collect($pattern)->pluck('staff_id')->unique()->count();
-
-            $result[] = [
-                'rank' => $i + 1,
-                'label' => $uniqueStaffCount >= 2
-                    ? '分担優先パターン'
-                    : '同一担当パターン',
-                'assignments' => array_values($pattern),
-            ];
-        }
-
-        return $result;
+        return true;
     }
 
     private function scoreAssignmentPattern(array $pattern): int

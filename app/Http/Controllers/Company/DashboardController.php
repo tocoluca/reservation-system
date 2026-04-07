@@ -23,7 +23,8 @@ class DashboardController extends Controller
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
 
-        $dashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
+        $rawDashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
+        $dashboardPermissions = $this->normalizeDashboardPermissions($rawDashboardPermissions, $staff->role);
 
         $now = Carbon::now();
         $today = $now->copy()->startOfDay();
@@ -359,6 +360,91 @@ class DashboardController extends Controller
             'changeNoticeTotalCount',
             'hasChangeNoticeAlert'
         ));
+    }
+
+    private function normalizeDashboardPermissions($rawPermissions, string $role): array
+    {
+        $raw = is_array($rawPermissions) ? $rawPermissions : [];
+
+        $canonicalKeys = [
+            'card.reserve',
+            'card.business_calendar',
+            'card.customers',
+            'card.month_shift',
+            'card.reservation_change_notices',
+            'card.reviews',
+            'card.vacation',
+            'card.my_profile',
+            'dashboard.sales',
+            'card.company_info',
+            'card.staff',
+            'card.logo',
+            'card.menu_category_tag',
+            'card.menu',
+            'card.menu_staff',
+            'card.shift_patterns',
+            'card.default_shift',
+            'card.notices',
+            'card.billing',
+            'card.theme',
+            'dashboard.manage',
+        ];
+
+        $aliases = [
+            'card.calendar' => 'card.business_calendar',
+            'card.business' => 'card.business_calendar',
+            'card.customer' => 'card.customers',
+            'card.shift' => 'card.month_shift',
+            'card.staff_shift' => 'card.month_shift',
+            'card.staff_shifts' => 'card.month_shift',
+            'card.company' => 'card.company_info',
+            'card.company_edit' => 'card.company_info',
+            'card.staffs' => 'card.staff',
+            'card.staff_manage' => 'card.staff',
+            'card.category_tag' => 'card.menu_category_tag',
+            'card.menu_category' => 'card.menu_category_tag',
+            'card.menu_categories' => 'card.menu_category_tag',
+            'card.dashboard_settings' => 'dashboard.manage',
+            'card.dashboard_manage' => 'dashboard.manage',
+            'card.sales' => 'dashboard.sales',
+        ];
+
+        $normalized = [];
+
+        foreach ($raw as $key => $value) {
+            $key = $aliases[$key] ?? $key;
+            $normalized[$key] = filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
+            if ($normalized[$key] === null) {
+                $normalized[$key] = !empty($value);
+            }
+        }
+
+        $defaultsByRole = [
+            'master' => array_fill_keys($canonicalKeys, true),
+            'area_leader' => array_fill_keys($canonicalKeys, false),
+            'leader' => array_fill_keys($canonicalKeys, false),
+            'staff' => array_fill_keys($canonicalKeys, false),
+        ];
+
+        $base = $defaultsByRole[$role] ?? array_fill_keys($canonicalKeys, false);
+
+        // 最低限、本人設定系はスタッフでも出せるようにする
+        if (array_key_exists('card.my_profile', $base)) {
+            $base['card.my_profile'] = true;
+        }
+
+        foreach ($canonicalKeys as $key) {
+            if (array_key_exists($key, $normalized)) {
+                $base[$key] = (bool) $normalized[$key];
+            }
+        }
+
+        // master の dashboard.manage は強制表示
+        if ($role === 'master') {
+            $base['dashboard.manage'] = true;
+        }
+
+        return $base;
     }
 
     private function buildReservationSettingWarnings($company): array

@@ -41,13 +41,39 @@ class DashboardSettingController extends Controller
 
         $submittedPermissions = $request->input('permissions', []);
 
+        $aliases = [
+            'card.calendar' => 'card.business_calendar',
+            'card.business' => 'card.business_calendar',
+            'card.customer' => 'card.customers',
+            'card.shift' => 'card.month_shift',
+            'card.staff_shift' => 'card.month_shift',
+            'card.staff_shifts' => 'card.month_shift',
+            'card.company' => 'card.company_info',
+            'card.company_edit' => 'card.company_info',
+            'card.staffs' => 'card.staff',
+            'card.staff_manage' => 'card.staff',
+            'card.category_tag' => 'card.menu_category_tag',
+            'card.menu_category' => 'card.menu_category_tag',
+            'card.menu_categories' => 'card.menu_category_tag',
+            'card.dashboard_settings' => 'dashboard.manage',
+            'card.dashboard_manage' => 'dashboard.manage',
+            'card.sales' => 'dashboard.sales',
+        ];
+
+        $permissionLabels = CompanyDashboardPermission::permissionLabels();
+
         foreach (CompanyDashboardPermission::roleLabels() as $role => $label) {
             $rolePermissions = $submittedPermissions[$role] ?? [];
 
-            foreach (CompanyDashboardPermission::permissionLabels() as $permissionKey => $permissionLabel) {
-                $isEnabled = !empty($rolePermissions[$permissionKey]);
+            $normalizedRolePermissions = [];
+            foreach ($rolePermissions as $key => $value) {
+                $canonicalKey = $aliases[$key] ?? $key;
+                $normalizedRolePermissions[$canonicalKey] = !empty($value);
+            }
 
-                // master の dashboard.manage は常に有効
+            foreach ($permissionLabels as $permissionKey => $permissionLabel) {
+                $isEnabled = !empty($normalizedRolePermissions[$permissionKey]);
+
                 if ($role === 'master' && $permissionKey === 'dashboard.manage') {
                     $isEnabled = true;
                 }

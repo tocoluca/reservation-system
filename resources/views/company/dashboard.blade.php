@@ -21,6 +21,10 @@
     $changePhonePending = (int) ($changeNoticePhonePendingCount ?? 0);
     $changeConfirmed = (int) ($changeNoticeConfirmedCount ?? 0);
     $changeTotalActive = $changePending + $changePhonePending;
+
+    $can = function ($key, $default = false) use ($dashboardPermissions) {
+        return (bool) ($dashboardPermissions[$key] ?? $default);
+    };
 @endphp
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -44,7 +48,7 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
-            @if($dashboardPermissions['card.reserve'] ?? false)
+            @if($can('card.reserve'))
                 <a href="{{ route('company.reserve') }}"
                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
                    style="background: {{ $theme }}">
@@ -52,7 +56,7 @@
                 </a>
             @endif
 
-            @if($dashboardPermissions['card.business_calendar'] ?? false)
+            @if($can('card.business_calendar'))
                 <a href="{{ route('company.calendar.index') }}"
                    class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-gray-700 font-semibold shadow-sm hover:bg-gray-50 transition">
                     営業日管理
@@ -281,7 +285,7 @@
             <div class="mt-2 text-sm text-gray-500">確認待ち + 電話対応待ち</div>
         </div>
 
-        @if($dashboardPermissions['dashboard.sales'] ?? false)
+        @if($can('dashboard.sales'))
             <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
                 <div class="text-xs font-semibold text-gray-500">今日売上</div>
                 <div class="mt-2 text-3xl font-bold text-gray-900">¥{{ number_format($todaySales) }}</div>
@@ -307,7 +311,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            @if($dashboardPermissions['card.reserve'] ?? false)
+            @if($can('card.reserve'))
                 <a href="{{ route('company.reserve') }}"
                    class="group rounded-3xl p-6 text-white shadow-lg hover:-translate-y-0.5 transition"
                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #1f2937 100%);">
@@ -334,7 +338,7 @@
                 </a>
             @endif
 
-            @if($dashboardPermissions['card.customers'] ?? false)
+            @if($can('card.customers'))
                 <a href="{{ route('company.customers') }}"
                    class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
@@ -355,7 +359,7 @@
                 </a>
             @endif
 
-            @if($dashboardPermissions['card.month_shift'] ?? false)
+            @if($can('card.month_shift'))
                 <a href="{{ route('company.staff-shifts') }}"
                    class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
@@ -375,7 +379,8 @@
                     <div class="mt-6 text-sm font-semibold text-fuchsia-700">開く</div>
                 </a>
             @endif
-            @if($dashboardPermissions['card.business_calendar'] ?? false)
+
+            @if($can('card.business_calendar'))
                 <a href="{{ route('company.calendar.index') }}"
                    class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
@@ -395,7 +400,6 @@
                     <div class="mt-6 text-sm font-semibold text-emerald-700">開く</div>
                 </a>
             @endif
-
         </div>
     </div>
 
@@ -403,7 +407,7 @@
         <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4">その他のよく使うメニュー</h2>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            @if($dashboardPermissions['card.reservation_change_notices'] ?? true)
+            @if($can('card.reservation_change_notices'))
                 <a href="{{ route('company.reservation_change_notices.index') }}"
                    class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
                     <div class="flex items-start justify-between gap-3">
@@ -429,7 +433,7 @@
                 </a>
             @endif
 
-            @if(($dashboardPermissions['card.reviews'] ?? true) && ($company->review_enabled ?? false))
+            @if($can('card.reviews') && ($company->review_enabled ?? false))
                 <a href="{{ route('company.reviews.index') }}"
                    class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
                     <div class="text-amber-500 text-xs font-semibold">口コミ管理</div>
@@ -440,7 +444,7 @@
                 </a>
             @endif
 
-            @if($dashboardPermissions['card.vacation'] ?? false)
+            @if($can('card.vacation'))
                 <a href="{{ route('company.vacation.index') }}"
                    class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
                     <div class="text-green-500 text-xs font-semibold">休暇管理</div>
@@ -451,7 +455,7 @@
                 </a>
             @endif
 
-            @if($dashboardPermissions['card.my_profile'] ?? false)
+            @if($can('card.my_profile'))
                 <a href="{{ route('company.my-profile') }}"
                    class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
                     <div class="text-teal-500 text-xs font-semibold">マイプロフィール</div>
@@ -472,7 +476,7 @@
                     <p class="text-sm text-gray-500 mt-1">{{ now()->format('Y年m月d日') }}</p>
                 </div>
 
-                @if($dashboardPermissions['card.reserve'] ?? false)
+                @if($can('card.reserve'))
                     <a href="{{ route('company.reservations.index') }}"
                        class="inline-flex items-center justify-center px-4 py-2 rounded-2xl bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200 transition">
                         予約一覧を見る
@@ -545,7 +549,7 @@
         </div>
     </div>
 
-    @if($dashboardPermissions['dashboard.sales'] ?? false)
+    @if($can('dashboard.sales'))
         <div class="mb-10">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
                 <div>
@@ -660,7 +664,7 @@
             <div>
                 <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">基本設定</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    @if($dashboardPermissions['card.company_info'] ?? false)
+                    @if($can('card.company_info'))
                         <a href="{{ route('company.info.edit') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-orange-500 text-xs font-semibold">COMPANY</div>
@@ -669,7 +673,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.business_calendar'] ?? false)
+                    @if($can('card.business_calendar'))
                         <a href="{{ route('company.calendar.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-emerald-500 text-xs font-semibold">BUSINESS</div>
@@ -678,7 +682,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.staff'] ?? false)
+                    @if($can('card.staff'))
                         <a href="{{ route('company.staff.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-indigo-500 text-xs font-semibold">STAFF</div>
@@ -687,7 +691,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.logo'] ?? false)
+                    @if($can('card.logo'))
                         <a href="{{ route('company.logo') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-gray-500 text-xs font-semibold">BRAND</div>
@@ -695,14 +699,13 @@
                             <div class="text-sm text-gray-500 mt-2">企業ロゴ変更</div>
                         </a>
                     @endif
-
                 </div>
             </div>
 
             <div>
                 <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">メニュー設定</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    @if($dashboardPermissions['card.menu_category_tag'] ?? false)
+                    @if($can('card.menu_category_tag'))
                         <a href="{{ route('company.menu.settings') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-cyan-500 text-xs font-semibold">CATEGORY & TAG</div>
@@ -711,7 +714,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.menu'] ?? false)
+                    @if($can('card.menu'))
                         <a href="{{ route('company.menu.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-lime-500 text-xs font-semibold">MENU</div>
@@ -720,7 +723,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.menu_staff'] ?? false)
+                    @if($can('card.menu_staff'))
                         <a href="{{ route('company.menu-staff.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-lime-500 text-xs font-semibold">SKILL</div>
@@ -728,14 +731,13 @@
                             <div class="text-sm text-gray-500 mt-2">施工可能な担当者を管理</div>
                         </a>
                     @endif
-
                 </div>
             </div>
 
             <div>
                 <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">シフト・運営設定</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    @if($dashboardPermissions['card.shift_patterns'] ?? false)
+                    @if($can('card.shift_patterns'))
                         <a href="{{ route('company.shift-patterns') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-pink-500 text-xs font-semibold">SHIFT</div>
@@ -744,7 +746,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.default_shift'] ?? false)
+                    @if($can('card.default_shift'))
                         <a href="{{ route('company.staff-default-shifts') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-rose-500 text-xs font-semibold">SHIFT</div>
@@ -753,7 +755,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.month_shift'] ?? false)
+                    @if($can('card.month_shift'))
                         <a href="{{ route('company.staff-shifts') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-fuchsia-500 text-xs font-semibold">SHIFT</div>
@@ -762,7 +764,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.notices'] ?? false)
+                    @if($can('card.notices'))
                         <a href="{{ route('company.notices.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-emerald-500 text-xs font-semibold">INFORMATION</div>
@@ -770,14 +772,13 @@
                             <div class="text-sm text-gray-500 mt-2">予約画面に表示するお知らせ情報を管理</div>
                         </a>
                     @endif
-
                 </div>
             </div>
 
             <div>
                 <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">システム管理</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    @if($dashboardPermissions['card.billing'] ?? false)
+                    @if($can('card.billing'))
                         <a href="{{ route('company.billing.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="flex items-center justify-between gap-3">
@@ -797,7 +798,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['card.theme'] ?? false)
+                    @if($can('card.theme'))
                         <a href="{{ route('company.theme') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-purple-500 text-xs font-semibold">DESIGN</div>
@@ -806,7 +807,7 @@
                         </a>
                     @endif
 
-                    @if($dashboardPermissions['dashboard.manage'] ?? false)
+                    @if($can('dashboard.manage'))
                         <a href="{{ route('company.dashboard-settings.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
                             <div class="text-violet-500 text-xs font-semibold">DASHBOARD</div>
@@ -824,7 +825,7 @@
 const salesLabels = @json($monthlyChart->pluck('month')->values());
 const salesData = @json($monthlyChart->pluck('total')->values());
 
-@if($dashboardPermissions['dashboard.sales'] ?? false)
+@if($can('dashboard.sales'))
 const salesCanvas = document.getElementById('salesChart');
 if (salesCanvas) {
     new Chart(salesCanvas, {

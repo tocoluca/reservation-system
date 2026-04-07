@@ -109,10 +109,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/companies/bulk-update', [CompanyController::class, 'bulkUpdate'])->name('admin.company.bulk-update');
 
         Route::post('/companies/{id}/toggle', [CompanyController::class, 'toggle'])->name('admin.company.toggle');
-
     });
 });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -317,8 +315,8 @@ Route::prefix('company')->group(function () {
             Route::post('menu-staff', [MenuStaffController::class, 'update'])
                 ->name('company.menu-staff.update');
 
-			Route::post('shift-patterns/order', [ShiftPatternController::class, 'updateOrder'])
-			    ->name('company.shift-patterns.order');
+            Route::post('shift-patterns/order', [ShiftPatternController::class, 'updateOrder'])
+                ->name('company.shift-patterns.order');
 
             Route::get('shift-patterns', [ShiftPatternController::class, 'index'])
                 ->name('company.shift-patterns');
@@ -374,7 +372,6 @@ Route::prefix('company')->group(function () {
             Route::post('/dashboard-settings', [DashboardSettingController::class, 'update'])
                 ->name('company.dashboard-settings.update');
 
-            // 口コミ管理
             Route::get('reviews', [CompanyReviewController::class, 'index'])
                 ->name('company.reviews.index');
 
@@ -390,34 +387,32 @@ Route::prefix('company')->group(function () {
             Route::post('reviews/{review}/reply', [CompanyReviewController::class, 'reply'])
                 ->name('company.reviews.reply');
 
-			Route::get('/company/reservations', [\App\Http\Controllers\Company\ReservationController::class, 'index'])
-			    ->name('company.reservations.index');
+            Route::get('reservations', [\App\Http\Controllers\Company\ReservationController::class, 'index'])
+                ->name('company.reservations.index');
 
-			Route::post('/company/reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
-			    ->name('company.reservations.cancel');
+            Route::post('reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
+                ->name('company.reservations.cancel');
 
-	        Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
-	            ->name('company.reservation_change_notices.index');
+            Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
+                ->name('company.reservation_change_notices.index');
 
-	        Route::get('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'show'])
-	            ->name('company.reservation_change_notices.show');
+            Route::get('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'show'])
+                ->name('company.reservation_change_notices.show');
 
-	        Route::post('/reservation-change-notices/create-from-closed-date', [ReservationChangeNoticeController::class, 'createFromClosedDate'])
-	            ->name('company.reservation_change_notices.create_from_closed_date');
+            Route::post('/reservation-change-notices/create-from-closed-date', [ReservationChangeNoticeController::class, 'createFromClosedDate'])
+                ->name('company.reservation_change_notices.create_from_closed_date');
 
-	        Route::post('/reservation-change-notices/{notice}/send-mails', [ReservationChangeNoticeController::class, 'sendMails'])
-	            ->name('company.reservation_change_notices.send_mails');
+            Route::post('/reservation-change-notices/{notice}/send-mails', [ReservationChangeNoticeController::class, 'sendMails'])
+                ->name('company.reservation_change_notices.send_mails');
 
-	        Route::post('/reservation-change-notices/items/{item}/phone-confirmed', [ReservationChangeNoticeController::class, 'markPhoneConfirmed'])
-	            ->name('company.reservation_change_notices.items.phone_confirmed');
+            Route::post('/reservation-change-notices/items/{item}/phone-confirmed', [ReservationChangeNoticeController::class, 'markPhoneConfirmed'])
+                ->name('company.reservation_change_notices.items.phone_confirmed');
 
-	        Route::post('/reservation-change-notices/items/{item}/update-note', [ReservationChangeNoticeController::class, 'updateNote'])
-	            ->name('company.reservation_change_notices.items.update_note');
+            Route::post('/reservation-change-notices/items/{item}/update-note', [ReservationChangeNoticeController::class, 'updateNote'])
+                ->name('company.reservation_change_notices.items.update_note');
 
-			Route::get('/calendar/assignment-candidates', [\App\Http\Controllers\Company\ReservationController::class, 'assignmentCandidates'])
-			    ->name('company.calendar.assignment-candidates');
-
-
+            Route::get('/calendar/assignment-candidates', [\App\Http\Controllers\Company\ReservationController::class, 'assignmentCandidates'])
+                ->name('company.calendar.assignment-candidates');
         });
     });
 });
@@ -431,32 +426,49 @@ Route::get('/company/staff/list', function () {
         ->get(['id', 'name']);
 })->middleware('auth:company');
 
-
 /*
 |--------------------------------------------------------------------------
 | 公開予約
 |--------------------------------------------------------------------------
+|
+| /r/{company_code} 配下の公開予約画面
+|
 */
+
 Route::prefix('r/{company_code}')
     ->middleware(['company.code'])
     ->group(function () {
-
-        Route::get('/', [ReserveController::class, 'index']);
+        Route::get('/', [ReserveController::class, 'index'])
+            ->name('reserve.index');
 
         Route::get('/line/redirect', [ReserveController::class, 'lineRedirect'])
             ->name('reserve.line.redirect');
 
+        Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
+            ->name('reserve.line.callback');
+
         Route::get('/line/logout', [ReserveController::class, 'lineLogout'])
             ->name('reserve.line.logout');
 
-        Route::match(['get', 'post'], '/confirm', [ReserveController::class, 'confirm']);
-        Route::post('/store', [ReserveController::class, 'store']);
-        Route::get('/complete', [ReserveController::class, 'complete']);
-        Route::get('/slots', [ReserveController::class, 'slots']);
+        Route::get('/available-staff', [ReserveController::class, 'availableStaff'])
+            ->name('reserve.available_staff');
+
+        Route::get('/slots', [ReserveController::class, 'slots'])
+            ->name('reserve.slots');
+
+        Route::match(['get', 'post'], '/confirm', [ReserveController::class, 'confirm'])
+            ->name('reserve.confirm');
+
+        Route::post('/store', [ReserveController::class, 'store'])
+            ->name('reserve.store');
+
+        Route::get('/complete', [ReserveController::class, 'complete'])
+            ->name('reserve.complete');
 
         Route::get('/notice/{id}', [ReserveController::class, 'noticeShow'])
             ->name('reserve.notice.show');
     });
+
 
 Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
     ->name('reserve.line.callback');
@@ -481,7 +493,6 @@ Route::get('/notice-response/{token}', [ReservationNoticeResponseController::cla
 
 Route::post('/notice-response/{token}/confirm', [ReservationNoticeResponseController::class, 'confirm'])
     ->name('reservation.notice.response.confirm');
-
 
 /*
 |--------------------------------------------------------------------------

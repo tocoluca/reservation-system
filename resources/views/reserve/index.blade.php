@@ -49,6 +49,16 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700 text-sm">
+                <ul class="list-disc pl-5 space-y-1">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if($lineLoginEnabled ?? false)
             <div class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-5 mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -144,7 +154,7 @@
         <form method="POST" action="/r/{{ $company->company_code }}/confirm" id="reserveForm">
             @csrf
 
-            <input type="hidden" name="start_at" id="start_at">
+            <input type="hidden" name="start_at" id="start_at" value="{{ old('start_at') }}">
 
             <div class="grid lg:grid-cols-[1.4fr_0.8fr] gap-6">
 
@@ -173,6 +183,10 @@
                         <div id="menuErrorBox"
                              class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
                         </div>
+
+                        @php
+                            $oldMenuIds = collect(old('menu_ids', []))->map(fn ($id) => (string) $id)->all();
+                        @endphp
 
                         @foreach($menus as $categoryName => $categoryMenus)
                             @php
@@ -216,6 +230,10 @@
 
                                 <div class="space-y-4">
                                     @foreach($categoryMenus as $menu)
+                                        @php
+                                            $isChecked = in_array((string) $menu->id, $oldMenuIds, true);
+                                        @endphp
+
                                         <label class="block cursor-pointer">
                                             <input
                                                 type="checkbox"
@@ -224,7 +242,8 @@
                                                 data-price="{{ $menu->price }}"
                                                 data-duration="{{ $menu->duration }}"
                                                 data-name="{{ $menu->name }}"
-                                                class="sr-only menu-check">
+                                                class="sr-only menu-check"
+                                                {{ $isChecked ? 'checked' : '' }}>
 
                                             <div class="menu-card relative z-10 rounded-[1.4rem] border border-gray-200 bg-white p-4 sm:p-5 transition duration-200 hover:border-gray-300 hover:shadow-md">
                                                 <div class="flex gap-4">
@@ -312,14 +331,19 @@
                              class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
                         </div>
 
-                        <div class="space-y-3">
+                        @php
+                            $oldStaffId = old('staff_id');
+                        @endphp
+
+                        <div id="staffList" class="space-y-3">
                             <label class="block cursor-pointer">
                                 <input type="radio"
                                        name="staff_id"
                                        value=""
                                        data-fee="0"
                                        data-name="指名なし"
-                                       class="sr-only staff-radio">
+                                       class="sr-only staff-radio"
+                                       {{ ($oldStaffId === null || $oldStaffId === '') ? 'checked' : '' }}>
 
                                 <div class="staff-card relative z-10 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm">
                                     <div class="flex items-center gap-4">
@@ -342,7 +366,8 @@
                                         value="{{ $s->id }}"
                                         data-fee="{{ $s->nomination_fee }}"
                                         data-name="{{ $s->name }}"
-                                        class="sr-only staff-radio">
+                                        class="sr-only staff-radio"
+                                        {{ (string) $oldStaffId === (string) $s->id ? 'checked' : '' }}>
 
                                     <div class="staff-card relative z-10 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm">
                                         <div class="flex gap-4">
@@ -397,7 +422,8 @@
                                 type="text"
                                 id="date"
                                 placeholder="日付を選択してください"
-                                class="w-full border border-gray-300 rounded-2xl p-3.5 bg-white">
+                                class="w-full border border-gray-300 rounded-2xl p-3.5 bg-white"
+                                value="{{ old('start_at') ? \Carbon\Carbon::parse(old('start_at'))->format('Y-m-d') : '' }}">
                         </div>
 
                         <div>
@@ -646,58 +672,22 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('reserveForm');
+    const oldStartAt = @json(old('start_at'));
+    const oldTime = oldStartAt ? String(oldStartAt).split(' ')[1]?.slice(0, 5) : '';
 
-    document.querySelectorAll('.menu-check').forEach(el => {
-        el.addEventListener('change', function () {
-            updatePrice();
-            updateSummary();
-            updateStepStates();
-            loadSlots();
-        });
-    });
-
-    document.querySelectorAll('[name=staff_id]').forEach(el => {
-        el.addEventListener('change', function () {
-            updatePrice();
-            updateSummary();
-            updateStepStates();
-            loadSlots();
-        });
-    });
-
-    document.querySelectorAll('.menu-card').forEach(card => {
-        card.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const input = this.closest('label')?.querySelector('.menu-check');
-            if (!input) return;
-
-            input.checked = !input.checked;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-    });
-
-    document.querySelectorAll('.staff-card').forEach(card => {
-        card.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const input = this.closest('label')?.querySelector('.staff-radio');
-            if (!input) return;
-
-            input.checked = true;
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-    });
+    bindMenuEvents();
+    bindStaffEvents();
 
     flatpickr("#date", {
         locale: "ja",
         minDate: "today",
         dateFormat: "Y-m-d",
-        onChange: function () {
+        defaultDate: oldStartAt ? String(oldStartAt).split(' ')[0] : null,
+        onChange: async function () {
+            document.getElementById('start_at').value = '';
             updateSummary();
             updateStepStates();
+            await reloadAvailableStaff();
             loadSlots();
         }
     });
@@ -732,10 +722,200 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    (async function initializePage() {
+        updatePrice();
+        updateSummary();
+        updateStepStates();
+
+        const selectedMenus = document.querySelectorAll('.menu-check:checked');
+        const date = document.getElementById('date').value;
+
+        if (selectedMenus.length > 0 && date) {
+            await reloadAvailableStaff();
+
+            if (oldTime) {
+                loadSlots(oldTime);
+            } else {
+                loadSlots();
+            }
+        }
+    })();
+});
+
+function bindMenuEvents() {
+    document.querySelectorAll('.menu-check').forEach(el => {
+        el.addEventListener('change', async function () {
+            document.getElementById('start_at').value = '';
+            updatePrice();
+            updateSummary();
+            updateStepStates();
+            await reloadAvailableStaff();
+            loadSlots();
+        });
+    });
+
+    document.querySelectorAll('.menu-card').forEach(card => {
+        card.addEventListener('click', async function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const input = this.closest('label')?.querySelector('.menu-check');
+            if (!input) return;
+
+            input.checked = !input.checked;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+}
+
+function bindStaffEvents() {
+    document.querySelectorAll('[name=staff_id]').forEach(el => {
+        el.addEventListener('change', function () {
+            document.getElementById('start_at').value = '';
+            updatePrice();
+            updateSummary();
+            updateStepStates();
+            loadSlots();
+        });
+    });
+
+    document.querySelectorAll('.staff-card').forEach(card => {
+        card.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const input = this.closest('label')?.querySelector('.staff-radio');
+            if (!input) return;
+
+            input.checked = true;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+    });
+}
+
+async function reloadAvailableStaff() {
+    const date = document.getElementById('date').value;
+    const menuEls = Array.from(document.querySelectorAll('.menu-check:checked'));
+
+    const previouslySelected = document.querySelector('[name=staff_id]:checked')?.value ?? '';
+
+    if (!date || menuEls.length === 0) {
+        renderStaffList([], previouslySelected);
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.append('date', date);
+    menuEls.forEach(m => params.append('menu_ids[]', m.value));
+
+    try {
+        const response = await fetch(`/r/{{ $company->company_code }}/available-staff?${params.toString()}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        const data = await response.json();
+        const staff = Array.isArray(data.staff) ? data.staff : [];
+
+        renderStaffList(staff, previouslySelected);
+    } catch (e) {
+        renderStaffList([], previouslySelected);
+    }
+}
+
+function renderStaffList(staffItems, selectedValue = '') {
+    const staffList = document.getElementById('staffList');
+    if (!staffList) return;
+
+    let html = `
+        <label class="block cursor-pointer">
+            <input type="radio"
+                   name="staff_id"
+                   value=""
+                   data-fee="0"
+                   data-name="指名なし"
+                   class="sr-only staff-radio"
+                   ${selectedValue === '' ? 'checked' : ''}>
+
+            <div class="staff-card relative z-10 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0">
+                        人
+                    </div>
+                    <div class="flex-1">
+                        <div class="font-semibold text-gray-900">指名なし</div>
+                        <div class="text-sm text-gray-500 mt-1">空いている担当者をご案内します</div>
+                    </div>
+                </div>
+            </div>
+        </label>
+    `;
+
+    if (staffItems.length === 0) {
+        html += `
+            <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                この日程・メニューで勤務可能な担当者がいません。
+            </div>
+        `;
+    } else {
+        html += staffItems.map(staff => `
+            <label class="block cursor-pointer">
+                <input
+                    type="radio"
+                    name="staff_id"
+                    value="${staff.id}"
+                    data-fee="${staff.nomination_fee ?? 0}"
+                    data-name="${escapeHtml(staff.name ?? '')}"
+                    class="sr-only staff-radio"
+                    ${String(selectedValue) === String(staff.id) ? 'checked' : ''}>
+
+                <div class="staff-card relative z-10 rounded-2xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm">
+                    <div class="flex gap-4">
+                        <img
+                            src="${staff.image_url ?? '{{ asset('images/noimage.png') }}'}"
+                            class="w-14 h-14 rounded-full object-cover shrink-0">
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <div class="font-semibold text-gray-900">
+                                    ${escapeHtml(staff.name ?? '')}
+                                </div>
+
+                                ${(Number(staff.nomination_fee || 0) > 0) ? `
+                                    <span class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600 font-semibold">
+                                        +${Number(staff.nomination_fee).toLocaleString()}円
+                                    </span>
+                                ` : ''}
+                            </div>
+
+                            ${staff.comment ? `
+                                <div class="text-sm text-gray-500 mt-2 leading-6">
+                                    ${escapeHtml(staff.comment)}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </label>
+        `).join('');
+    }
+
+    staffList.innerHTML = html;
+
+    const stillExists = selectedValue === '' || staffItems.some(s => String(s.id) === String(selectedValue));
+    if (!stillExists) {
+        const noSelect = staffList.querySelector('input[name="staff_id"][value=""]');
+        if (noSelect) {
+            noSelect.checked = true;
+        }
+    }
+
+    bindStaffEvents();
     updatePrice();
     updateSummary();
     updateStepStates();
-});
+}
 
 function updatePrice() {
     const menus = document.querySelectorAll('.menu-check:checked');
@@ -811,7 +991,7 @@ function setStepState(el, isOk, forceHighlight) {
     }
 }
 
-function loadSlots() {
+function loadSlots(preselectTime = '') {
     const date = document.getElementById('date').value;
     const guide = document.getElementById('slotGuide');
     const slotsBox = document.getElementById('slots');
@@ -931,6 +1111,10 @@ function loadSlots() {
                     updateSummary();
                     updateStepStates();
                 });
+
+                if (preselectTime && btn.dataset.time === preselectTime) {
+                    btn.click();
+                }
             });
         })
         .catch(() => {
@@ -967,6 +1151,15 @@ function scrollToStep(id) {
     const el = document.getElementById(id);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 </script>
 @endpush

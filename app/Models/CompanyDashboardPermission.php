@@ -23,7 +23,7 @@ class CompanyDashboardPermission extends Model
             'master' => 'マスター',
             'area_leader' => 'エリアリーダー',
             'leader' => 'リーダー',
-            'member' => 'スタッフ',
+            'staff' => 'スタッフ',
         ];
     }
 
@@ -43,7 +43,7 @@ class CompanyDashboardPermission extends Model
             'card.default_shift'      => '基本シフト',
             'card.month_shift'        => '月シフト',
             'card.customers'          => '顧客管理',
-            'card.reviews'    	      => '口コミ管理',
+            'card.reviews'            => '口コミ管理',
             'card.notices'            => 'お知らせ情報管理',
             'card.vacation'           => '休暇管理',
             'card.theme'              => 'テーマ設定',
@@ -51,6 +51,7 @@ class CompanyDashboardPermission extends Model
             'card.logo'               => 'ロゴ設定',
             'card.billing'            => '契約管理',
             'card.my_profile'         => 'マイプロフィール',
+            'card.reservation_change_notices' => '予約変更連絡管理',
         ];
     }
 
@@ -72,6 +73,7 @@ class CompanyDashboardPermission extends Model
                 'card.default_shift'      => true,
                 'card.month_shift'        => true,
                 'card.customers'          => true,
+                'card.reviews'            => true,
                 'card.notices'            => true,
                 'card.vacation'           => true,
                 'card.theme'              => true,
@@ -79,6 +81,7 @@ class CompanyDashboardPermission extends Model
                 'card.logo'               => true,
                 'card.billing'            => true,
                 'card.my_profile'         => true,
+                'card.reservation_change_notices' => true,
             ],
             'area_leader' => [
                 'dashboard.sales'         => true,
@@ -92,9 +95,11 @@ class CompanyDashboardPermission extends Model
                 'card.default_shift'      => true,
                 'card.month_shift'        => true,
                 'card.customers'          => true,
+                'card.reviews'            => true,
                 'card.notices'            => true,
                 'card.vacation'           => true,
                 'card.my_profile'         => true,
+                'card.reservation_change_notices' => true,
             ],
             'leader' => [
                 'dashboard.sales'         => true,
@@ -108,11 +113,13 @@ class CompanyDashboardPermission extends Model
                 'card.default_shift'      => true,
                 'card.month_shift'        => true,
                 'card.customers'          => true,
+                'card.reviews'            => true,
                 'card.notices'            => true,
                 'card.vacation'           => true,
                 'card.my_profile'         => true,
+                'card.reservation_change_notices' => true,
             ],
-            'member' => [
+            'staff' => [
                 'card.reserve'            => true,
                 'card.vacation'           => true,
                 'card.my_profile'         => true,
@@ -145,11 +152,16 @@ class CompanyDashboardPermission extends Model
 
     public static function resolveForCompanyRole(int $companyId, string $role): array
     {
+        // 旧データ救済
+        if ($role === 'member') {
+            $role = 'staff';
+        }
+
         $defaults = static::defaultPermissions($role);
 
         $rows = static::query()
             ->where('company_id', $companyId)
-            ->where('role', $role)
+            ->whereIn('role', array_unique([$role, $role === 'staff' ? 'member' : $role]))
             ->get(['permission_key', 'is_enabled']);
 
         foreach ($rows as $row) {

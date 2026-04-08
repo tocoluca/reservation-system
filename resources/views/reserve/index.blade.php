@@ -31,8 +31,8 @@
                 </h1>
 
                 <p class="text-sm sm:text-base text-gray-600 mt-3 leading-7 max-w-2xl mx-auto">
-                    メニュー・担当・日時を選ぶだけで、かんたんに予約できます。<br class="hidden sm:block">
-                    スマホからでも見やすく、スムーズにご予約いただけます。
+                    メニューを選んで、ご希望の日付・時間を選ぶだけ。<br class="hidden sm:block">
+                    担当者のご希望がある場合は、あとから選べます。
                 </p>
             </div>
         </div>
@@ -154,9 +154,17 @@
         <form method="POST" action="/r/{{ $company->company_code }}/confirm" id="reserveForm">
             @csrf
 
+            @php
+                $oldMenuIds = collect(old('menu_ids', []))->map(fn ($id) => (string) $id)->all();
+                $oldStaffId = old('staff_id');
+                $oldStartAt = old('start_at');
+                $oldDate = $oldStartAt ? \Carbon\Carbon::parse($oldStartAt)->format('Y-m-d') : '';
+                $oldTime = $oldStartAt ? \Carbon\Carbon::parse($oldStartAt)->format('H:i') : '';
+            @endphp
+
             <input type="hidden" name="start_at" id="start_at" value="{{ old('start_at') }}">
 
-            <div class="grid lg:grid-cols-[1.4fr_0.8fr] gap-6">
+            <div class="grid lg:grid-cols-[1.45fr_0.85fr] gap-6">
 
                 {{-- 左カラム --}}
                 <div class="space-y-6">
@@ -165,9 +173,9 @@
                     <div class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-5">
                         <div class="grid grid-cols-4 gap-2 text-center text-xs sm:text-sm">
                             <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">1 メニュー</div>
-                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">2 スタッフ</div>
-                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">3 日付</div>
-                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">4 時間</div>
+                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">2 日付</div>
+                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">3 時間</div>
+                            <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">4 担当者</div>
                         </div>
                     </div>
 
@@ -181,12 +189,7 @@
                         </div>
 
                         <div id="menuErrorBox"
-                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
-                        </div>
-
-                        @php
-                            $oldMenuIds = collect(old('menu_ids', []))->map(fn ($id) => (string) $id)->all();
-                        @endphp
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"></div>
 
                         @foreach($menus as $categoryName => $categoryMenus)
                             @php
@@ -279,9 +282,7 @@
                                                             </div>
 
                                                             <div class="text-right shrink-0">
-                                                                <div class="text-[11px] sm:text-xs text-gray-400 mb-1">
-                                                                    PRICE
-                                                                </div>
+                                                                <div class="text-[11px] sm:text-xs text-gray-400 mb-1">PRICE</div>
                                                                 <div class="text-lg sm:text-xl font-bold text-gray-900">
                                                                     ¥{{ number_format($menu->price) }}
                                                                 </div>
@@ -318,22 +319,77 @@
                         @endforeach
                     </section>
 
-                    {{-- スタッフ --}}
+                    {{-- 日付 --}}
+                    <section class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 id="stepDateTitle" class="text-lg sm:text-xl font-bold text-gray-900 transition">
+                                STEP2 日付を選ぶ
+                            </h2>
+                            <span class="text-xs text-gray-400">DATE</span>
+                        </div>
+
+                        <div id="dateErrorBox"
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"></div>
+
+                        <div class="mb-4 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600 leading-6">
+                            ご希望日を選ぶと、予約できる時間が表示されます。
+                        </div>
+
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            日付
+                        </label>
+                        <input
+                            type="text"
+                            id="date"
+                            placeholder="日付を選択してください"
+                            class="w-full border border-gray-300 rounded-2xl p-3.5 bg-white"
+                            value="{{ $oldDate }}">
+                    </section>
+
+                    {{-- 空き時間 --}}
+                    <section class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 id="stepTimeTitle" class="text-lg sm:text-xl font-bold text-gray-900 transition">
+                                STEP3 時間を選ぶ
+                            </h2>
+                            <span class="text-xs text-gray-400">TIME</span>
+                        </div>
+
+                        <div id="datetimeErrorBox"
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"></div>
+
+                        <div id="slotGuide" class="text-sm text-gray-400 mb-3">
+                            メニューと日付を選ぶと、空いている時間が表示されます
+                        </div>
+
+                        <div class="mb-3 flex flex-wrap gap-2 text-xs">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
+                                <span class="w-2 h-2 rounded-full bg-green-500"></span>予約可能
+                            </span>
+                            <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-500 px-3 py-1">
+                                <span class="w-2 h-2 rounded-full bg-gray-400"></span>満席
+                            </span>
+                        </div>
+
+                        <div id="slots" class="space-y-5"></div>
+                    </section>
+
+                    {{-- 担当者 --}}
                     <section class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6">
                         <div class="flex items-center justify-between mb-4">
                             <h2 id="stepStaffTitle" class="text-lg sm:text-xl font-bold text-gray-900 transition">
-                                STEP2 スタッフを選ぶ
+                                STEP4 担当者を選ぶ（任意）
                             </h2>
                             <span class="text-xs text-gray-400">STAFF</span>
                         </div>
 
                         <div id="staffErrorBox"
-                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
-                        </div>
+                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm"></div>
 
-                        @php
-                            $oldStaffId = old('staff_id');
-                        @endphp
+                        <div class="mb-4 rounded-2xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600 leading-6">
+                            担当者のご希望がある場合はお選びください。<br>
+                            指名しない場合は、空いている担当者をご案内します。
+                        </div>
 
                         <div id="staffList" class="space-y-3">
                             <label class="block cursor-pointer">
@@ -341,7 +397,7 @@
                                        name="staff_id"
                                        value=""
                                        data-fee="0"
-                                       data-name="指名なし"
+                                       data-name="指名しない"
                                        class="sr-only staff-radio"
                                        {{ ($oldStaffId === null || $oldStaffId === '') ? 'checked' : '' }}>
 
@@ -351,7 +407,7 @@
                                             人
                                         </div>
                                         <div class="flex-1">
-                                            <div class="font-semibold text-gray-900">指名なし</div>
+                                            <div class="font-semibold text-gray-900">指名しない（おすすめ）</div>
                                             <div class="text-sm text-gray-500 mt-1">空いている担当者をご案内します</div>
                                         </div>
                                     </div>
@@ -400,59 +456,6 @@
                             @endforeach
                         </div>
                     </section>
-
-                    {{-- 日付と時間 --}}
-                    <section class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-6">
-                        <div class="flex items-center justify-between mb-4">
-                            <h2 id="stepDatetimeTitle" class="text-lg sm:text-xl font-bold text-gray-900 transition">
-                                STEP3・4 日時を選ぶ
-                            </h2>
-                            <span class="text-xs text-gray-400">DATE & TIME</span>
-                        </div>
-
-                        <div id="datetimeErrorBox"
-                             class="hidden mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 text-sm">
-                        </div>
-
-                        <div class="mb-5">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                日付
-                            </label>
-                            <input
-                                type="text"
-                                id="date"
-                                placeholder="日付を選択してください"
-                                class="w-full border border-gray-300 rounded-2xl p-3.5 bg-white"
-                                value="{{ old('start_at') ? \Carbon\Carbon::parse(old('start_at'))->format('Y-m-d') : '' }}">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-3">
-                                空き時間
-                            </label>
-
-                            <div id="slotGuide" class="text-sm text-gray-400 mb-3">
-                                メニュー・担当者・日付を選ぶと、空いている時間が表示されます
-                            </div>
-
-                            <div class="mb-3 flex flex-wrap gap-2 text-xs">
-                                <span class="inline-flex items-center gap-2 rounded-full bg-emerald-50 text-emerald-700 px-3 py-1">
-                                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>余裕あり
-                                </span>
-                                <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
-                                    <span class="w-2 h-2 rounded-full bg-green-500"></span>予約可能
-                                </span>
-                                <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
-                                    <span class="w-2 h-2 rounded-full bg-amber-500"></span>残りわずか
-                                </span>
-                                <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 text-gray-500 px-3 py-1">
-                                    <span class="w-2 h-2 rounded-full bg-gray-400"></span>満席
-                                </span>
-                            </div>
-
-                            <div id="slots" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"></div>
-                        </div>
-                    </section>
                 </div>
 
                 {{-- 右カラム --}}
@@ -461,39 +464,34 @@
 
                         <div class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-5">
                             <div class="flex items-center justify-between mb-4">
-                                <h2 class="text-lg font-bold text-gray-900">
-                                    選択中の内容
-                                </h2>
+                                <h2 class="text-lg font-bold text-gray-900">選択中の内容</h2>
                                 <span class="text-xs text-gray-400">SUMMARY</span>
                             </div>
 
                             <div class="space-y-4 text-sm">
                                 <div>
                                     <div class="text-gray-400 mb-1">メニュー</div>
-                                    <div id="selectedMenus" class="font-medium text-gray-800 leading-6">
-                                        未選択
-                                    </div>
+                                    <div id="selectedMenus" class="font-medium text-gray-800 leading-6">未選択</div>
+                                </div>
+
+                                <div>
+                                    <div class="text-gray-400 mb-1">日付</div>
+                                    <div id="selectedDateText" class="font-medium text-gray-800">未選択</div>
+                                </div>
+
+                                <div>
+                                    <div class="text-gray-400 mb-1">時間</div>
+                                    <div id="selectedTimeText" class="font-medium text-gray-800">未選択</div>
                                 </div>
 
                                 <div>
                                     <div class="text-gray-400 mb-1">担当</div>
-                                    <div id="selectedStaff" class="font-medium text-gray-800">
-                                        未選択
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="text-gray-400 mb-1">日時</div>
-                                    <div id="selectedDatetimeText" class="font-medium text-gray-800">
-                                        未選択
-                                    </div>
+                                    <div id="selectedStaff" class="font-medium text-gray-800">指名しない</div>
                                 </div>
 
                                 <div>
                                     <div class="text-gray-400 mb-1">施術時間</div>
-                                    <div id="selectedDuration" class="font-medium text-gray-800">
-                                        0分
-                                    </div>
+                                    <div id="selectedDuration" class="font-medium text-gray-800">0分</div>
                                 </div>
 
                                 <div class="pt-3 border-t">
@@ -625,7 +623,8 @@
         pointer-events: none;
     }
 
-    .menu-card:hover {
+    .menu-card:hover,
+    .staff-card:hover {
         transform: translateY(-1px);
     }
 
@@ -672,8 +671,8 @@
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById('reserveForm');
-    const oldStartAt = @json(old('start_at'));
-    const oldTime = oldStartAt ? String(oldStartAt).split(' ')[1]?.slice(0, 5) : '';
+    const oldStartAt = @json($oldStartAt);
+    const oldTime = @json($oldTime);
 
     bindMenuEvents();
     bindStaffEvents();
@@ -682,7 +681,7 @@ document.addEventListener("DOMContentLoaded", function () {
         locale: "ja",
         minDate: "today",
         dateFormat: "Y-m-d",
-        defaultDate: oldStartAt ? String(oldStartAt).split(' ')[0] : null,
+        defaultDate: @json($oldDate ?: null),
         onChange: async function () {
             document.getElementById('start_at').value = '';
             updateSummary();
@@ -697,8 +696,9 @@ document.addEventListener("DOMContentLoaded", function () {
         updateStepStates(true);
 
         const menus = document.querySelectorAll('.menu-check:checked');
-        const staff = document.querySelector('[name=staff_id]:checked');
+        const date = document.getElementById('date').value;
         const start = document.getElementById("start_at").value;
+        const staff = document.querySelector('[name=staff_id]:checked');
 
         if (menus.length === 0) {
             e.preventDefault();
@@ -707,17 +707,24 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
-        if (!staff) {
+        if (!date) {
             e.preventDefault();
-            showFieldError('staffErrorBox', '担当者を選択してください。');
-            scrollToStep('stepStaffTitle');
+            showFieldError('dateErrorBox', '日付を選択してください。');
+            scrollToStep('stepDateTitle');
             return;
         }
 
         if (!start) {
             e.preventDefault();
-            showFieldError('datetimeErrorBox', '日時を選択してください。');
-            scrollToStep('stepDatetimeTitle');
+            showFieldError('datetimeErrorBox', '時間を選択してください。');
+            scrollToStep('stepTimeTitle');
+            return;
+        }
+
+        if (!staff) {
+            e.preventDefault();
+            showFieldError('staffErrorBox', '担当者を選択してください。');
+            scrollToStep('stepStaffTitle');
             return;
         }
     });
@@ -755,7 +762,7 @@ function bindMenuEvents() {
     });
 
     document.querySelectorAll('.menu-card').forEach(card => {
-        card.addEventListener('click', async function (e) {
+        card.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
 
@@ -771,11 +778,17 @@ function bindMenuEvents() {
 function bindStaffEvents() {
     document.querySelectorAll('[name=staff_id]').forEach(el => {
         el.addEventListener('change', function () {
-            document.getElementById('start_at').value = '';
+            const date = document.getElementById('date').value;
+            const selectedTime = document.getElementById('start_at').value;
+
             updatePrice();
             updateSummary();
             updateStepStates();
-            loadSlots();
+
+            if (date && selectedTime) {
+                const time = selectedTime.split(' ')[1];
+                loadSlots(time);
+            }
         });
     });
 
@@ -796,17 +809,24 @@ function bindStaffEvents() {
 async function reloadAvailableStaff() {
     const date = document.getElementById('date').value;
     const menuEls = Array.from(document.querySelectorAll('.menu-check:checked'));
-
+    const selectedTime = document.getElementById('start_at').value;
     const previouslySelected = document.querySelector('[name=staff_id]:checked')?.value ?? '';
 
     if (!date || menuEls.length === 0) {
-        renderStaffList([], previouslySelected);
+        renderStaffList([], previouslySelected, false);
         return;
     }
 
     const params = new URLSearchParams();
     params.append('date', date);
     menuEls.forEach(m => params.append('menu_ids[]', m.value));
+
+    if (selectedTime) {
+        const time = selectedTime.split(' ')[1];
+        if (time) {
+            params.append('time', time);
+        }
+    }
 
     try {
         const response = await fetch(`/r/{{ $company->company_code }}/available-staff?${params.toString()}`, {
@@ -817,16 +837,20 @@ async function reloadAvailableStaff() {
 
         const data = await response.json();
         const staff = Array.isArray(data.staff) ? data.staff : [];
-
-        renderStaffList(staff, previouslySelected);
+        renderStaffList(staff, previouslySelected, true);
     } catch (e) {
-        renderStaffList([], previouslySelected);
+        renderStaffList([], previouslySelected, true);
     }
 }
 
-function renderStaffList(staffItems, selectedValue = '') {
+function renderStaffList(staffItems, selectedValue = '', hasContext = false) {
     const staffList = document.getElementById('staffList');
     if (!staffList) return;
+
+    const selectedTime = document.getElementById('start_at').value;
+    const availabilityBadge = selectedTime
+        ? '<span class="text-[10px] sm:text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">この時間で予約可能</span>'
+        : '<span class="text-[10px] sm:text-xs px-2 py-1 rounded-full bg-sky-50 text-sky-700 font-semibold border border-sky-100">この日に勤務中</span>';
 
     let html = `
         <label class="block cursor-pointer">
@@ -834,7 +858,7 @@ function renderStaffList(staffItems, selectedValue = '') {
                    name="staff_id"
                    value=""
                    data-fee="0"
-                   data-name="指名なし"
+                   data-name="指名しない"
                    class="sr-only staff-radio"
                    ${selectedValue === '' ? 'checked' : ''}>
 
@@ -844,7 +868,9 @@ function renderStaffList(staffItems, selectedValue = '') {
                         人
                     </div>
                     <div class="flex-1">
-                        <div class="font-semibold text-gray-900">指名なし</div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <div class="font-semibold text-gray-900">指名しない（おすすめ）</div>
+                        </div>
                         <div class="text-sm text-gray-500 mt-1">空いている担当者をご案内します</div>
                     </div>
                 </div>
@@ -852,10 +878,10 @@ function renderStaffList(staffItems, selectedValue = '') {
         </label>
     `;
 
-    if (staffItems.length === 0) {
+    if (hasContext && staffItems.length === 0) {
         html += `
             <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                この日程・メニューで勤務可能な担当者がいません。
+                この条件で候補の担当者が見つかりません。指名しない場合は時間を優先してご予約ください。
             </div>
         `;
     } else {
@@ -887,6 +913,8 @@ function renderStaffList(staffItems, selectedValue = '') {
                                         +${Number(staff.nomination_fee).toLocaleString()}円
                                     </span>
                                 ` : ''}
+
+                                ${availabilityBadge}
                             </div>
 
                             ${staff.comment ? `
@@ -945,36 +973,41 @@ function updateSummary() {
     document.getElementById('selectedMenus').innerText =
         menuNames.length ? menuNames.join(' / ') : '未選択';
 
+    document.getElementById('selectedDateText').innerText =
+        date ? date : '未選択';
+
+    document.getElementById('selectedTimeText').innerText =
+        start ? start.split(' ')[1] : '未選択';
+
     document.getElementById('selectedStaff').innerText =
-        staffEl ? (staffEl.dataset.name || '指名なし') : '未選択';
+        staffEl ? (staffEl.dataset.name || '指名しない') : '指名しない';
 
     document.getElementById('selectedDuration').innerText = totalDuration + '分';
     document.getElementById('bottomMenuCount').innerText = menuEls.length;
 
     if (start) {
-        document.getElementById('selectedDatetimeText').innerText = start;
         document.getElementById('bottomDatetime').innerText = start;
     } else if (date) {
-        document.getElementById('selectedDatetimeText').innerText = date + '（時間未選択）';
         document.getElementById('bottomDatetime').innerText = date + '（時間未選択）';
     } else {
-        document.getElementById('selectedDatetimeText').innerText = '未選択';
         document.getElementById('bottomDatetime').innerText = '日時未選択';
     }
 }
 
 function updateStepStates(forceHighlight = false) {
     const menus = document.querySelectorAll('.menu-check:checked');
-    const staff = document.querySelector('[name=staff_id]:checked');
-    const start = document.getElementById("start_at").value;
+    const date = document.getElementById('date').value;
+    const start = document.getElementById('start_at').value;
 
     const menuTitle = document.getElementById('stepMenuTitle');
+    const dateTitle = document.getElementById('stepDateTitle');
+    const timeTitle = document.getElementById('stepTimeTitle');
     const staffTitle = document.getElementById('stepStaffTitle');
-    const datetimeTitle = document.getElementById('stepDatetimeTitle');
 
     setStepState(menuTitle, menus.length > 0, forceHighlight);
-    setStepState(staffTitle, !!staff, forceHighlight);
-    setStepState(datetimeTitle, !!start, forceHighlight);
+    setStepState(dateTitle, !!date, forceHighlight);
+    setStepState(timeTitle, !!start, forceHighlight);
+    setStepState(staffTitle, true, forceHighlight);
 }
 
 function setStepState(el, isOk, forceHighlight) {
@@ -997,37 +1030,38 @@ function loadSlots(preselectTime = '') {
     const slotsBox = document.getElementById('slots');
     const staffEl = document.querySelector('[name=staff_id]:checked');
 
-    document.getElementById('start_at').value = '';
-    updateSummary();
-    updateStepStates();
+    const currentSelected = document.getElementById('start_at').value;
+    const currentSelectedTime = currentSelected ? currentSelected.split(' ')[1] : '';
 
     if (!date) {
+        document.getElementById('start_at').value = '';
         slotsBox.innerHTML = '';
         guide.innerText = '日付を選択すると空き時間が表示されます';
+        updateSummary();
+        updateStepStates();
         return;
     }
 
     const menuEls = document.querySelectorAll('.menu-check:checked');
     if (menuEls.length === 0) {
+        document.getElementById('start_at').value = '';
         slotsBox.innerHTML = '';
         guide.innerText = 'メニューを選択すると空き時間が表示されます';
-        return;
-    }
-
-    if (!staffEl) {
-        slotsBox.innerHTML = '';
-        guide.innerText = '担当者を選択すると空き時間が表示されます';
+        updateSummary();
+        updateStepStates();
         return;
     }
 
     const menuIds = [];
     menuEls.forEach(m => menuIds.push(m.value));
 
-    const staff = staffEl.value;
+    const staff = staffEl ? staffEl.value : '';
 
     const params = new URLSearchParams();
     params.append('date', date);
-    params.append('staff_id', staff);
+    if (staff !== '') {
+        params.append('staff_id', staff);
+    }
     menuIds.forEach(id => params.append('menu_ids[]', id));
 
     guide.innerText = '空き時間を読み込み中です...';
@@ -1036,89 +1070,135 @@ function loadSlots(preselectTime = '') {
     fetch(`/r/{{ $company->company_code }}/slots?${params.toString()}`)
         .then(r => r.json())
         .then(data => {
-            let html = '';
+            const wantedTime = preselectTime || currentSelectedTime;
 
             if (!data.length) {
+                document.getElementById('start_at').value = '';
                 guide.innerText = '選択条件に合う空き時間がありません';
                 slotsBox.innerHTML = '';
+                updateSummary();
+                updateStepStates();
                 return;
             }
 
             guide.innerText = 'ご希望の時間を選択してください';
 
+            const groups = {
+                morning: [],
+                afternoon: [],
+                evening: [],
+            };
+
             data.forEach(slot => {
-                const remaining = Number(slot.remaining || 0);
-                const total = Number(slot.total || 0);
+                const hour = Number(String(slot.time).split(':')[0]);
 
-                let statusText = '';
-                let statusClass = '';
-                let disabled = false;
-                let labelText = '';
-
-                if (remaining >= 3) {
-                    statusText = '◎';
-                    statusClass = 'text-emerald-600';
-                    labelText = `残り ${remaining}/${total}`;
-                } else if (remaining === 2) {
-                    statusText = '○';
-                    statusClass = 'text-green-600';
-                    labelText = `残り ${remaining}/${total}`;
-                } else if (remaining === 1) {
-                    statusText = '△';
-                    statusClass = 'text-amber-500';
-                    labelText = `残り ${remaining}/${total}`;
+                if (hour < 12) {
+                    groups.morning.push(slot);
+                } else if (hour < 17) {
+                    groups.afternoon.push(slot);
                 } else {
-                    statusText = '×';
-                    statusClass = 'text-gray-400';
-                    labelText = `${total - remaining}/${total}`;
-                    disabled = true;
-                }
-
-                if (!disabled) {
-                    html += `
-                        <button type="button"
-                                data-time="${slot.time}"
-                                class="slot-btn border border-gray-200 rounded-2xl px-3 py-3 text-center bg-white hover:bg-gray-50 transition">
-                            <div class="font-semibold text-gray-800">${slot.time}</div>
-                            <div class="text-xs mt-1 ${statusClass} font-bold">${statusText}</div>
-                            <div class="text-[11px] mt-1 text-gray-500">${labelText}</div>
-                        </button>
-                    `;
-                } else {
-                    html += `
-                        <div class="border border-gray-100 rounded-2xl px-3 py-3 text-center bg-gray-50">
-                            <div class="font-semibold text-gray-400">${slot.time}</div>
-                            <div class="text-xs mt-1 ${statusClass} font-bold">${statusText}</div>
-                            <div class="text-[11px] mt-1 text-gray-400">${labelText}</div>
-                        </div>
-                    `;
+                    groups.evening.push(slot);
                 }
             });
 
+            let selectedStillExists = false;
+            let html = '';
+
+            const renderSection = (title, slots) => {
+                if (!slots.length) return '';
+
+                let sectionHtml = `
+                    <div class="col-span-full mt-2 first:mt-0">
+                        <div class="mb-3 flex items-center gap-3">
+                            <div class="h-px flex-1 bg-gray-200"></div>
+                            <div class="text-sm font-semibold text-gray-700 shrink-0">${title}</div>
+                            <div class="h-px flex-1 bg-gray-200"></div>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                `;
+
+                slots.forEach(slot => {
+                    const remaining = Number(slot.remaining || 0);
+                    const disabled = remaining <= 0;
+                    const isSelected = wantedTime && slot.time === wantedTime;
+
+                    if (isSelected) {
+                        selectedStillExists = true;
+                    }
+
+                    if (!disabled) {
+                        sectionHtml += `
+                            <button type="button"
+                                    data-time="${slot.time}"
+                                    class="slot-btn border border-gray-200 rounded-2xl px-3 py-3 text-center bg-white hover:bg-gray-50 transition ${isSelected ? 'slot-active' : ''}">
+                                <div class="font-semibold ${isSelected ? 'text-white' : 'text-gray-800'}">${slot.time}</div>
+                                <div class="text-xs mt-1 ${isSelected ? 'text-white' : 'text-green-600'} font-bold">○</div>
+                                <div class="text-[11px] mt-1 ${isSelected ? 'text-white/90' : 'text-gray-500'}">予約可能</div>
+                            </button>
+                        `;
+                    } else {
+                        sectionHtml += `
+                            <div class="border border-gray-100 rounded-2xl px-3 py-3 text-center bg-gray-50">
+                                <div class="font-semibold text-gray-400">${slot.time}</div>
+                                <div class="text-xs mt-1 text-gray-400 font-bold">×</div>
+                                <div class="text-[11px] mt-1 text-gray-400">満席</div>
+                            </div>
+                        `;
+                    }
+                });
+
+                sectionHtml += `
+                        </div>
+                    </div>
+                `;
+
+                return sectionHtml;
+            };
+
+            html += renderSection('午前', groups.morning);
+            html += renderSection('午後', groups.afternoon);
+            html += renderSection('夕方', groups.evening);
+
             slotsBox.innerHTML = html;
 
+            if (selectedStillExists && wantedTime) {
+                document.getElementById('start_at').value = date + ' ' + wantedTime;
+            } else {
+                document.getElementById('start_at').value = '';
+            }
+
             document.querySelectorAll('.slot-btn').forEach(btn => {
-                btn.addEventListener('click', function () {
+                btn.addEventListener('click', async function () {
                     const datetime = date + ' ' + this.dataset.time;
                     document.getElementById('start_at').value = datetime;
 
                     document.querySelectorAll('.slot-btn').forEach(el => {
                         el.classList.remove('slot-active');
+                        el.querySelectorAll('div').forEach(d => {
+                            d.classList.remove('text-white', 'text-white/90');
+                        });
                     });
 
                     this.classList.add('slot-active');
+                    this.querySelectorAll('div')[0]?.classList.add('text-white');
+                    this.querySelectorAll('div')[1]?.classList.add('text-white');
+                    this.querySelectorAll('div')[2]?.classList.add('text-white/90');
+
                     clearErrors();
+                    await reloadAvailableStaff();
                     updateSummary();
                     updateStepStates();
                 });
-
-                if (preselectTime && btn.dataset.time === preselectTime) {
-                    btn.click();
-                }
             });
+
+            updateSummary();
+            updateStepStates();
         })
         .catch(() => {
+            document.getElementById('start_at').value = '';
             guide.innerText = '空き時間の取得に失敗しました';
+            updateSummary();
+            updateStepStates();
         });
 }
 
@@ -1131,7 +1211,7 @@ function showFieldError(id, message) {
 }
 
 function clearErrors() {
-    ['menuErrorBox', 'staffErrorBox', 'datetimeErrorBox'].forEach(id => {
+    ['menuErrorBox', 'dateErrorBox', 'datetimeErrorBox', 'staffErrorBox'].forEach(id => {
         const box = document.getElementById(id);
         if (!box) return;
 

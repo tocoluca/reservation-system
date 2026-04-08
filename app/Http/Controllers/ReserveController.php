@@ -159,18 +159,15 @@ class ReserveController extends Controller
     private function getPublicSelectableStaff($company, Collection $menus, Carbon $startAt)
     {
         $endAt = $this->calculateRequestedEndAt($company, $menus, $startAt);
-
         $menuIds = $menus->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
 
         return Staff::query()
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
             ->when(!empty($menuIds), function ($query) use ($menuIds) {
-                foreach ($menuIds as $menuId) {
-                    $query->whereHas('menus', function ($q) use ($menuId) {
-                        $q->where('menus.id', $menuId);
-                    });
-                }
+                $query->whereHas('menus', function ($q) use ($menuIds) {
+                    $q->whereIn('menus.id', $menuIds);
+                });
             })
             ->orderBy('priority_order')
             ->orderBy('id')
@@ -197,11 +194,9 @@ class ReserveController extends Controller
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
             ->when(!empty($menuIds), function ($query) use ($menuIds) {
-                foreach ($menuIds as $menuId) {
-                    $query->whereHas('menus', function ($q) use ($menuId) {
-                        $q->where('menus.id', $menuId);
-                    });
-                }
+                $query->whereHas('menus', function ($q) use ($menuIds) {
+                    $q->whereIn('menus.id', $menuIds);
+                });
             })
             ->orderBy('priority_order')
             ->orderBy('id')
@@ -823,30 +818,31 @@ class ReserveController extends Controller
     |--------------------------------------------------------------------------
     */
 
-    public function complete($company_code, Request $request)
-    {
-        $company = Company::where('company_code', $company_code)->firstOrFail();
+	public function complete($company_code, Request $request)
+	{
+	    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-        $reservation = Reservation::where('id', $request->reservation_id)
-            ->where('company_id', $company->id)
-            ->with(['staff', 'details.menu', 'details.staff'])
-            ->firstOrFail();
+	    $reservation = Reservation::where('id', $request->reservation_id)
+	        ->where('company_id', $company->id)
+	        ->with(['staff', 'details.menu', 'details.staff'])
+	        ->firstOrFail();
 
-        $menus = ReservationMenu::where('reservation_id', $reservation->id)
-            ->with('menu')
-            ->get();
+	    $menus = ReservationMenu::where('reservation_id', $reservation->id)
+	        ->with('menu')
+	        ->get();
 
-        $staff = $reservation->staff;
+	    $staff = $reservation->staff;
 
-        return view('reserve.complete', [
-            'company'     => $company,
-            'reservation' => $reservation,
-            'menus'       => $menus,
-            'staff'       => $staff,
-            'details'     => $reservation->details,
-            'step'        => 3,
-        ]);
-    }
+	    return view('reserve.complete', [
+	        'company'     => $company,
+	        'reservation' => $reservation,
+	        'menus'       => $menus,
+	        'staff'       => $staff,
+	        'details'     => $reservation->details,
+	        'start_at'    => $reservation->start_at,
+	        'step'        => 3,
+	    ]);
+	}
 
     /*
     |--------------------------------------------------------------------------

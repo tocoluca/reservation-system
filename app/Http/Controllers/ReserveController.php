@@ -514,36 +514,73 @@ class ReserveController extends Controller
     {
         $company = Company::where('company_code', $company_code)->firstOrFail();
 
+        $sessionKey = 'reserve_confirm.' . $company->id;
+
+        if ($request->isMethod('post')) {
+            session([
+                $sessionKey => [
+                    'start_at' => $request->input('start_at'),
+                    'menu_ids' => collect($request->input('menu_ids', []))
+                        ->map(fn ($id) => (int) $id)
+                        ->filter()
+                        ->values()
+                        ->all(),
+                    'staff_id' => $request->filled('staff_id')
+                        ? (int) $request->input('staff_id')
+                        : null,
+                ],
+            ]);
+        }
+
+        $confirmData = session($sessionKey, []);
+
+        $menuIds = collect($request->input('menu_ids', $confirmData['menu_ids'] ?? []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        $startAtValue = $request->input('start_at', $confirmData['start_at'] ?? null);
+
+        $staffId = $request->filled('staff_id')
+            ? (int) $request->input('staff_id')
+            : ($confirmData['staff_id'] ?? null);
+
+        if ($menuIds->isEmpty() || empty($startAtValue)) {
+            return redirect('/r/' . $company_code)->withErrors([
+                'menu_ids' => 'メニューと日時を選択してください。',
+            ])->withInput();
+        }
+
         $menus = Menu::where('company_id', $company->id)
-            ->whereIn('id', $request->menu_ids ?? [])
+            ->whereIn('id', $menuIds->all())
             ->orderBy('sort_order')
             ->get()
-            ->sortBy(fn ($menu) => array_search($menu->id, $request->menu_ids ?? []))
+            ->sortBy(fn ($menu) => array_search($menu->id, $menuIds->all()))
             ->values();
 
         if ($menus->isEmpty()) {
-            return back()->withErrors([
+            return redirect('/r/' . $company_code)->withErrors([
                 'menu_ids' => 'メニューを選択してください。',
             ])->withInput();
         }
 
-        $startAt = Carbon::parse($request->start_at);
+        $startAt = Carbon::parse($startAtValue);
         $endAt = $this->calculateRequestedEndAt($company, $menus, $startAt);
 
         $staff = null;
-        if ($request->filled('staff_id')) {
+        if (!empty($staffId)) {
             $staff = Staff::where('company_id', $company->id)
-                ->where('id', $request->staff_id)
+                ->where('id', $staffId)
                 ->first();
 
             if (!$staff) {
-                return back()->withErrors([
+                return redirect('/r/' . $company_code)->withErrors([
                     'staff_id' => '選択した担当者が見つかりません。',
                 ])->withInput();
             }
 
             if (!$this->isStaffSelectableForPublic($company, (int) $staff->id, $startAt, $endAt)) {
-                return back()->withErrors([
+                return redirect('/r/' . $company_code)->withErrors([
                     'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
                 ])->withInput();
             }
@@ -556,7 +593,7 @@ class ReserveController extends Controller
             'company'      => $company,
             'menus'        => $menus,
             'staff'        => $staff,
-            'start_at'     => $request->start_at,
+            'start_at'     => $startAtValue,
             'lineProfile'  => $lineProfile,
             'lineCustomer' => $lineCustomer,
             'step'         => 2,
@@ -800,6 +837,8 @@ class ReserveController extends Controller
                 }
             }
 
+            session()->forget('reserve_confirm.' . $company->id);
+
             return redirect("/r/" . $company_code . "/complete?reservation_id=" . $reservation->id);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -818,31 +857,31 @@ class ReserveController extends Controller
     |--------------------------------------------------------------------------
     */
 
-	public function complete($company_code, Request $request)
-	{
-	    $company = Company::where('company_code', $company_code)->firstOrFail();
+    public function complete($company_code, Request $request)
+    {
+        $company = Company::where('company_code', $company_code)->firstOrFail();
 
-	    $reservation = Reservation::where('id', $request->reservation_id)
-	        ->where('company_id', $company->id)
-	        ->with(['staff', 'details.menu', 'details.staff'])
-	        ->firstOrFail();
+        $reservation = Reservation::where('id', $request->reservation_id)
+            ->where('company_id', $company->id)
+            ->with(['staff', 'details.menu', 'details.staff'])
+            ->firstOrFail();
 
-	    $menus = ReservationMenu::where('reservation_id', $reservation->id)
-	        ->with('menu')
-	        ->get();
+        $menus = ReservationMenu::where('reservation_id', $reservation->id)
+            ->with('menu')
+            ->get();
 
-	    $staff = $reservation->staff;
+        $staff = $reservation->staff;
 
-	    return view('reserve.complete', [
-	        'company'     => $company,
-	        'reservation' => $reservation,
-	        'menus'       => $menus,
-	        'staff'       => $staff,
-	        'details'     => $reservation->details,
-	        'start_at'    => $reservation->start_at,
-	        'step'        => 3,
-	    ]);
-	}
+        return view('reserve.complete', [
+            'company'     => $company,
+            'reservation' => $reservation,
+            'menus'       => $menus,
+            'staff'       => $staff,
+            'details'     => $reservation->details,
+            'start_at'    => $reservation->start_at,
+            'step'        => 3,
+        ]);
+    }
 
     /*
     |--------------------------------------------------------------------------

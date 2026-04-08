@@ -51,6 +51,7 @@
 
         @if($errors->any())
             <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700 text-sm">
+                <div class="font-bold mb-2">入力内容をご確認ください</div>
                 <ul class="list-disc pl-5 space-y-1">
                     @foreach($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -169,7 +170,6 @@
                 {{-- 左カラム --}}
                 <div class="space-y-6">
 
-                    {{-- STEPガイド --}}
                     <div class="relative z-10 bg-white rounded-3xl shadow-sm border border-gray-100 p-4 sm:p-5">
                         <div class="grid grid-cols-4 gap-2 text-center text-xs sm:text-sm">
                             <div class="rounded-2xl bg-gray-50 py-3 font-semibold text-gray-700">1 メニュー</div>
@@ -511,7 +511,7 @@
                         <button
                             type="submit"
                             id="submitButtonDesktop"
-                            class="hidden lg:block w-full text-white py-4 rounded-2xl text-base sm:text-lg font-bold shadow-lg"
+                            class="hidden lg:block w-full text-white py-4 rounded-2xl text-base sm:text-lg font-bold shadow-lg hover:opacity-95 transition"
                             style="background: {{ $theme }}">
                             予約確認へ進む
                         </button>
@@ -588,7 +588,7 @@
                 type="button"
                 id="bottomSubmitButton"
                 onclick="submitReserveForm()"
-                class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-2xl text-sm sm:text-base font-bold shadow-lg"
+                class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-2xl text-sm sm:text-base font-bold shadow-lg hover:opacity-95 transition"
                 style="background: {{ $theme }}">
                 確認へ進む
             </button>
@@ -686,6 +686,7 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('start_at').value = '';
             updateSummary();
             updateStepStates();
+            clearErrors();
             await reloadAvailableStaff();
             loadSlots();
         }
@@ -729,6 +730,26 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    (function showInitialErrors() {
+        const hasMenuError = @json($errors->has('menu_ids'));
+        const hasStartAtError = @json($errors->has('start_at'));
+        const hasStaffError = @json($errors->has('staff_id'));
+
+        if (hasMenuError) {
+            showFieldError('menuErrorBox', 'メニューを選択してください。');
+        }
+
+        if (hasStartAtError && !document.getElementById('date').value) {
+            showFieldError('dateErrorBox', '日付を選択してください。');
+        } else if (hasStartAtError) {
+            showFieldError('datetimeErrorBox', '時間を選択してください。');
+        }
+
+        if (hasStaffError) {
+            showFieldError('staffErrorBox', '担当者を選択してください。');
+        }
+    })();
+
     (async function initializePage() {
         updatePrice();
         updateSummary();
@@ -756,6 +777,7 @@ function bindMenuEvents() {
             updatePrice();
             updateSummary();
             updateStepStates();
+            clearErrors();
             await reloadAvailableStaff();
             loadSlots();
         });
@@ -784,6 +806,7 @@ function bindStaffEvents() {
             updatePrice();
             updateSummary();
             updateStepStates();
+            clearErrors();
 
             if (date && selectedTime) {
                 const time = selectedTime.split(' ')[1];

@@ -26,7 +26,6 @@
 <div class="min-h-screen bg-[#f7f3ee] py-8 px-4">
     <div class="max-w-5xl mx-auto">
 
-        {{-- ヘッダー --}}
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
             <div class="bg-gradient-to-br from-[#c9a27e] to-[#b7875c] px-6 sm:px-8 py-8 text-white text-center">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">RESERVATION CONFIRM</div>
@@ -69,7 +68,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ url('/r/' . $company->company_code . '/store') }}">
+                <form id="reserve-confirm-form" method="POST" action="{{ url('/r/' . $company->company_code . '/store') }}">
                     @csrf
 
                     <input type="hidden" name="start_at" value="{{ $start_at }}">
@@ -83,10 +82,8 @@
 
                     <div class="grid lg:grid-cols-[1.35fr_0.85fr] gap-6">
 
-                        {{-- 左カラム --}}
                         <div class="space-y-6">
 
-                            {{-- 予約内容 --}}
                             <section class="rounded-2xl border border-[#eadfd3] bg-[#fcf8f4] p-5 sm:p-6">
                                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                                     <div>
@@ -164,7 +161,6 @@
                                 </div>
                             </section>
 
-                            {{-- 選択メニュー --}}
                             <section class="rounded-2xl border border-[#f0e2d4] bg-[#fffaf5] p-5 sm:p-6">
                                 <div class="flex items-center justify-between mb-4">
                                     <div class="text-[14px] font-bold text-[#6b533f]">選択メニュー</div>
@@ -231,7 +227,6 @@
                                 </div>
                             </section>
 
-                            {{-- 担当について --}}
                             <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
                                 <div class="text-[14px] font-bold mb-2 text-amber-900">担当について</div>
                                 <p class="text-[14px] leading-8 text-amber-900">
@@ -246,7 +241,6 @@
                                 @endif
                             </section>
 
-                            {{-- お客様情報 --}}
                             <section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
                                 <div class="text-[14px] font-bold mb-4 text-[#6b533f]">お客様情報</div>
 
@@ -259,9 +253,12 @@
                                             type="text"
                                             name="customer_name"
                                             value="{{ old('customer_name', $lineCustomer->name ?? '') }}"
-                                            class="w-full rounded-xl border border-[#d9cabb] px-4 py-3 text-[14px] focus:outline-none focus:ring-2"
-                                            style="--tw-ring-color: {{ $theme }};"
+                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
                                         >
+                                        @error('customer_name')
+                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
+                                        @enderror
                                     </div>
 
                                     <div>
@@ -272,10 +269,13 @@
                                             type="text"
                                             name="customer_phone"
                                             value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
-                                            class="w-full rounded-xl border border-[#d9cabb] px-4 py-3 text-[14px] focus:outline-none focus:ring-2"
-                                            style="--tw-ring-color: {{ $theme }};"
+                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
                                             placeholder="090-1234-5678"
                                         >
+                                        @error('customer_phone')
+                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
+                                        @enderror
                                     </div>
 
                                     <div>
@@ -294,10 +294,13 @@
                                             type="email"
                                             name="customer_email"
                                             value="{{ old('customer_email', $lineEmail ?? '') }}"
-                                            class="w-full rounded-xl border border-[#d9cabb] px-4 py-3 text-[14px] focus:outline-none focus:ring-2"
-                                            style="--tw-ring-color: {{ $theme }};"
+                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"
                                             placeholder="example@example.com"
                                         >
+                                        @error('customer_email')
+                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
+                                        @enderror
                                     </div>
 
                                     @if($lineName)
@@ -309,7 +312,6 @@
                             </section>
                         </div>
 
-                        {{-- 右カラム --}}
                         <div class="space-y-6">
                             <div class="lg:sticky lg:top-6 space-y-6">
 
@@ -354,7 +356,7 @@
                                 <div class="hidden lg:flex flex-col gap-3">
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 text-white font-bold text-sm shadow-sm"
+                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 text-white font-bold text-sm shadow-sm hover:opacity-95 transition"
                                         style="background:#b7875c;">
                                         この内容で予約する
                                     </button>
@@ -379,7 +381,6 @@
     </div>
 </div>
 
-{{-- 下部固定バー --}}
 <div class="fixed bottom-0 inset-x-0 z-40 pointer-events-none border-t border-[#e5d9cd] bg-white/95 backdrop-blur">
     <div class="max-w-5xl mx-auto px-4 py-3 pointer-events-auto">
         <div class="flex items-center gap-3">
@@ -397,8 +398,8 @@
 
             <button
                 type="button"
-                onclick="document.querySelector('form').requestSubmit();"
-                class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg"
+                onclick="document.getElementById('reserve-confirm-form').requestSubmit();"
+                class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg hover:opacity-95 transition"
                 style="background:#b7875c;">
                 予約を確定する
             </button>

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Staff extends Authenticatable
 {
@@ -19,26 +20,113 @@ class Staff extends Authenticatable
         'role',
         'is_reservable',
         'priority_order',
-	'nomination_fee',
+        'nomination_fee',
         'image_path',
         'comment',
-	'force_password_change'
+        'retired_at',
+        'force_password_change',
     ];
 
     protected $hidden = [
         'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'is_reservable' => 'boolean',
+        'force_password_change' => 'boolean',
+        'priority_order' => 'integer',
+        'nomination_fee' => 'integer',
+        'retired_at' => 'date',
     ];
 
     public function company()
     {
         return $this->belongsTo(Company::class);
     }
-	public function stores()
-	{
-	    return $this->belongsToMany(Store::class);
-	}
-	public function menus()
-	{
-	    return $this->belongsToMany(Menu::class,'menu_staff');
-	}
+
+    public function stores()
+    {
+        return $this->belongsToMany(Store::class);
+    }
+
+    public function menus()
+    {
+        return $this->belongsToMany(Menu::class, 'menu_staff');
+    }
+
+    public function canDashboard(string $permissionKey): bool
+    {
+        return CompanyDashboardPermission::can(
+            (int) $this->company_id,
+            (string) $this->role,
+            $permissionKey
+        );
+    }
+
+    public function isMaster(): bool
+    {
+        return $this->role === 'master';
+    }
+
+    public function isStoreOperator(): bool
+    {
+        return $this->role === 'store_operator';
+    }
+
+    public function isAreaLeader(): bool
+    {
+        return $this->role === 'area_leader';
+    }
+
+    public function isLeader(): bool
+    {
+        return $this->role === 'leader';
+    }
+
+    public function isStaffRole(): bool
+    {
+        return $this->role === 'staff';
+    }
+
+    public function isRetired(?string $dateTime = null): bool
+    {
+        if (empty($this->retired_at)) {
+            return false;
+        }
+
+        $target = $dateTime
+            ? Carbon::parse($dateTime)
+            : now();
+
+        return $target->gte(Carbon::parse($this->retired_at)->startOfDay());
+    }
+
+    public function isActiveForReservation(?string $dateTime = null): bool
+    {
+        return $this->is_reservable && !$this->isRetired($dateTime);
+    }
+
+    public function roleLabel(): string
+    {
+        return match ($this->role) {
+            'master' => 'マスター',
+            'store_operator' => '店舗運営',
+            'area_leader' => 'エリアリーダー',
+            'leader' => 'リーダー',
+            'staff' => '一般スタッフ',
+            default => (string) $this->role,
+        };
+    }
+
+    public static function roleOptions(): array
+    {
+        return [
+            'staff' => '一般スタッフ',
+            'leader' => 'リーダー',
+            'area_leader' => 'エリアリーダー',
+            'store_operator' => '店舗運営',
+            'master' => 'マスター',
+        ];
+    }
 }

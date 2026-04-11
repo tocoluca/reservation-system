@@ -3,29 +3,64 @@
 @section('content')
 
 @php
-$company = auth()->guard('company')->user()->company;
-$theme = $company->theme_color ?? '#3b82f6';
+    $company = auth()->guard('company')->user()->company;
+    $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
 @endphp
 
-<div class="max-w-6xl mx-auto">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-    <div class="flex justify-between mb-6 items-center">
-        <h1 class="text-xl font-bold">
-            基本シフト
-        </h1>
+    {{-- ヘッダー --}}
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
 
-        <a href="{{ route('company.dashboard') }}"
-           class="px-3 py-1 border rounded"
-           style="border-color:{{ $theme }};color:{{ $theme }}">
-            ← ダッシュボード
-        </a>
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div>
+                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Default Shift</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">基本シフト</h1>
+                    <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
+                        曜日ごとの基本シフトを設定して、月ごとの勤務表作成の土台にできます。
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{{ route('company.dashboard') }}"
+                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-medium">
+                        ← ダッシュボード
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 
-    {{-- バリデーションエラー --}}
+    {{-- ガイド --}}
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-6 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">使い方</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    曜日ごとの基本シフトを決めておくと、勤務管理画面の自動生成が使いやすくなります。
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">月〜日を設定</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">休みも設定可能</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">保存して反映</span>
+            </div>
+        </div>
+    </div>
+
     @if($errors->any())
-        <div class="mb-4 px-4 py-3 rounded-lg border bg-red-50 text-red-700 border-red-200">
+        <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <div class="font-semibold mb-1">入力内容を確認してください。</div>
-            <ul class="list-disc pl-5 text-sm">
+            <ul class="list-disc pl-5 space-y-1">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
@@ -36,67 +71,73 @@ $theme = $company->theme_color ?? '#3b82f6';
     <form method="POST" action="{{ route('company.staff-default-shifts') }}">
         @csrf
 
-        <div class="bg-white shadow rounded-xl p-6 overflow-x-auto">
-
-            <table class="min-w-full border text-sm">
-                <thead style="background:{{ $theme }};color:white">
-                    <tr>
-                        <th class="p-3">スタッフ</th>
-
-                        @foreach(['月','火','水','木','金','土','日'] as $i => $d)
-                            <th class="p-3 text-center">{{ $d }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-
-                <tbody>
-                    @foreach($staffs as $staff)
-                        <tr>
-                            <td class="p-3 font-semibold">
-                                {{ $staff->name }}
-                            </td>
-
-                            @for($w = 1; $w <= 7; $w++)
-                                @php
-                                    $shift = $shifts
-                                        ->where('staff_id', $staff->id)
-                                        ->where('weekday', $w % 7)
-                                        ->first();
-                                @endphp
-
-                                <td class="p-2">
-                                    <select
-                                        name="shifts[{{ $staff->id }}][{{ $w % 7 }}]"
-                                        class="border rounded p-1 w-full"
-                                    >
-                                        <option value="">休</option>
-
-                                        @foreach($patterns as $p)
-                                            <option
-                                                value="{{ $p->id }}"
-                                                @if($shift && $shift->shift_pattern_id == $p->id) selected @endif
-                                            >
-                                                {{ $p->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </td>
-                            @endfor
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <div class="mt-6 text-right">
-                <button
-                    type="submit"
-                    class="px-6 py-2 text-white rounded"
-                    style="background:{{ $theme }}"
-                >
-                    保存
-                </button>
+        <div class="bg-white shadow-sm rounded-3xl border border-gray-100 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100"
+                 style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+                <h2 class="text-lg font-bold text-gray-900">スタッフ別 基本シフト設定</h2>
+                <p class="text-sm text-gray-500 mt-1">各スタッフの曜日ごとの標準シフトを設定します。</p>
             </div>
 
+            <div class="overflow-x-auto p-4 sm:p-6">
+                <table class="min-w-full text-sm border-separate border-spacing-0">
+                    <thead>
+                        <tr style="background:{{ $theme }};color:white">
+                            <th class="p-4 text-left rounded-tl-2xl">スタッフ</th>
+                            @foreach(['月','火','水','木','金','土','日'] as $i => $d)
+                                <th class="p-4 text-center {{ $loop->last ? 'rounded-tr-2xl' : '' }}">{{ $d }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach($staffs as $staff)
+                            <tr class="odd:bg-stone-50 even:bg-white">
+                                <td class="p-4 font-semibold text-stone-800 border-b border-stone-200">
+                                    {{ $staff->name }}
+                                </td>
+
+                                @for($w = 1; $w <= 7; $w++)
+                                    @php
+                                        $shift = $shifts
+                                            ->where('staff_id', $staff->id)
+                                            ->where('weekday', $w % 7)
+                                            ->first();
+                                    @endphp
+
+                                    <td class="p-3 border-b border-stone-200">
+                                        <select
+                                            name="shifts[{{ $staff->id }}][{{ $w % 7 }}]"
+                                            class="border border-stone-300 rounded-xl p-3 w-full bg-white focus:outline-none focus:ring-2"
+                                            style="--tw-ring-color: {{ $theme }}"
+                                        >
+                                            <option value="">休</option>
+
+                                            @foreach($patterns as $p)
+                                                <option
+                                                    value="{{ $p->id }}"
+                                                    @if($shift && $shift->shift_pattern_id == $p->id) selected @endif
+                                                >
+                                                    {{ $p->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                @endfor
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="px-6 pb-6 flex justify-end">
+                <button
+                    type="submit"
+                    class="px-8 py-3 text-white rounded-2xl shadow-lg hover:opacity-90 transition"
+                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);"
+                >
+                    保存する
+                </button>
+            </div>
         </div>
     </form>
 

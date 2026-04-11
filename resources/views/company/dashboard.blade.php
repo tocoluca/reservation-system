@@ -25,54 +25,65 @@
     $can = function ($key, $default = false) use ($dashboardPermissions) {
         return (bool) ($dashboardPermissions[$key] ?? $default);
     };
+
+    $setupPercent = $setupTotalCount > 0 ? (int) floor(($setupDoneCount / $setupTotalCount) * 100) : 0;
 @endphp
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-            <div class="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-xs font-medium text-gray-500 shadow-sm">
-                <span class="inline-block w-2 h-2 rounded-full" style="background: {{ $theme }}"></span>
-                店舗運営ダッシュボード
+    {{-- ヘッダー --}}
+    <div class="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-amber-50 via-white to-sky-50 shadow-sm mb-6">
+        <div class="absolute inset-x-0 top-0 h-1.5" style="background: {{ $theme }};"></div>
+
+        <div class="px-5 sm:px-8 py-6 sm:py-8">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+                <div class="min-w-0">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-white/90 border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ $theme }}"></span>
+                        STORE DASHBOARD
+                    </div>
+
+                    <h1 class="mt-4 text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                        ダッシュボード
+                    </h1>
+
+                    <p class="text-gray-500 mt-2 text-sm sm:text-base leading-7">
+                        {{ $staff->company->name }} ｜ {{ $staff->name }}（{{ $roleLabel ?? $staff->role }}）
+                    </p>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3">
+                    @if($can('card.reserve'))
+                        <a href="{{ route('company.reserve') }}"
+                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
+                           style="background: {{ $theme }}">
+                            予約管理を開く
+                        </a>
+                    @endif
+
+                    @if($can('card.business_calendar'))
+                        <a href="{{ route('company.calendar.index') }}"
+                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white border text-sm font-semibold shadow-sm hover:bg-gray-50 transition"
+                           style="border-color: {{ $theme }}22; color: {{ $theme }};">
+                            営業日管理
+                        </a>
+                    @endif
+                </div>
             </div>
-
-            <h1 class="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">
-                ダッシュボード
-            </h1>
-
-            <p class="text-gray-500 mt-2 text-sm sm:text-base">
-                {{ $staff->company->name }} ｜ {{ $staff->name }}（{{ $staff->role }}）
-            </p>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
-            @if($can('card.reserve'))
-                <a href="{{ route('company.reserve') }}"
-                   class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
-                   style="background: {{ $theme }}">
-                    予約管理
-                </a>
-            @endif
-
-            @if($can('card.business_calendar'))
-                <a href="{{ route('company.calendar.index') }}"
-                   class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl bg-white border border-gray-200 text-gray-700 font-semibold shadow-sm hover:bg-gray-50 transition">
-                    営業日管理
-                </a>
-            @endif
         </div>
     </div>
 
+    {{-- アラート群 --}}
     <div class="space-y-4 mb-8">
 
         @if($showSetupGuide)
-            <div class="rounded-3xl border border-amber-200 bg-amber-50 shadow-sm p-5 lg:p-6">
+            <div class="rounded-[2rem] border border-amber-200 bg-amber-50 shadow-sm p-5 lg:p-6">
                 <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
                     <div class="flex-1">
                         <div class="flex items-start gap-3">
-                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
+                            <div class="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0 shadow-sm"
                                  style="background: {{ $theme }}">
                                 !
                             </div>
@@ -87,11 +98,18 @@
                         </div>
 
                         <div class="mt-4">
-                            <p class="text-sm sm:text-base text-gray-700">
-                                必須設定
-                                <span class="font-bold text-xl">{{ $setupDoneCount }} / {{ $setupTotalCount }}</span>
-                                完了
-                            </p>
+                            <div class="flex items-end gap-3">
+                                <p class="text-sm sm:text-base text-gray-700">
+                                    必須設定
+                                </p>
+                                <span class="font-bold text-2xl text-gray-900">{{ $setupDoneCount }} / {{ $setupTotalCount }}</span>
+                                <span class="text-sm text-gray-500 mb-1">完了</span>
+                            </div>
+
+                            <div class="mt-3 w-full h-3 rounded-full bg-white/80 overflow-hidden border border-white/70">
+                                <div class="h-full rounded-full" style="width: {{ $setupPercent }}%; background: {{ $theme }};"></div>
+                            </div>
+                            <div class="mt-2 text-sm text-amber-900">進捗率 {{ $setupPercent }}%</div>
                         </div>
 
                         <div class="mt-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -114,7 +132,7 @@
 
                     <div class="shrink-0">
                         <a href="{{ url('/company/setup') }}"
-                           class="inline-flex items-center justify-center px-6 py-4 rounded-2xl text-white font-bold shadow-lg hover:opacity-90 transition"
+                           class="inline-flex items-center justify-center px-6 py-4 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
                            style="background: {{ $theme }}">
                             はじめての設定ガイドへ
                         </a>
@@ -126,7 +144,7 @@
         @if($hasAnySettingAlert)
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
                 @if($hasBusinessAlert)
-                    <div class="rounded-3xl border {{ ($businessWarning['has_alert'] ?? false) ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50' }} shadow-sm p-5">
+                    <div class="rounded-[2rem] border {{ ($businessWarning['has_alert'] ?? false) ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50' }} shadow-sm p-5">
                         <div class="flex items-start gap-3">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 {{ ($businessWarning['has_alert'] ?? false) ? 'bg-red-500' : 'bg-amber-500' }}">
                                 !
@@ -135,7 +153,7 @@
                                 <h3 class="text-base sm:text-lg font-bold {{ ($businessWarning['has_alert'] ?? false) ? 'text-red-900' : 'text-amber-900' }}">
                                     営業日{{ ($businessWarning['has_alert'] ?? false) ? 'の警告' : 'のワーニング' }}
                                 </h3>
-                                <p class="text-sm mt-1 {{ ($businessWarning['has_alert'] ?? false) ? 'text-red-800' : 'text-amber-800' }}">
+                                <p class="text-sm mt-1 leading-6 {{ ($businessWarning['has_alert'] ?? false) ? 'text-red-800' : 'text-amber-800' }}">
                                     {{ ($businessWarning['has_alert'] ?? false)
                                         ? '営業日設定した最終日が予約可能期間内です。顧客が予約を行えなくなるため、至急、営業日を設定してください。'
                                         : '営業日設定した最終日が予約可能期間内に近づいています。余裕のあるうちに営業日を設定してください。' }}
@@ -153,7 +171,7 @@
 
                                 <div class="mt-4">
                                     <a href="{{ route('company.calendar.index') }}"
-                                       class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
+                                       class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
                                        style="background: {{ $theme }}">
                                         営業日を設定する
                                     </a>
@@ -164,7 +182,7 @@
                 @endif
 
                 @if($hasShiftAlert)
-                    <div class="rounded-3xl border {{ ($shiftWarning['has_alert'] ?? false) ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50' }} shadow-sm p-5">
+                    <div class="rounded-[2rem] border {{ ($shiftWarning['has_alert'] ?? false) ? 'border-red-200 bg-red-50' : 'border-amber-200 bg-amber-50' }} shadow-sm p-5">
                         <div class="flex items-start gap-3">
                             <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0 {{ ($shiftWarning['has_alert'] ?? false) ? 'bg-red-500' : 'bg-amber-500' }}">
                                 !
@@ -173,7 +191,7 @@
                                 <h3 class="text-base sm:text-lg font-bold {{ ($shiftWarning['has_alert'] ?? false) ? 'text-red-900' : 'text-amber-900' }}">
                                     勤務日程{{ ($shiftWarning['has_alert'] ?? false) ? 'の警告' : 'のワーニング' }}
                                 </h3>
-                                <p class="text-sm mt-1 {{ ($shiftWarning['has_alert'] ?? false) ? 'text-red-800' : 'text-amber-800' }}">
+                                <p class="text-sm mt-1 leading-6 {{ ($shiftWarning['has_alert'] ?? false) ? 'text-red-800' : 'text-amber-800' }}">
                                     {{ ($shiftWarning['has_alert'] ?? false)
                                         ? '勤務日程の最終日が予約可能期間内です。顧客が予約を行えなくなるため、至急、従業員の勤務日程を設定してください。'
                                         : '勤務日程の最終日が予約可能期間に近づいています。余裕のあるうちに従業員の勤務日程を設定してください。' }}
@@ -191,7 +209,7 @@
 
                                 <div class="mt-4">
                                     <a href="{{ route('company.staff-shifts') }}"
-                                       class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
+                                       class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
                                        style="background: {{ $theme }}">
                                         従業員の勤務日程を設定する
                                     </a>
@@ -204,7 +222,7 @@
         @endif
 
         @if($hasChangeNoticeAlert ?? false)
-            <div class="rounded-3xl border border-rose-200 bg-rose-50 shadow-sm p-5 lg:p-6">
+            <div class="rounded-[2rem] border border-rose-200 bg-rose-50 shadow-sm p-5 lg:p-6">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                     <div class="flex-1">
                         <div class="flex items-start gap-3">
@@ -243,7 +261,7 @@
 
                     <div class="shrink-0">
                         <a href="{{ route('company.reservation_change_notices.index') }}"
-                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
+                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
                            style="background: {{ $theme }}">
                             予約変更連絡管理を開く
                         </a>
@@ -253,20 +271,21 @@
         @endif
     </div>
 
+    {{-- 今日の状況 --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+        <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 p-5">
             <div class="text-xs font-semibold text-gray-500">今日の予約</div>
             <div class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($todayReservationCount) }}</div>
             <div class="mt-2 text-sm text-gray-500">{{ $todayReservationLabel }}</div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+        <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 p-5">
             <div class="text-xs font-semibold text-gray-500">本日の来店予定人数</div>
             <div class="mt-2 text-3xl font-bold text-gray-900">{{ number_format($todayCustomerCount) }}</div>
             <div class="mt-2 text-sm text-gray-500">同一名義をまとめて集計</div>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+        <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 p-5">
             <div class="flex items-center justify-between gap-3">
                 <div class="text-xs font-semibold text-gray-500">予約変更連絡</div>
                 @if($changeTotalActive > 0)
@@ -286,13 +305,13 @@
         </div>
 
         @if($can('dashboard.sales'))
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 p-5">
                 <div class="text-xs font-semibold text-gray-500">今日売上</div>
                 <div class="mt-2 text-3xl font-bold text-gray-900">¥{{ number_format($todaySales) }}</div>
                 <div class="mt-2 text-sm text-gray-500">当日分の集計</div>
             </div>
         @else
-            <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-gray-100 p-5">
                 <div class="text-xs font-semibold text-gray-500">現在のご案内</div>
                 <div class="mt-2 text-lg font-bold text-gray-900">
                     {{ $notices->count() > 0 ? $notices->count().'件のお知らせ' : 'お知らせはありません' }}
@@ -302,6 +321,7 @@
         @endif
     </div>
 
+    {{-- よく使う操作 --}}
     <div class="mb-10">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
             <div>
@@ -313,7 +333,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             @if($can('card.reserve'))
                 <a href="{{ route('company.reserve') }}"
-                   class="group rounded-3xl p-6 text-white shadow-lg hover:-translate-y-0.5 transition"
+                   class="group rounded-[2rem] p-6 text-white shadow-lg hover:-translate-y-0.5 transition"
                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #1f2937 100%);">
                     <div class="flex items-center justify-between gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center">
@@ -340,7 +360,7 @@
 
             @if($can('card.customers'))
                 <a href="{{ route('company.customers') }}"
-                   class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-lime-50 text-lime-600 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -361,7 +381,7 @@
 
             @if($can('card.month_shift'))
                 <a href="{{ route('company.staff-shifts') }}"
-                   class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -382,7 +402,7 @@
 
             @if($can('card.business_calendar'))
                 <a href="{{ route('company.calendar.index') }}"
-                   class="group bg-white rounded-3xl p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
+                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
                     <div class="flex items-center justify-between gap-3">
                         <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -403,6 +423,7 @@
         </div>
     </div>
 
+    {{-- 補助メニュー --}}
     <div class="mb-10">
         <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4">その他のよく使うメニュー</h2>
 
@@ -468,8 +489,9 @@
         </div>
     </div>
 
+    {{-- 今日の予約 + お知らせ --}}
     <div class="grid grid-cols-1 2xl:grid-cols-3 gap-6 mb-10">
-        <div class="2xl:col-span-2 bg-white shadow-sm rounded-3xl border border-gray-100 p-5 sm:p-6">
+        <div class="2xl:col-span-2 bg-white shadow-sm rounded-[2rem] border border-gray-100 p-5 sm:p-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-5">
                 <div>
                     <h2 class="text-lg sm:text-xl font-bold text-gray-900">今日の予約</h2>
@@ -512,7 +534,7 @@
             </div>
         </div>
 
-        <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5 sm:p-6">
+        <div class="bg-white shadow-sm rounded-[2rem] border border-gray-100 p-5 sm:p-6">
             <div class="flex items-center justify-between gap-3 mb-4">
                 <h2 class="text-lg sm:text-xl font-bold text-gray-900">企業向けお知らせ</h2>
                 <span class="text-xs text-gray-400">{{ $notices->count() }}件</span>
@@ -549,6 +571,7 @@
         </div>
     </div>
 
+    {{-- 売上ダッシュボード --}}
     @if($can('dashboard.sales'))
         <div class="mb-10">
             <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
@@ -558,7 +581,7 @@
                 </div>
             </div>
 
-            <form method="GET" class="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-5">
+            <form method="GET" class="bg-white rounded-[2rem] border border-gray-100 shadow-sm p-4 mb-5">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <select name="period" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full">
                         <option value="month" {{ $period=='month' ? 'selected':'' }}>月別</option>
@@ -585,25 +608,25 @@
             </form>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-5">
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <div class="text-gray-500 text-sm">今日売上</div>
                     <div class="text-3xl font-bold mt-2">¥{{ number_format($todaySales) }}</div>
                 </div>
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <div class="text-gray-500 text-sm">今月売上</div>
                     <div class="text-3xl font-bold mt-2">¥{{ number_format($monthlySales) }}</div>
                 </div>
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <div class="text-gray-500 text-sm">今年売上</div>
                     <div class="text-3xl font-bold mt-2">¥{{ number_format($yearlySales) }}</div>
                 </div>
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <div class="text-gray-500 text-sm">客単価</div>
                     <div class="text-3xl font-bold mt-2">¥{{ number_format($averagePrice) }}</div>
                 </div>
             </div>
 
-            <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5 sm:p-6 mb-5">
+            <div class="bg-white shadow-sm rounded-[2rem] border border-gray-100 p-5 sm:p-6 mb-5">
                 <h3 class="font-bold text-gray-900 mb-4">売上推移（{{ $year }}年）</h3>
                 <div class="w-full overflow-x-auto">
                     <div class="min-w-[560px]">
@@ -613,7 +636,7 @@
             </div>
 
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <h3 class="font-bold mb-4 text-gray-900">従業員売上ランキング</h3>
                     <div class="space-y-2">
                         @foreach($staffRanking as $i => $row)
@@ -625,7 +648,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <h3 class="font-bold mb-4 text-gray-900">指名ランキング</h3>
                     <div class="space-y-2">
                         @foreach($nominationRanking as $i => $row)
@@ -637,7 +660,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5">
+                <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5">
                     <h3 class="font-bold mb-4 text-gray-900">人気メニュー</h3>
                     <div class="space-y-2">
                         @foreach($menuRanking as $i => $row)
@@ -652,7 +675,8 @@
         </div>
     @endif
 
-    <div class="bg-white shadow-sm rounded-3xl border border-gray-100 p-5 sm:p-6">
+    {{-- 設定メニュー --}}
+    <div class="bg-white shadow-sm rounded-[2rem] border border-gray-100 p-5 sm:p-6">
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-5">
             <div>
                 <h2 class="text-xl sm:text-2xl font-bold text-gray-900">設定メニュー</h2>

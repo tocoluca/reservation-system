@@ -22,6 +22,7 @@ class DashboardController extends Controller
     {
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
+        $roleLabel = method_exists($staff, 'roleLabel') ? $staff->roleLabel() : $staff->role;
 
         $rawDashboardPermissions = CompanyDashboardPermission::resolveForCompanyRole($company->id, $staff->role);
         $dashboardPermissions = $this->normalizeDashboardPermissions($rawDashboardPermissions, $staff->role);
@@ -31,9 +32,6 @@ class DashboardController extends Controller
         $startOfMonth = $now->copy()->startOfMonth();
         $endOfMonth = $now->copy()->endOfMonth();
 
-        /* ===============================
-           予約変更連絡サマリー
-        =============================== */
         $changeNoticeSummary = ReservationChangeNoticeItem::query()
             ->where('company_id', $company->id)
             ->selectRaw("
@@ -51,9 +49,6 @@ class DashboardController extends Controller
 
         $hasChangeNoticeAlert = $changeNoticePendingCount > 0 || $changeNoticePhonePendingCount > 0;
 
-        /* ===============================
-           初期設定ガイド表示判定
-        =============================== */
         $openPatterns = $company->open_patterns ?? [];
         $hasOpenPattern = false;
 
@@ -112,23 +107,14 @@ class DashboardController extends Controller
         $setupTotalCount = count($setupStatusList);
         $showSetupGuide = $setupDoneCount < $setupTotalCount;
 
-        /* ===============================
-           営業日カレンダー / 月シフト 警告集計
-        =============================== */
         $settingWarnings = $this->buildReservationSettingWarnings($company);
 
-        /* ===============================
-           今月の予約時間（分）
-        =============================== */
         $totalReservedMinutes = (int) Reservation::where('company_id', $company->id)
             ->whereBetween('start_at', [$startOfMonth, $endOfMonth])
             ->where('status', 'reserved')
             ->select(DB::raw('SUM(TIMESTAMPDIFF(MINUTE,start_at,end_at)) as total'))
             ->value('total');
 
-        /* ===============================
-           今月の営業時間（分）
-        =============================== */
         $totalAvailableMinutes = 0;
 
         $staffCount = Staff::where('company_id', $company->id)
@@ -167,18 +153,12 @@ class DashboardController extends Controller
             $date->addDay();
         }
 
-        /* ===============================
-           稼働率
-        =============================== */
         $utilizationRate = 0;
 
         if ($totalAvailableMinutes > 0 && $totalReservedMinutes > 0) {
             $utilizationRate = round(($totalReservedMinutes / $totalAvailableMinutes) * 100, 1);
         }
 
-        /* ===============================
-           今日 / 今月 予約数
-        =============================== */
         $todayCount = Reservation::where('company_id', $company->id)
             ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
@@ -190,9 +170,6 @@ class DashboardController extends Controller
             ->where('status', 'reserved')
             ->count();
 
-        /* ===============================
-           今日の予約一覧
-        =============================== */
         $todayReservations = Reservation::where('company_id', $company->id)
             ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
@@ -200,9 +177,6 @@ class DashboardController extends Controller
             ->orderBy('start_at')
             ->get();
 
-        /* ===============================
-           ダッシュボードお知らせ
-        =============================== */
         $notices = CompanyDashboardNotice::visibleForCompany($company->id)
             ->orderByDesc('is_important')
             ->orderByDesc('is_new')
@@ -211,9 +185,6 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-        /* ===============================
-           今日 / 今月 / 今年の売上
-        =============================== */
         $todaySales = Reservation::where('company_id', $company->id)
             ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
@@ -230,9 +201,6 @@ class DashboardController extends Controller
             ->where('status', 'reserved')
             ->sum('total_price');
 
-        /* ===============================
-           売上集計条件
-        =============================== */
         $period = request('period', 'month');
         $year = (int) request('year', now()->year);
         $month = (int) request('month', now()->month);
@@ -247,9 +215,6 @@ class DashboardController extends Controller
             $query->whereYear('start_at', $year);
         }
 
-        /* ===============================
-           月別売上（グラフ用）
-        =============================== */
         $monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year) {
             $total = Reservation::where('company_id', $company->id)
                 ->whereYear('start_at', $year)
@@ -263,9 +228,6 @@ class DashboardController extends Controller
             ];
         });
 
-        /* ===============================
-           スタッフ売上ランキング
-        =============================== */
         $staffRanking = (clone $query)
             ->select('staff_id', DB::raw('SUM(total_price) as total'))
             ->groupBy('staff_id')
@@ -274,9 +236,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        /* ===============================
-           指名ランキング
-        =============================== */
         $nominationRanking = (clone $query)
             ->where('nomination_fee', '>', 0)
             ->select(
@@ -290,9 +249,6 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        /* ===============================
-           人気メニュー
-        =============================== */
         $menuRanking = DB::table('reservation_menus')
             ->join('reservations', 'reservations.id', '=', 'reservation_menus.reservation_id')
             ->join('menus', 'menus.id', '=', 'reservation_menus.menu_id')
@@ -311,9 +267,6 @@ class DashboardController extends Controller
             ? round($totalSales / $totalReservations)
             : 0;
 
-        /* ===============================
-           契約状態表示用
-        =============================== */
         $subscriptionStatusLabel = $company->subscription_status_label;
         $subscriptionAvailable = $company->isSubscriptionAvailable();
         $billingWarning = null;
@@ -329,6 +282,7 @@ class DashboardController extends Controller
         return view('company.dashboard', compact(
             'staff',
             'company',
+            'roleLabel',
             'todayCount',
             'monthlyCount',
             'utilizationRate',
@@ -421,6 +375,31 @@ class DashboardController extends Controller
 
         $defaultsByRole = [
             'master' => array_fill_keys($canonicalKeys, true),
+
+            'store_operator' => [
+                'card.reserve' => true,
+                'card.business_calendar' => true,
+                'card.customers' => true,
+                'card.month_shift' => true,
+                'card.reservation_change_notices' => true,
+                'card.reviews' => true,
+                'card.vacation' => true,
+                'card.my_profile' => true,
+                'dashboard.sales' => true,
+                'card.company_info' => true,
+                'card.staff' => true,
+                'card.logo' => true,
+                'card.menu_category_tag' => true,
+                'card.menu' => true,
+                'card.menu_staff' => true,
+                'card.shift_patterns' => true,
+                'card.default_shift' => true,
+                'card.notices' => true,
+                'card.billing' => false,
+                'card.theme' => true,
+                'dashboard.manage' => false,
+            ],
+
             'area_leader' => array_fill_keys($canonicalKeys, false),
             'leader' => array_fill_keys($canonicalKeys, false),
             'staff' => array_fill_keys($canonicalKeys, false),
@@ -428,7 +407,6 @@ class DashboardController extends Controller
 
         $base = $defaultsByRole[$role] ?? array_fill_keys($canonicalKeys, false);
 
-        // 最低限、本人設定系はスタッフでも出せるようにする
         if (array_key_exists('card.my_profile', $base)) {
             $base['card.my_profile'] = true;
         }
@@ -439,7 +417,6 @@ class DashboardController extends Controller
             }
         }
 
-        // master の dashboard.manage は強制表示
         if ($role === 'master') {
             $base['dashboard.manage'] = true;
         }

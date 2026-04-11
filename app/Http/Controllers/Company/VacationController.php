@@ -17,30 +17,29 @@ class VacationController extends Controller
     ) {
     }
 
-    /* ==========================
-       権限レベル定義
-    ========================== */
-    private function roleLevel($role)
+    private function authorizeVacationCard(): void
     {
-        return match($role) {
-            'master' => 4,
-            'area_leader' => 3,
-            'leader' => 2,
-            default => 1
-        };
+        $staff = Auth::guard('company')->user();
+
+        if (!$staff || !$staff->canDashboard('card.vacation')) {
+            abort(403, '権限がありません');
+        }
     }
 
-    private function isLeaderOrAbove()
+    private function authorizeVacationApproval(): void
     {
-        $role = Auth::guard('company')->user()->role;
-        return $this->roleLevel($role) >= 2;
+        $staff = Auth::guard('company')->user();
+
+        // 承認・却下・取消はまず master のみに絞る
+        if (!$staff || !$staff->isMaster()) {
+            abort(403, '承認権限がありません');
+        }
     }
 
-    /* ==========================
-       一覧表示
-    ========================== */
     public function index()
     {
+        $this->authorizeVacationCard();
+
         $current = Auth::guard('company')->user();
 
         $vacations = Vacation::whereHas('staff', function ($q) use ($current) {
@@ -50,23 +49,20 @@ class VacationController extends Controller
         return view('company.vacation.index', compact('vacations', 'current'));
     }
 
-    /* ==========================
-       申請画面
-    ========================== */
     public function create()
     {
+        $this->authorizeVacationCard();
+
         $staff = auth()->guard('company')->user();
 
         return view('company.vacation.create', compact('staff'));
     }
 
-    /* ==========================
-       申請保存
-    ========================== */
     public function store(Request $request)
     {
-        $staff = auth()->guard('company')->user();
+        $this->authorizeVacationCard();
 
+        $staff = auth()->guard('company')->user();
         $isFullDay = $request->boolean('is_full_day');
 
         if ($isFullDay) {
@@ -75,31 +71,31 @@ class VacationController extends Controller
             ]);
 
             $start = Carbon::parse($request->vacation_date)->startOfDay();
-            $end   = Carbon::parse($request->vacation_date)->endOfDay();
+            $end = Carbon::parse($request->vacation_date)->endOfDay();
         } else {
             $request->validate([
                 'start_date' => 'required|date',
                 'start_time' => 'required',
-                'end_date'   => 'required|date',
-                'end_time'   => 'required',
+                'end_date' => 'required|date',
+                'end_time' => 'required',
             ]);
 
             $start = Carbon::parse($request->start_date . ' ' . $request->start_time);
-            $end   = Carbon::parse($request->end_date . ' ' . $request->end_time);
+            $end = Carbon::parse($request->end_date . ' ' . $request->end_time);
 
             if ($start >= $end) {
                 return back()->withErrors([
-                    'end_time' => '終了は開始より後にしてください'
+                    'end_time' => '終了は開始より後にしてください',
                 ])->withInput();
             }
         }
 
         DB::transaction(function () use ($staff, $start, $end, $isFullDay) {
             Vacation::create([
-                'staff_id'    => $staff->id,
-                'start_at'    => $start,
-                'end_at'      => $end,
-                'status'      => 'pending',
+                'staff_id' => $staff->id,
+                'start_at' => $start,
+                'end_at' => $end,
+                'status' => 'pending',
                 'is_full_day' => $isFullDay,
             ]);
         });
@@ -108,14 +104,9 @@ class VacationController extends Controller
             ->with('success', '休暇申請を送信しました');
     }
 
-    /* ==========================
-       承認
-    ========================== */
     public function approve(Vacation $vacation)
     {
-        if (!$this->isLeaderOrAbove()) {
-            abort(403, '承認権限がありません');
-        }
+        $this->authorizeVacationApproval();
 
         $current = auth()->guard('company')->user();
 
@@ -138,14 +129,9 @@ class VacationController extends Controller
         return back()->with('success', '承認しました');
     }
 
-    /* ==========================
-       却下
-    ========================== */
     public function reject(Vacation $vacation)
     {
-        if (!$this->isLeaderOrAbove()) {
-            abort(403);
-        }
+        $this->authorizeVacationApproval();
 
         $current = auth()->guard('company')->user();
 
@@ -160,14 +146,13 @@ class VacationController extends Controller
         return back()->with('success', '却下しました');
     }
 
-    /* ==========================
-       削除（自分の申請のみ）
-    ========================== */
     public function destroy(Vacation $vacation)
     {
+        $this->authorizeVacationCard();
+
         $current = Auth::guard('company')->user();
 
-        if ($vacation->staff_id !== $current->id && !$this->isLeaderOrAbove()) {
+        if ($vacation->staff_id !== $current->id && !$current->isMaster()) {
             abort(403);
         }
 
@@ -180,20 +165,15 @@ class VacationController extends Controller
         return back()->with('success', '削除しました');
     }
 
-    /* ==========================
-       承認済み➡取り消し
-    ========================== */
     public function cancel(Vacation $vacation)
     {
-        $current = auth()->guard('company')->user();
+        $this->authorizeVacationApproval();
 
-        if (!in_array($current->role, ['leader', 'area_leader', 'master'])) {
-            abort(403);
-        }
+        $current = auth()->guard('company')->user();
 
         if ($vacation->status !== 'approved') {
             return back()->withErrors([
-                'status' => '承認済の休暇のみ取消できます'
+                'status' => '承認済の休暇のみ取消できます',
             ]);
         }
 

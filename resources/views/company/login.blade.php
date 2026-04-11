@@ -14,7 +14,7 @@
                 企業管理ログイン
             </h1>
             <p class="text-sm text-gray-500">
-                企業コード・スタッフコード・パスワードを入力してください
+                企業コード・担当者コード・パスワードを入力してください
             </p>
         </div>
 
@@ -64,10 +64,10 @@
                     @enderror
                 </div>
 
-                {{-- スタッフコード --}}
+                {{-- 担当者コード --}}
                 <div>
                     <label for="staff_code" class="block text-sm font-semibold text-gray-700 mb-2">
-                        スタッフコード
+                        担当者コード
                     </label>
                     <input
                         type="text"
@@ -76,7 +76,7 @@
                         value="{{ old('staff_code') }}"
                         autocomplete="username"
                         class="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder-gray-400 shadow-sm outline-none transition focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-                        placeholder="例：MASTER01"
+                        placeholder="担当者コードを入力"
                     >
                     @error('staff_code')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -116,7 +116,7 @@
 
         {{-- 補足 --}}
         <p class="text-center text-xs text-gray-400 mt-5">
-            ログインできない場合は、企業コード・スタッフコード・パスワードをご確認ください。
+            ログインできない場合は、企業コード・担当者コード・パスワードをご確認ください。
         </p>
     </div>
 </div>

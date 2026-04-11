@@ -5,6 +5,7 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
 
     $days = \Carbon\Carbon::parse($month)->daysInMonth;
 
@@ -14,53 +15,74 @@
     $patternMap = collect($patterns)->keyBy('id');
 @endphp
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
-    <div class="mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-            <div class="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1 text-xs font-medium text-gray-500 shadow-sm">
-                <span class="inline-block w-2 h-2 rounded-full" style="background: {{ $theme }}"></span>
-                勤務
-            </div>
-            <h1 class="mt-3 text-2xl sm:text-3xl font-bold text-gray-900">勤務管理</h1>
-            <p class="text-gray-500 text-sm mt-2">{{ $month }}</p>
+    {{-- ヘッダー --}}
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
         </div>
 
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('company.dashboard') }}"
-               class="inline-flex items-center justify-center px-4 py-2.5 rounded-2xl border text-sm font-semibold bg-white shadow-sm hover:bg-gray-50 transition"
-               style="border-color: {{ $theme }}; color: {{ $theme }};">
-                ダッシュボード
-            </a>
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div>
+                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Shift Management</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">勤務管理</h1>
+                    <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
+                        {{ $month }} の勤務表を、スタッフごと・日付ごとにまとめて調整できます。
+                    </p>
+                </div>
 
-            <button form="shiftForm"
-                    class="inline-flex items-center justify-center px-5 py-2.5 rounded-2xl text-sm font-bold text-white shadow hover:opacity-90 transition"
-                    style="background: {{ $theme }};">
-                保存する
-            </button>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('company.dashboard') }}"
+                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-medium">
+                        ダッシュボード
+                    </a>
+
+                    <button form="shiftForm"
+                            class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-sm font-bold text-white bg-white/15 hover:bg-white/20 backdrop-blur-sm transition">
+                        保存する
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="mb-6 rounded-3xl border border-blue-100 bg-blue-50 px-5 py-4">
-        <h2 class="text-sm font-bold text-blue-900">操作の流れ</h2>
-        <p class="mt-2 text-sm text-blue-800 leading-6">
-            まず「基本シフト生成」または「前月コピー」で土台を作り、必要な日だけ調整してください。
-            シフトボタンは、登録済みのシフトパターンをそのまま表示しています。
-        </p>
+    {{-- ガイド --}}
+    <div class="mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-900">操作の流れ</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    まず自動生成で土台を作り、そのあと必要な日だけ個別調整すると効率的です。
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">1. 月を選ぶ</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">2. 自動生成</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">3. 微調整</span>
+            </div>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-        <div class="xl:col-span-2 bg-white border border-gray-200 rounded-3xl shadow-sm p-4 sm:p-5">
+        <div class="xl:col-span-2 bg-white border border-gray-200 rounded-3xl shadow-sm p-5">
             <div class="flex flex-col lg:flex-row lg:items-end gap-3">
                 <form method="GET" class="flex flex-col sm:flex-row gap-3 w-full">
                     <div class="flex-1">
                         <label class="block text-xs font-semibold text-gray-500 mb-2">表示する月</label>
-                        <input type="month" name="month" value="{{ $month }}"
-                               class="w-full border border-gray-300 rounded-2xl px-3 py-2.5">
+                        <input type="month"
+                               name="month"
+                               value="{{ $month }}"
+                               class="w-full border border-gray-300 rounded-2xl px-4 py-3">
                     </div>
 
                     <div class="sm:self-end">
-                        <button class="w-full sm:w-auto px-5 py-2.5 text-white rounded-2xl font-semibold hover:opacity-90 transition"
+                        <button class="w-full sm:w-auto px-5 py-3 text-white rounded-2xl font-semibold hover:opacity-90 transition"
                                 style="background: {{ $theme }}">
                             表示
                         </button>
@@ -69,14 +91,14 @@
             </div>
         </div>
 
-        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-4 sm:p-5">
+        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-5">
             <div class="text-xs font-semibold text-gray-500 mb-3">初期反映</div>
 
-            <div class="flex flex-col sm:flex-row xl:flex-col gap-3">
+            <div class="flex flex-col gap-3">
                 <form method="POST" action="{{ route('company.staff-shifts.generate') }}">
                     @csrf
                     <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="w-full px-4 py-2.5 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-700 transition">
+                    <button class="w-full px-4 py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-700 transition">
                         基本シフト生成
                     </button>
                 </form>
@@ -84,7 +106,7 @@
                 <form method="POST" action="{{ route('company.staff-shifts.copy') }}">
                     @csrf
                     <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="w-full px-4 py-2.5 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-500 transition">
+                    <button class="w-full px-4 py-3 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-500 transition">
                         前月コピー
                     </button>
                 </form>
@@ -92,7 +114,7 @@
         </div>
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-4 sm:p-5 mb-6">
+    <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-end gap-3">
             <div>
                 <div class="text-sm font-bold text-gray-900">曜日ごとの一括設定</div>
@@ -100,7 +122,7 @@
             </div>
 
             <div class="flex flex-col sm:flex-row gap-3 lg:ml-auto">
-                <select id="weekdaySelect" class="border border-gray-300 p-2.5 rounded-2xl min-w-[140px]">
+                <select id="weekdaySelect" class="border border-gray-300 p-3 rounded-2xl min-w-[140px]">
                     <option value="">曜日を選択</option>
                     <option value="0">日曜</option>
                     <option value="1">月曜</option>
@@ -111,8 +133,7 @@
                     <option value="6">土曜</option>
                 </select>
 
-                <select id="weekdayShift" class="border border-gray-300 p-2.5 rounded-2xl min-w-[180px]">
-                    <option value="">状態を選択</option>
+                <select id="weekdayShift" class="border border-gray-300 p-3 rounded-2xl min-w-[180px]">
                     <option value="">休み</option>
                     @foreach($patterns as $p)
                         <option value="{{ $p->id }}">{{ $p->name }}</option>
@@ -121,7 +142,7 @@
 
                 <button type="button"
                         onclick="applyWeekdayShift()"
-                        class="px-5 py-2.5 bg-green-600 text-white rounded-2xl font-semibold hover:bg-green-500 transition">
+                        class="px-5 py-3 bg-green-600 text-white rounded-2xl font-semibold hover:bg-green-500 transition">
                     適用
                 </button>
             </div>
@@ -132,7 +153,7 @@
         @csrf
 
         <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
-            <div class="px-4 sm:px-5 py-4 border-b bg-gray-50">
+            <div class="px-5 py-4 border-b bg-gray-50">
                 <h2 class="text-lg font-bold text-gray-900">スタッフ別 シフト表</h2>
                 <p class="text-sm text-gray-500 mt-1">
                     各マスのボタンを押すだけで変更できます。表示されるシフトは登録済みパターンです。
@@ -249,13 +270,9 @@
 
                                     <td class="p-1 min-w-[156px] align-middle">
                                         @if($isClosed)
-                                            <div class="text-gray-400 text-center font-semibold text-xs py-3">
-                                                休業
-                                            </div>
+                                            <div class="text-gray-400 text-center font-semibold text-xs py-3">休業</div>
                                         @elseif($isVacation)
-                                            <div class="text-red-500 text-center font-bold text-xs py-3">
-                                                休暇
-                                            </div>
+                                            <div class="text-red-500 text-center font-bold text-xs py-3">休暇</div>
                                         @else
                                             <input type="hidden"
                                                    name="shifts[{{ $staff->id }}][{{ $date }}]"

@@ -3,52 +3,58 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
 @endphp
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-    <div class="mb-6">
-        <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-4">
-            <div>
-                <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold"
-                     style="background-color: {{ $theme }}15; color: {{ $theme }};">
-                    Reservation Calendar
+    {{-- ヘッダー --}}
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
+
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+            <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-5">
+                <div>
+                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Reservation Calendar</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">予約カレンダー</h1>
+                    <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
+                        空き状況の確認、予約登録、キャンセル確認までこの画面で行えます。
+                    </p>
                 </div>
 
-                <h1 class="text-2xl sm:text-3xl font-bold text-stone-800 mt-3">予約カレンダー</h1>
-                <p class="text-sm sm:text-base text-gray-500 mt-2">
-                    日付を選んで空き状況を確認し、そのまま予約登録・キャンセルができます
-                </p>
-            </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ route('company.reservations.index') }}"
+                       class="group inline-flex items-center gap-3 rounded-2xl px-5 py-3 text-white bg-white/15 hover:bg-white/20 backdrop-blur-sm transition">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
+                            予
+                        </span>
 
-            <div class="flex flex-wrap items-center gap-3">
-                <a href="{{ route('company.reservations.index') }}"
-                   class="group inline-flex items-center gap-3 rounded-2xl px-5 py-3 text-white shadow-lg hover:opacity-95 transition"
-                   style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-lg font-bold">
-                        予
-                    </span>
+                        <span class="text-left leading-tight">
+                            <span class="block text-sm font-bold">予約一覧</span>
+                            <span class="block text-[11px] text-white/80">顧客検索・予約確認はこちら</span>
+                        </span>
+                    </a>
 
-                    <span class="text-left leading-tight">
-                        <span class="block text-sm font-bold">予約一覧</span>
-                        <span class="block text-[11px] text-white/80">顧客検索・予約確認はこちら</span>
-                    </span>
-                </a>
-
-                <a href="{{ route('company.dashboard') }}"
-                   class="inline-flex items-center justify-center px-4 py-3 text-sm rounded-xl border bg-white hover:bg-gray-50 transition"
-                   style="border-color: {{ $theme }}; color: {{ $theme }};">
-                    ← ダッシュボード
-                </a>
+                    <a href="{{ route('company.dashboard') }}"
+                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-medium">
+                        ← ダッシュボード
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-stone-200 p-4 sm:p-5 mb-6">
+    {{-- 操作の流れ --}}
+    <div class="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 sm:p-6 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-                <h2 class="text-sm font-bold text-stone-800 mb-2">操作の流れ</h2>
+                <h2 class="text-base font-bold text-stone-800 mb-2">操作の流れ</h2>
                 <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-stone-600">
                     <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">1. 日付を選ぶ</span>
                     <span class="text-stone-300">→</span>
@@ -64,13 +70,13 @@
 
             <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
                 <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能（残り枠あり）
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>残りわずか
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり（枠満了）
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり
                 </span>
                 <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
                     <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
@@ -79,96 +85,102 @@
         </div>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6 border border-stone-200">
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
-            <div class="xl:col-span-5">
-                <div class="text-xs font-semibold text-stone-500 mb-2">日付</div>
-                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div class="flex items-center gap-2">
-                        <button type="button"
-                                onclick="navigateCurrent(-1)"
-                                class="px-4 py-2.5 rounded-xl text-white shadow hover:opacity-90 transition"
-                                style="background: {{ $theme }};">
-                            ◀ 前へ
-                        </button>
+    {{-- 操作エリア --}}
+    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
+        <div class="xl:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+            <div class="text-xs font-semibold text-stone-500 mb-2">日付操作</div>
 
-                        <button type="button"
-                                onclick="goToday()"
-                                class="px-4 py-2.5 rounded-xl border bg-white hover:bg-gray-50 text-sm font-semibold transition"
-                                style="border-color: {{ $theme }}; color: {{ $theme }};">
-                            今日
-                        </button>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="flex items-center gap-2">
+                    <button type="button"
+                            onclick="navigateCurrent(-1)"
+                            class="px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
+                            style="background: {{ $theme }};">
+                        ◀ 前へ
+                    </button>
 
-                        <button type="button"
-                                onclick="navigateCurrent(1)"
-                                class="px-4 py-2.5 rounded-xl text-white shadow hover:opacity-90 transition"
-                                style="background: {{ $theme }};">
-                            次へ ▶
-                        </button>
-                    </div>
+                    <button type="button"
+                            onclick="goToday()"
+                            class="px-4 py-2.5 rounded-2xl border bg-white hover:bg-gray-50 text-sm font-semibold transition"
+                            style="border-color: {{ $theme }}; color: {{ $theme }};">
+                        今日
+                    </button>
 
-                    <div class="flex-1">
-                        <input type="date"
-                               id="globalDatePicker"
-                               class="w-full border rounded-xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2"
-                               style="border-color: #d6d3d1;"
-                               onchange="jumpByMode(this.value)">
-                    </div>
+                    <button type="button"
+                            onclick="navigateCurrent(1)"
+                            class="px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
+                            style="background: {{ $theme }};">
+                        次へ ▶
+                    </button>
                 </div>
 
-                <div class="mt-3 rounded-xl bg-stone-50 border border-stone-200 px-4 py-3">
-                    <div class="text-xs text-stone-500 mb-1">選択中の日付</div>
-                    <div id="currentDateHero" class="text-lg sm:text-xl font-bold text-stone-800">-</div>
+                <div class="flex-1">
+                    <input type="date"
+                           id="globalDatePicker"
+                           class="w-full border rounded-2xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2"
+                           style="border-color: #d6d3d1; --tw-ring-color: {{ $theme }};"
+                           onchange="jumpByMode(this.value)">
                 </div>
             </div>
 
-            <div class="xl:col-span-3">
-                <div class="text-xs font-semibold text-stone-500 mb-2">表示方法</div>
-                <div class="grid grid-cols-2 gap-2">
-                    <a href="{{ route('company.reserve',['mode'=>'day']) }}"
-                       class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
-                       style="background: {{ request('mode') === 'day' ? $theme : '#f5f5f4' }};
-                              color: {{ request('mode') === 'day' ? 'white' : '#44403c' }};">
-                        日表示
-                    </a>
+            <div class="mt-3 rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3">
+                <div class="text-xs text-stone-500 mb-1">選択中の日付</div>
+                <div id="currentDateHero" class="text-lg sm:text-xl font-bold text-stone-800">-</div>
+            </div>
+        </div>
 
-                    <a href="{{ route('company.reserve',['mode'=>'week']) }}"
-                       class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
-                       style="background: {{ request('mode','week') === 'week' ? $theme : '#f5f5f4' }};
-                              color: {{ request('mode','week') === 'week' ? 'white' : '#44403c' }};">
-                        週表示
-                    </a>
-                </div>
-                <p class="text-xs text-gray-500 mt-2">
-                    日表示は詳細確認向け、週表示は全体把握向けです
-                </p>
+        <div class="xl:col-span-3 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+            <div class="text-xs font-semibold text-stone-500 mb-2">表示方法</div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <a href="{{ route('company.reserve',['mode'=>'day']) }}"
+                   class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
+                   style="background: {{ request('mode') === 'day' ? $theme : '#f5f5f4' }};
+                          color: {{ request('mode') === 'day' ? 'white' : '#44403c' }};">
+                    日表示
+                </a>
+
+                <a href="{{ route('company.reserve',['mode'=>'week']) }}"
+                   class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
+                   style="background: {{ request('mode','week') === 'week' ? $theme : '#f5f5f4' }};
+                          color: {{ request('mode','week') === 'week' ? 'white' : '#44403c' }};">
+                    週表示
+                </a>
             </div>
 
-            <div class="xl:col-span-4">
-                <div class="text-xs font-semibold text-stone-500 mb-2">担当者で絞り込み</div>
-                <select id="staffSelect"
-                        class="w-full border rounded-xl px-3 py-3 shadow-sm focus:outline-none focus:ring-2"
-                        onchange="reloadByMode()">
-                    <option value="">全担当者を表示</option>
-                    @foreach($company->staff()->where('is_reservable', true)->orderBy('priority_order')->get() as $staff)
-                        <option value="{{ $staff->id }}">{{ $staff->name }}</option>
-                    @endforeach
-                </select>
-                <p class="text-xs text-gray-500 mt-2">
-                    全体の空き確認なら「全担当者を表示」のままで使えます
-                </p>
-            </div>
+            <p class="text-xs text-gray-500 mt-3">
+                日表示は詳細確認向け、週表示は全体把握向けです。
+            </p>
+        </div>
+
+        <div class="xl:col-span-4 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+            <div class="text-xs font-semibold text-stone-500 mb-2">担当者で絞り込み</div>
+
+            <select id="staffSelect"
+                    class="w-full border rounded-2xl px-3 py-3 shadow-sm focus:outline-none focus:ring-2"
+                    style="--tw-ring-color: {{ $theme }};"
+                    onchange="reloadByMode()">
+                <option value="">全担当者を表示</option>
+                @foreach($company->staff()->where('is_reservable', true)->orderBy('priority_order')->get() as $staff)
+                    <option value="{{ $staff->id }}">{{ $staff->name }}</option>
+                @endforeach
+            </select>
+
+            <p class="text-xs text-gray-500 mt-3">
+                全体の空き確認なら「全担当者を表示」のままで使えます。
+            </p>
         </div>
     </div>
 
     <div id="messageArea" class="mb-6"></div>
 
-    <div class="bg-white rounded-2xl shadow-lg border border-stone-200 p-4 sm:p-6">
+    {{-- カレンダー本体 --}}
+    <div class="bg-white rounded-3xl shadow-lg border border-stone-200 p-4 sm:p-6">
         @if($mode === 'day')
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
                     <h2 class="text-lg font-bold text-stone-800">日別の空き状況</h2>
-                    <p class="text-sm text-gray-500">空いている枠を押すと、メニュー選択から予約登録へ進みます</p>
+                    <p class="text-sm text-gray-500">空いている枠を押すと、メニュー選択から予約登録へ進みます。</p>
                 </div>
                 <div class="text-xs sm:text-sm text-stone-500">
                     予約ありの枠は内容確認後にキャンセルできます
@@ -185,7 +197,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
                     <h2 class="text-lg font-bold text-stone-800">週別の空き状況</h2>
-                    <p class="text-sm text-gray-500">まずは空きのある日を探したいときに便利です</p>
+                    <p class="text-sm text-gray-500">まずは空きのある日を探したいときに便利です。</p>
                 </div>
                 <div class="text-xs sm:text-sm text-stone-500">
                     「予約可能」「残りわずか」の枠を押すとメニュー選択へ進みます
@@ -757,7 +769,6 @@ document.addEventListener('change', function(e){
     document.getElementById('stepTotalPrice').innerText = totalPrice.toLocaleString();
 });
 
-
 function normalizeAssignmentCandidates(data) {
     let normalizedMode = data.mode || 'single';
     let candidates = [];
@@ -888,7 +899,6 @@ function proceedToStaffSelection() {
             alert('担当候補の取得に失敗しました');
         });
 }
-
 
 function closeStaffStepModal() {
     document.getElementById('staffStepModal').classList.add('hidden');
@@ -1100,9 +1110,16 @@ function formatTel(input) {
 }
 </script>
 
+{{-- メニュー選択 --}}
 <div id="menuStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-lg font-bold text-stone-800 mb-2">メニュー選択</h2>
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <div class="mb-4">
+            <div class="flex items-center gap-2 text-xs text-stone-500 mb-2">
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">STEP 1</span>
+                <span>メニュー選択</span>
+            </div>
+            <h2 class="text-lg font-bold text-stone-800">メニューを選択</h2>
+        </div>
 
         <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
             <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
@@ -1159,12 +1176,20 @@ function formatTel(input) {
     </div>
 </div>
 
+{{-- 担当選択 --}}
 <div id="staffStepModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-lg font-bold text-stone-800 mb-2">担当パターンを選択</h2>
-		<p class="text-sm text-stone-500 mb-4">
-		    上位のおすすめ候補を先に表示しています。気になる担当を選んでください。
-		</p>
+    <div class="bg-white rounded-3xl shadow-xl w-full max-w-2xl p-6 max-h-[90vh] overflow-y-auto">
+        <div class="mb-4">
+            <div class="flex items-center gap-2 text-xs text-stone-500 mb-2">
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">STEP 2</span>
+                <span>担当パターン選択</span>
+            </div>
+            <h2 class="text-lg font-bold text-stone-800 mb-2">担当パターンを選択</h2>
+            <p class="text-sm text-stone-500">
+                上位のおすすめ候補を先に表示しています。気になる担当を選んでください。
+            </p>
+        </div>
+
         <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4 text-sm">
             <div class="text-stone-500">予約日時</div>
             <div id="stepStaffDatetime" class="font-semibold text-stone-800 mb-2"></div>
@@ -1177,7 +1202,9 @@ function formatTel(input) {
                 <span>¥<span id="stepStaffPrice">0</span></span>
             </div>
         </div>
+
         <div id="stepStaffListArea" class="space-y-3"></div>
+
         <button onclick="closeStaffStepModal()"
                 class="mt-5 w-full px-4 py-3 rounded-xl bg-stone-100 text-stone-700 hover:bg-stone-200 transition">
             戻る
@@ -1185,9 +1212,10 @@ function formatTel(input) {
     </div>
 </div>
 
+{{-- キャンセル確認 --}}
 <div id="cancelConfirmModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
         <h2 class="text-lg font-bold mb-4 text-stone-800">予約キャンセル確認</h2>
 
         <p class="text-sm text-gray-500 mb-4">
@@ -1230,10 +1258,17 @@ function formatTel(input) {
     </div>
 </div>
 
+{{-- 予約確定 --}}
 <div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
 
-        <h2 class="text-lg font-bold text-stone-800 mb-2">予約確定</h2>
+        <div class="mb-4">
+            <div class="flex items-center gap-2 text-xs text-stone-500 mb-2">
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">STEP 3</span>
+                <span>予約確定</span>
+            </div>
+            <h2 class="text-lg font-bold text-stone-800">予約内容の確認</h2>
+        </div>
 
         <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
             <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
@@ -1245,6 +1280,7 @@ function formatTel(input) {
             <input type="text"
                    id="modal_customer_name"
                    class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                   style="--tw-ring-color: {{ $theme }};"
                    placeholder="例：山田 花子">
         </div>
 
@@ -1253,6 +1289,7 @@ function formatTel(input) {
             <input type="text"
                    id="modal_customer_phone"
                    class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                   style="--tw-ring-color: {{ $theme }};"
                    placeholder="例：090-1234-5678"
                    oninput="formatTel(this)">
         </div>
@@ -1285,7 +1322,6 @@ function formatTel(input) {
                 この内容で予約する
             </button>
         </div>
-
     </div>
 </div>
 @endsection

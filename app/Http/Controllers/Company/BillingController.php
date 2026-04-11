@@ -15,18 +15,18 @@ class BillingController extends Controller
 
         $plans = [
             'light' => [
-                'key' => 'light',
-                'name' => 'ライトプラン',
-                'price_id' => env('STRIPE_PRICE_LIGHT'),
-                'amount' => 6000,
-                'description' => '小規模店舗向けの基本プランです。',
-            ],
-            'standard' => [
                 'key' => 'standard',
                 'name' => 'スタンダードプラン',
                 'price_id' => env('STRIPE_PRICE_STANDARD'),
+                'amount' => 6000,
+                'description' => '基本プランです。',
+            ],
+            'standard' => [
+                'key' => 'platinum',
+                'name' => 'プラチナプラン',
+                'price_id' => env('STRIPE_PRICE_PLATINUM'),
                 'amount' => 9000,
-                'description' => 'より実用的に使いたい店舗向けのおすすめプランです。',
+                'description' => 'Lineログイン機能が付いたプランです。',
             ],
         ];
 
@@ -36,7 +36,7 @@ class BillingController extends Controller
     public function checkout(Request $request)
     {
         $request->validate([
-            'plan' => ['required', 'in:light,standard'],
+            'plan' => ['required', 'in:platinum,standard'],
         ], [
             'plan.required' => 'プランを選択してください。',
             'plan.in' => '選択したプランが正しくありません。',
@@ -46,8 +46,8 @@ class BillingController extends Controller
         $company = $staff->company;
 
         $priceMap = [
-            'light' => env('STRIPE_PRICE_LIGHT'),
             'standard' => env('STRIPE_PRICE_STANDARD'),
+            'platinum' => env('STRIPE_PRICE_PLATINUM'),
         ];
 
         $priceId = $priceMap[$request->plan] ?? null;

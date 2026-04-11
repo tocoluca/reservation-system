@@ -5,251 +5,183 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
 @endphp
 
-<div class="max-w-6xl mx-auto space-y-8">
-
-{{-- タイトル --}}
-<div class="flex justify-between items-center">
-
-    <div>
-        <h1 class="text-2xl font-bold">メニュー管理</h1>
-        <p class="text-gray-500 text-sm mt-1">
-            メニューの設定・変更・削除
-        </p>
-    </div>
-
-    <a href="{{ route('company.dashboard') }}"
-       class="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50 transition"
-       style="border-color: {{ $theme }}; color: {{ $theme }}">
-        ← ダッシュボード
-    </a>
-
-</div>
-
-
-{{-- メニュー一覧カード --}}
-<div class="bg-white rounded-xl shadow">
-
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
     {{-- ヘッダー --}}
-    <div class="p-6 border-b flex justify-between items-center">
+    <div class="relative overflow-hidden rounded-3xl shadow-lg">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
 
-        <h2 class="font-bold text-lg">
-            メニュー一覧
-        </h2>
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+                <div>
+                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Menu Management</p>
+                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">メニュー管理</h1>
+                    <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
+                        メニューの登録・検索・編集・削除を行えます。
+                    </p>
+                </div>
 
-        <a href="{{ route('company.menu.create') }}"
-           class="text-white px-4 py-2 rounded-lg"
-           style="background: {{ $theme }}">
-            新規メニュー
-        </a>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{{ route('company.dashboard') }}"
+                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-medium">
+                        ← ダッシュボード
+                    </a>
 
+                    <a href="{{ route('company.menu.create') }}"
+                       class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white text-sm font-semibold shadow text-stone-800 hover:bg-stone-100 transition">
+                        新規メニュー
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
-
 
     {{-- フィルター --}}
-    <div class="p-6 border-b">
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100"
+             style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+            <h2 class="font-bold text-lg text-gray-900">検索・絞り込み</h2>
+            <p class="text-sm text-gray-500 mt-1">カテゴリ・タグ・並び順で一覧を整理できます。</p>
+        </div>
 
-        <form method="GET" class="flex flex-wrap gap-3 items-center">
+        <div class="p-6">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
 
-            <select name="category_id"
-                    class="border rounded-lg px-3 py-2">
-
-                <option value="">カテゴリ</option>
-
-                @foreach($categories as $category)
-
-                <option value="{{ $category->id }}"
-                    @if(request('category_id')==$category->id) selected @endif>
-
-                    {{ $category->name }}
-
-                </option>
-
-                @endforeach
-
-            </select>
-
-
-            <select name="tag_id"
-                    class="border rounded-lg px-3 py-2">
-
-                <option value="">タグ</option>
-
-                @foreach($tags as $tag)
-
-                <option value="{{ $tag->id }}"
-                    @if(request('tag_id')==$tag->id) selected @endif>
-
-                    {{ $tag->name }}
-
-                </option>
-
-                @endforeach
-
-            </select>
-
-
-            <select name="sort"
-                    class="border rounded-lg px-3 py-2">
-
-                <option value="">並び替え</option>
-
-                <option value="name"
-                    @if(request('sort')=='name') selected @endif>
-                    名前順
-                </option>
-
-                <option value="price"
-                    @if(request('sort')=='price') selected @endif>
-                    料金順
-                </option>
-
-            </select>
-
-
-            <button
-                class="bg-gray-700 text-white px-4 py-2 rounded-lg">
-                検索
-            </button>
-
-        </form>
-
-    </div>
-
-
-    {{-- テーブル --}}
-    <div class="overflow-x-auto">
-
-        <table class="w-full text-sm border">
-
-            <thead class="bg-gray-50">
-
-                <tr>
-
-                    <th class="border px-4 py-3 text-left">
-                        カテゴリ
-                    </th>
-
-                    <th class="border px-4 py-3 text-left">
-                        名前
-                    </th>
-
-                    <th class="border px-4 py-3 text-left">
-                        タグ
-                    </th>
-
-                    <th class="border px-4 py-3 text-center w-28">
-                        時間
-                    </th>
-
-                    <th class="border px-4 py-3 text-center w-32">
-                        料金
-                    </th>
-
-                    <th class="border px-4 py-3 text-center w-32">
-                        操作
-                    </th>
-
-                </tr>
-
-            </thead>
-
-
-            <tbody>
-
-            @forelse($menus as $menu)
-
-                <tr class="hover:bg-gray-50">
-
-                    <td class="border px-4 py-3">
-                        {{ $menu->category->name ?? '-' }}
-                    </td>
-
-                    <td class="border px-4 py-3 font-medium">
-                        {{ $menu->name }}
-                    </td>
-
-
-                    {{-- タグ --}}
-                    <td class="border px-4 py-3">
-
-                        <div class="flex flex-wrap gap-1">
-
-                        @foreach($menu->tags as $tag)
-
-                            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">
-                                {{ $tag->name }}
-                            </span>
-
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">カテゴリ</label>
+                    <select name="category_id" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                        <option value="">すべて</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}"
+                                @if(request('category_id')==$category->id) selected @endif>
+                                {{ $category->name }}
+                            </option>
                         @endforeach
+                    </select>
+                </div>
 
-                        </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">タグ</label>
+                    <select name="tag_id" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                        <option value="">すべて</option>
+                        @foreach($tags as $tag)
+                            <option value="{{ $tag->id }}"
+                                @if(request('tag_id')==$tag->id) selected @endif>
+                                {{ $tag->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
 
-                    </td>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">並び替え</label>
+                    <select name="sort" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                        <option value="">標準</option>
+                        <option value="name" @if(request('sort')=='name') selected @endif>名前順</option>
+                        <option value="price" @if(request('sort')=='price') selected @endif>料金順</option>
+                    </select>
+                </div>
 
+                <div>
+                    <button class="w-full bg-stone-800 text-white px-4 py-3 rounded-2xl font-semibold hover:bg-stone-700 transition">
+                        検索する
+                    </button>
+                </div>
 
-                    <td class="border px-4 py-3 text-center">
-                        {{ $menu->duration }}分
-                    </td>
-
-                    <td class="border px-4 py-3 text-center">
-                        ¥{{ number_format($menu->price) }}
-                    </td>
-
-
-                    {{-- 操作 --}}
-                    <td class="border px-4 py-3">
-
-                        <div class="flex justify-center gap-3">
-
-                            <a href="{{ route('company.menu.edit',$menu->id) }}"
-                               class="text-blue-500 hover:underline text-sm">
-                                編集
-                            </a>
-
-                            <form method="POST"
-                                  action="{{ route('company.menu.destroy',$menu->id) }}"
-                                  onsubmit="return confirm('削除しますか？')">
-
-                                @csrf
-                                @method('DELETE')
-
-                                <button class="text-red-500 hover:underline text-sm">
-                                    削除
-                                </button>
-
-                            </form>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-            @empty
-
-                <tr>
-
-                    <td colspan="6"
-                        class="border px-4 py-10 text-center text-gray-400">
-
-                        メニューがまだ登録されていません
-
-                    </td>
-
-                </tr>
-
-            @endforelse
-
-            </tbody>
-
-        </table>
-
+            </form>
+        </div>
     </div>
 
-</div>
+    {{-- メニュー一覧 --}}
+    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-lg text-gray-900">メニュー一覧</h2>
+            <p class="text-sm text-gray-500 mt-1">登録済みのメニューを確認できます。</p>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-stone-50">
+                    <tr>
+                        <th class="border-b border-stone-200 px-4 py-3 text-left">カテゴリ</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-left">名前</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-left">タグ</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-center w-28">時間</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-center w-32">料金</th>
+                        <th class="border-b border-stone-200 px-4 py-3 text-center w-40">操作</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                @forelse($menus as $menu)
+                    <tr class="hover:bg-stone-50 transition">
+                        <td class="border-b border-stone-100 px-4 py-3 text-stone-700">
+                            {{ $menu->category->name ?? '-' }}
+                        </td>
+
+                        <td class="border-b border-stone-100 px-4 py-3 font-semibold text-stone-800">
+                            {{ $menu->name }}
+                        </td>
+
+                        <td class="border-b border-stone-100 px-4 py-3">
+                            <div class="flex flex-wrap gap-1">
+                                @foreach($menu->tags as $tag)
+                                    <span class="text-xs px-2.5 py-1 rounded-full"
+                                          style="background-color: {{ $theme }}15; color: {{ $theme }};">
+                                        {{ $tag->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </td>
+
+                        <td class="border-b border-stone-100 px-4 py-3 text-center text-stone-700">
+                            {{ $menu->duration }}分
+                        </td>
+
+                        <td class="border-b border-stone-100 px-4 py-3 text-center font-medium text-stone-800">
+                            ¥{{ number_format($menu->price) }}
+                        </td>
+
+                        <td class="border-b border-stone-100 px-4 py-3">
+                            <div class="flex justify-center gap-2">
+                                <a href="{{ route('company.menu.edit',$menu->id) }}"
+                                   class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition">
+                                    編集
+                                </a>
+
+                                <form method="POST"
+                                      action="{{ route('company.menu.destroy',$menu->id) }}"
+                                      onsubmit="return confirm('削除しますか？')">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                        削除
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="6"
+                            class="px-4 py-10 text-center text-gray-400">
+                            メニューがまだ登録されていません
+                        </td>
+                    </tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
 
 </div>
 

@@ -82,6 +82,16 @@
                             </div>
                         </section>
 
+                        {{-- 閉じられない場合の案内 --}}
+                        <section id="closeHelpBox" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+                            <div class="text-[15px] font-bold text-amber-900">
+                                この画面は自動では閉じられませんでした
+                            </div>
+                            <p class="mt-2 text-[13px] leading-7 text-amber-900">
+                                お手数ですが、ブラウザやアプリの閉じる操作でこの画面を終了してください。
+                            </p>
+                        </section>
+
                         {{-- 予約内容 --}}
                         <section class="rounded-2xl border border-[#eadfd3] bg-[#fcf8f4] p-5 sm:p-6">
                             <div class="mb-4">
@@ -333,12 +343,16 @@
                             </section>
 
                             <div class="hidden lg:flex flex-col gap-3">
-                                <a
-                                    href="{{ url('/r/' . $company->company_code) }}"
+                                <button
+                                    type="button"
+                                    onclick="handleCompleteClose()"
                                     class="inline-flex items-center justify-center rounded-full px-6 py-4 text-white font-bold text-sm shadow-sm"
                                     style="background:#b7875c;">
-                                    トップへ戻る
-                                </a>
+                                    閉じる
+                                </button>
+                                <p class="text-[12px] text-center text-[#9a8878] leading-6">
+                                    この画面は閉じて終了できます
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -368,13 +382,31 @@
                 </div>
             </div>
 
-            <a
-                href="{{ url('/r/' . $company->company_code) }}"
+            <button
+                type="button"
+                onclick="handleCompleteClose()"
                 class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg text-center"
                 style="background:#b7875c;">
-                トップへ戻る
-            </a>
+                閉じる
+            </button>
         </div>
     </div>
 </div>
+
+<script>
+    function handleCompleteClose() {
+        const helpBox = document.getElementById('closeHelpBox');
+
+        try {
+            window.close();
+        } catch (e) {}
+
+        setTimeout(function () {
+            if (helpBox) {
+                helpBox.classList.remove('hidden');
+                helpBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 250);
+    }
+</script>
 @endsection

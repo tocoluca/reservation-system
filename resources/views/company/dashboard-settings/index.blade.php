@@ -20,6 +20,7 @@
             'card.shift_patterns',
             'card.default_shift',
             'card.month_shift',
+            'card.month_shift_view',
             'card.customers',
             'card.reviews',
             'card.notices',

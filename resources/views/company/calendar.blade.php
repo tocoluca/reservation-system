@@ -68,20 +68,17 @@
                 </div>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能
-                </span>
-                <span class="inline-flex items-center gap-2 rounded-full bg-amber-50 text-amber-700 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>残りわずか
-                </span>
-                <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり
-                </span>
-                <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
-                    <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
-                </span>
-            </div>
+				<div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+				    <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
+				        <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能
+				    </span>
+				    <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
+				        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり
+				    </span>
+				    <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
+				        <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
+				    </span>
+				</div>
         </div>
     </div>
 
@@ -187,12 +184,12 @@
                 </div>
             </div>
 
-            <div class="overflow-auto rounded-2xl border border-stone-200">
-                <table class="min-w-[720px] w-full text-sm text-center">
-                    <thead id="day-head"></thead>
-                    <tbody id="day-body"></tbody>
-                </table>
-            </div>
+			<div class="overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
+			    <table class="min-w-[720px] w-full text-sm text-center border-collapse">
+			        <thead id="day-head"></thead>
+			        <tbody id="day-body"></tbody>
+			    </table>
+			</div>
         @else
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
@@ -200,7 +197,7 @@
                     <p class="text-sm text-gray-500">まずは空きのある日を探したいときに便利です。</p>
                 </div>
                 <div class="text-xs sm:text-sm text-stone-500">
-                    「予約可能」「残りわずか」の枠を押すとメニュー選択へ進みます
+                	「予約可能」の枠を押すとメニュー選択へ進みます
                 </div>
             </div>
 
@@ -422,26 +419,17 @@ function reloadByMode() {
 function getStatusBadge(cell) {
     if (!cell) {
         return `
-            <div class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">
+            <div class="mx-auto inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200 w-[96px]">
                 -
             </div>
         `;
     }
 
-    if (cell.status === '○') {
+    if (cell.status === '○' || cell.status === '△') {
         return `
-            <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-green-50 text-green-700 border border-green-200 min-w-[96px] shadow-sm">
-                <span class="text-xs font-bold">予約可能</span>
-                <span class="text-[11px] mt-0.5">空き ${cell.available}/${cell.total}</span>
-            </div>
-        `;
-    }
-
-    if (cell.status === '△') {
-        return `
-            <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 min-w-[96px] shadow-sm">
-                <span class="text-xs font-bold">残りわずか</span>
-                <span class="text-[11px] mt-0.5">空き ${cell.available}/${cell.total}</span>
+            <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-green-50 text-green-700 border border-green-200 w-[96px] shadow-sm">
+                <span class="text-xs font-bold whitespace-nowrap">予約可能</span>
+                <span class="text-[11px] mt-0.5 whitespace-nowrap">空き ${cell.available}/${cell.total}</span>
             </div>
         `;
     }
@@ -453,10 +441,10 @@ function getStatusBadge(cell) {
     const label = (cell.total > 0) ? '予約あり' : '受付不可';
 
     return `
-        <div class="inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[96px] opacity-90"
+        <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-stone-200 text-stone-500 border border-stone-300 w-[96px] opacity-90"
              title="${reason}">
-            <span class="text-xs font-bold">${label}</span>
-            <span class="text-[11px] mt-0.5">${Math.max(0, (cell.total ?? 0) - (cell.available ?? 0))}/${cell.total ?? 0}</span>
+            <span class="text-xs font-bold whitespace-nowrap">${label}</span>
+            <span class="text-[11px] mt-0.5 whitespace-nowrap">${Math.max(0, (cell.total ?? 0) - (cell.available ?? 0))}/${cell.total ?? 0}</span>
         </div>
     `;
 }
@@ -482,12 +470,21 @@ function loadCalendar() {
             let dates = firstTimeKey ? Object.keys(slots[firstTimeKey] || {}) : [];
             let times = Object.keys(slots);
 
+            const timeColWidth = 88;
+            const dayColWidth = 132;
+
             let html = `
-                <div class="overflow-auto rounded-2xl border border-stone-200">
-                    <table class="min-w-[960px] w-full text-sm border-collapse">
+                <div class="overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
+                    <table class="border-collapse text-sm table-fixed"
+                           style="width: max-content; min-width: ${timeColWidth + (dates.length * dayColWidth)}px;">
+                        <colgroup>
+                            <col style="width:${timeColWidth}px; min-width:${timeColWidth}px; max-width:${timeColWidth}px;">
+                            ${dates.map(() => `<col style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">`).join('')}
+                        </colgroup>
                         <thead>
                             <tr class="bg-stone-50">
-                                <th class="sticky top-0 left-0 z-20 p-3 border-b border-r bg-stone-50 text-left font-bold text-stone-700 min-w-[90px]">
+                                <th class="sticky top-0 left-0 z-30 px-2 py-3 border-b border-r bg-stone-50 text-center font-bold text-stone-700 whitespace-nowrap"
+                                    style="width:${timeColWidth}px; min-width:${timeColWidth}px; max-width:${timeColWidth}px;">
                                     時間
                                 </th>
             `;
@@ -498,8 +495,9 @@ function loadCalendar() {
                 let dayClass = day === 0 ? 'text-red-500' : (day === 6 ? 'text-blue-500' : 'text-stone-700');
 
                 html += `
-                    <th class="sticky top-0 z-10 p-3 border-b bg-white text-center min-w-[140px]">
-                        <div class="text-sm font-bold ${dayClass}">${d}</div>
+                    <th class="sticky top-0 z-20 px-2 py-3 border-b bg-white text-center align-middle"
+                        style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
+                        <div class="text-sm font-bold ${dayClass} whitespace-nowrap">${d}</div>
                         <div class="text-xs ${dayClass} mt-1">${w}</div>
                     </th>
                 `;
@@ -510,7 +508,8 @@ function loadCalendar() {
             times.forEach(time => {
                 html += `
                     <tr class="hover:bg-stone-50/70 transition">
-                        <td class="sticky left-0 z-10 bg-white p-3 border-b border-r font-bold text-stone-700">
+                        <td class="sticky left-0 z-10 bg-white px-2 py-3 border-b border-r font-bold text-stone-700 text-center whitespace-nowrap align-middle"
+                            style="width:${timeColWidth}px; min-width:${timeColWidth}px; max-width:${timeColWidth}px;">
                             ${time}
                         </td>
                 `;
@@ -520,18 +519,22 @@ function loadCalendar() {
 
                     if (!cell) {
                         html += `
-                            <td class="border-b p-3 text-center bg-stone-50">
-                                <div class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200">-</div>
+                            <td class="border-b px-2 py-2 text-center bg-stone-50 align-middle"
+                                style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
+                                <div class="mx-auto inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200 w-[96px]">
+                                    -
+                                </div>
                             </td>
                         `;
                         return;
                     }
 
                     let clickable = cell.status !== '×';
-                    let wrapperClass = clickable ? 'cursor-pointer hover:scale-[1.02] transition' : 'cursor-not-allowed';
+                    let wrapperClass = clickable ? 'cursor-pointer transition hover:scale-[1.02]' : 'cursor-not-allowed';
 
                     html += `
-                        <td class="border-b p-3 text-center ${clickable ? 'bg-white' : 'bg-stone-50'}">
+                        <td class="border-b px-2 py-2 text-center ${clickable ? 'bg-white' : 'bg-stone-50'} align-middle"
+                            style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
                             <div class="${wrapperClass}"
                                  ${clickable ? `onclick="startReservationFlow('${d} ${time}')"` : ''}>
                                 ${getStatusBadge(cell)}
@@ -618,31 +621,7 @@ function getDayCellContent(cell, dateStr, time, staff) {
         `;
     }
 
-    if (cell.status === '△') {
-        if (isPast) {
-            return `
-                <td class="p-3 sm:p-4 text-center bg-stone-50">
-                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px]">
-                        <span class="text-xs font-bold">受付終了</span>
-                        <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
-                    </div>
-                </td>
-            `;
-        }
-
-        return `
-            <td class="p-3 sm:p-4 text-center">
-                <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 min-w-[104px] shadow-sm cursor-pointer hover:bg-amber-100 transition"
-                     onclick="startReservationFlow('${dateStr} ${time}')"
-                     title="この担当者は残り ${available} 枠です">
-                    <span class="text-xs font-bold">残りわずか</span>
-                    <span class="text-[11px] mt-0.5">残り ${available}/${total || 0}</span>
-                </div>
-            </td>
-        `;
-    }
-
-    if (cell.status === '○') {
+    if (cell.status === '○' || cell.status === '△') {
         if (isPast) {
             return `
                 <td class="p-3 sm:p-4 text-center bg-stone-50">
@@ -661,7 +640,7 @@ function getDayCellContent(cell, dateStr, time, staff) {
                      onclick="startReservationFlow('${dateStr} ${time}')"
                      title="この担当者は残り ${available} 枠です">
                     <span class="text-xs font-bold">予約可能</span>
-                    <span class="text-[11px] mt-0.5 text-white/90">残り ${available}/${total || 0}</span>
+                    <span class="text-[11px] mt-0.5 text-white/90">空き ${available}/${total || 0}</span>
                 </div>
             </td>
         `;
@@ -675,6 +654,7 @@ function getDayCellContent(cell, dateStr, time, staff) {
         </td>
     `;
 }
+
 
 function loadDayCalendar() {
     if (mode !== 'day') return;
@@ -693,12 +673,14 @@ function loadDayCalendar() {
 
             let headerRow = `
                 <tr class="bg-stone-50">
-                    <th class="p-4 sticky top-0 left-0 z-20 text-left border-b border-r bg-stone-50 text-stone-700 min-w-[90px]">時間</th>`;
+                    <th class="p-4 sticky top-0 left-0 z-30 text-left border-b border-r bg-stone-50 text-stone-700 min-w-[90px] whitespace-nowrap">
+                        時間
+                    </th>`;
 
             data.staffs.forEach(staff => {
                 headerRow += `
-                    <th class="p-4 border-b text-center sticky top-0 bg-white z-10 min-w-[120px]">
-                        <div class="font-semibold text-stone-800">${staff.name}</div>
+                    <th class="p-4 border-b text-center sticky top-0 bg-white z-20 min-w-[120px]">
+                        <div class="font-semibold text-stone-800 whitespace-nowrap">${staff.name}</div>
                     </th>`;
             });
 
@@ -708,7 +690,9 @@ function loadDayCalendar() {
             Object.keys(data.slots).forEach(time => {
                 let row = `
                     <tr class="hover:bg-stone-50 transition">
-                        <td class="p-4 font-bold bg-white sticky left-0 z-10 text-center align-middle border-b border-r text-stone-700">${time}</td>`;
+                        <td class="p-4 font-bold bg-white sticky left-0 z-10 text-center align-middle border-b border-r text-stone-700 whitespace-nowrap">
+                            ${time}
+                        </td>`;
 
                 data.staffs.forEach(staff => {
                     let cell = data.slots[time][staff.id];

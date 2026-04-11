@@ -322,172 +322,211 @@
     </div>
 
     {{-- よく使う操作 --}}
-    <div class="mb-10">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
-            <div>
-                <h2 class="text-xl sm:text-2xl font-bold text-gray-900">よく使う操作</h2>
-                <p class="text-sm text-gray-500 mt-1">まずここから操作すると迷いにくくなります。</p>
-            </div>
+{{-- よく使う操作 --}}
+<div class="mb-10">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-4">
+        <div>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900">よく使う操作</h2>
+            <p class="text-sm text-gray-500 mt-1">まずここから操作すると迷いにくくなります。</p>
         </div>
+    </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            @if($can('card.reserve'))
-                <a href="{{ route('company.reserve') }}"
-                   class="group rounded-[2rem] p-6 text-white shadow-lg hover:-translate-y-0.5 transition"
-                   style="background: linear-gradient(135deg, {{ $theme }} 0%, #1f2937 100%);">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M8 7V3M16 7V3M4 11H20M5 5H19A2 2 0 0121 7V19A2 2 0 0119 21H5A2 2 0 013 19V7A2 2 0 015 5Z"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs font-bold bg-white/15 px-3 py-1 rounded-full">最優先</span>
-                    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        @if($can('card.reserve'))
+			<a href="{{ route('company.reserve') }}"
+			   class="group rounded-[2rem] p-6 border shadow-lg hover:-translate-y-1 hover:shadow-xl transition text-white relative overflow-hidden"
+			   style="background: linear-gradient(135deg, {{ $theme }} 0%, #334155 65%, #0f172a 100%); border-color: {{ $theme }}55;">
+			    <div class="absolute inset-0 bg-white/5 pointer-events-none"></div>
 
-                    <div class="mt-6 text-2xl font-bold">予約管理</div>
-                    <div class="mt-2 text-sm text-white/85 leading-6">
-                        予約の確認、登録、キャンセル、検索をすぐ行えます。
-                    </div>
+			    <div class="relative flex items-center justify-between gap-3">
+			        <div class="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shadow-sm">
+			            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			                <path d="M8 7V3M16 7V3M4 11H20M5 5H19A2 2 0 0121 7V19A2 2 0 0119 21H5A2 2 0 013 19V7A2 2 0 015 5Z"/>
+			            </svg>
+			        </div>
+			        <span class="text-xs font-bold bg-amber-300 text-amber-900 px-3 py-1 rounded-full shadow-sm">
+			            最優先
+			        </span>
+			    </div>
 
-                    <div class="mt-6 inline-flex items-center text-sm font-semibold">
-                        開く
-                        <svg class="w-4 h-4 ml-2 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M9 5L16 12L9 19"/>
+			    <div class="relative mt-6 text-2xl font-bold">予約管理</div>
+			    <div class="relative mt-2 text-sm text-white/85 leading-6">
+			        予約の確認、登録、キャンセル、検索をすぐ行えます。
+			    </div>
+
+			    <div class="relative mt-6 inline-flex items-center text-sm font-semibold text-white">
+			        開く
+			        <svg class="w-4 h-4 ml-2 transition group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			            <path d="M9 5L16 12L9 19"/>
+			        </svg>
+			    </div>
+			</a>
+        @endif
+
+        @if($can('card.customers'))
+            <a href="{{ route('company.customers') }}"
+               class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
+                      bg-gradient-to-br from-lime-50 via-white to-lime-50/60 border-lime-200">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-lime-500 text-white flex items-center justify-center shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M17 21V19A4 4 0 0013 15H5A4 4 0 001 19V21M23 21V19A4 4 0 0019 15.13M16 3.13A4 4 0 0116 11"/>
                         </svg>
                     </div>
-                </a>
-            @endif
+                    <span class="text-xs font-bold text-lime-700 bg-white px-3 py-1 rounded-full border border-lime-200">顧客</span>
+                </div>
 
-            @if($can('card.customers'))
-                <a href="{{ route('company.customers') }}"
-                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-lime-50 text-lime-600 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M17 21V19A4 4 0 0013 15H5A4 4 0 001 19V21M23 21V19A4 4 0 0019 15.13M16 3.13A4 4 0 0116 11"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs font-bold text-lime-700 bg-lime-50 px-3 py-1 rounded-full">顧客</span>
+                <div class="mt-6 text-xl font-bold text-gray-900">顧客管理</div>
+                <div class="mt-2 text-sm text-gray-600 leading-6">
+                    来店履歴や顧客情報を確認し、次の提案につなげられます。
+                </div>
+
+                <div class="mt-6 text-sm font-semibold text-lime-700">開く</div>
+            </a>
+        @endif
+
+        @if($can('card.month_shift'))
+            <a href="{{ route('company.staff-shifts') }}"
+               class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
+                      bg-gradient-to-br from-fuchsia-50 via-white to-fuchsia-50/60 border-fuchsia-200">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-fuchsia-500 text-white flex items-center justify-center shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M12 8V12L15 15M3 12A9 9 0 1021 12A9 9 0 003 12Z"/>
+                        </svg>
                     </div>
+                    <span class="text-xs font-bold text-fuchsia-700 bg-white px-3 py-1 rounded-full border border-fuchsia-200">勤務</span>
+                </div>
 
-                    <div class="mt-6 text-xl font-bold text-gray-900">顧客管理</div>
-                    <div class="mt-2 text-sm text-gray-500 leading-6">
-                        来店履歴や顧客情報を確認し、次の提案につなげられます。
+                <div class="mt-6 text-xl font-bold text-gray-900">勤務管理</div>
+                <div class="mt-2 text-sm text-gray-600 leading-6">
+                    従業員の勤務予定について日単位での変更や月単位での登録ができます。
+                </div>
+
+                <div class="mt-6 text-sm font-semibold text-fuchsia-700">開く</div>
+            </a>
+			<a href="{{ route('company.staff-shifts.view') }}"
+			   class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
+			          bg-gradient-to-br from-amber-50 via-white to-amber-50/60 border-amber-200">
+			    <div class="flex items-center justify-between gap-3">
+			        <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
+			            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+			                <path d="M9 12h6M9 16h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2Z"/>
+			            </svg>
+			        </div>
+			        <span class="text-xs font-bold text-amber-700 bg-white px-3 py-1 rounded-full border border-amber-200">
+			            閲覧
+			        </span>
+			    </div>
+
+			    <div class="mt-6 text-xl font-bold text-gray-900">スタッフ別シフト表</div>
+			    <div class="mt-2 text-sm text-gray-600 leading-6">
+			        月別の勤務表を確認し、PDFでダウンロードできます。
+			    </div>
+			    <div class="mt-6 text-sm font-semibold text-amber-700">開く</div>
+			</a>
+        @endif
+
+        @if($can('card.business_calendar'))
+            <a href="{{ route('company.calendar.index') }}"
+               class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
+                      bg-gradient-to-br from-emerald-50 via-white to-emerald-50/60 border-emerald-200">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M8 7V3M16 7V3M4 11H20M5 5H19A2 2 0 0121 7V19A2 2 0 0119 21H5A2 2 0 013 19V7A2 2 0 015 5Z"/>
+                        </svg>
                     </div>
+                    <span class="text-xs font-bold text-emerald-700 bg-white px-3 py-1 rounded-full border border-emerald-200">営業日</span>
+                </div>
 
-                    <div class="mt-6 text-sm font-semibold text-lime-700">開く</div>
-                </a>
-            @endif
+                <div class="mt-6 text-xl font-bold text-gray-900">営業日管理</div>
+                <div class="mt-2 text-sm text-gray-600 leading-6">
+                    営業日・営業時間・予約状況を確認しながら調整できます。
+                </div>
 
-            @if($can('card.month_shift'))
-                <a href="{{ route('company.staff-shifts') }}"
-                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M12 8V12L15 15M3 12A9 9 0 1021 12A9 9 0 003 12Z"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs font-bold text-fuchsia-700 bg-fuchsia-50 px-3 py-1 rounded-full">勤務</span>
-                    </div>
-
-                    <div class="mt-6 text-xl font-bold text-gray-900">勤務管理</div>
-                    <div class="mt-2 text-sm text-gray-500 leading-6">
-                        従業員の勤務予定について日単位での変更や月単位での登録ができます。
-                    </div>
-
-                    <div class="mt-6 text-sm font-semibold text-fuchsia-700">開く</div>
-                </a>
-            @endif
-
-            @if($can('card.business_calendar'))
-                <a href="{{ route('company.calendar.index') }}"
-                   class="group bg-white rounded-[2rem] p-6 border border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M8 7V3M16 7V3M4 11H20M5 5H19A2 2 0 0121 7V19A2 2 0 0119 21H5A2 2 0 013 19V7A2 2 0 015 5Z"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full">営業日</span>
-                    </div>
-
-                    <div class="mt-6 text-xl font-bold text-gray-900">営業日管理</div>
-                    <div class="mt-2 text-sm text-gray-500 leading-6">
-                        営業日・営業時間・予約状況を確認しながら調整できます。
-                    </div>
-
-                    <div class="mt-6 text-sm font-semibold text-emerald-700">開く</div>
-                </a>
-            @endif
-        </div>
+                <div class="mt-6 text-sm font-semibold text-emerald-700">開く</div>
+            </a>
+        @endif
     </div>
+</div>
 
     {{-- 補助メニュー --}}
-    <div class="mb-10">
-        <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4">その他のよく使うメニュー</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            @if($can('card.reservation_change_notices'))
-                <a href="{{ route('company.reservation_change_notices.index') }}"
-                   class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <div class="text-rose-500 text-xs font-semibold">予約変更連絡管理</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">未対応確認</div>
-                        </div>
+{{-- 補助メニュー --}}
+<div class="mb-10">
+    <h2 class="text-lg sm:text-xl font-bold text-gray-900 mb-4">その他のよく使うメニュー</h2>
 
-                        @if($changeTotalActive > 0)
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 whitespace-nowrap">
-                                {{ $changeTotalActive }}件
-                            </span>
-                        @else
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 whitespace-nowrap">
-                                なし
-                            </span>
-                        @endif
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        @if($can('card.reservation_change_notices'))
+            <a href="{{ route('company.reservation_change_notices.index') }}"
+               class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-rose-200 hover:-translate-y-0.5">
+                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-rose-400"></div>
+
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <div class="text-rose-600 text-xs font-semibold">予約変更連絡管理</div>
+                        <div class="text-lg font-bold mt-2 text-gray-900">未対応確認</div>
                     </div>
 
-                    <div class="mt-3 text-sm text-gray-500 leading-6">
-                        店都合で変更が必要な予約の確認・連絡状況を管理します。
-                    </div>
-                </a>
-            @endif
+                    @if($changeTotalActive > 0)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 whitespace-nowrap">
+                            {{ $changeTotalActive }}件
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 whitespace-nowrap">
+                            なし
+                        </span>
+                    @endif
+                </div>
 
-            @if($can('card.reviews') && ($company->review_enabled ?? false))
-                <a href="{{ route('company.reviews.index') }}"
-                   class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
-                    <div class="text-amber-500 text-xs font-semibold">口コミ管理</div>
-                    <div class="text-lg font-bold mt-2 text-gray-900">口コミの確認・返信</div>
-                    <div class="mt-3 text-sm text-gray-500 leading-6">
-                        投稿された口コミの確認、公開、返信を行えます。
-                    </div>
-                </a>
-            @endif
+                <div class="mt-3 text-sm text-gray-600 leading-6">
+                    店都合で変更が必要な予約の確認・連絡状況を管理します。
+                </div>
+            </a>
+        @endif
 
-            @if($can('card.vacation'))
-                <a href="{{ route('company.vacation.index') }}"
-                   class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
-                    <div class="text-green-500 text-xs font-semibold">休暇管理</div>
-                    <div class="text-lg font-bold mt-2 text-gray-900">休暇申請・承認</div>
-                    <div class="mt-3 text-sm text-gray-500 leading-6">
-                        従業員の休暇管理を行えます。
-                    </div>
-                </a>
-            @endif
+        @if($can('card.reviews') && ($company->review_enabled ?? false))
+            <a href="{{ route('company.reviews.index') }}"
+               class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-amber-200 hover:-translate-y-0.5">
+                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-amber-400"></div>
 
-            @if($can('card.my_profile'))
-                <a href="{{ route('company.my-profile') }}"
-                   class="bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-gray-200">
-                    <div class="text-teal-500 text-xs font-semibold">マイプロフィール</div>
-                    <div class="text-lg font-bold mt-2 text-gray-900">個人設定</div>
-                    <div class="mt-3 text-sm text-gray-500 leading-6">
-                        自分のプロフィールや基本情報を変更できます。
-                    </div>
-                </a>
-            @endif
-        </div>
+                <div class="text-amber-600 text-xs font-semibold">口コミ管理</div>
+                <div class="text-lg font-bold mt-2 text-gray-900">口コミの確認・返信</div>
+                <div class="mt-3 text-sm text-gray-600 leading-6">
+                    投稿された口コミの確認、公開、返信を行えます。
+                </div>
+            </a>
+        @endif
+
+        @if($can('card.vacation'))
+            <a href="{{ route('company.vacation.index') }}"
+               class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-green-200 hover:-translate-y-0.5">
+                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-green-400"></div>
+
+                <div class="text-green-600 text-xs font-semibold">休暇管理</div>
+                <div class="text-lg font-bold mt-2 text-gray-900">休暇申請・承認</div>
+                <div class="mt-3 text-sm text-gray-600 leading-6">
+                    従業員の休暇管理を行えます。
+                </div>
+            </a>
+        @endif
+
+        @if($can('card.my_profile'))
+            <a href="{{ route('company.my-profile') }}"
+               class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-teal-200 hover:-translate-y-0.5">
+                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-teal-400"></div>
+
+                <div class="text-teal-600 text-xs font-semibold">マイプロフィール</div>
+                <div class="text-lg font-bold mt-2 text-gray-900">個人設定</div>
+                <div class="mt-3 text-sm text-gray-600 leading-6">
+                    自分のプロフィールや基本情報を変更できます。
+                </div>
+            </a>
+        @endif
+
     </div>
+</div>
 
     {{-- 今日の予約 + お知らせ --}}
     <div class="grid grid-cols-1 2xl:grid-cols-3 gap-6 mb-10">
@@ -688,15 +727,17 @@
             <div>
                 <h3 class="text-sm font-bold tracking-wide text-gray-400 uppercase mb-3">基本設定</h3>
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                    @if($can('card.company_info'))
-                        <a href="{{ route('company.info.edit') }}"
-                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
-                            <div class="text-orange-500 text-xs font-semibold">COMPANY</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">企業情報編集</div>
-                            <div class="text-sm text-gray-500 mt-2">会社情報・営業時間変更</div>
-                        </a>
-                    @endif
-
+					@if($can('card.company_info'))
+					    <a href="{{ route('company.info.edit') }}"
+					       class="rounded-2xl p-5 border shadow-sm transition hover:-translate-y-0.5 hover:shadow-md
+					              bg-gradient-to-br from-[#f8f4ec] via-[#fdfbf7] to-[#f3eadb]
+					              border-[#dcc9a3] hover:from-[#f3ebde] hover:via-[#fbf7f0] hover:to-[#eadbbf]">
+					        <div class="text-[#9a7b3f] text-xs font-semibold tracking-[0.12em]">COMPANY</div>
+					        <div class="text-lg font-bold mt-2 text-gray-900">企業情報編集</div>
+					        <div class="mt-3 h-px w-10 bg-[#c9ab6a] opacity-70"></div>
+					        <div class="text-sm text-gray-600 mt-3">会社情報・営業時間変更</div>
+					    </a>
+					@endif
                     @if($can('card.business_calendar'))
                         <a href="{{ route('company.calendar.index') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
@@ -839,6 +880,7 @@
                             <div class="text-sm text-gray-500 mt-2">役職ごとの表示権限を設定</div>
                         </a>
                     @endif
+
                 </div>
             </div>
         </div>

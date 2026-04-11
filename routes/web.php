@@ -345,6 +345,12 @@ Route::prefix('company')->group(function () {
             Route::post('staff-shifts/copy', [StaffShiftController::class, 'copy'])
                 ->name('company.staff-shifts.copy');
 
+			Route::get('staff-shifts/view', [StaffShiftController::class, 'view'])
+			    ->name('company.staff-shifts.view');
+
+			Route::get('staff-shifts/pdf', [StaffShiftController::class, 'pdf'])
+			    ->name('company.staff-shifts.pdf');
+
             Route::get('customers', [CustomerController::class, 'index'])
                 ->name('company.customers');
 

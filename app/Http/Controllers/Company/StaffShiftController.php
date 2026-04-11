@@ -12,6 +12,8 @@ use App\Models\StaffDefaultShift;
 use App\Models\Vacation;
 use App\Models\CompanyBusinessCalendar;
 use App\Services\ReservationChangeNoticeService;
+use Barryvdh\DomPDF\Facade\Pdf;
+
 
 class StaffShiftController extends Controller
 {
@@ -81,6 +83,182 @@ class StaffShiftController extends Controller
             'vacations' => $vacations,
             'businessDays' => $businessDays,
         ]);
+    }
+
+    /*
+    閲覧専用 月シフト画面
+    */
+    public function view(Request $request)
+    {
+        $loginStaff = auth()->guard('company')->user();
+        $company = $loginStaff->company;
+
+        $month = $request->query('month', now()->format('Y-m'));
+        $topStaffId = (int) $request->query('top_staff_id', $loginStaff->id);
+
+        $start = Carbon::parse($month . '-01')->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $staffs = Staff::where('company_id', $company->id)
+            ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
+            ->orderByRaw("
+                CASE role
+                    WHEN 'master' THEN 1
+                    WHEN 'area_leader' THEN 2
+                    WHEN 'leader' THEN 3
+                    WHEN 'staff' THEN 4
+                    ELSE 99
+                END
+            ")
+            ->orderByRaw('CAST(NULLIF(staff_code, "") AS UNSIGNED)')
+            ->orderBy('staff_code')
+            ->orderBy('id')
+            ->get();
+
+        $staffIds = $staffs->pluck('id');
+
+        $patterns = ShiftPattern::where('company_id', $company->id)
+            ->orderBy('sort_order')
+            ->orderBy('start_time')
+            ->orderBy('id')
+            ->get();
+
+		$defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
+		    ->get()
+		    ->groupBy([
+		        'staff_id',
+		        fn ($row) => (int) $row->weekday,
+		    ]);
+
+        $vacations = Vacation::whereIn('staff_id', $staffIds)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('start_at', [$start, $end])
+                    ->orWhereBetween('end_at', [$start, $end])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->where('start_at', '<=', $start)
+                            ->where('end_at', '>=', $end);
+                    });
+            })
+            ->get()
+            ->groupBy('staff_id');
+
+        $businessDays = CompanyBusinessCalendar::where('company_id', $company->id)
+            ->whereBetween('date', [$start, $end])
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->date)->format('Y-m-d H:i:s');
+            });
+
+        $shifts = StaffShift::whereIn('staff_id', $staffIds)
+            ->whereBetween('date', [$start, $end])
+            ->get()
+            ->groupBy([
+                'staff_id',
+                fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
+            ]);
+
+			return view('company.staff_shifts_view', [
+			    'company' => $company,
+			    'month' => $month,
+			    'staffs' => $staffs,
+			    'patterns' => $patterns,
+			    'defaultShifts' => $defaultShifts,
+			    'shifts' => $shifts,
+			    'vacations' => $vacations,
+			    'businessDays' => $businessDays,
+			    'topStaffId' => $topStaffId,
+			    'loginStaffId' => (int) $loginStaff->id,
+			]);
+    }
+
+    /*
+    月シフト表 PDF
+    */
+    public function pdf(Request $request)
+    {
+        $loginStaff = auth()->guard('company')->user();
+        $company = $loginStaff->company;
+
+        $month = $request->query('month', now()->format('Y-m'));
+        $topStaffId = (int) $request->query('top_staff_id', $loginStaff->id);
+
+        $start = Carbon::parse($month . '-01')->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $staffs = Staff::where('company_id', $company->id)
+            ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
+            ->orderByRaw("
+                CASE role
+                    WHEN 'master' THEN 1
+                    WHEN 'area_leader' THEN 2
+                    WHEN 'leader' THEN 3
+                    WHEN 'staff' THEN 4
+                    ELSE 99
+                END
+            ")
+            ->orderByRaw('CAST(NULLIF(staff_code, "") AS UNSIGNED)')
+            ->orderBy('staff_code')
+            ->orderBy('id')
+            ->get();
+
+        $staffIds = $staffs->pluck('id');
+
+        $patterns = ShiftPattern::where('company_id', $company->id)
+            ->orderBy('sort_order')
+            ->orderBy('start_time')
+            ->orderBy('id')
+            ->get();
+
+		$defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
+		    ->get()
+		    ->groupBy([
+		        'staff_id',
+		        fn ($row) => (int) $row->weekday,
+		    ]);
+
+        $vacations = Vacation::whereIn('staff_id', $staffIds)
+            ->where('status', 'approved')
+            ->where(function ($q) use ($start, $end) {
+                $q->whereBetween('start_at', [$start, $end])
+                    ->orWhereBetween('end_at', [$start, $end])
+                    ->orWhere(function ($q2) use ($start, $end) {
+                        $q2->where('start_at', '<=', $start)
+                            ->where('end_at', '>=', $end);
+                    });
+            })
+            ->get()
+            ->groupBy('staff_id');
+
+        $businessDays = CompanyBusinessCalendar::where('company_id', $company->id)
+            ->whereBetween('date', [$start, $end])
+            ->get()
+            ->keyBy(function ($row) {
+                return Carbon::parse($row->date)->format('Y-m-d H:i:s');
+            });
+
+        $shifts = StaffShift::whereIn('staff_id', $staffIds)
+            ->whereBetween('date', [$start, $end])
+            ->get()
+            ->groupBy([
+                'staff_id',
+                fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
+            ]);
+
+		$pdf = Pdf::loadView('company.staff_shifts_pdf', [
+		    'company' => $company,
+		    'month' => $month,
+		    'staffs' => $staffs,
+		    'patterns' => $patterns,
+		    'defaultShifts' => $defaultShifts,
+		    'shifts' => $shifts,
+		    'vacations' => $vacations,
+		    'businessDays' => $businessDays,
+		    'topStaffId' => $topStaffId,
+		    'loginStaffId' => (int) $loginStaff->id,
+		])->setPaper('a4', 'landscape');
+
+        return $pdf->download('staff_shift_' . $month . '.pdf');
     }
 
     /*

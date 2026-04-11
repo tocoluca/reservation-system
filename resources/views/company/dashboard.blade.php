@@ -405,6 +405,9 @@
 
                 <div class="mt-6 text-sm font-semibold text-fuchsia-700">開く</div>
             </a>
+        @endif
+
+        @if($can('card.month_shift_view'))
 			<a href="{{ route('company.staff-shifts.view') }}"
 			   class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
 			          bg-gradient-to-br from-amber-50 via-white to-amber-50/60 border-amber-200">

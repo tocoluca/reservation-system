@@ -23,7 +23,7 @@ class StaffShiftController extends Controller
     }
 
     /*
-    月シフト画面
+    勤務管理画面
     */
     public function index(Request $request)
     {
@@ -86,7 +86,7 @@ class StaffShiftController extends Controller
     }
 
     /*
-    閲覧専用 月シフト画面
+    閲覧専用 勤務管理画面
     */
     public function view(Request $request)
     {
@@ -123,12 +123,12 @@ class StaffShiftController extends Controller
             ->orderBy('id')
             ->get();
 
-		$defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
-		    ->get()
-		    ->groupBy([
-		        'staff_id',
-		        fn ($row) => (int) $row->weekday,
-		    ]);
+        $defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
+            ->get()
+            ->groupBy([
+                'staff_id',
+                fn ($row) => (int) $row->weekday,
+            ]);
 
         $vacations = Vacation::whereIn('staff_id', $staffIds)
             ->where('status', 'approved')
@@ -158,22 +158,22 @@ class StaffShiftController extends Controller
                 fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
             ]);
 
-			return view('company.staff_shifts_view', [
-			    'company' => $company,
-			    'month' => $month,
-			    'staffs' => $staffs,
-			    'patterns' => $patterns,
-			    'defaultShifts' => $defaultShifts,
-			    'shifts' => $shifts,
-			    'vacations' => $vacations,
-			    'businessDays' => $businessDays,
-			    'topStaffId' => $topStaffId,
-			    'loginStaffId' => (int) $loginStaff->id,
-			]);
+        return view('company.staff_shifts_view', [
+            'company' => $company,
+            'month' => $month,
+            'staffs' => $staffs,
+            'patterns' => $patterns,
+            'defaultShifts' => $defaultShifts,
+            'shifts' => $shifts,
+            'vacations' => $vacations,
+            'businessDays' => $businessDays,
+            'topStaffId' => $topStaffId,
+            'loginStaffId' => (int) $loginStaff->id,
+        ]);
     }
 
     /*
-    月シフト表 PDF
+    勤務管理表 PDF
     */
     public function pdf(Request $request)
     {
@@ -210,12 +210,12 @@ class StaffShiftController extends Controller
             ->orderBy('id')
             ->get();
 
-		$defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
-		    ->get()
-		    ->groupBy([
-		        'staff_id',
-		        fn ($row) => (int) $row->weekday,
-		    ]);
+        $defaultShifts = StaffDefaultShift::whereIn('staff_id', $staffIds)
+            ->get()
+            ->groupBy([
+                'staff_id',
+                fn ($row) => (int) $row->weekday,
+            ]);
 
         $vacations = Vacation::whereIn('staff_id', $staffIds)
             ->where('status', 'approved')
@@ -245,24 +245,24 @@ class StaffShiftController extends Controller
                 fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
             ]);
 
-		$pdf = Pdf::loadView('company.staff_shifts_pdf', [
-		    'company' => $company,
-		    'month' => $month,
-		    'staffs' => $staffs,
-		    'patterns' => $patterns,
-		    'defaultShifts' => $defaultShifts,
-		    'shifts' => $shifts,
-		    'vacations' => $vacations,
-		    'businessDays' => $businessDays,
-		    'topStaffId' => $topStaffId,
-		    'loginStaffId' => (int) $loginStaff->id,
-		])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('company.staff_shifts_pdf', [
+            'company' => $company,
+            'month' => $month,
+            'staffs' => $staffs,
+            'patterns' => $patterns,
+            'defaultShifts' => $defaultShifts,
+            'shifts' => $shifts,
+            'vacations' => $vacations,
+            'businessDays' => $businessDays,
+            'topStaffId' => $topStaffId,
+            'loginStaffId' => (int) $loginStaff->id,
+        ])->setPaper('a4', 'landscape');
 
         return $pdf->download('staff_shift_' . $month . '.pdf');
     }
 
     /*
-    基本シフトから月シフト生成
+    基本シフトから勤務管理生成
     */
     public function generate(Request $request)
     {
@@ -419,28 +419,60 @@ class StaffShiftController extends Controller
 
         $prevShifts = StaffShift::whereIn('staff_id', $staffIds)
             ->whereBetween('date', [$prevStart, $prevEnd])
-            ->get();
+            ->get()
+            ->groupBy([
+                'staff_id',
+                fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
+            ]);
 
-        foreach ($prevShifts as $shift) {
-            $shiftDate = Carbon::parse($shift->date);
-            $targetDay = $shiftDate->day;
+        foreach ($staffIds as $staffId) {
+            $date = $currentStart->copy();
 
-            if ($targetDay > $currentEnd->day) {
-                continue;
+            while ($date->lte($currentEnd)) {
+                $targetDate = $date->copy();
+                $targetDay = $targetDate->day;
+
+                $shift = null;
+
+                // まずは同日コピーを優先
+                if ($targetDay <= $prevEnd->day) {
+                    $sameDay = $prevStart->copy()->day($targetDay)->format('Y-m-d');
+                    $shift = $prevShifts[$staffId][$sameDay][0] ?? null;
+                }
+
+                // 足りない末日分だけ、曜日で補完
+                if (!$shift) {
+                    $weekday = $targetDate->dayOfWeek;
+
+                    $cursor = $prevEnd->copy();
+                    while ($cursor->gte($prevStart)) {
+                        if ($cursor->dayOfWeek === $weekday) {
+                            $sourceKey = $cursor->format('Y-m-d');
+                            $shift = $prevShifts[$staffId][$sourceKey][0] ?? null;
+
+                            if ($shift) {
+                                break;
+                            }
+                        }
+                        $cursor->subDay();
+                    }
+                }
+
+                if ($shift) {
+                    StaffShift::updateOrCreate(
+                        [
+                            'staff_id' => $staffId,
+                            'date' => $targetDate->format('Y-m-d'),
+                        ],
+                        [
+                            'shift_pattern_id' => $shift->shift_pattern_id,
+                            'is_work' => $shift->is_work,
+                        ]
+                    );
+                }
+
+                $date->addDay();
             }
-
-            $newDate = $currentStart->copy()->day($targetDay)->format('Y-m-d');
-
-            StaffShift::updateOrCreate(
-                [
-                    'staff_id' => $shift->staff_id,
-                    'date' => $newDate,
-                ],
-                [
-                    'shift_pattern_id' => $shift->shift_pattern_id,
-                    'is_work' => $shift->is_work,
-                ]
-            );
         }
 
         return back()->with('success', '前月シフトをコピーしました');

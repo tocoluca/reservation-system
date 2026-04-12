@@ -16,9 +16,13 @@
 /public/build
 /public/hot
 /public/storage
+/public/*.html
+/public/checkout.php
 /storage/*.key
 /storage/pail
 /vendor
 Homestead.json
 Homestead.yaml
 Thumbs.db
+secrets.php
+composer.*

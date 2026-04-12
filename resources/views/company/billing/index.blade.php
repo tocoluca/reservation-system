@@ -40,7 +40,8 @@
         </div>
     </div>
 
-    {{-- エラー表示 --}}
+
+    {{-- バリデーションエラー --}}
     @if($errors->any())
         <div class="mb-6 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
             <div class="font-bold text-sm mb-2">入力内容をご確認ください</div>
@@ -71,11 +72,18 @@
         </div>
 
         <div class="p-5 sm:p-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
                 <div class="rounded-[1.5rem] bg-amber-50/60 border border-amber-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">契約状態</div>
                     <div class="mt-2 text-lg font-bold text-gray-900">
                         {{ $company->subscription_status_label }}
+                    </div>
+                </div>
+
+                <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
+                    <div class="text-xs font-semibold tracking-wide text-gray-500">現在のプラン</div>
+                    <div class="mt-2 text-base font-semibold text-gray-900">
+                        {{ $company->current_plan_label }}
                     </div>
                 </div>
 
@@ -129,7 +137,11 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         @foreach($plans as $plan)
-            <div class="bg-white rounded-[2rem] shadow-sm p-6 border border-gray-100 hover:shadow-md transition">
+            @php
+                $isCurrentPlan = $company->stripe_price_id === $plan['price_id'] && $company->isSubscriptionAvailable();
+            @endphp
+
+            <div class="bg-white rounded-[2rem] shadow-sm p-6 border {{ $isCurrentPlan ? 'border-amber-300 ring-2 ring-amber-100' : 'border-gray-100' }} hover:shadow-md transition">
                 <div class="flex items-start justify-between gap-3">
                     <div>
                         <div class="text-sm font-semibold" style="color: {{ $theme }}">
@@ -141,8 +153,16 @@
                         </h3>
                     </div>
 
-                    <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-xl">
-                        💳
+                    <div class="flex flex-col items-end gap-2">
+                        @if($isCurrentPlan)
+                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                現在ご利用中
+                            </span>
+                        @endif
+
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-xl">
+                            💳
+                        </div>
                     </div>
                 </div>
 
@@ -157,16 +177,22 @@
                     </div>
                 </div>
 
-                <form action="{{ route('company.billing.checkout') }}" method="POST" class="mt-6">
-                    @csrf
-                    <input type="hidden" name="plan" value="{{ $plan['key'] }}">
+                @if($isCurrentPlan)
+                    <div class="mt-6 w-full px-4 py-3.5 rounded-2xl bg-gray-100 text-gray-500 text-center font-bold">
+                        現在ご利用中のプランです
+                    </div>
+                @else
+                    <form action="{{ route('company.billing.checkout') }}" method="POST" class="mt-6">
+                        @csrf
+                        <input type="hidden" name="plan" value="{{ $plan['key'] }}">
 
-                    <button type="submit"
-                            class="w-full px-4 py-3.5 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
-                            style="background: {{ $theme }};">
-                        このプランで申し込む
-                    </button>
-                </form>
+                        <button type="submit"
+                                class="w-full px-4 py-3.5 rounded-2xl text-white font-bold shadow-sm hover:opacity-90 transition"
+                                style="background: {{ $theme }};">
+                            このプランで申し込む
+                        </button>
+                    </form>
+                @endif
             </div>
         @endforeach
     </div>

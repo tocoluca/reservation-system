@@ -14,19 +14,19 @@ class BillingController extends Controller
         $company = $staff->company;
 
         $plans = [
-            'light' => [
+            'standard' => [
                 'key' => 'standard',
                 'name' => 'スタンダードプラン',
                 'price_id' => env('STRIPE_PRICE_STANDARD'),
                 'amount' => 6000,
                 'description' => '基本プランです。',
             ],
-            'standard' => [
+            'platinum' => [
                 'key' => 'platinum',
                 'name' => 'プラチナプラン',
                 'price_id' => env('STRIPE_PRICE_PLATINUM'),
                 'amount' => 9000,
-                'description' => 'Lineログイン機能が付いたプランです。',
+                'description' => 'LINEログイン機能が付いたプランです。',
             ],
         ];
 
@@ -36,7 +36,7 @@ class BillingController extends Controller
     public function checkout(Request $request)
     {
         $request->validate([
-            'plan' => ['required', 'in:platinum,standard'],
+            'plan' => ['required', 'in:standard,platinum'],
         ], [
             'plan.required' => 'プランを選択してください。',
             'plan.in' => '選択したプランが正しくありません。',

@@ -2,104 +2,125 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Company extends Model
+class Company extends Authenticatable
 {
-    use Billable;
+    use HasFactory, Notifiable, Billable;
 
     protected $fillable = [
         'company_code',
         'name',
-        'industry_type',
-        'logo_path',
         'email',
-        'phone',
-        'address',
-        'slot_minutes',
+        'password',
         'theme_color',
+        'logo_path',
+
+        // 予約設定
+        'slot_minutes',
         'max_simultaneous_reservations',
+        'open_patterns',
         'regular_holidays',
         'holiday_is_closed',
-        'review_enabled',
-        'line_login_enabled',
-        'line_channel_id',
-        'line_channel_secret',
-        'menu_time_priority_flag',
         'reservation_month_limit',
         'reservation_open_days',
         'reservation_close_hours',
-        'revisit_reminder_days',
-        'web_cancel_deadline_hours',
-        'is_initialized',
-        'open_patterns',
 
-        'is_active',
-        'grace_until',
-        'stripe_customer_id',
+        // Stripe / Billing
+        'stripe_id',
+        'pm_type',
+        'pm_last_four',
         'stripe_subscription_id',
         'stripe_price_id',
         'subscription_status',
-        'subscription_started_at',
-        'subscription_ends_at',
-        'prefer_less_capable_staff_for_menu_assignment',
+        'plan_code',
+        'trial_ends_at',
+        'current_period_end',
+        'subscribed_at',
+        'canceled_at',
+        'is_billing_active',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [
         'open_patterns' => 'array',
         'regular_holidays' => 'array',
         'holiday_is_closed' => 'boolean',
-        'review_enabled' => 'boolean',
-        'menu_time_priority_flag' => 'boolean',
-        'is_initialized' => 'boolean',
-        'is_active' => 'boolean',
-        'grace_until' => 'datetime',
-        'subscription_started_at' => 'datetime',
-        'subscription_ends_at' => 'datetime',
-        'prefer_less_capable_staff_for_menu_assignment' => 'boolean',
+        'is_billing_active' => 'boolean',
+        'trial_ends_at' => 'datetime',
+        'current_period_end' => 'datetime',
+        'subscribed_at' => 'datetime',
+        'canceled_at' => 'datetime',
+        'email_verified_at' => 'datetime',
     ];
 
-    public function staff()
+    public function staff(): HasMany
     {
         return $this->hasMany(Staff::class);
     }
 
-    public function isSubscriptionAvailable(): bool
+    public function menus(): HasMany
     {
-        if (!$this->is_active) {
-            return false;
-        }
-
-        if (in_array($this->subscription_status, ['active', 'trialing'], true)) {
-            return true;
-        }
-
-        if ($this->grace_until && now()->lt($this->grace_until)) {
-            return true;
-        }
-
-        if ($this->subscription_ends_at && now()->lt($this->subscription_ends_at)) {
-            return true;
-        }
-
-        return false;
+        return $this->hasMany(Menu::class);
     }
 
-    public function getSubscriptionStatusLabelAttribute(): string
+    public function reservations(): HasMany
     {
-        return match ($this->subscription_status) {
-            'trialing' => 'お試し期間中',
-            'active' => '契約中',
-            'past_due' => 'お支払い確認中',
-            'unpaid' => '未払い',
-            'canceled' => '解約済み',
+        return $this->hasMany(Reservation::class);
+    }
+
+    public function businessCalendars(): HasMany
+    {
+        return $this->hasMany(CompanyBusinessCalendar::class);
+    }
+
+    public function notices(): HasMany
+    {
+        return $this->hasMany(Notice::class);
+    }
+
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+	public function isSubscribed(): bool
+	{
+	    return $this->subscription_status === 'active'
+	        && (bool) $this->is_billing_active;
+	}
+
+	public function isOnTrial(): bool
+	{
+	    return $this->subscription_status === 'trialing'
+	        && !is_null($this->trial_ends_at)
+	        && $this->trial_ends_at->isFuture();
+	}
+
+	public function isSubscriptionAvailable(): bool
+	{
+	    return $this->isSubscribed() || $this->isOnTrial();
+	}
+
+    public function isCanceled(): bool
+    {
+        return in_array($this->subscription_status, ['canceled', 'incomplete_expired', 'unpaid'], true);
+    }
+
+    public function planLabel(): string
+    {
+        return match ($this->plan_code) {
+            'standard' => 'スタンダード',
+            'platinum' => 'プラチナ',
             default => '未契約',
         };
-    }
-
-    public function reviews()
-    {
-        return $this->hasMany(\App\Models\Review::class);
     }
 }

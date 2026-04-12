@@ -125,7 +125,8 @@ Route::middleware(['auth:company'])->prefix('company')->group(function () {
     Route::get('/billing/portal', [BillingController::class, 'portal'])->name('company.billing.portal');
 });
 
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+    ->name('stripe.webhook');
 
 Route::prefix('company')->group(function () {
 

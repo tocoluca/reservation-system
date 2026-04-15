@@ -46,6 +46,23 @@ use App\Http\Controllers\StripeWebhookController;
 
 /*
 |--------------------------------------------------------------------------
+| STRIPEテスト
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/stripe/webhook', function (Request $request) {
+    Log::info('stripe webhook reached', [
+        'method' => $request->method(),
+        'path' => $request->path(),
+        'raw' => $request->getContent(),
+    ]);
+
+    return response()->json(['ok' => true], 200);
+});
+
+
+/*
+|--------------------------------------------------------------------------
 | 共通
 |--------------------------------------------------------------------------
 */

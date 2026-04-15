@@ -253,6 +253,8 @@ class ReservationController extends Controller
                                 'status' => '×',
                                 'available' => 0,
                                 'total' => max(1, (int) ($company->max_simultaneous_reservations ?? 1)),
+                                'is_closed' => false,
+                                'unavailable_reason' => 'past',
                             ];
                         }
 
@@ -267,7 +269,9 @@ class ReservationController extends Controller
                             $data[$slotStart->format('H:i')][$staff->id] = [
                                 'status' => '×',
                                 'available' => 0,
-                                'total' => max(1, (int) ($company->max_simultaneous_reservations ?? 1)),
+                                'total' => 0,
+                                'is_closed' => true,
+                                'unavailable_reason' => $status === 'closed' ? 'non_business_day' : 'outside_business_hours',
                             ];
                         }
 
@@ -303,7 +307,11 @@ class ReservationController extends Controller
 
                         $perStaffLimit = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
 
-                        if ($overlapDetail && $staffReservedCount >= $perStaffLimit) {
+                        if (
+                            !$result['is_closed']
+                            && $overlapDetail
+                            && $staffReservedCount >= $perStaffLimit
+                        ) {
                             $reservation = $overlapDetail->reservation;
 
                             $data[$slotStart->format('H:i')][$staff->id] = [
@@ -315,6 +323,8 @@ class ReservationController extends Controller
                                 'reservation_start' => optional($reservation?->start_at)->format('Y-m-d H:i'),
                                 'available'         => 0,
                                 'total'             => $perStaffLimit,
+                                'is_closed'         => false,
+                                'unavailable_reason'=> 'already_booked',
                             ];
                         } else {
                             $data[$slotStart->format('H:i')][$staff->id] = $result;
@@ -432,6 +442,8 @@ class ReservationController extends Controller
                                 'status' => '×',
                                 'available' => 0,
                                 'total' => count($staffList) * max(1, (int) ($company->max_simultaneous_reservations ?? 1)),
+                                'is_closed' => false,
+                                'unavailable_reason' => 'past',
                             ];
 
                             $time->addMinutes($minutes);
@@ -444,7 +456,9 @@ class ReservationController extends Controller
                             $data[$time->format('H:i')][$day->format('Y-m-d')] = [
                                 'status' => '×',
                                 'available' => 0,
-                                'total' => count($staffList) * max(1, (int) ($company->max_simultaneous_reservations ?? 1)),
+                                'total' => 0,
+                                'is_closed' => true,
+                                'unavailable_reason' => $status === 'closed' ? 'non_business_day' : 'outside_business_hours',
                             ];
                             $time->addMinutes($minutes);
                             continue;
@@ -1324,11 +1338,23 @@ class ReservationController extends Controller
 
         $total = $workingStaff * $maxSimultaneous;
 
-        if ($workingStaff <= 0 || $available <= 0) {
+        if ($workingStaff <= 0) {
+            return [
+                'status' => '×',
+                'available' => 0,
+                'total' => 0,
+                'is_closed' => true,
+                'unavailable_reason' => 'shift_off',
+            ];
+        }
+
+        if ($available <= 0) {
             return [
                 'status' => '×',
                 'available' => 0,
                 'total' => $total,
+                'is_closed' => false,
+                'unavailable_reason' => 'already_booked',
             ];
         }
 
@@ -1337,6 +1363,8 @@ class ReservationController extends Controller
                 'status' => '△',
                 'available' => 1,
                 'total' => $total,
+                'is_closed' => false,
+                'unavailable_reason' => null,
             ];
         }
 
@@ -1344,6 +1372,8 @@ class ReservationController extends Controller
             'status' => '○',
             'available' => $available,
             'total' => $total,
+            'is_closed' => false,
+            'unavailable_reason' => null,
         ];
     }
 

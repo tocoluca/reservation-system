@@ -11,15 +11,17 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.2
+          extensions: mbstring, pdo, pdo_mysql, gd, zip, bcmath, intl, fileinfo
+          tools: composer:v2
 
       - name: Install Composer
-        run: composer install --no-dev --optimize-autoloader
+        run: composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
       - name: Deploy to reserve
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -27,7 +29,7 @@ jobs:
           server: ftp.lolipop.jp
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: reserve/laravel/
+          server-dir: /reserve/laravel/
           exclude: |
             **/.env
             **/storage/**
@@ -44,7 +46,7 @@ jobs:
           server: ftp.lolipop.jp
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: demo/laravel/
+          server-dir: /demo/laravel/
           exclude: |
             **/.env
             **/storage/**
@@ -54,4 +56,3 @@ jobs:
             **/secrets.php
             **/public/*.html
             **/public/checkout.php
-

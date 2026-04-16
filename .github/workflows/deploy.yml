@@ -35,7 +35,6 @@ jobs:
             **/.github/**
             **/node_modules/**
             **/secrets.php
-            **/composer.*
             **/public/*.html
             **/public/checkout.php
 
@@ -53,7 +52,6 @@ jobs:
             **/.github/**
             **/node_modules/**
             **/secrets.php
-            **/composer.*
             **/public/*.html
             **/public/checkout.php
 

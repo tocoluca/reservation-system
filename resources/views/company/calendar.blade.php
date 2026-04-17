@@ -416,7 +416,7 @@ function reloadByMode() {
     if (mode === 'day') loadDayCalendar();
 }
 
-function getStatusBadge(cell) {
+function getStatusBadge(cell, dateStr = null, timeStr = null) {
     if (!cell) {
         return `
             <div class="mx-auto inline-flex items-center justify-center rounded-xl px-2 py-2 text-xs font-semibold bg-stone-100 text-stone-400 border border-stone-200 w-[96px]">
@@ -425,26 +425,47 @@ function getStatusBadge(cell) {
         `;
     }
 
-    if (cell.status === '○' || cell.status === '△') {
+    let isPast = false;
+    if (dateStr && timeStr) {
+        const now = new Date();
+        const cellTime = new Date(`${dateStr}T${timeStr}:00`);
+        isPast = cellTime < now;
+    }
+
+    const total = parseInt(cell.total ?? 0);
+    const available = parseInt(cell.available ?? 0);
+    const used = Math.max(0, total - available);
+
+    if (isPast) {
         return `
-            <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-green-50 text-green-700 border border-green-200 w-[96px] shadow-sm">
-                <span class="text-xs font-bold whitespace-nowrap">予約可能</span>
-                <span class="text-[11px] mt-0.5 whitespace-nowrap">空き ${cell.available}/${cell.total}</span>
+            <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-stone-200 text-stone-500 border border-stone-300 w-[96px] opacity-90"
+                 title="過去の時間のため受付できません">
+                <span class="text-xs font-bold whitespace-nowrap">受付終了</span>
+                <span class="text-[11px] mt-0.5 whitespace-nowrap">${used}/${total}</span>
             </div>
         `;
     }
 
-    const reason = (cell.total > 0)
+    if (cell.status === '○' || cell.status === '△') {
+        return `
+            <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-green-50 text-green-700 border border-green-200 w-[96px] shadow-sm">
+                <span class="text-xs font-bold whitespace-nowrap">予約可能</span>
+                <span class="text-[11px] mt-0.5 whitespace-nowrap">空き ${available}/${total}</span>
+            </div>
+        `;
+    }
+
+    const reason = (total > 0)
         ? 'この時間帯の受付枠が埋まっています'
         : '営業時間外・休業日・シフト外などで受付できません';
 
-    const label = (cell.total > 0) ? '予約あり' : '受付不可';
+    const label = (total > 0) ? '予約あり' : '受付不可';
 
     return `
         <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-2 py-2 bg-stone-200 text-stone-500 border border-stone-300 w-[96px] opacity-90"
              title="${reason}">
             <span class="text-xs font-bold whitespace-nowrap">${label}</span>
-            <span class="text-[11px] mt-0.5 whitespace-nowrap">${Math.max(0, (cell.total ?? 0) - (cell.available ?? 0))}/${cell.total ?? 0}</span>
+            <span class="text-[11px] mt-0.5 whitespace-nowrap">${used}/${total}</span>
         </div>
     `;
 }
@@ -537,8 +558,7 @@ function loadCalendar() {
                             style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
                             <div class="${wrapperClass}"
                                  ${clickable ? `onclick="startReservationFlow('${d} ${time}')"` : ''}>
-                                ${getStatusBadge(cell)}
-                            </div>
+                                ${getStatusBadge(cell, d, time)}3                            </div>
                         </td>
                     `;
                 });

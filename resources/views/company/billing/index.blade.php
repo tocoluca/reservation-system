@@ -4,11 +4,27 @@
 @php
     $theme = $company->theme_color ?? '#3b82f6';
     $isAvailable = $company->isSubscriptionAvailable();
+
+    $statusLabel = match($company->subscription_status) {
+        'active' => '有効',
+        'trialing' => 'トライアル中',
+        'past_due' => '支払い確認中',
+        'canceled' => '解約済み',
+        'incomplete' => '未完了',
+        'incomplete_expired' => '期限切れ',
+        'unpaid' => '未払い',
+        default => '未契約',
+    };
+
+    $planLabel = match($company->plan_code) {
+        'standard' => 'スタンダード',
+        'platinum' => 'プラチナ',
+        default => '未契約',
+    };
 @endphp
 
 <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
-    {{-- ヘッダー --}}
     <div class="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-amber-50 via-white to-rose-50 shadow-sm mb-6">
         <div class="absolute inset-x-0 top-0 h-1.5" style="background: {{ $theme }};"></div>
 
@@ -40,8 +56,6 @@
         </div>
     </div>
 
-
-    {{-- バリデーションエラー --}}
     @if($errors->any())
         <div class="mb-6 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
             <div class="font-bold text-sm mb-2">入力内容をご確認ください</div>
@@ -53,7 +67,18 @@
         </div>
     @endif
 
-    {{-- 現在の契約状況 --}}
+    @if(session('success'))
+        <div class="mb-6 rounded-[1.5rem] border border-green-200 bg-green-50 text-green-700 px-5 py-4 shadow-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="mb-6 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-white to-gray-50">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -76,14 +101,14 @@
                 <div class="rounded-[1.5rem] bg-amber-50/60 border border-amber-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">契約状態</div>
                     <div class="mt-2 text-lg font-bold text-gray-900">
-                        {{ $company->subscription_status_label }}
+                        {{ $statusLabel }}
                     </div>
                 </div>
 
                 <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">現在のプラン</div>
                     <div class="mt-2 text-base font-semibold text-gray-900">
-                        {{ $company->current_plan_label }}
+                        {{ $planLabel }}
                     </div>
                 </div>
 
@@ -97,25 +122,19 @@
                 <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">契約開始日</div>
                     <div class="mt-2 text-base font-semibold text-gray-900">
-                        {{ optional($company->subscription_started_at)->format('Y/m/d') ?: '-' }}
+                        {{ optional($company->subscribed_at)->format('Y/m/d') ?: '-' }}
                     </div>
                 </div>
 
                 <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">利用終了予定日</div>
                     <div class="mt-2 text-base font-semibold text-gray-900">
-                        {{ optional($company->subscription_ends_at)->format('Y/m/d') ?: '-' }}
+                        {{ optional($company->current_period_end)->format('Y/m/d') ?: '-' }}
                     </div>
                 </div>
             </div>
 
-            @if($company->grace_until)
-                <div class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 px-4 py-3 text-sm">
-                    <span class="font-semibold">猶予期限：</span>{{ $company->grace_until->format('Y/m/d H:i') }}
-                </div>
-            @endif
-
-            @if($company->stripe_customer_id)
+            @if($company->stripe_id)
                 <div class="mt-5 flex flex-col sm:flex-row gap-3">
                     <a href="{{ route('company.billing.portal') }}"
                        class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-semibold shadow-sm hover:opacity-90 transition"
@@ -127,7 +146,6 @@
         </div>
     </div>
 
-    {{-- プラン一覧 --}}
     <div class="mb-4">
         <h2 class="text-lg sm:text-xl font-bold text-gray-900">プラン一覧</h2>
         <p class="text-sm text-gray-500 mt-1">

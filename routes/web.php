@@ -48,7 +48,7 @@ use App\Http\Controllers\StripeWebhookController;
 |--------------------------------------------------------------------------
 | STRIPEテスト
 |--------------------------------------------------------------------------
-*/
+
 
 Route::post('/stripe/webhook', function (Request $request) {
     Log::info('stripe webhook reached', [
@@ -59,7 +59,7 @@ Route::post('/stripe/webhook', function (Request $request) {
 
     return response()->json(['ok' => true], 200);
 });
-
+*/
 
 /*
 |--------------------------------------------------------------------------
@@ -142,7 +142,7 @@ Route::middleware(['auth:company'])->prefix('company')->group(function () {
     Route::get('/billing/portal', [BillingController::class, 'portal'])->name('company.billing.portal');
 });
 
-Route::post('/stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])
+Route::post('/stripe-webhook', [StripeWebhookController::class, 'handleWebhook'])
     ->name('stripe.webhook');
 
 Route::prefix('company')->group(function () {

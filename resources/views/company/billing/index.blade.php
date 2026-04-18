@@ -4,11 +4,15 @@
 @php
     $theme = $company->theme_color ?? '#3b82f6';
     $isAvailable = $company->isSubscriptionAvailable();
+    $isInGrace = method_exists($company, 'isInGracePeriod') ? $company->isInGracePeriod() : false;
+    $graceUntil = optional($company->grace_until)->format('Y/m/d');
+    $currentPeriodEnd = optional($company->current_period_end)->format('Y/m/d');
+    $subscribedAt = optional($company->subscribed_at)->format('Y/m/d');
 
     $statusLabel = match($company->subscription_status) {
         'active' => '有効',
         'trialing' => 'トライアル中',
-        'past_due' => '支払い確認中',
+        'past_due' => $isInGrace ? '支払い失敗（猶予中）' : '支払い失敗（停止）',
         'canceled' => '解約済み',
         'incomplete' => '未完了',
         'incomplete_expired' => '期限切れ',
@@ -67,18 +71,6 @@
         </div>
     @endif
 
-    @if(session('success'))
-        <div class="mb-6 rounded-[1.5rem] border border-green-200 bg-green-50 text-green-700 px-5 py-4 shadow-sm">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-6 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
-            {{ session('error') }}
-        </div>
-    @endif
-
     <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-white to-gray-50">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -122,17 +114,48 @@
                 <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">契約開始日</div>
                     <div class="mt-2 text-base font-semibold text-gray-900">
-                        {{ optional($company->subscribed_at)->format('Y/m/d') ?: '-' }}
+                        {{ $subscribedAt ?: '-' }}
                     </div>
                 </div>
 
                 <div class="rounded-[1.5rem] bg-gray-50 border border-gray-100 p-4">
                     <div class="text-xs font-semibold tracking-wide text-gray-500">利用終了予定日</div>
                     <div class="mt-2 text-base font-semibold text-gray-900">
-                        {{ optional($company->current_period_end)->format('Y/m/d') ?: '-' }}
+                        {{ $currentPeriodEnd ?: '-' }}
                     </div>
                 </div>
             </div>
+
+            @if($isInGrace)
+                <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 text-amber-800 px-5 py-4 shadow-sm">
+                    <div class="font-bold text-sm mb-1">お支払い更新のお願い</div>
+                    <div class="text-sm leading-6">
+                        お支払いの更新が確認できていません。<br>
+                        利用停止予定日：{{ $graceUntil ?: '-' }}<br>
+                        停止を避けるため、カード情報の更新をお願いいたします。
+                    </div>
+                </div>
+            @endif
+
+            @if(!$isAvailable && $company->subscription_status === 'past_due' && !$isInGrace)
+                <div class="mt-5 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
+                    <div class="font-bold text-sm mb-1">システム利用を停止しています</div>
+                    <div class="text-sm leading-6">
+                        お支払いの更新が確認できないため、現在システムの利用を停止しています。<br>
+                        カード情報をご確認のうえ、再度お支払い状態の更新をお願いいたします。
+                    </div>
+                </div>
+            @endif
+
+            @if(!$isAvailable && in_array($company->subscription_status, ['unpaid', 'canceled', 'incomplete_expired']))
+                <div class="mt-5 rounded-[1.5rem] border border-red-200 bg-red-50 text-red-700 px-5 py-4 shadow-sm">
+                    <div class="font-bold text-sm mb-1">ご契約状況をご確認ください</div>
+                    <div class="text-sm leading-6">
+                        現在の契約状態ではシステムをご利用いただけません。<br>
+                        再開する場合は、カード情報または契約状況をご確認ください。
+                    </div>
+                </div>
+            @endif
 
             @if($company->stripe_id)
                 <div class="mt-5 flex flex-col sm:flex-row gap-3">

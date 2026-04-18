@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Middleware\CheckCompanyCode;
+use App\Http\Middleware\EnsureCompanyBillingIsActive;
+use App\Http\Middleware\EnsurePublicReservationAvailable;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'company.code' => CheckCompanyCode::class,
             'company.init' => \App\Http\Middleware\CompanyInit::class,
+            'company.billing.active' => EnsureCompanyBillingIsActive::class,
+            'public.reservation.available' => EnsurePublicReservationAvailable::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

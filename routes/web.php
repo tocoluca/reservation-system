@@ -185,7 +185,7 @@ Route::prefix('company')->group(function () {
         Route::post('setup/complete', [SetupController::class, 'complete'])
             ->name('company.setup.complete');
 
-        Route::middleware('company.init')->group(function () {
+       Route::middleware(['company.init', 'company.billing.active'])->group(function () {
 
             Route::get('dashboard', [CompanyDash::class, 'index'])
                 ->name('company.dashboard');
@@ -475,7 +475,7 @@ Route::get('/company/staff/list', function () {
 */
 
 Route::prefix('r/{company_code}')
-    ->middleware(['company.code'])
+    ->middleware(['company.code', 'public.reservation.available'])
     ->group(function () {
         Route::get('/', [ReserveController::class, 'index'])
             ->name('reserve.index');

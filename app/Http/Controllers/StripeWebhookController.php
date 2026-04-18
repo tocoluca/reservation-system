@@ -7,6 +7,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Stripe\Exception\SignatureVerificationException;
+use Stripe\Stripe;
+use Stripe\Subscription;
 use Stripe\Webhook;
 use UnexpectedValueException;
 
@@ -57,6 +59,10 @@ class StripeWebhookController extends Controller
                     $this->handleInvoicePaymentFailed($event->data->object);
                     break;
 
+                case 'payment_intent.payment_failed':
+                    $this->handlePaymentIntentPaymentFailed($event->data->object);
+                    break;
+
                 default:
                     Log::info('Stripe webhook ignored event.', [
                         'type' => $event->type,
@@ -84,6 +90,7 @@ class StripeWebhookController extends Controller
 
         $customerId = data_get($session, 'customer');
         $subscriptionId = data_get($session, 'subscription');
+        $sessionCreated = data_get($session, 'created');
 
         $company = Company::query()
             ->when($companyId, fn ($q) => $q->where('id', $companyId))
@@ -102,7 +109,10 @@ class StripeWebhookController extends Controller
             'stripe_id' => $customerId ?: $company->stripe_id,
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'plan_code' => $planCode ?: $company->plan_code,
-            'subscribed_at' => $company->subscribed_at ?: now(),
+            'subscribed_at' => $sessionCreated
+                ? Carbon::createFromTimestamp($sessionCreated)
+                : ($company->subscribed_at ?: now()),
+            'grace_until' => null,
             'is_billing_active' => true,
         ])->save();
 
@@ -111,6 +121,7 @@ class StripeWebhookController extends Controller
             'stripe_id' => $customerId,
             'stripe_subscription_id' => $subscriptionId,
             'plan_code' => $planCode,
+            'subscribed_at' => optional($company->subscribed_at)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -124,6 +135,7 @@ class StripeWebhookController extends Controller
         $currentPeriodEnd = data_get($subscription, 'current_period_end');
         $trialEnd = data_get($subscription, 'trial_end');
         $canceledAt = data_get($subscription, 'canceled_at');
+        $createdAt = data_get($subscription, 'created');
 
         $company = Company::query()
             ->where('stripe_id', $customerId)
@@ -138,34 +150,42 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $company->forceFill([
+        $data = [
             'stripe_id' => $customerId ?: $company->stripe_id,
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'stripe_price_id' => $priceId ?: $company->stripe_price_id,
             'subscription_status' => $status,
-            'trial_ends_at' => $trialEnd
-                ? Carbon::createFromTimestamp($trialEnd)
-                : $company->trial_ends_at,
+            'trial_ends_at' => $trialEnd ? Carbon::createFromTimestamp($trialEnd) : null,
             'current_period_end' => $currentPeriodEnd
                 ? Carbon::createFromTimestamp($currentPeriodEnd)
                 : $company->current_period_end,
-            'canceled_at' => $canceledAt
-                ? Carbon::createFromTimestamp($canceledAt)
-                : $company->canceled_at,
-            'subscribed_at' => $company->subscribed_at ?: now(),
-            'is_billing_active' => in_array($status, ['trialing', 'active', 'past_due'], true),
-        ]);
+            'canceled_at' => $canceledAt ? Carbon::createFromTimestamp($canceledAt) : null,
+            'subscribed_at' => $company->subscribed_at ?: (
+                $createdAt ? Carbon::createFromTimestamp($createdAt) : now()
+            ),
+        ];
 
-        if (in_array($status, ['canceled', 'incomplete_expired', 'unpaid'], true)) {
-            $company->is_billing_active = false;
+        if (in_array($status, ['active', 'trialing'], true)) {
+            $data['grace_until'] = null;
+            $data['is_billing_active'] = true;
+        } elseif ($status === 'past_due') {
+            $data['grace_until'] = $company->grace_until && $company->grace_until->isFuture()
+                ? $company->grace_until
+                : now()->addDays(10);
+            $data['is_billing_active'] = true;
+        } elseif (in_array($status, ['canceled', 'incomplete_expired', 'unpaid'], true)) {
+            $data['is_billing_active'] = false;
         }
 
-        $company->save();
+        $company->forceFill($data)->save();
 
         Log::info('Stripe subscription event handled.', [
             'company_id' => $company->id,
             'status' => $status,
             'price_id' => $priceId,
+            'subscribed_at' => optional($company->subscribed_at)->format('Y-m-d H:i:s'),
+            'current_period_end' => optional($company->current_period_end)->format('Y-m-d H:i:s'),
+            'grace_until' => optional($company->grace_until)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -173,7 +193,6 @@ class StripeWebhookController extends Controller
     {
         $customerId = data_get($invoice, 'customer');
         $subscriptionId = data_get($invoice, 'subscription');
-        $periodEnd = data_get($invoice, 'lines.data.0.period.end');
 
         $company = Company::query()
             ->where('stripe_id', $customerId)
@@ -188,18 +207,46 @@ class StripeWebhookController extends Controller
             return;
         }
 
+        $paidAt = data_get($invoice, 'status_transitions.paid_at');
+        $linePeriodEnd = data_get($invoice, 'lines.data.0.period.end');
+
+        $subscriptionPeriodEnd = null;
+
+        if ($subscriptionId) {
+            try {
+                Stripe::setApiKey(config('services.stripe.secret'));
+
+                $subscription = Subscription::retrieve($subscriptionId);
+                $subscriptionPeriodEnd = data_get($subscription, 'current_period_end');
+            } catch (\Throwable $e) {
+                Log::warning('Stripe invoice.paid: failed to retrieve subscription.', [
+                    'company_id' => $company->id,
+                    'stripe_subscription_id' => $subscriptionId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $resolvedPeriodEnd = $subscriptionPeriodEnd ?: $linePeriodEnd;
+
         $company->forceFill([
             'stripe_id' => $customerId ?: $company->stripe_id,
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'subscription_status' => 'active',
-            'current_period_end' => $periodEnd
-                ? Carbon::createFromTimestamp($periodEnd)
+            'subscribed_at' => $paidAt
+                ? Carbon::createFromTimestamp($paidAt)
+                : ($company->subscribed_at ?: now()),
+            'current_period_end' => $resolvedPeriodEnd
+                ? Carbon::createFromTimestamp($resolvedPeriodEnd)
                 : $company->current_period_end,
+            'grace_until' => null,
             'is_billing_active' => true,
         ])->save();
 
         Log::info('Stripe invoice.paid handled.', [
             'company_id' => $company->id,
+            'subscribed_at' => optional($company->subscribed_at)->format('Y-m-d H:i:s'),
+            'current_period_end' => optional($company->current_period_end)->format('Y-m-d H:i:s'),
         ]);
     }
 
@@ -225,11 +272,47 @@ class StripeWebhookController extends Controller
             'stripe_id' => $customerId ?: $company->stripe_id,
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'subscription_status' => 'past_due',
+            'grace_until' => now()->addDays(10),
             'is_billing_active' => true,
         ])->save();
 
         Log::warning('Stripe invoice.payment_failed handled.', [
             'company_id' => $company->id,
+            'grace_until' => optional($company->grace_until)->format('Y-m-d H:i:s'),
+        ]);
+    }
+
+    protected function handlePaymentIntentPaymentFailed($paymentIntent): void
+    {
+        $customerId = data_get($paymentIntent, 'customer');
+
+        if (!$customerId) {
+            Log::warning('Stripe payment_intent.payment_failed: customer missing.');
+            return;
+        }
+
+        $company = Company::query()
+            ->where('stripe_id', $customerId)
+            ->first();
+
+        if (!$company) {
+            Log::warning('Stripe payment_intent.payment_failed: company not found.', [
+                'stripe_id' => $customerId,
+            ]);
+            return;
+        }
+
+        $company->forceFill([
+            'stripe_id' => $customerId ?: $company->stripe_id,
+            'subscription_status' => 'past_due',
+            'grace_until' => now()->addDays(10),
+            'is_billing_active' => true,
+        ])->save();
+
+        Log::warning('Stripe payment_intent.payment_failed handled.', [
+            'company_id' => $company->id,
+            'stripe_id' => $customerId,
+            'grace_until' => optional($company->grace_until)->format('Y-m-d H:i:s'),
         ]);
     }
 }

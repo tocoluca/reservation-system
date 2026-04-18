@@ -285,13 +285,19 @@ class DashboardController extends Controller
         $subscriptionAvailable = $company->isSubscriptionAvailable();
         $billingWarning = null;
 
-        if (in_array($company->subscription_status, ['past_due', 'unpaid'], true)) {
-            $billingWarning = 'お支払い状況をご確認ください。必要に応じてカード情報の更新をお願いします。';
-        } elseif ($company->subscription_status === 'canceled') {
-            $billingWarning = '現在は解約済みです。再開する場合はプランをお申し込みください。';
-        } elseif (!$company->subscription_status) {
-            $billingWarning = 'まだご契約がありません。プランを選んでお申し込みください。';
-        }
+		if ($company->subscription_status === 'past_due') {
+		    if ($company->isInGracePeriod()) {
+		        $billingWarning = 'お支払い更新が確認できていません。利用停止予定日: ' . optional($company->grace_until)->format('Y/m/d') . '。カード情報の更新をお願いします。';
+		    } else {
+		        $billingWarning = 'お支払い更新が確認できないため、現在システム利用を停止しています。';
+		    }
+		} elseif ($company->subscription_status === 'unpaid') {
+		    $billingWarning = '未払い状態のため、現在システム利用を停止しています。';
+		} elseif ($company->subscription_status === 'canceled') {
+		    $billingWarning = '現在は解約済みです。再開する場合はプランをお申し込みください。';
+		} elseif (!$company->subscription_status) {
+		    $billingWarning = 'まだご契約がありません。プランを選んでお申し込みください。';
+		}
 
         return view('company.dashboard', compact(
             'staff',

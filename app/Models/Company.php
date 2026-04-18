@@ -42,6 +42,7 @@ class Company extends Authenticatable
         'current_period_end',
         'subscribed_at',
         'canceled_at',
+        'grace_until',
         'is_billing_active',
     ];
 
@@ -59,6 +60,7 @@ class Company extends Authenticatable
         'current_period_end' => 'datetime',
         'subscribed_at' => 'datetime',
         'canceled_at' => 'datetime',
+        'grace_until' => 'datetime',
         'email_verified_at' => 'datetime',
     ];
 
@@ -92,23 +94,42 @@ class Company extends Authenticatable
         return $this->hasMany(Customer::class);
     }
 
-	public function isSubscribed(): bool
-	{
-	    return $this->subscription_status === 'active'
-	        && (bool) $this->is_billing_active;
-	}
+    public function inquiries()
+    {
+        return $this->hasMany(\App\Models\Inquiry::class);
+    }
 
-	public function isOnTrial(): bool
-	{
-	    return $this->subscription_status === 'trialing'
-	        && !is_null($this->trial_ends_at)
-	        && $this->trial_ends_at->isFuture();
-	}
+    public function isSubscribed(): bool
+    {
+        return $this->subscription_status === 'active'
+            && (bool) $this->is_billing_active;
+    }
 
-	public function isSubscriptionAvailable(): bool
-	{
-	    return $this->isSubscribed() || $this->isOnTrial();
-	}
+    public function isOnTrial(): bool
+    {
+        return $this->subscription_status === 'trialing'
+            && !is_null($this->trial_ends_at)
+            && $this->trial_ends_at->isFuture();
+    }
+
+    public function isInGracePeriod(): bool
+    {
+        return $this->subscription_status === 'past_due'
+            && !is_null($this->grace_until)
+            && $this->grace_until->isFuture();
+    }
+
+    public function isSubscriptionAvailable(): bool
+    {
+        return $this->isSubscribed()
+            || $this->isOnTrial()
+            || $this->isInGracePeriod();
+    }
+
+    public function shouldBeLockedForBilling(): bool
+    {
+        return !$this->isSubscriptionAvailable();
+    }
 
     public function isCanceled(): bool
     {
@@ -123,8 +144,20 @@ class Company extends Authenticatable
             default => '未契約',
         };
     }
-	public function inquiries()
-	{
-	    return $this->hasMany(\App\Models\Inquiry::class);
-	}
+
+    public function getSubscriptionStatusLabelAttribute(): string
+    {
+        return match ($this->subscription_status) {
+            'active' => '有効',
+            'trialing' => 'トライアル中',
+            'past_due' => $this->isInGracePeriod()
+                ? '支払い失敗（猶予中）'
+                : '支払い失敗（停止）',
+            'canceled' => '解約済み',
+            'incomplete' => '未完了',
+            'incomplete_expired' => '期限切れ',
+            'unpaid' => '未払い',
+            default => '未契約',
+        };
+    }
 }

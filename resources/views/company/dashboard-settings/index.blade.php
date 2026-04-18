@@ -22,6 +22,7 @@
             'card.month_shift',
             'card.month_shift_view',
             'card.customers',
+		    'card.style',
             'card.reviews',
             'card.notices',
 		    'card.support',

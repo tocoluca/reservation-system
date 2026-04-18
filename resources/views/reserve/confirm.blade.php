@@ -93,10 +93,10 @@
                                         </div>
                                     </div>
 
-                                    <a href="{{ url('/r/' . $company->company_code) }}"
-                                       class="inline-flex items-center justify-center rounded-full px-4 py-2 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white">
-                                        戻って修正する
-                                    </a>
+									<a href="{{ url('/r/' . $company->company_code) }}"
+									   class="inline-flex items-center justify-center rounded-full px-4 py-2 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white">
+									    戻って修正する
+									</a>
                                 </div>
 
                                 <div class="space-y-4">

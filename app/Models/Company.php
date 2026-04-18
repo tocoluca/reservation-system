@@ -44,6 +44,12 @@ class Company extends Authenticatable
         'canceled_at',
         'grace_until',
         'is_billing_active',
+	    'salon_message',
+	    'business_hours_text',
+	    'parking_info',
+	    'payment_methods',
+	    'access_info',
+	    'salon_note',
     ];
 
     protected $hidden = [

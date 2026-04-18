@@ -44,6 +44,8 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\StripeWebhookController;
 
+use App\Http\Controllers\Company\StylePostController;
+
 use App\Http\Controllers\Company\InquiryController;
 use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
 
@@ -452,6 +454,16 @@ Route::prefix('company')->group(function () {
 
             Route::get('/calendar/assignment-candidates', [\App\Http\Controllers\Company\ReservationController::class, 'assignmentCandidates'])
                 ->name('company.calendar.assignment-candidates');
+
+	        Route::get('/style-posts', [StylePostController::class, 'index'])->name('company.style-posts.index');
+	        Route::get('/style-posts/create', [StylePostController::class, 'create'])->name('company.style-posts.create');
+	        Route::post('/style-posts', [StylePostController::class, 'store'])->name('company.style-posts.store');
+	        Route::get('/style-posts/{id}/edit', [StylePostController::class, 'edit'])->name('company.style-posts.edit');
+	        Route::put('/style-posts/{id}', [StylePostController::class, 'update'])->name('company.style-posts.update');
+	        Route::delete('/style-posts/{id}', [StylePostController::class, 'destroy'])->name('company.style-posts.destroy');
+
+
+
         });
     });
 });

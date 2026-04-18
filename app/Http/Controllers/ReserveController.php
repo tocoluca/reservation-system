@@ -14,6 +14,7 @@ use App\Models\ShiftPattern;
 use App\Models\Customer;
 use App\Models\Notice;
 use App\Models\Review;
+use App\Models\StylePost;
 use App\Mail\ReservationCompleteMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -352,6 +353,9 @@ class ReserveController extends Controller
     {
         $company = Company::where('company_code', $company_code)->firstOrFail();
 
+        $sessionKey = 'reserve_confirm.' . $company->id;
+        $confirmData = session($sessionKey, []);
+
         $notices = Notice::where('company_id', $company->id)
             ->visible()
             ->sorted()
@@ -367,11 +371,25 @@ class ReserveController extends Controller
 
         $flatMenus = $menus->flatten(1);
 
-        $requestedDate = $request->query('date');
-        $requestedMenuIds = collect($request->query('menu_ids', []))
+        $requestedStartAt = $request->query('start_at', $confirmData['start_at'] ?? null);
+
+        $requestedStaffId = $request->filled('staff_id')
+            ? (int) $request->query('staff_id')
+            : ($confirmData['staff_id'] ?? null);
+
+        $requestedMenuIds = collect($request->query('menu_ids', $confirmData['menu_ids'] ?? []))
             ->map(fn ($id) => (int) $id)
             ->filter()
             ->values();
+
+        $requestedDate = null;
+        if (!empty($requestedStartAt)) {
+            try {
+                $requestedDate = Carbon::parse($requestedStartAt)->format('Y-m-d');
+            } catch (\Throwable $e) {
+                $requestedDate = null;
+            }
+        }
 
         $staff = collect();
 
@@ -421,6 +439,17 @@ class ReserveController extends Controller
         $lineProfile = $this->getLineProfileFromSession($company);
         $lineCustomer = $this->getLineCustomerFromSession($company);
 
+		$styles = StylePost::where('company_id', $company->id)
+		    ->where('is_public', true)
+		    ->orderBy('sort_order')
+		    ->orderByDesc('id')
+		    ->take(3)
+		    ->get()
+		    ->map(function ($style) {
+		        $style->image_url = $style->image_path ? asset($style->image_path) : null;
+		        return $style;
+		    });
+
         return view('reserve.index', [
             'company'          => $company,
             'menus'            => $menus,
@@ -433,9 +462,12 @@ class ReserveController extends Controller
             'lineProfile'      => $lineProfile,
             'lineCustomer'     => $lineCustomer,
             'step'             => 1,
+            'prefillMenuIds'   => $requestedMenuIds->all(),
+            'prefillStaffId'   => $requestedStaffId,
+            'prefillStartAt'   => $requestedStartAt,
+			'styles'		   => $styles,
         ]);
     }
-
     /*
     |--------------------------------------------------------------------------
     | 公開側スタッフ取得

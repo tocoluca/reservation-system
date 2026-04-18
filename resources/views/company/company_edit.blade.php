@@ -168,6 +168,100 @@
                     @enderror
                 </div>
 
+				<div class="md:col-span-2">
+				    <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 sm:p-5">
+				        <h3 class="text-base font-bold text-stone-900">予約画面に表示するサロン情報</h3>
+				        <p class="text-sm text-stone-500 mt-1 leading-6">
+				            ここで入力した内容は、公開予約画面の「サロン情報」に表示されます。
+				        </p>
+				    </div>
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">サロンからのメッセージ</label>
+				    <textarea
+				        name="salon_message"
+				        rows="4"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：落ち着いた空間で、ゆっくりお過ごしいただけるサロンです。髪のお悩みやご希望を丁寧に伺います。"
+				    >{{ old('salon_message', $company->salon_message) }}</textarea>
+				    <p class="text-xs text-gray-500 mt-2">予約画面のサロン紹介として表示します。</p>
+				    @error('salon_message')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">営業時間（表示用）</label>
+				    <textarea
+				        name="business_hours_text"
+				        rows="3"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：平日 9:00〜18:00&#10;土日祝 9:00〜17:00&#10;定休日：毎週火曜日"
+				    >{{ old('business_hours_text', $company->business_hours_text) }}</textarea>
+				    <p class="text-xs text-gray-500 mt-2">予約画面に表示する案内文です。曜日別営業時間の内部設定とは別です。</p>
+				    @error('business_hours_text')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">駐車場案内</label>
+				    <textarea
+				        name="parking_info"
+				        rows="3"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：店舗前に2台ございます。P-22、P-23 をご利用ください。"
+				    >{{ old('parking_info', $company->parking_info) }}</textarea>
+				    @error('parking_info')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">支払い方法</label>
+				    <textarea
+				        name="payment_methods"
+				        rows="3"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：現金／Visa／Mastercard／PayPay／楽天Pay／交通系IC"
+				    >{{ old('payment_methods', $company->payment_methods) }}</textarea>
+				    @error('payment_methods')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">アクセス案内</label>
+				    <textarea
+				        name="access_info"
+				        rows="3"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：〇〇駅から徒歩5分です。店舗前に看板がございます。"
+				    >{{ old('access_info', $company->access_info) }}</textarea>
+				    @error('access_info')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
+
+				<div class="md:col-span-2">
+				    <label class="block font-semibold mb-2">メモ</label>
+				    <textarea
+				        name="salon_note"
+				        rows="3"
+				        class="w-full border rounded-2xl p-3 focus:ring-2"
+				        style="--tw-ring-color: {{ $theme }};"
+				        placeholder="例：妊娠中や体調が優れないお客様に関しましては薬剤等使用する施術はご希望に添えない場合がございますのでご了承下さい。"
+				    >{{ old('salon_note', $company->salon_note) }}</textarea>
+				    @error('salon_note')
+				        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+				    @enderror
+				</div>
                 <div class="md:col-span-2">
                     <label class="block font-semibold mb-2 flex items-center gap-2">
                         口コミ機能

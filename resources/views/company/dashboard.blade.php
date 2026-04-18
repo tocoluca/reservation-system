@@ -409,29 +409,6 @@
                 </a>
             @endif
 
-            @if($can('card.month_shift_view'))
-                <a href="{{ route('company.staff-shifts.view') }}"
-                   class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
-                          bg-gradient-to-br from-amber-50 via-white to-amber-50/60 border-amber-200">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="w-12 h-12 rounded-2xl bg-amber-500 text-white flex items-center justify-center shadow-sm">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M9 12h6M9 16h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2Z"/>
-                            </svg>
-                        </div>
-                        <span class="text-xs font-bold text-amber-700 bg-white px-3 py-1 rounded-full border border-amber-200">
-                            閲覧
-                        </span>
-                    </div>
-
-                    <div class="mt-6 text-xl font-bold text-gray-900">スタッフ別シフト表</div>
-                    <div class="mt-2 text-sm text-gray-600 leading-6">
-                        月別の勤務表を確認し、PDFでダウンロードできます。
-                    </div>
-                    <div class="mt-6 text-sm font-semibold text-amber-700">開く</div>
-                </a>
-            @endif
-
             @if($can('card.business_calendar'))
                 <a href="{{ route('company.calendar.index') }}"
                    class="group rounded-[2rem] p-6 border shadow-sm hover:shadow-md hover:-translate-y-0.5 transition
@@ -489,34 +466,6 @@
                 </a>
             @endif
 
-            @if($can('card.support'))
-	            <a href="{{ route('company.support.index') }}"
-	               class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-sky-200 hover:-translate-y-0.5">
-	                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-sky-400"></div>
-
-	                <div class="flex items-start justify-between gap-3">
-	                    <div>
-	                        <div class="text-sky-600 text-xs font-semibold">SUPPORT</div>
-	                        <div class="text-lg font-bold mt-2 text-gray-900">よくあるご質問・お問い合わせ</div>
-	                    </div>
-
-	                    @if($supportUnreadCount > 0)
-	                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 whitespace-nowrap">
-	                            {{ $supportUnreadCount }}件
-	                        </span>
-	                    @else
-	                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-700 whitespace-nowrap">
-	                            FAQ
-	                        </span>
-	                    @endif
-	                </div>
-
-	                <div class="mt-3 text-sm text-gray-600 leading-6">
-	                    操作方法や設定方法の確認、解決しない場合のお問い合わせができます。
-	                </div>
-	            </a>
-            @endif
-
             @if($can('card.reviews') && ($company->review_enabled ?? false))
                 <a href="{{ route('company.reviews.index') }}"
                    class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-amber-200 hover:-translate-y-0.5">
@@ -529,32 +478,41 @@
                     </div>
                 </a>
             @endif
-
-            @if($can('card.vacation'))
-                <a href="{{ route('company.vacation.index') }}"
+            @if($can('card.style'))
+                <a href="{{ route('company.style-posts.index') }}"
                    class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-green-200 hover:-translate-y-0.5">
                     <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-green-400"></div>
 
-                    <div class="text-green-600 text-xs font-semibold">休暇管理</div>
+                    <div class="text-green-600 text-xs font-semibold">投稿管理</div>
+                    <div class="text-lg font-bold mt-2 text-gray-900">最新スタイルの投稿</div>
+                    <div class="mt-3 text-sm text-gray-600 leading-6">
+                        顧客向け予約画面に表示するスタイル写真とコメントの登録・編集・削除ができます。
+                    </div>
+                </a>
+            @endif
+            @if($can('card.vacation'))
+                <a href="{{ route('company.vacation.index') }}"
+                   class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-blue-200 hover:-translate-y-0.5">
+                    <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-blue-400"></div>
+                    <div class="text-blue-600 text-xs font-semibold">休暇管理</div>
                     <div class="text-lg font-bold mt-2 text-gray-900">休暇申請・承認</div>
                     <div class="mt-3 text-sm text-gray-600 leading-6">
                         従業員の休暇管理を行えます。
                     </div>
                 </a>
             @endif
-
-            @if($can('card.my_profile'))
-                <a href="{{ route('company.my-profile') }}"
-                   class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-teal-200 hover:-translate-y-0.5">
-                    <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-teal-400"></div>
-
-                    <div class="text-teal-600 text-xs font-semibold">マイプロフィール</div>
-                    <div class="text-lg font-bold mt-2 text-gray-900">個人設定</div>
+            @if($can('card.month_shift_view'))
+                <a href="{{ route('company.staff-shifts.view') }}"
+                   class="relative bg-white shadow-sm hover:shadow-md transition rounded-2xl p-5 border border-rose-200 hover:-translate-y-0.5">
+                    <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-rose-400"></div>
+                    <div class="text-rose-600 text-xs font-semibold">スタッフ別シフト表</div>
+                    <div class="text-lg font-bold mt-2 text-gray-900">シフト表の参照</div>
                     <div class="mt-3 text-sm text-gray-600 leading-6">
-                        自分のプロフィールや基本情報を変更できます。
+                        スタッフの勤務表を確認、PDFでダウンロードができます。
                     </div>
                 </a>
             @endif
+
         </div>
     </div>
 
@@ -843,14 +801,20 @@
                         </a>
                     @endif
 
-                    @if($can('card.logo'))
-                        <a href="{{ route('company.logo') }}"
+		            @if($can('card.my_profile'))
+		                <a href="{{ route('company.my-profile') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
-                            <div class="text-gray-500 text-xs font-semibold">BRAND</div>
-                            <div class="text-lg font-bold mt-2 text-gray-900">ロゴ設定</div>
-                            <div class="text-sm text-gray-500 mt-2">企業ロゴ変更</div>
-                        </a>
-                    @endif
+		                    <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-teal-400"></div>
+
+		                    <div class="text-teal-600 text-xs font-semibold">マイプロフィール</div>
+		                    <div class="text-lg font-bold mt-2 text-gray-900">個人設定</div>
+		                    <div class="mt-3 text-sm text-gray-600 leading-6">
+		                        自分のプロフィールや基本情報を変更できます。
+		                    </div>
+		                </a>
+		            @endif
+
+
                 </div>
             </div>
 
@@ -950,6 +914,15 @@
                         </a>
                     @endif
 
+                    @if($can('card.logo'))
+                        <a href="{{ route('company.logo') }}"
+                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
+                            <div class="text-gray-500 text-xs font-semibold">BRAND</div>
+                            <div class="text-lg font-bold mt-2 text-gray-900">ロゴ設定</div>
+                            <div class="text-sm text-gray-500 mt-2">企業ロゴ変更</div>
+                        </a>
+                    @endif
+
                     @if($can('card.theme'))
                         <a href="{{ route('company.theme') }}"
                            class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
@@ -967,6 +940,34 @@
                             <div class="text-sm text-gray-500 mt-2">役職ごとの表示権限を設定</div>
                         </a>
                     @endif
+		            @if($can('card.support'))
+			            <a href="{{ route('company.support.index') }}"
+                           class="bg-gray-50 hover:bg-gray-100 transition rounded-2xl p-5 border border-gray-200">
+			                <div class="absolute inset-x-0 top-0 h-1.5 rounded-t-2xl bg-sky-400"></div>
+
+			                <div class="flex items-start justify-between gap-3">
+			                    <div>
+			                        <div class="text-sky-600 text-xs font-semibold">SUPPORT</div>
+			                        <div class="text-lg font-bold mt-2 text-gray-900">よくあるご質問・お問い合わせ</div>
+			                    </div>
+
+			                    @if($supportUnreadCount > 0)
+			                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 whitespace-nowrap">
+			                            {{ $supportUnreadCount }}件
+			                        </span>
+			                    @else
+			                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-700 whitespace-nowrap">
+			                            FAQ
+			                        </span>
+			                    @endif
+			                </div>
+
+			                <div class="mt-3 text-sm text-gray-600 leading-6">
+			                    操作方法や設定方法の確認、解決しない場合のお問い合わせができます。
+			                </div>
+			            </a>
+		            @endif
+
                 </div>
             </div>
         </div>

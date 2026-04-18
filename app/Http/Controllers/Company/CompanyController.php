@@ -29,6 +29,14 @@ class CompanyController extends Controller
             'theme_color' => 'required',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:30',
+
+            'salon_message' => 'nullable|string|max:5000',
+            'business_hours_text' => 'nullable|string|max:5000',
+            'parking_info' => 'nullable|string|max:5000',
+            'payment_methods' => 'nullable|string|max:5000',
+            'access_info' => 'nullable|string|max:5000',
+            'salon_note' => 'nullable|string|max:5000',
+
             'slot_minutes' => 'required|integer|min:5|max:120',
             'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
             'open_patterns' => 'nullable|array',
@@ -56,6 +64,12 @@ class CompanyController extends Controller
             'web_cancel_deadline_hours.integer' => 'Webキャンセル締切時間は数字で入力してください。',
             'web_cancel_deadline_hours.min' => 'Webキャンセル締切時間は0時間以上で入力してください。',
             'web_cancel_deadline_hours.max' => 'Webキャンセル締切時間は168時間以内で入力してください。',
+            'salon_message.max' => 'サロンからのメッセージは5000文字以内で入力してください。',
+            'business_hours_text.max' => '営業時間は5000文字以内で入力してください。',
+            'parking_info.max' => '駐車場案内は5000文字以内で入力してください。',
+            'payment_methods.max' => '支払い方法は5000文字以内で入力してください。',
+            'access_info.max' => 'アクセス案内は5000文字以内で入力してください。',
+            'salon_note.max' => 'ご来店時のご案内は5000文字以内で入力してください。',
         ]);
 
         $dayNames = ['日', '月', '火', '水', '木', '金', '土'];
@@ -93,6 +107,14 @@ class CompanyController extends Controller
             'theme_color' => $validated['theme_color'],
             'address' => $validated['address'] ?? null,
             'phone' => $validated['phone'] ?? null,
+
+            'salon_message' => $validated['salon_message'] ?? null,
+            'business_hours_text' => $validated['business_hours_text'] ?? null,
+            'parking_info' => $validated['parking_info'] ?? null,
+            'payment_methods' => $validated['payment_methods'] ?? null,
+            'access_info' => $validated['access_info'] ?? null,
+            'salon_note' => $validated['salon_note'] ?? null,
+
             'reservation_month_limit' => $validated['reservation_month_limit'] ?? 3,
             'reservation_open_days' => $validated['reservation_open_days'] ?? 0,
             'reservation_close_hours' => $validated['reservation_close_hours'] ?? 1,

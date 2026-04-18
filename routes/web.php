@@ -44,6 +44,9 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\StripeWebhookController;
 
+use App\Http\Controllers\Company\InquiryController;
+use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
+
 /*
 |--------------------------------------------------------------------------
 | STRIPEテスト
@@ -126,6 +129,13 @@ Route::prefix('admin')->group(function () {
         Route::post('/companies/bulk-update', [CompanyController::class, 'bulkUpdate'])->name('admin.company.bulk-update');
 
         Route::post('/companies/{id}/toggle', [CompanyController::class, 'toggle'])->name('admin.company.toggle');
+
+
+	    Route::get('/inquiries', [AdminInquiryController::class, 'index'])->name('admin.inquiries.index');
+	    Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show'])->name('admin.inquiries.show');
+	    Route::post('/inquiries/{inquiry}/reply', [AdminInquiryController::class, 'reply'])->name('admin.inquiries.reply');
+
+
     });
 });
 
@@ -140,6 +150,11 @@ Route::middleware(['auth:company'])->prefix('company')->group(function () {
     Route::post('/billing/checkout', [BillingController::class, 'checkout'])->name('company.billing.checkout');
     Route::get('/billing/success', [BillingController::class, 'success'])->name('company.billing.success');
     Route::get('/billing/portal', [BillingController::class, 'portal'])->name('company.billing.portal');
+
+    Route::get('/support', [InquiryController::class, 'index'])->name('company.support.index');
+    Route::post('/support/inquiries', [InquiryController::class, 'store'])->name('company.support.store');
+    Route::get('/support/inquiries/{inquiry}', [InquiryController::class, 'show'])->name('company.support.show');
+
 });
 
 Route::post('/stripe-webhook', [StripeWebhookController::class, 'handleWebhook'])

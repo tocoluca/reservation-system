@@ -24,6 +24,7 @@
             'card.customers',
             'card.reviews',
             'card.notices',
+		    'card.support',
             'card.vacation',
             'card.theme',
             'card.company_info',

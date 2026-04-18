@@ -123,4 +123,8 @@ class Company extends Authenticatable
             default => '未契約',
         };
     }
+	public function inquiries()
+	{
+	    return $this->hasMany(\App\Models\Inquiry::class);
+	}
 }

@@ -13,6 +13,7 @@ use App\Models\StaffShift;
 use App\Models\CompanyBusinessCalendar;
 use App\Models\CompanyDashboardPermission;
 use App\Models\ReservationChangeNoticeItem;
+use App\Models\Inquiry;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -185,6 +186,19 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
+		$supportReplyInquiries = Inquiry::where('company_id', $company->id)
+		    ->whereIn('status', ['answered', 'closed'])
+		    ->whereNotNull('admin_reply')
+		    ->orderByDesc('replied_at')
+		    ->limit(5)
+		    ->get();
+
+		$supportUnreadCount = Inquiry::where('company_id', $company->id)
+		    ->where('status', 'answered')
+		    ->whereNotNull('admin_reply')
+		    ->where('is_read_by_company', false)
+		    ->count();
+
         $todaySales = Reservation::where('company_id', $company->id)
             ->whereDate('start_at', $today->toDateString())
             ->where('status', 'reserved')
@@ -288,6 +302,8 @@ class DashboardController extends Controller
             'utilizationRate',
             'todayReservations',
             'notices',
+			'supportReplyInquiries',
+			'supportUnreadCount',
             'todaySales',
             'monthlySales',
             'yearlySales',
@@ -340,6 +356,7 @@ class DashboardController extends Controller
             'card.shift_patterns',
             'card.default_shift',
             'card.notices',
+            'card.support',
             'card.billing',
             'card.theme',
             'dashboard.manage',
@@ -384,6 +401,7 @@ class DashboardController extends Controller
                 'card.month_shift' => true,
 				'card.month_shift_view' => true,
                 'card.reservation_change_notices' => true,
+                'card.support' => true,
                 'card.reviews' => true,
                 'card.vacation' => true,
                 'card.my_profile' => true,

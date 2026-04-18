@@ -12,7 +12,13 @@
 @endphp
 
 <style>
-.tooltip { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    z-index: 30;
+}
 .tooltip .tooltip-text {
     visibility: hidden;
     width: 280px;
@@ -22,7 +28,7 @@
     padding: 10px 12px;
     border-radius: 12px;
     position: absolute;
-    z-index: 50;
+    z-index: 9999;
     bottom: 135%;
     left: 50%;
     transform: translateX(-50%);
@@ -31,8 +37,13 @@
     opacity: 0;
     transition: .2s;
     box-shadow: 0 12px 30px rgba(0,0,0,.15);
+    pointer-events: none;
+    white-space: normal;
 }
-.tooltip.active .tooltip-text { visibility: visible; opacity: 1; }
+.tooltip.active .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
 </style>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -99,8 +110,8 @@
         @csrf
 
         {{-- 基本情報 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100"
+        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
+            <div class="px-6 py-4 border-b border-gray-100 relative z-10"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900">基本情報</h2>
                 <p class="text-sm text-gray-500 mt-1">企業の連絡先や公開設定に関わる基本項目です。</p>
@@ -127,7 +138,7 @@
                            name="email"
                            value="{{ old('email',$company->email) }}"
                            class="w-full border rounded-2xl p-3 focus:ring-2"
-                           style="--tw-ring-color: {{ $theme }}">
+                           style="--tw-ring-color: {{ $theme }};">
                     @error('email')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
@@ -139,7 +150,7 @@
                            name="phone"
                            value="{{ old('phone',$company->phone) }}"
                            class="w-full border rounded-2xl p-3 focus:ring-2"
-                           style="--tw-ring-color: {{ $theme }}">
+                           style="--tw-ring-color: {{ $theme }};">
                     @error('phone')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
@@ -151,7 +162,7 @@
                            name="address"
                            value="{{ old('address',$company->address) }}"
                            class="w-full border rounded-2xl p-3 focus:ring-2"
-                           style="--tw-ring-color: {{ $theme }}">
+                           style="--tw-ring-color: {{ $theme }};">
                     @error('address')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
@@ -235,7 +246,7 @@
                                name="line_channel_id"
                                value="{{ old('line_channel_id', $company->line_channel_id) }}"
                                class="w-full border rounded-2xl p-3 focus:ring-2"
-                               style="--tw-ring-color: {{ $theme }}">
+                               style="--tw-ring-color: {{ $theme }};">
                         @error('line_channel_id')
                             <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                         @enderror
@@ -247,7 +258,7 @@
                                name="line_channel_secret"
                                value="{{ old('line_channel_secret', $company->line_channel_secret) }}"
                                class="w-full border rounded-2xl p-3 focus:ring-2"
-                               style="--tw-ring-color: {{ $theme }}">
+                               style="--tw-ring-color: {{ $theme }};">
                         @error('line_channel_secret')
                             <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                         @enderror
@@ -257,8 +268,8 @@
         </section>
 
         {{-- 予約設定 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100"
+        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
+            <div class="px-6 py-4 border-b border-gray-100 relative z-10"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900">予約設定</h2>
                 <p class="text-sm text-gray-500 mt-1">予約受付の条件や締切時間を設定します。</p>
@@ -278,7 +289,7 @@
                            name="slot_minutes"
                            value="{{ old('slot_minutes',$company->slot_minutes) }}"
                            class="w-full border rounded-2xl p-3 focus:ring-2"
-                           style="--tw-ring-color: {{ $theme }}">
+                           style="--tw-ring-color: {{ $theme }};">
                     @error('slot_minutes')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
@@ -297,7 +308,7 @@
                            name="max_simultaneous_reservations"
                            value="{{ old('max_simultaneous_reservations',$company->max_simultaneous_reservations) }}"
                            class="w-full border rounded-2xl p-3 focus:ring-2"
-                           style="--tw-ring-color: {{ $theme }}">
+                           style="--tw-ring-color: {{ $theme }};">
                     @error('max_simultaneous_reservations')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
@@ -398,8 +409,8 @@
         </section>
 
         {{-- 曜日別営業時間 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100"
+        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative z-20">
+            <div class="px-6 py-4 border-b border-gray-100 relative z-30"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
                     曜日別営業時間
@@ -420,7 +431,7 @@
                             <button type="button"
                                     onclick="addTimeSlot({{ $weekday }})"
                                     class="text-sm px-4 py-2 rounded-xl text-white shadow-sm hover:opacity-90 transition"
-                                    style="background: {{ $theme }}">
+                                    style="background: {{ $theme }};">
                                 ＋枠追加
                             </button>
                         </div>
@@ -475,8 +486,17 @@
 
 <script>
 function toggleTooltip(el){
-    el.classList.toggle('active')
+    document.querySelectorAll('.tooltip.active').forEach(t => {
+        if (t !== el) t.classList.remove('active');
+    });
+    el.classList.toggle('active');
 }
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.tooltip')) {
+        document.querySelectorAll('.tooltip.active').forEach(t => t.classList.remove('active'));
+    }
+});
 
 function addTimeSlot(weekday){
     const container = document.getElementById('day-' + weekday)

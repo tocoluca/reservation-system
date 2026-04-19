@@ -16,10 +16,25 @@ class Customer extends Model
         'last_visit',
         'memo',
         'photo',
+
+        // LINE連携
+        'line_user_id',
+        'line_name',
+        'line_picture_url',
+        'line_linked_at',
+        'line_notifications_enabled',
+        'line_review_opt_in',
+        'line_friend_flag',
+        'last_line_sent_at',
     ];
 
     protected $casts = [
         'last_visit' => 'datetime',
+        'line_linked_at' => 'datetime',
+        'last_line_sent_at' => 'datetime',
+        'line_notifications_enabled' => 'boolean',
+        'line_review_opt_in' => 'boolean',
+        'line_friend_flag' => 'boolean',
     ];
 
     public function reservations()
@@ -42,9 +57,22 @@ class Customer extends Model
         return $this->hasMany(CustomerFollowupMailLog::class);
     }
 
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    public function canReceiveMailOrLine(): bool
+    {
+        $hasEmail = !empty($this->email);
+        $hasLine = !empty($this->line_user_id) && (bool) ($this->line_notifications_enabled ?? true);
+
+        return $hasEmail || $hasLine;
+    }
+
     public function isRevisitReminderTarget(): bool
     {
-        if (empty($this->email) || empty($this->last_visit)) {
+        if (!$this->canReceiveMailOrLine() || empty($this->last_visit)) {
             return false;
         }
 
@@ -79,8 +107,8 @@ class Customer extends Model
 
     public function getRevisitReminderStatusAttribute(): string
     {
-        if (empty($this->email)) {
-            return 'メール未登録';
+        if (!$this->canReceiveMailOrLine()) {
+            return '送信先未登録';
         }
 
         if (empty($this->last_visit)) {
@@ -114,10 +142,5 @@ class Customer extends Model
         }
 
         return '対象';
-    }
-
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
     }
 }

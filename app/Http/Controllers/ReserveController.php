@@ -16,6 +16,7 @@ use App\Models\Notice;
 use App\Models\Review;
 use App\Models\StylePost;
 use App\Mail\ReservationCompleteMail;
+use App\Services\LineMessagingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -58,6 +59,12 @@ class ReserveController extends Controller
     private function setupLineConfig($company): void
     {
         abort_unless($this->isLineLoginEnabled($company), 404);
+/*TEST
+		dd(url('/line/callback'));
+		Log::debug($company->line_channel_id);
+		Log::debug($company->line_channel_secret);
+		Log::debug(url('/line/callback'));
+*/
 
         config([
             'services.line.client_id' => $company->line_channel_id,
@@ -297,12 +304,13 @@ class ReserveController extends Controller
             ->where('line_user_id', $lineUser->getId())
             ->first();
 
-        if ($linkedCustomer) {
-            $linkedCustomer->line_name = $lineUser->getName() ?: $linkedCustomer->line_name;
-            $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
-            $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
-            $linkedCustomer->save();
-        }
+		if ($linkedCustomer) {
+		    $linkedCustomer->line_name = $lineUser->getName() ?: $linkedCustomer->line_name;
+		    $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
+		    $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
+		    $linkedCustomer->line_notifications_enabled = true;
+		    $linkedCustomer->save();
+		}
 
         session([
             'reserve_line_company_id'   => $company->id,
@@ -342,6 +350,42 @@ class ReserveController extends Controller
         return redirect('/r/' . $company_code)
             ->with('success', 'LINEログインを解除しました。');
     }
+
+	private function sendReservationCompleteLine(Company $company, Reservation $reservation): void
+	{
+	    $customer = $reservation->customer;
+
+	    if (
+	        !$customer ||
+	        empty($customer->line_user_id) ||
+	        !(bool) ($customer->line_notifications_enabled ?? true)
+	    ) {
+	        return;
+	    }
+
+	    $staffName = $reservation->staff->name ?? '担当未定';
+	    $dateText = Carbon::parse($reservation->start_at)->format('Y年n月j日 H:i');
+
+	    $menus = $reservation->menus->pluck('name')->filter()->implode('、');
+	    if ($menus === '') {
+	        $menus = 'ご予約メニュー';
+	    }
+
+	    $text = "【{$company->name}】ご予約ありがとうございます。\n"
+	        . "日時：{$dateText}\n"
+	        . "担当：{$staffName}\n"
+	        . "内容：{$menus}\n";
+
+	    if (!empty($reservation->cancel_token)) {
+	        $text .= "キャンセルはこちら\n" . url('/cancel/' . $reservation->cancel_token);
+	    }
+
+	    app(LineMessagingService::class)->pushText($company, $customer->line_user_id, $text);
+
+	    $customer->forceFill([
+	        'last_line_sent_at' => now(),
+	    ])->save();
+	}
 
     /*
     |--------------------------------------------------------------------------
@@ -777,16 +821,17 @@ class ReserveController extends Controller
                 $canLinkThisCustomer = empty($customer->line_user_id)
                     || $customer->line_user_id === $lineProfile['line_user_id'];
 
-                if (!$alreadyLinkedOther && $canLinkThisCustomer) {
-                    $customer->line_user_id = $lineProfile['line_user_id'];
-                    $customer->line_name = $lineProfile['name'] ?? $customer->line_name;
-                    $customer->line_picture_url = $lineProfile['avatar'] ?? $customer->line_picture_url;
-                    $customer->line_linked_at = $customer->line_linked_at ?: now();
+				if (!$alreadyLinkedOther && $canLinkThisCustomer) {
+				    $customer->line_user_id = $lineProfile['line_user_id'];
+				    $customer->line_name = $lineProfile['name'] ?? $customer->line_name;
+				    $customer->line_picture_url = $lineProfile['avatar'] ?? $customer->line_picture_url;
+				    $customer->line_linked_at = $customer->line_linked_at ?: now();
+				    $customer->line_notifications_enabled = true;
 
-                    session([
-                        'reserve_line_customer_id' => $customer->id,
-                    ]);
-                }
+				    session([
+				        'reserve_line_customer_id' => $customer->id,
+				    ]);
+				}
             }
 
             $customer->save();
@@ -855,6 +900,17 @@ class ReserveController extends Controller
                             'details.staff',
                         ]))
                     );
+
+
+					$reservation->load([
+					    'customer',
+					    'staff',
+					    'menus',
+					    'details.menu',
+					    'details.staff',
+					]);
+
+					$this->sendReservationCompleteLine($company, $reservation);
 
                     Log::info('予約完了メール送信成功', [
                         'reservation_id' => $reservation->id,

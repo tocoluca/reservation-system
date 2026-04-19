@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\ReservationReminderMail;
 use App\Models\Reservation;
+use App\Services\LineMessagingService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Mail;
 class SendReservationReminders extends Command
 {
     protected $signature = 'mail:send-reservation-reminders';
-    protected $description = '前日の予約リマインドメールを送信します';
+    protected $description = '前日の予約リマインドメール・LINEを送信します';
 
     public function handle(): int
     {
@@ -49,24 +50,59 @@ class SendReservationReminders extends Command
                     continue;
                 }
 
-                if (empty($reservation->customer->email)) {
+                $sentAny = false;
+
+                if (!empty($reservation->customer->email)) {
+                    Mail::to($reservation->customer->email)
+                        ->send(new ReservationReminderMail($reservation));
+
+                    $sentAny = true;
+                }
+
+                if (
+                    !empty($reservation->customer->line_user_id) &&
+                    (bool) ($reservation->customer->line_notifications_enabled ?? true)
+                ) {
+                    $company = $reservation->company;
+                    $staffName = $reservation->staff->name ?? '担当未定';
+                    $dateText = Carbon::parse($reservation->start_at)->format('Y年n月j日 H:i');
+                    $menus = $reservation->menus->pluck('name')->filter()->implode('、');
+                    $menus = $menus !== '' ? $menus : 'ご予約メニュー';
+
+                    $text = "【{$company->name}】明日のご予約確認です。\n"
+                        . "日時：{$dateText}\n"
+                        . "担当：{$staffName}\n"
+                        . "内容：{$menus}";
+
+                    $lineSent = app(LineMessagingService::class)->pushText(
+                        $company,
+                        $reservation->customer->line_user_id,
+                        $text
+                    );
+
+                    if ($lineSent) {
+                        $reservation->customer->forceFill([
+                            'last_line_sent_at' => now(),
+                        ])->save();
+
+                        $sentAny = true;
+                    }
+                }
+
+                if (!$sentAny) {
                     $skipCount++;
-                    Log::warning('リマインド送信スキップ: customer email が空', [
+                    Log::warning('リマインド送信スキップ: メールもLINEも送れない', [
                         'reservation_id' => $reservation->id,
-                        'customer_id' => $reservation->customer->id ?? null,
+                        'customer_id'    => $reservation->customer->id ?? null,
                     ]);
                     continue;
                 }
-
-                Mail::to($reservation->customer->email)
-                    ->send(new ReservationReminderMail($reservation));
 
                 $reservation->update([
                     'reminder_sent_at' => now(),
                 ]);
 
                 $sentCount++;
-
                 $this->info("送信完了 reservation_id={$reservation->id}");
             } catch (\Throwable $e) {
                 $errorCount++;

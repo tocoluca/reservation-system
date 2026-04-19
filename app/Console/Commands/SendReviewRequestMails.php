@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\ReviewRequestMail;
 use App\Models\Reservation;
+use App\Services\LineMessagingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -11,13 +12,12 @@ use Illuminate\Support\Facades\Mail;
 class SendReviewRequestMails extends Command
 {
     protected $signature = 'mail:send-review-requests {--company_id=}';
-    protected $description = '来店後の口コミ依頼メールを送信する';
+    protected $description = '来店後の口コミ依頼メール・LINEを送信する';
 
     public function handle(): int
     {
-        $query = Reservation::with(['company', 'review'])
+        $query = Reservation::with(['company', 'review', 'customer'])
             ->where('status', 'reserved')
-            ->whereNotNull('customer_email')
             ->whereNotNull('review_token')
             ->whereNull('review_requested_at')
             ->whereNull('review_submitted_at')
@@ -56,27 +56,67 @@ class SendReviewRequestMails extends Command
 
                 $reviewUrl = route('reviews.create', $reservation->review_token);
 
-                Mail::to($reservation->customer_email)->send(
-                    new ReviewRequestMail($reservation->company, $reservation, $reviewUrl)
-                );
+                $sentAny = false;
+
+                if (!empty($reservation->customer_email)) {
+                    Mail::to($reservation->customer_email)->send(
+                        new ReviewRequestMail($reservation->company, $reservation, $reviewUrl)
+                    );
+                    $sentAny = true;
+                }
+
+                if (
+                    $reservation->customer &&
+                    !empty($reservation->customer->line_user_id) &&
+                    (bool) ($reservation->customer->line_notifications_enabled ?? true) &&
+                    (bool) ($reservation->customer->line_review_opt_in ?? true)
+                ) {
+                    $text = "【{$reservation->company->name}】ご来店ありがとうございました。\n"
+                        . "よろしければ口コミのご協力をお願いいたします。\n"
+                        . $reviewUrl;
+
+                    $lineSent = app(LineMessagingService::class)->pushText(
+                        $reservation->company,
+                        $reservation->customer->line_user_id,
+                        $text
+                    );
+
+                    if ($lineSent) {
+                        $reservation->customer->forceFill([
+                            'last_line_sent_at' => now(),
+                        ])->save();
+
+                        $sentAny = true;
+                    }
+                }
+
+                if (!$sentAny) {
+                    Log::warning('口コミ依頼送信スキップ: メールもLINEも送れない', [
+                        'reservation_id' => $reservation->id,
+                        'company_id'     => $reservation->company_id,
+                    ]);
+                    continue;
+                }
 
                 $reservation->update([
                     'review_requested_at' => now(),
                 ]);
 
-                $this->info("送信完了: reservation={$reservation->id} email={$reservation->customer_email}");
+                $this->info("送信完了: reservation={$reservation->id}");
 
-                Log::info('口コミ依頼メール送信成功', [
+                Log::info('口コミ依頼送信成功', [
                     'reservation_id' => $reservation->id,
-                    'company_id' => $reservation->company_id,
-                    'email' => $reservation->customer_email,
+                    'company_id'     => $reservation->company_id,
+                    'email'          => $reservation->customer_email,
+                    'line_user_id'   => optional($reservation->customer)->line_user_id,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('口コミ依頼メール送信失敗', [
+                Log::error('口コミ依頼送信失敗', [
                     'reservation_id' => $reservation->id,
-                    'company_id' => $reservation->company_id,
-                    'email' => $reservation->customer_email,
-                    'error' => $e->getMessage(),
+                    'company_id'     => $reservation->company_id,
+                    'email'          => $reservation->customer_email,
+                    'line_user_id'   => optional($reservation->customer)->line_user_id,
+                    'error'          => $e->getMessage(),
                 ]);
             }
         }

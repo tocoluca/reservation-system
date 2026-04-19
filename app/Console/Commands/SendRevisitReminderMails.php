@@ -6,6 +6,7 @@ use App\Mail\RevisitReminderMail;
 use App\Models\Company;
 use App\Models\Customer;
 use App\Models\CustomerFollowupMailLog;
+use App\Services\LineMessagingService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Mail;
 class SendRevisitReminderMails extends Command
 {
     protected $signature = 'mail:send-revisit-reminders {--company_id=}';
-    protected $description = '最終来店日から会社ごとの設定日数が経過した顧客へ再来店促進メールを送る';
+    protected $description = '最終来店日から会社ごとの設定日数が経過した顧客へ再来店促進メール・LINEを送る';
 
     public function handle(): int
     {
@@ -35,10 +36,17 @@ class SendRevisitReminderMails extends Command
 
                 $customers = Customer::query()
                     ->where('company_id', $company->id)
-                    ->whereNotNull('email')
-                    ->where('email', '!=', '')
                     ->whereNotNull('last_visit')
                     ->whereDate('last_visit', '<=', $targetDate)
+                    ->where(function ($q) {
+                        $q->where(function ($q2) {
+                            $q2->whereNotNull('email')
+                               ->where('email', '!=', '');
+                        })->orWhere(function ($q2) {
+                            $q2->whereNotNull('line_user_id')
+                               ->where('line_user_id', '!=', '');
+                        });
+                    })
                     ->whereDoesntHave('reservations', function ($q) {
                         $q->where('status', 'reserved')
                           ->where('start_at', '>', now());
@@ -52,9 +60,50 @@ class SendRevisitReminderMails extends Command
 
                 foreach ($customers as $customer) {
                     try {
-                        Mail::to($customer->email)->send(
-                            new RevisitReminderMail($company, $customer)
-                        );
+                        $sentAny = false;
+
+                        if (!empty($customer->email)) {
+                            Mail::to($customer->email)->send(
+                                new RevisitReminderMail($company, $customer)
+                            );
+                            $sentAny = true;
+                        }
+
+                        if (
+                            !empty($customer->line_user_id) &&
+                            (bool) ($customer->line_notifications_enabled ?? true)
+                        ) {
+                            $reserveUrl = url('/r/' . $company->company_code);
+
+                            $text = "【{$company->name}】その後いかがでしょうか？\n"
+                                . "前回のご来店から少しお日にちが経ちました。\n"
+                                . "ご都合のよいタイミングで、ぜひまたご利用ください。\n"
+                                . $reserveUrl;
+
+                            $lineSent = app(LineMessagingService::class)->pushText(
+                                $company,
+                                $customer->line_user_id,
+                                $text
+                            );
+
+                            if ($lineSent) {
+                                $customer->forceFill([
+                                    'last_line_sent_at' => now(),
+                                ])->save();
+
+                                $sentAny = true;
+                            }
+                        }
+
+                        if (!$sentAny) {
+                            Log::warning('再来店促進送信スキップ: メールもLINEも送れない', [
+                                'company_id'   => $company->id,
+                                'customer_id'  => $customer->id,
+                                'email'        => $customer->email,
+                                'line_user_id' => $customer->line_user_id,
+                            ]);
+                            continue;
+                        }
 
                         CustomerFollowupMailLog::create([
                             'company_id' => $company->id,
@@ -63,16 +112,17 @@ class SendRevisitReminderMails extends Command
                             'sent_at' => now(),
                         ]);
 
-                        $this->info("送信完了: company={$company->id} customer={$customer->id} email={$customer->email}");
+                        $this->info("送信完了: company={$company->id} customer={$customer->id}");
                     } catch (\Throwable $e) {
-                        Log::error('再来店促進メール送信失敗', [
-                            'company_id' => $company->id,
-                            'customer_id' => $customer->id,
-                            'email' => $customer->email,
-                            'error' => $e->getMessage(),
+                        Log::error('再来店促進送信失敗', [
+                            'company_id'   => $company->id,
+                            'customer_id'  => $customer->id,
+                            'email'        => $customer->email,
+                            'line_user_id' => $customer->line_user_id,
+                            'error'        => $e->getMessage(),
                         ]);
 
-                        $this->error("送信失敗: company={$company->id} customer={$customer->id} email={$customer->email}");
+                        $this->error("送信失敗: company={$company->id} customer={$customer->id}");
                     }
                 }
             }

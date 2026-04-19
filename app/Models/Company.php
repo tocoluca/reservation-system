@@ -44,17 +44,32 @@ class Company extends Authenticatable
         'canceled_at',
         'grace_until',
         'is_billing_active',
-	    'salon_message',
-	    'business_hours_text',
-	    'parking_info',
-	    'payment_methods',
-	    'access_info',
-	    'salon_note',
+
+        // サロン情報
+        'salon_message',
+        'business_hours_text',
+        'parking_info',
+        'payment_methods',
+        'access_info',
+        'salon_note',
+
+        // LINE Login / Messaging
+        'line_login_enabled',
+        'line_channel_id',
+        'line_channel_secret',
+        'line_channel_access_token',
+        'line_official_account_id',
+
+        // 口コミ・再来店設定
+        'review_enabled',
+        'revisit_reminder_days',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
+        'line_channel_secret',
+        'line_channel_access_token',
     ];
 
     protected $casts = [
@@ -62,6 +77,8 @@ class Company extends Authenticatable
         'regular_holidays' => 'array',
         'holiday_is_closed' => 'boolean',
         'is_billing_active' => 'boolean',
+        'line_login_enabled' => 'boolean',
+        'review_enabled' => 'boolean',
         'trial_ends_at' => 'datetime',
         'current_period_end' => 'datetime',
         'subscribed_at' => 'datetime',

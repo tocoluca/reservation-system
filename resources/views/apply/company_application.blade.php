@@ -145,7 +145,8 @@
                                     </div>
                                 </div>
                             </label>
-{{-- いったん非表示 
+
+{{-- いったん非表示
                             <label class="block cursor-pointer">
                                 <input type="radio"
                                        name="industry_type"
@@ -162,7 +163,7 @@
                                     </div>
                                 </div>
                             </label>
-いったん非表示　--}}
+いったん非表示 --}}
                         </div>
                     </div>
 
@@ -198,9 +199,9 @@
                                    value="{{ old('email') }}"
                                    placeholder="example@company.co.jp"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
-						    <p class="mt-2 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-6">
-						        @tocoluca.com ドメインからのメールを受信できるよう、あらかじめ設定をお願いいたします。
-						    </p>
+                            <p class="mt-2 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-6">
+                                @tocoluca.com ドメインからのメールを受信できるよう、あらかじめ設定をお願いいたします。
+                            </p>
                         </div>
 
                         <div>
@@ -228,14 +229,39 @@
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                        <label class="flex items-start gap-3 text-sm text-slate-600 leading-6">
-                            <input type="checkbox" name="agree" value="1" class="mt-1 rounded border-slate-300">
+                    <div class="rounded-2xl bg-slate-50 border border-slate-200 p-4 sm:p-5">
+                        <div class="text-sm font-semibold text-slate-800 mb-3">
+                            規約への同意 <span class="text-red-500">*</span>
+                        </div>
+
+                        <label class="flex items-start gap-3 text-sm text-slate-600 leading-7">
+                            <input
+                                type="checkbox"
+                                name="agree_terms"
+                                value="1"
+                                class="mt-1 rounded border-slate-300 text-sky-600 focus:ring-sky-400"
+                                {{ old('agree_terms') ? 'checked' : '' }}
+                                required
+                            >
                             <span>
-                                申請内容を送信し、管理者からの連絡を受けることに同意します。
-                                <span class="text-red-500">*</span>
+                                <a href="{{ route('terms') }}" target="_blank" rel="noopener noreferrer" class="text-sky-600 font-semibold underline underline-offset-2 hover:text-sky-700">
+                                    利用規約
+                                </a>
+                                ・
+                                <a href="{{ route('privacy') }}" target="_blank" rel="noopener noreferrer" class="text-sky-600 font-semibold underline underline-offset-2 hover:text-sky-700">
+                                    プライバシーポリシー
+                                </a>
+                                ・
+                                <a href="{{ route('tokusho') }}" target="_blank" rel="noopener noreferrer" class="text-sky-600 font-semibold underline underline-offset-2 hover:text-sky-700">
+                                    特定商取引法に基づく表記
+                                </a>
+                                を確認し、同意のうえ申し込みます。
                             </span>
                         </label>
+
+                        @error('agree_terms')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <button type="submit"

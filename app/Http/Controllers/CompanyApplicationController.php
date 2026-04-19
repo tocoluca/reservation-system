@@ -23,7 +23,7 @@ class CompanyApplicationController extends Controller
             'email'          => ['required', 'email', 'max:255'],
             'phone'          => ['required', 'string', 'max:255'],
             'message'        => ['nullable', 'string', 'max:3000'],
-            'agree'          => ['accepted'],
+            'agree_terms'    => ['accepted'],
         ], [
             'company_name.required'   => '企業名を入力してください。',
             'industry_type.required'  => '業種を選択してください。',
@@ -33,7 +33,7 @@ class CompanyApplicationController extends Controller
             'email.email'             => 'メールアドレスの形式が正しくありません。',
             'phone.required'          => '電話番号を入力してください。',
             'message.max'             => '補足・お問い合わせは3000文字以内で入力してください。',
-            'agree.accepted'          => '利用申請への同意が必要です。',
+            'agree_terms.accepted'    => '利用規約・プライバシーポリシー・特定商取引法に基づく表記への同意が必要です。',
         ]);
 
         $existsPending = Application::where('email', $data['email'])

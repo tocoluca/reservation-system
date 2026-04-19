@@ -81,6 +81,10 @@ Route::post('/apply', [CompanyApplicationController::class, 'store'])
 Route::get('/apply/complete', [CompanyApplicationController::class, 'complete'])
     ->name('company.application.complete');
 
+Route::view('/terms', 'apply.terms')->name('terms');
+Route::view('/privacy', 'apply.privacy')->name('privacy');
+Route::view('/tokusho', 'apply.tokusho')->name('tokusho');
+
 /*
 |--------------------------------------------------------------------------
 | 管理者（admin）

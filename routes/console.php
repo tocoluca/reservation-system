@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Schedule;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
-
+/*
 Schedule::command('reservations:complete-past')
     ->everyMinute()
     ->withoutOverlapping();
-
+*/
 Schedule::command('customers:reflect-visits')
     ->everyMinute()
     ->withoutOverlapping();

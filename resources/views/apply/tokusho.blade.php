@@ -67,30 +67,30 @@
                         <tbody>
                             <tr>
                                 <th style="width: 32%; text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">販売事業者</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">[運営者名]tocoluca</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">tocoluca</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">運営統括責任者</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">[代表者名]住友 宏和</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">住友 宏和</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">所在地</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">[住所]神奈川県藤沢市遠藤638-4</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">神奈川県藤沢市遠藤638-4</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">電話番号</th>
                                 <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">
-                                    [電話番号]090-2766-9391<br>
+                                    090-2766-9391<br>
                                     ※お問い合わせは原則としてメールにてお願いいたします。
                                 </td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">メールアドレス</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">[メールアドレス]master@tocoluca.com</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">master@tocoluca.com</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">販売URL</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">[サービスURL]https://reserve.tocoluca.com/apply</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">https://reserve.tocoluca.com/apply</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">販売価格</th>
@@ -102,7 +102,7 @@
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">お支払い方法</th>
-                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">クレジットカード、銀行振込、その他当社が定める方法</td>
+                                <td style="padding: 16px; border-bottom: 1px solid #e5e7eb;">クレジットカード、その他当社が定める方法</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; vertical-align: top; padding: 16px; border-bottom: 1px solid #e5e7eb; background: #f8fafc; color: #0f172a;">お支払い時期</th>

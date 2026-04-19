@@ -91,10 +91,12 @@ class SendReviewRequestMails extends Command
                 }
 
                 if (!$sentAny) {
+/*
                     Log::warning('口コミ依頼送信スキップ: メールもLINEも送れない', [
                         'reservation_id' => $reservation->id,
                         'company_id'     => $reservation->company_id,
                     ]);
+*/
                     continue;
                 }
 
@@ -103,13 +105,14 @@ class SendReviewRequestMails extends Command
                 ]);
 
                 $this->info("送信完了: reservation={$reservation->id}");
-
+/*
                 Log::info('口コミ依頼送信成功', [
                     'reservation_id' => $reservation->id,
                     'company_id'     => $reservation->company_id,
                     'email'          => $reservation->customer_email,
                     'line_user_id'   => optional($reservation->customer)->line_user_id,
                 ]);
+*/
             } catch (\Throwable $e) {
                 Log::error('口コミ依頼送信失敗', [
                     'reservation_id' => $reservation->id,

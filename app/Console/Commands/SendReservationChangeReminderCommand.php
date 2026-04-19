@@ -70,13 +70,14 @@ class SendReservationChangeReminderCommand extends Command
                 ]);
 
                 $sentCount++;
-
+/*
                 Log::info('予約変更リマインド送信成功', [
                     'item_id' => $item->id,
                     'reservation_id' => $item->reservation_id,
                     'email' => $item->customer_email,
                     'days_before' => $daysBefore,
                 ]);
+*/
             } catch (\Throwable $e) {
                 Log::error('予約変更リマインド送信失敗', [
                     'item_id' => $item->id,
@@ -87,10 +88,10 @@ class SendReservationChangeReminderCommand extends Command
                 ]);
             }
         }
-
+/*
         $this->info("送信件数: {$sentCount}");
         $this->info("スキップ件数: {$skipCount}");
-
+*/
         return self::SUCCESS;
     }
 

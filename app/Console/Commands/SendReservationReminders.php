@@ -32,7 +32,9 @@ class SendReservationReminders extends Command
             ->get();
 
         if ($reservations->isEmpty()) {
+/*
             $this->info('送信対象の予約はありません。');
+*/
             return self::SUCCESS;
         }
 
@@ -44,9 +46,11 @@ class SendReservationReminders extends Command
             try {
                 if (!$reservation->customer) {
                     $skipCount++;
+/*
                     Log::warning('リマインド送信スキップ: customer が存在しない', [
                         'reservation_id' => $reservation->id,
                     ]);
+*/
                     continue;
                 }
 
@@ -91,10 +95,12 @@ class SendReservationReminders extends Command
 
                 if (!$sentAny) {
                     $skipCount++;
+/*
                     Log::warning('リマインド送信スキップ: メールもLINEも送れない', [
                         'reservation_id' => $reservation->id,
                         'customer_id'    => $reservation->customer->id ?? null,
                     ]);
+*/
                     continue;
                 }
 
@@ -103,7 +109,9 @@ class SendReservationReminders extends Command
                 ]);
 
                 $sentCount++;
+/*
                 $this->info("送信完了 reservation_id={$reservation->id}");
+*/
             } catch (\Throwable $e) {
                 $errorCount++;
 
@@ -116,9 +124,9 @@ class SendReservationReminders extends Command
                 $this->error("送信失敗 reservation_id={$reservation->id} : {$e->getMessage()}");
             }
         }
-
+/*
         $this->info("完了: sent={$sentCount}, skip={$skipCount}, error={$errorCount}");
-
+*/
         return self::SUCCESS;
     }
 }

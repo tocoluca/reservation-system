@@ -59,7 +59,7 @@ class ReflectCustomerVisits extends Command
                         $reservation->save();
 
                         $count++;
-
+/*
                         $this->info("反映完了: reservation_id={$reservation->id} customer_id={$customer->id}");
 
                         Log::info('顧客来店実績反映成功', [
@@ -69,6 +69,7 @@ class ReflectCustomerVisits extends Command
                             'visit_count' => $customer->visit_count,
                             'last_visit' => optional($customer->last_visit)->format('Y-m-d H:i:s'),
                         ]);
+*/
                     });
                 } catch (\Throwable $e) {
                     Log::error('顧客来店実績反映失敗', [
@@ -80,9 +81,9 @@ class ReflectCustomerVisits extends Command
                 }
             }
         });
-
+/*
         $this->info("完了: {$count}件反映しました。");
-
+*/
         return self::SUCCESS;
     }
 }

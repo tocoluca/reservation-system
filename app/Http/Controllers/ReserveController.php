@@ -681,264 +681,263 @@ class ReserveController extends Controller
     | store
     |--------------------------------------------------------------------------
     */
+public function store(Request $request, $company_code)
+{
+    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    public function store(Request $request, $company_code)
-    {
-        $company = Company::where('company_code', $company_code)->firstOrFail();
+    $lineProfile = $this->getLineProfileFromSession($company);
+    $lineCustomer = $this->getLineCustomerFromSession($company);
 
-        $request->validate([
-            'customer_name'  => ['required', 'max:255'],
-            'customer_phone' => ['required', 'regex:/^[0-9\-]+$/'],
-            'customer_email' => ['nullable', 'email', 'max:255'],
-            'start_at'       => ['required', 'date'],
-            'menu_ids'       => ['required', 'array', 'min:1'],
-            'menu_ids.*'     => ['integer'],
-        ], [
-            'customer_name.required' => ':attributeを入力してください',
-            'customer_phone.regex'   => ':attributeは半角数字とハイフンのみ入力できます',
-        ], [
-            'customer_name'  => 'お名前',
-            'customer_phone' => '電話番号',
-            'customer_email' => 'メールアドレス',
-            'start_at'       => '予約日時',
-            'menu_ids'       => 'メニュー',
-        ]);
+    $hasLinkedCustomer = !empty($lineCustomer);
 
-        $menus = Menu::where('company_id', $company->id)
-            ->whereIn('id', $request->menu_ids ?? [])
-            ->orderBy('sort_order')
-            ->get()
-            ->sortBy(fn ($menu) => array_search($menu->id, $request->menu_ids ?? []))
-            ->values();
+    $nameRules = ['required', 'max:255'];
+    $phoneRules = ['required', 'regex:/^[0-9\-]+$/'];
 
-        if ($menus->isEmpty()) {
-            return back()->with('error', 'メニューを選択してください');
+    // 既にLINE連携済み顧客なら、空欄でも既存情報で予約できるようにする
+    if ($hasLinkedCustomer) {
+        $nameRules = ['nullable', 'max:255'];
+        $phoneRules = ['nullable', 'regex:/^[0-9\-]+$/'];
+    }
+
+    $request->validate([
+        'customer_name'  => $nameRules,
+        'customer_phone' => $phoneRules,
+        'customer_email' => ['nullable', 'email', 'max:255'],
+        'start_at'       => ['required', 'date'],
+        'menu_ids'       => ['required', 'array', 'min:1'],
+        'menu_ids.*'     => ['integer'],
+    ], [
+        'customer_name.required'  => ':attributeを入力してください',
+        'customer_phone.required' => ':attributeを入力してください',
+        'customer_phone.regex'    => ':attributeは半角数字とハイフンのみ入力できます',
+    ], [
+        'customer_name'  => 'お名前',
+        'customer_phone' => '電話番号',
+        'customer_email' => 'メールアドレス',
+        'start_at'       => '予約日時',
+        'menu_ids'       => 'メニュー',
+    ]);
+
+    $menus = Menu::where('company_id', $company->id)
+        ->whereIn('id', $request->menu_ids ?? [])
+        ->orderBy('sort_order')
+        ->get()
+        ->sortBy(fn ($menu) => array_search($menu->id, $request->menu_ids ?? []))
+        ->values();
+
+    if ($menus->isEmpty()) {
+        return back()->with('error', 'メニューを選択してください');
+    }
+
+    $start = Carbon::parse($request->start_at);
+    $limits = $this->getReservationLimits($company);
+
+    if ($start < $limits['start']) {
+        return back()->with('error', 'この日はまだ予約受付していません');
+    }
+
+    if ($start > $limits['end']) {
+        return back()->with('error', '予約可能期間を超えています');
+    }
+
+    if ($start < $limits['close']) {
+        return back()->with('error', '予約締切を過ぎています');
+    }
+
+    if ($request->filled('staff_id')) {
+        $selectedStaff = Staff::where('company_id', $company->id)
+            ->where('id', (int) $request->staff_id)
+            ->first();
+
+        if (!$selectedStaff) {
+            return back()->withErrors([
+                'staff_id' => '選択した担当者が見つかりません。',
+            ])->withInput();
         }
 
-        $start = Carbon::parse($request->start_at);
-        $limits = $this->getReservationLimits($company);
+        $requestedEndAt = $this->calculateRequestedEndAt($company, $menus, $start);
 
-        if ($start < $limits['start']) {
-            return back()->with('error', 'この日はまだ予約受付していません');
-        }
-
-        if ($start > $limits['end']) {
-            return back()->with('error', '予約可能期間を超えています');
-        }
-
-        if ($start < $limits['close']) {
-            return back()->with('error', '予約締切を過ぎています');
-        }
-
-        if ($request->filled('staff_id')) {
-            $selectedStaff = Staff::where('company_id', $company->id)
-                ->where('id', (int) $request->staff_id)
-                ->first();
-
-            if (!$selectedStaff) {
-                return back()->withErrors([
-                    'staff_id' => '選択した担当者が見つかりません。',
-                ])->withInput();
-            }
-
-            $requestedEndAt = $this->calculateRequestedEndAt($company, $menus, $start);
-
-            if (!$this->isStaffSelectableForPublic($company, (int) $selectedStaff->id, $start, $requestedEndAt)) {
-                return back()->withErrors([
-                    'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
-                ])->withInput();
-            }
-        }
-
-        try {
-            if ($company->prefer_less_capable_staff_for_menu_assignment) {
-                [$detailPlans, $end, $totalPrice, $representativeStaffId] =
-                    $this->buildReservationDetailsWithPriorityPolicy(
-                        $company,
-                        $menus,
-                        $start
-                    );
-            } else {
-                [$detailPlans, $end, $totalPrice, $representativeStaffId] =
-                    $this->buildReservationDetailsNormal(
-                        $company,
-                        $request->staff_id ? (int) $request->staff_id : null,
-                        $menus,
-                        $start
-                    );
-            }
-        } catch (ValidationException $e) {
-            return back()->withErrors($e->errors())->withInput();
-        }
-
-        $lineProfile = $this->getLineProfileFromSession($company);
-
-        $lineCustomer = null;
-        if ($lineProfile && !empty($lineProfile['line_user_id'])) {
-            $lineCustomer = Customer::where('company_id', $company->id)
-                ->where('line_user_id', $lineProfile['line_user_id'])
-                ->first();
-        }
-
-        DB::beginTransaction();
-
-        try {
-            if ($lineCustomer) {
-                $customer = Customer::where('id', $lineCustomer->id)
-                    ->lockForUpdate()
-                    ->first();
-            } else {
-                $customer = Customer::where('company_id', $company->id)
-                    ->where('phone', str_replace('-', '', $request->customer_phone))
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$customer) {
-                    $customer = Customer::create([
-                        'company_id' => $company->id,
-                        'phone'      => str_replace('-', '', $request->customer_phone),
-                        'name'       => $request->customer_name,
-                        'email'      => $request->customer_email,
-                    ]);
-                }
-            }
-
-            $customer->name = $request->customer_name;
-            $customer->phone = str_replace('-', '', $request->customer_phone);
-
-            if ($request->filled('customer_email')) {
-                $customer->email = $request->customer_email;
-            } elseif (!$customer->email && $lineProfile && !empty($lineProfile['email'])) {
-                $customer->email = $lineProfile['email'];
-            }
-
-            if ($lineProfile && !empty($lineProfile['line_user_id'])) {
-                $alreadyLinkedOther = Customer::where('company_id', $company->id)
-                    ->where('line_user_id', $lineProfile['line_user_id'])
-                    ->where('id', '!=', $customer->id)
-                    ->exists();
-
-                $canLinkThisCustomer = empty($customer->line_user_id)
-                    || $customer->line_user_id === $lineProfile['line_user_id'];
-
-				if (!$alreadyLinkedOther && $canLinkThisCustomer) {
-				    $customer->line_user_id = $lineProfile['line_user_id'];
-				    $customer->line_name = $lineProfile['name'] ?? $customer->line_name;
-				    $customer->line_picture_url = $lineProfile['avatar'] ?? $customer->line_picture_url;
-				    $customer->line_linked_at = $customer->line_linked_at ?: now();
-				    $customer->line_notifications_enabled = true;
-
-				    session([
-				        'reserve_line_customer_id' => $customer->id,
-				    ]);
-				}
-            }
-
-            $customer->save();
-
-            $representativeStaff = Staff::findOrFail($representativeStaffId);
-
-            $reservation = Reservation::create([
-                'company_id'      => $company->id,
-                'customer_id'     => $customer->id,
-                'staff_id'        => $representativeStaffId,
-                'customer_name'   => $request->customer_name,
-                'customer_phone'  => str_replace('-', '', $request->customer_phone),
-                'customer_email'  => $request->customer_email ?: $customer->email,
-                'start_at'        => $start,
-                'end_at'          => $end,
-                'price'           => $totalPrice,
-                'nomination_fee'  => $request->filled('staff_id')
-                    ? ((int) ($representativeStaff->nomination_fee ?? 0))
-                    : 0,
-                'total_price'     => $totalPrice + (
-                    $request->filled('staff_id')
-                        ? ((int) ($representativeStaff->nomination_fee ?? 0))
-                        : 0
-                ),
-                'status'          => 'reserved',
-                'cancel_token'    => Str::random(6),
-                'review_token'    => Str::random(40),
-            ]);
-
-            foreach ($menus as $menu) {
-                ReservationMenu::create([
-                    'reservation_id' => $reservation->id,
-                    'menu_id'        => $menu->id,
-                    'price'          => $menu->price,
-                    'duration'       => $menu->duration,
-                ]);
-            }
-
-            foreach ($detailPlans as $index => $detail) {
-                ReservationDetail::create([
-                    'reservation_id' => $reservation->id,
-                    'menu_id'        => $detail['menu_id'],
-                    'staff_id'       => $detail['staff_id'],
-                    'start_at'       => $detail['start_at'],
-                    'end_at'         => $detail['end_at'],
-                    'duration'       => $detail['duration'],
-                    'price'          => $detail['price'],
-                    'sort_order'     => $index + 1,
-                ]);
-            }
-
-            $maxCycle = $menus->max('revisit_days');
-            if ($maxCycle) {
-                $customer->next_visit_at = Carbon::parse($reservation->start_at)->addDays($maxCycle);
-                $customer->save();
-            }
-
-            DB::commit();
-
-            if (!empty($reservation->customer_email)) {
-                try {
-                    Mail::to($reservation->customer_email)->send(
-                        new ReservationCompleteMail($company, $reservation->load([
-                            'staff',
-                            'details.menu',
-                            'details.staff',
-                        ]))
-                    );
-
-
-					$reservation->load([
-					    'customer',
-					    'staff',
-					    'menus',
-					    'details.menu',
-					    'details.staff',
-					]);
-
-					$this->sendReservationCompleteLine($company, $reservation);
-
-                    Log::info('予約完了メール送信成功', [
-                        'reservation_id' => $reservation->id,
-                        'email' => $reservation->customer_email,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::error('予約完了メール送信失敗', [
-                        'reservation_id' => $reservation->id,
-                        'email' => $reservation->customer_email,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            session()->forget('reserve_confirm.' . $company->id);
-
-            return redirect("/r/" . $company_code . "/complete?reservation_id=" . $reservation->id);
-        } catch (\Throwable $e) {
-            DB::rollBack();
-            Log::error('公開予約登録失敗', [
-                'company_id' => $company->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', '予約登録に失敗しました。時間をおいて再度お試しください。');
+        if (!$this->isStaffSelectableForPublic($company, (int) $selectedStaff->id, $start, $requestedEndAt)) {
+            return back()->withErrors([
+                'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
+            ])->withInput();
         }
     }
 
+    try {
+        if ($company->prefer_less_capable_staff_for_menu_assignment) {
+            [$detailPlans, $end, $totalPrice, $representativeStaffId] =
+                $this->buildReservationDetailsWithPriorityPolicy(
+                    $company,
+                    $menus,
+                    $start
+                );
+        } else {
+            [$detailPlans, $end, $totalPrice, $representativeStaffId] =
+                $this->buildReservationDetailsNormal(
+                    $company,
+                    $request->filled('staff_id') ? (int) $request->staff_id : null,
+                    $menus,
+                    $start
+                );
+        }
+    } catch (ValidationException $e) {
+        return back()->withErrors($e->errors())->withInput();
+    }
+
+    $resolvedName = trim((string) $request->input('customer_name', ''));
+    if ($resolvedName === '') {
+        $resolvedName = $lineCustomer->name
+            ?? ($lineProfile['name'] ?? '');
+    }
+
+    $resolvedPhone = trim((string) $request->input('customer_phone', ''));
+    if ($resolvedPhone === '') {
+        $resolvedPhone = $lineCustomer->phone ?? '';
+    }
+
+    $resolvedEmail = trim((string) $request->input('customer_email', ''));
+    if ($resolvedEmail === '') {
+        $resolvedEmail = $lineCustomer->email
+            ?? ($lineProfile['email'] ?? '');
+    }
+
+    $normalizedPhone = $resolvedPhone !== ''
+        ? preg_replace('/[^0-9]/', '', $resolvedPhone)
+        : null;
+
+    DB::beginTransaction();
+
+    try {
+        if ($lineCustomer) {
+            $customer = Customer::where('id', $lineCustomer->id)
+                ->lockForUpdate()
+                ->first();
+        } else {
+            $customer = null;
+
+            if (!empty($normalizedPhone)) {
+                $customer = Customer::where('company_id', $company->id)
+                    ->where('phone', $normalizedPhone)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
+            if (!$customer) {
+                $customer = new Customer();
+                $customer->company_id = $company->id;
+            }
+        }
+
+        if ($resolvedName !== '') {
+            $customer->name = $resolvedName;
+        }
+
+        if (!empty($normalizedPhone)) {
+            $customer->phone = $normalizedPhone;
+        }
+
+        if ($resolvedEmail !== '') {
+            $customer->email = $resolvedEmail;
+        }
+
+        if (!empty($lineProfile['line_user_id'])) {
+            $customer->line_user_id = $lineProfile['line_user_id'];
+            $customer->line_name = $lineProfile['name'] ?? ($customer->line_name ?? null);
+            $customer->line_picture_url = $lineProfile['avatar'] ?? ($customer->line_picture_url ?? null);
+            $customer->line_linked_at = $customer->line_linked_at ?? now();
+            $customer->line_notifications_enabled = true;
+        }
+
+        $customer->save();
+
+        if (!empty($lineProfile)) {
+            session([
+                'reserve_line_customer_id' => $customer->id,
+            ]);
+        }
+
+        $representativeStaff = Staff::where('company_id', $company->id)
+            ->where('id', $representativeStaffId)
+            ->first();
+
+        $reservation = Reservation::create([
+            'company_id'      => $company->id,
+            'customer_id'     => $customer->id,
+            'staff_id'        => $representativeStaffId,
+            'start_at'        => $start,
+            'end_at'          => $end,
+            'status'          => 'reserved',
+            'customer_name'   => $resolvedName,
+            'customer_phone'  => !empty($normalizedPhone) ? $normalizedPhone : null,
+            'customer_email'  => $resolvedEmail ?: null,
+            'price'           => $totalPrice,
+            'nomination_fee'  => (int) ($representativeStaff->nomination_fee ?? 0),
+            'total_price'     => $totalPrice + (int) ($representativeStaff->nomination_fee ?? 0),
+            'cancel_token'    => Str::random(40),
+        ]);
+
+        foreach ($menus as $menu) {
+            ReservationMenu::create([
+                'reservation_id' => $reservation->id,
+                'menu_id'        => $menu->id,
+                'price'          => (int) ($menu->price ?? 0),
+                'duration'       => (int) ($menu->duration ?? 0),
+            ]);
+        }
+
+        foreach ($detailPlans as $index => $detail) {
+            ReservationDetail::create([
+                'reservation_id' => $reservation->id,
+                'menu_id'        => $detail['menu_id'],
+                'staff_id'       => $detail['staff_id'],
+                'start_at'       => $detail['start_at'],
+                'end_at'         => $detail['end_at'],
+                'duration'       => $detail['duration'],
+                'price'          => $detail['price'],
+                'sort_order'     => $index + 1,
+            ]);
+        }
+
+        DB::commit();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+
+        Log::error('公開予約登録失敗', [
+            'company_id' => $company->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        return back()->with('error', '予約登録に失敗しました。時間をおいて再度お試しください。');
+    }
+
+    try {
+        $reservation->load(['customer', 'staff', 'menus']);
+        if (!empty($reservation->customer_email)) {
+            Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($reservation));
+        }
+    } catch (\Throwable $e) {
+        Log::error('予約完了メール送信失敗', [
+            'reservation_id' => $reservation->id,
+            'email' => $reservation->customer_email,
+            'error' => $e->getMessage(),
+        ]);
+    }
+
+    try {
+        $reservation->loadMissing(['customer', 'staff', 'menus']);
+        $this->sendReservationCompleteLine($company, $reservation);
+    } catch (\Throwable $e) {
+        Log::error('LINE予約完了通知失敗', [
+            'reservation_id' => $reservation->id,
+            'error' => $e->getMessage(),
+        ]);
+    }
+
+    session()->forget('reserve_confirm.' . $company->id);
+
+    return redirect("/r/" . $company_code . "/complete?reservation_id=" . $reservation->id);
+}
     /*
     |--------------------------------------------------------------------------
     | complete

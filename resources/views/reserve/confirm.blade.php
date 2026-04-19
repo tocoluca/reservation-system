@@ -241,75 +241,89 @@
                                 @endif
                             </section>
 
-                            <section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
-                                <div class="text-[14px] font-bold mb-4 text-[#6b533f]">お客様情報</div>
+							<section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
+							    <div class="flex items-center justify-between gap-3 mb-4">
+							        <div class="text-[14px] font-bold text-[#6b533f]">お客様情報</div>
 
-                                <div class="grid grid-cols-1 gap-4">
-                                    <div>
-                                        <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-                                            お名前 <span class="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="customer_name"
-                                            value="{{ old('customer_name', $lineCustomer->name ?? '') }}"
-                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
-                                            style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
-                                        >
-                                        @error('customer_name')
-                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+							        @if(!empty($lineProfile))
+							            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
+							                LINEログイン中
+							            </span>
+							        @endif
+							    </div>
 
-                                    <div>
-                                        <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-                                            電話番号 <span class="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            name="customer_phone"
-                                            value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
-                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
-                                            style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
-                                            placeholder="090-1234-5678"
-                                        >
-                                        @error('customer_phone')
-                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+							    @if(!empty($lineProfile))
+							        <div class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 leading-6">
+							            LINEログイン情報をもとに、入力を補助しています。<br>
+							            電話番号が未登録の場合は、ご入力をお願いします。
+							        </div>
+							    @endif
 
-                                    <div>
-                                        <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-                                            メールアドレス
-                                            <span class="ml-1 text-[11px] font-normal text-[#9a8878]">（任意）</span>
-                                        </label>
+							    <div class="grid grid-cols-1 gap-4">
+							        <div>
+							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
+							                お名前 <span class="text-red-500">*</span>
+							            </label>
+							            <input
+							                type="text"
+							                name="customer_name"
+							                value="{{ old('customer_name', $lineName ?? '') }}"
+							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
+							                style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
+							                placeholder="山田 花子">
+							            @error('customer_name')
+							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+							            @enderror
+							        </div>
 
-                                        <div class="mb-3 rounded-xl border border-[#e8dccf] bg-[#fcf8f4] px-4 py-3 text-[13px] leading-7 text-[#6b5b4d]">
-                                            メールアドレスをご入力いただくと、予約内容の確認やキャンセル用URLをお送りします。<br>
-                                            予約内容の再確認やキャンセル手続きがスムーズに行えますので、変更やキャンセルの可能性がある場合は入力をおすすめします。<br>
-                                            未入力の場合、キャンセルの際はお電話でのご連絡をお願いいたします。
-                                        </div>
+							        <div>
+							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
+							                電話番号 <span class="text-red-500">*</span>
+							            </label>
+							            <input
+							                type="text"
+							                name="customer_phone"
+							                value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
+							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
+							                style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
+							                placeholder="090-1234-5678">
+							            @error('customer_phone')
+							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+							            @enderror
 
-                                        <input
-                                            type="email"
-                                            name="customer_email"
-                                            value="{{ old('customer_email', $lineEmail ?? '') }}"
-                                            class="w-full rounded-xl px-4 py-3 text-[14px] focus:outline-none focus:ring-2 {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb]' }}"
-                                            style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"
-                                            placeholder="example@example.com"
-                                        >
-                                        @error('customer_email')
-                                            <div class="mt-2 text-[12px] font-bold text-red-600">{{ $message }}</div>
-                                        @enderror
-                                    </div>
+							            @if(!empty($lineProfile) && empty($lineCustomer?->phone))
+							                <div class="mt-2 text-xs text-[#8a7665] leading-6">
+							                    LINEログインだけでは電話番号は取得できないため、初回のみご入力をお願いします。
+							                </div>
+							            @endif
+							        </div>
 
-                                    @if($lineName)
-                                        <div class="rounded-xl bg-[#f8f2eb] px-4 py-3 text-[13px] leading-7 text-[#6b5b4d]">
-                                            LINEログイン情報が利用されています。必要に応じて上記内容を修正してください。
-                                        </div>
-                                    @endif
-                                </div>
-                            </section>
+							        <div>
+							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
+							                メールアドレス
+							            </label>
+							            <div class="mb-3 rounded-xl border border-[#e8dccf] bg-[#fcf8f4] px-4 py-3 text-[13px] leading-7 text-[#6b5b4d]">
+							                メールアドレスをご入力いただくと、予約内容の確認やキャンセル用URLをお送りします。<br>
+							                予約内容の再確認やキャンセル手続きがスムーズに行えますので、変更やキャンセルの可能性がある場合は入力をおすすめします。<br>
+							                未入力の場合、キャンセルの際はお電話でのご連絡をお願いいたします。
+							            </div>
+							            <input
+							                type="email"
+							                name="customer_email"
+							                value="{{ old('customer_email', $lineEmail ?? '') }}"
+							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
+							                style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"
+							                placeholder="example@example.com">
+							            @error('customer_email')
+							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+							            @enderror
+
+							            <div class="mt-2 text-xs text-[#8a7665] leading-6">
+							                メールアドレスを入力すると、予約内容の確認やキャンセルURLを送付できます。
+							            </div>
+							        </div>
+							    </div>
+							</section>
                         </div>
 
                         <div class="space-y-6">

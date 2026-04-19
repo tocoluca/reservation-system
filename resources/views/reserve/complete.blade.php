@@ -140,6 +140,25 @@
                                     </div>
                                 @endif
 
+								@if(!empty($googleCalendarUrl))
+								    <section class="rounded-2xl border border-sky-200 bg-sky-50 p-5 sm:p-6">
+								        <div class="text-[13px] font-bold mb-2 text-sky-900">Googleカレンダー</div>
+								        <div class="text-[13px] leading-7 text-sky-900">
+								            ご予約内容をGoogleカレンダーに追加できます。
+								        </div>
+
+								        <div class="mt-4">
+								            <a href="{{ $googleCalendarUrl }}"
+								               target="_blank"
+								               rel="noopener"
+								               class="inline-flex items-center justify-center rounded-full px-5 py-3 text-white font-bold text-sm shadow-sm"
+								               style="background: {{ $theme }};">
+								                Googleカレンダーに追加
+								            </a>
+								        </div>
+								    </section>
+								@endif
+
                                 <div class="rounded-xl border border-[#eadfd3] bg-white p-4">
                                     <div class="text-[12px] text-[#8a7665] font-bold mb-2">代表担当者</div>
 

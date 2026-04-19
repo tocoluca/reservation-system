@@ -95,7 +95,7 @@
 
 									<a href="{{ url('/r/' . $company->company_code) }}"
 									   class="inline-flex items-center justify-center rounded-full px-4 py-2 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white">
-									    戻って修正する
+									    入力内容を修正する
 									</a>
                                 </div>
 
@@ -230,8 +230,7 @@
                             <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
                                 <div class="text-[14px] font-bold mb-2 text-amber-900">担当について</div>
                                 <p class="text-[14px] leading-8 text-amber-900">
-                                    複数メニューをご予約の場合、内容に応じてメニューごとに担当者が分かれる場合があります。<br>
-                                    ご希望担当が対応できるメニューは優先して割り当てられ、対応できないメニューは他の担当者が対応することがあります。
+                                    複数メニューをご予約の場合、内容に応じてメニューごとに担当者が分かれる場合があります。
                                 </p>
 
                                 @if($selectedStaff)
@@ -241,89 +240,100 @@
                                 @endif
                             </section>
 
-							<section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
-							    <div class="flex items-center justify-between gap-3 mb-4">
-							        <div class="text-[14px] font-bold text-[#6b533f]">お客様情報</div>
+                            <section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
+                                <div class="flex items-center justify-between gap-3 mb-4">
+                                    <div>
+                                        <div class="text-[14px] font-bold text-[#6b533f]">お客様情報</div>
+                                        <div class="mt-1 text-[12px] text-[#9a7d63]">ご連絡先をご入力ください</div>
+                                    </div>
 
-							        @if(!empty($lineProfile))
-							            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
-							                LINEログイン中
-							            </span>
-							        @endif
-							    </div>
+                                    @if(!empty($lineProfile))
+                                        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-100">
+                                            LINEログイン中
+                                        </span>
+                                    @endif
+                                </div>
 
-							    @if(!empty($lineProfile))
-							        <div class="mb-4 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 leading-6">
-							            LINEログイン情報をもとに、入力を補助しています。<br>
-							            電話番号が未登録の場合は、ご入力をお願いします。
-							        </div>
-							    @endif
+                                @if(!empty($lineProfile))
+                                    <div class="mb-5 rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 leading-6">
+                                        LINEログイン情報をもとに、入力を補助しています。<br>
+                                        電話番号が未登録の場合は、ご入力をお願いします。
+                                    </div>
+                                @endif
 
-							    <div class="grid grid-cols-1 gap-4">
-							        <div>
-							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-							                お名前 <span class="text-red-500">*</span>
-							            </label>
-							            <input
-							                type="text"
-							                name="customer_name"
-							                value="{{ old('customer_name', $lineName ?? '') }}"
-							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
-							                style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
-							                placeholder="山田 花子">
-							            @error('customer_name')
-							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
-							            @enderror
-							        </div>
+                                <div class="grid grid-cols-1 gap-5">
+                                    <div>
+                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                            お名前 <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="customer_name"
+                                            value="{{ old('customer_name', $lineName ?? '') }}"
+                                            class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
+                                            placeholder="山田 花子">
+                                        @error('customer_name')
+                                            <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+                                        @enderror
+                                    </div>
 
-							        <div>
-							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-							                電話番号 <span class="text-red-500">*</span>
-							            </label>
-							            <input
-							                type="text"
-							                name="customer_phone"
-							                value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
-							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
-							                style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
-							                placeholder="090-1234-5678">
-							            @error('customer_phone')
-							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
-							            @enderror
+                                    <div>
+                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                            電話番号 <span class="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            name="customer_phone"
+                                            value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
+                                            class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
+                                            placeholder="090-1234-5678">
+                                        @error('customer_phone')
+                                            <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+                                        @enderror
 
-							            @if(!empty($lineProfile) && empty($lineCustomer?->phone))
-							                <div class="mt-2 text-xs text-[#8a7665] leading-6">
-							                    LINEログインだけでは電話番号は取得できないため、初回のみご入力をお願いします。
-							                </div>
-							            @endif
-							        </div>
+                                        @if(!empty($lineProfile) && empty($lineCustomer?->phone))
+                                            <div class="mt-2 text-xs text-[#8a7665] leading-6">
+                                                LINEログインだけでは電話番号は取得できないため、初回のみご入力をお願いします。
+                                            </div>
+                                        @endif
+                                    </div>
 
-							        <div>
-							            <label class="block text-[13px] font-bold text-[#7a614d] mb-2">
-							                メールアドレス
-							            </label>
-							            <div class="mb-3 rounded-xl border border-[#e8dccf] bg-[#fcf8f4] px-4 py-3 text-[13px] leading-7 text-[#6b5b4d]">
-							                メールアドレスをご入力いただくと、予約内容の確認やキャンセル用URLをお送りします。<br>
-							                予約内容の再確認やキャンセル手続きがスムーズに行えますので、変更やキャンセルの可能性がある場合は入力をおすすめします。<br>
-							                未入力の場合、キャンセルの際はお電話でのご連絡をお願いいたします。
-							            </div>
-							            <input
-							                type="email"
-							                name="customer_email"
-							                value="{{ old('customer_email', $lineEmail ?? '') }}"
-							                class="w-full rounded-xl px-4 py-3 text-[14px] border {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d9cabb] bg-white' }} focus:outline-none focus:ring-2"
-							                style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"
-							                placeholder="example@example.com">
-							            @error('customer_email')
-							                <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
-							            @enderror
+                                    <div>
+                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                            メールアドレス
+                                            <span class="ml-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
+                                                  style="background: {{ $theme }};">
+                                                入力推奨
+                                            </span>
+                                        </label>
 
-							            <div class="mt-2 text-xs text-[#8a7665] leading-6">
-							                メールアドレスを入力すると、予約内容の確認やキャンセルURLを送付できます。
-							            </div>
-							        </div>
-							    </div>
-							</section>
+                                        <div class="mb-3 rounded-2xl border px-4 py-3 text-[13px] leading-6 shadow-sm"
+                                             style="border-color: {{ $theme }}22; background: linear-gradient(to right, {{ $theme }}12, #fcf8f4); color:#6b5b4d;">
+                                            メールアドレスを入れると、予約確認とWebキャンセルがご利用いただけます。
+                                        </div>
+
+                                        <input
+                                            type="email"
+                                            name="customer_email"
+                                            value="{{ old('customer_email', $lineEmail ?? '') }}"
+                                            class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
+                                            style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"
+                                            placeholder="example@example.com">
+                                        @error('customer_email')
+                                            <div class="mt-2 text-sm text-red-600">{{ $message }}</div>
+                                        @enderror
+
+                                        <div class="mt-2 text-xs text-[#8a7665] leading-6">
+                                            未入力の場合、キャンセルはお電話でのご連絡となります。
+                                        </div>
+									    <div class="mt-2 text-xs text-[#8a7665] leading-6">
+									        @tocoluca.com ドメインからのメールを受信できるよう、あらかじめ設定をお願いいたします。
+									    </div>
+                                    </div>
+                                </div>
+                            </section>
                         </div>
 
                         <div class="space-y-6">
@@ -367,20 +377,30 @@
                                     </div>
                                 </section>
 
-                                <div class="hidden lg:flex flex-col gap-3">
-                                    <button
-                                        type="submit"
-                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 text-white font-bold text-sm shadow-sm hover:opacity-95 transition"
-                                        style="background:#b7875c;">
-                                        この内容で予約する
-                                    </button>
+                                <div class="hidden lg:block">
+                                    <div class="rounded-3xl border border-[#eadfd3] bg-[#fcf8f4] p-4 sm:p-5">
+                                        <div class="mb-4">
+                                            <div class="text-[14px] font-bold text-[#6b533f]">ご入力内容をご確認のうえ、お進みください</div>
+                                            <div class="mt-1 text-[12px] leading-6 text-[#8a7665]">
+                                                内容に問題がなければ、このままご予約を確定します。
+                                            </div>
+                                        </div>
 
-                                    <a
-                                        href="{{ url('/r/' . $company->company_code) }}"
-                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white"
-                                    >
-                                        戻って修正する
-                                    </a>
+                                        <div class="flex flex-col gap-3">
+                                            <button
+                                                type="submit"
+                                                class="inline-flex items-center justify-center rounded-2xl px-6 py-3.5 text-white font-bold text-sm shadow-md hover:opacity-95 transition"
+                                                style="background: {{ $theme }};">
+                                                この内容で予約を確定する
+                                            </button>
+
+                                            <a
+                                                href="{{ url('/r/' . $company->company_code) }}"
+                                                class="inline-flex items-center justify-center rounded-2xl px-6 py-3.5 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white hover:bg-[#f8f3ee] transition">
+                                                入力内容を修正する
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -414,7 +434,7 @@
                 type="button"
                 onclick="document.getElementById('reserve-confirm-form').requestSubmit();"
                 class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg hover:opacity-95 transition"
-                style="background:#b7875c;">
+                style="background: {{ $theme }};">
                 予約を確定する
             </button>
         </div>

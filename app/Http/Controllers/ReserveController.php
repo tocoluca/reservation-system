@@ -44,6 +44,44 @@ class ReserveController extends Controller
         ];
     }
 
+	private function buildGoogleCalendarUrl($company, $reservation, $menus): string
+	{
+	    $startAt = Carbon::parse($reservation->start_at);
+	    $endAt   = Carbon::parse($reservation->end_at);
+
+	    $menuNames = collect($menus)
+	        ->map(function ($row) {
+	            return $row->menu->name ?? null;
+	        })
+	        ->filter()
+	        ->implode(' / ');
+
+	    $staffName = optional($reservation->staff)->name ?? '指名なし';
+
+	    $title = 'ご予約：' . $company->name;
+
+	    $details = implode("\n", array_filter([
+	        '店舗: ' . $company->name,
+	        $menuNames ? 'メニュー: ' . $menuNames : null,
+	        '担当者: ' . $staffName,
+	        '予約日時: ' . $startAt->format('Y年n月j日 H:i'),
+	        !empty($reservation->customer_name) ? 'お名前: ' . $reservation->customer_name : null,
+	        !empty($company->phone) ? '電話: ' . $company->phone : null,
+	    ]));
+
+	    $location = (string) ($company->address ?? '');
+
+	    $startUtc = $startAt->copy()->utc()->format('Ymd\THis\Z');
+	    $endUtc   = $endAt->copy()->utc()->format('Ymd\THis\Z');
+
+	    return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+	        . '&text=' . urlencode($title)
+	        . '&dates=' . urlencode($startUtc . '/' . $endUtc)
+	        . '&details=' . urlencode($details)
+	        . '&location=' . urlencode($location)
+	        . '&ctz=' . urlencode('Asia/Tokyo');
+	}
+
     private function perStaffSimultaneousLimit($company): int
     {
         return max(1, (int) ($company->max_simultaneous_reservations ?? 1));
@@ -944,31 +982,34 @@ public function store(Request $request, $company_code)
     |--------------------------------------------------------------------------
     */
 
-    public function complete($company_code, Request $request)
-    {
-        $company = Company::where('company_code', $company_code)->firstOrFail();
+	public function complete($company_code, Request $request)
+	{
+	    $company = Company::where('company_code', $company_code)->firstOrFail();
 
-        $reservation = Reservation::where('id', $request->reservation_id)
-            ->where('company_id', $company->id)
-            ->with(['staff', 'details.menu', 'details.staff'])
-            ->firstOrFail();
+	    $reservation = Reservation::where('id', $request->reservation_id)
+	        ->where('company_id', $company->id)
+	        ->with(['staff', 'details.menu', 'details.staff'])
+	        ->firstOrFail();
 
-        $menus = ReservationMenu::where('reservation_id', $reservation->id)
-            ->with('menu')
-            ->get();
+	    $menus = ReservationMenu::where('reservation_id', $reservation->id)
+	        ->with('menu')
+	        ->get();
 
-        $staff = $reservation->staff;
+	    $staff = $reservation->staff;
 
-        return view('reserve.complete', [
-            'company'     => $company,
-            'reservation' => $reservation,
-            'menus'       => $menus,
-            'staff'       => $staff,
-            'details'     => $reservation->details,
-            'start_at'    => $reservation->start_at,
-            'step'        => 3,
-        ]);
-    }
+	    $googleCalendarUrl = $this->buildGoogleCalendarUrl($company, $reservation, $menus);
+
+	    return view('reserve.complete', [
+	        'company'           => $company,
+	        'reservation'       => $reservation,
+	        'menus'             => $menus,
+	        'staff'             => $staff,
+	        'details'           => $reservation->details,
+	        'start_at'          => $reservation->start_at,
+	        'step'              => 3,
+	        'googleCalendarUrl' => $googleCalendarUrl,
+	    ]);
+	}
 
     /*
     |--------------------------------------------------------------------------

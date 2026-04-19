@@ -94,7 +94,7 @@
                 <div class="bg-sky-50 rounded-3xl border border-sky-100 p-6 shadow-sm">
                     <h3 class="text-lg font-bold text-sky-800 mb-3">ご入力いただく内容</h3>
                     <p class="text-sm text-sky-900/80 leading-6">
-                        業種、企業名、担当者名、メールアドレス、電話番号、補足情報のみです。<br>
+                        企業名、担当者名、メールアドレス、電話番号、補足情報のみです。<br>
                         入力しやすい内容だけに絞っているので、短時間で申請できます。
                     </p>
                 </div>
@@ -198,6 +198,9 @@
                                    value="{{ old('email') }}"
                                    placeholder="example@company.co.jp"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
+						    <p class="mt-2 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-6">
+						        @tocoluca.com ドメインからのメールを受信できるよう、あらかじめ設定をお願いいたします。
+						    </p>
                         </div>
 
                         <div>

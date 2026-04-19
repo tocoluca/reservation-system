@@ -9,8 +9,11 @@
     $totalCount = $items->count();
     $pendingCount = $items->whereIn('response_status', ['waiting', 'mail_sent', 'no_response'])->count();
     $confirmedCount = $items->whereIn('response_status', ['closed', 'confirmed', 'phone_confirmed'])->count();
-    $phoneCount = $items->where('contact_type', 'phone')->count();
-    $mailCount = $items->where('contact_type', 'mail')->count();
+
+    $phoneCount = $items->filter(fn ($item) => ($item->contact_type ?? '') === 'phone')->count();
+    $mailCount = $items->filter(fn ($item) => in_array(($item->contact_type ?? ''), ['mail', 'line+mail'], true))->count();
+    $lineCount = $items->filter(fn ($item) => in_array(($item->contact_type ?? ''), ['line', 'line+mail'], true))->count();
+
     $progress = $totalCount > 0 ? min(100, round(($confirmedCount / $totalCount) * 100)) : 0;
 @endphp
 
@@ -23,7 +26,6 @@
             ← 予約変更連絡管理へ戻る
         </a>
 
-        {{-- 案件ヘッダー --}}
         <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
             <div class="px-6 py-6 md:px-8 md:py-8">
                 <div class="flex flex-col 2xl:flex-row 2xl:items-start 2xl:justify-between gap-6">
@@ -67,17 +69,17 @@
                                 <button type="submit"
                                         class="w-full px-4 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
                                         style="background: {{ $theme }};">
-                                    未送信・未確認へメール送信
+                                    未送信・未確認へ通知送信
                                 </button>
                             </form>
                             <p class="text-xs text-gray-400 mt-3 leading-6">
-                                メールアドレスが登録されている未送信・未確認の顧客へ一括送信します。
+                                LINEまたはメールで送信可能な未送信・未確認の顧客へ一括通知します。どちらも使えない顧客は電話対応です。
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6 grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div class="mt-6 grid grid-cols-2 md:grid-cols-6 gap-3">
                     <div class="rounded-2xl bg-gray-50 px-4 py-4 border border-gray-100">
                         <div class="text-[11px] text-gray-500">対象件数</div>
                         <div class="text-lg font-bold text-gray-800 mt-1">{{ $totalCount }}件</div>
@@ -93,13 +95,18 @@
                         <div class="text-lg font-bold text-green-700 mt-1">{{ $confirmedCount }}件</div>
                     </div>
 
+                    <div class="rounded-2xl bg-emerald-50 px-4 py-4 border border-emerald-100">
+                        <div class="text-[11px] text-emerald-500">LINE対象</div>
+                        <div class="text-lg font-bold text-emerald-700 mt-1">{{ $lineCount }}件</div>
+                    </div>
+
                     <div class="rounded-2xl bg-blue-50 px-4 py-4 border border-blue-100">
                         <div class="text-[11px] text-blue-500">メール対象</div>
                         <div class="text-lg font-bold text-blue-700 mt-1">{{ $mailCount }}件</div>
                     </div>
 
                     <div class="rounded-2xl bg-amber-50 px-4 py-4 border border-amber-100">
-                        <div class="text-[11px] text-amber-500">電話対象</div>
+                        <div class="text-[11px] text-amber-500">電話対応</div>
                         <div class="text-lg font-bold text-amber-700 mt-1">{{ $phoneCount }}件</div>
                     </div>
                 </div>
@@ -118,19 +125,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="mb-4 rounded-2xl bg-green-50 border border-green-200 text-green-700 px-4 py-3">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 px-4 py-3">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    {{-- 顧客一覧 --}}
     <div class="space-y-5">
         @forelse($notice->items as $item)
             @php
@@ -140,7 +134,7 @@
                     'closed' => '完了',
                     'confirmed' => '確認済み',
                     'phone_confirmed' => '電話確認済み',
-                    'mail_sent' => 'メール送信済み',
+                    'mail_sent' => '通知送信済み',
                     'no_response' => '未返信',
                     default => '確認待ち',
                 };
@@ -152,9 +146,38 @@
                     default => 'bg-rose-100 text-rose-700',
                 };
 
+                $contactType = $item->contact_type ?? 'phone';
+
+                $contactLabel = match($contactType) {
+                    'line' => 'LINE中心',
+                    'mail' => 'メール中心',
+                    'line+mail' => 'LINE・メール',
+                    default => '電話中心',
+                };
+
+                $contactClass = match($contactType) {
+                    'line' => 'bg-emerald-100 text-emerald-700',
+                    'mail' => 'bg-blue-100 text-blue-700',
+                    'line+mail' => 'bg-cyan-100 text-cyan-700',
+                    default => 'bg-amber-100 text-amber-700',
+                };
+
+                $contactStatus = $item->contact_status ?? 'pending';
+
+                $contactStatusLabel = match($contactStatus) {
+                    'line_sent' => 'LINE送信済み',
+                    'mail_sent' => 'メール送信済み',
+                    'line+mail_sent' => 'LINE・メール送信済み',
+                    'phone_pending' => '電話対応待ち',
+                    default => '未送信',
+                };
+
                 $reservationAt = optional($item->reservation->start_at)->format('Y/m/d H:i');
                 $confirmedAt = optional($item->confirmed_at)->format('Y/m/d H:i');
                 $isDone = in_array($item->response_status, ['closed', 'confirmed', 'phone_confirmed'], true);
+
+                $lineUserId = optional(optional($item->reservation)->customer)->line_user_id;
+                $hasLine = !empty($lineUserId);
             @endphp
 
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -167,13 +190,16 @@
                                     {{ $statusLabel }}
                                 </span>
 
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium {{ $contactClass }}">
+                                    {{ $contactLabel }}
+                                </span>
+
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                    {{ $item->contact_type === 'phone' ? '電話中心' : 'メール中心' }}
+                                    {{ $contactStatusLabel }}
                                 </span>
                             </div>
 
                             <div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                                {{-- 顧客情報 --}}
                                 <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
@@ -184,10 +210,15 @@
                                         </div>
                                     </div>
 
-                                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
                                         <div class="rounded-xl bg-white border border-gray-100 px-3 py-3">
                                             <div class="text-xs text-gray-500">予約日時</div>
                                             <div class="font-semibold text-gray-800 mt-1">{{ $reservationAt ?: '―' }}</div>
+                                        </div>
+
+                                        <div class="rounded-xl bg-white border border-gray-100 px-3 py-3">
+                                            <div class="text-xs text-gray-500">LINE</div>
+                                            <div class="font-semibold text-gray-800 mt-1">{{ $hasLine ? '連携あり' : '未連携' }}</div>
                                         </div>
 
                                         <div class="rounded-xl bg-white border border-gray-100 px-3 py-3">
@@ -202,18 +233,22 @@
                                     </div>
                                 </div>
 
-                                {{-- 対応状況 --}}
                                 <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
                                     <div class="text-sm font-bold text-gray-800 mb-3">対応状況</div>
 
-                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                                         <div class="rounded-xl bg-white px-3 py-3 border border-gray-100">
                                             <div class="text-[11px] text-gray-500">確認状況</div>
                                             <div class="text-sm font-bold text-gray-800 mt-1">{{ $statusLabel }}</div>
                                         </div>
 
                                         <div class="rounded-xl bg-white px-3 py-3 border border-gray-100">
-                                            <div class="text-[11px] text-gray-500">リマインド回数</div>
+                                            <div class="text-[11px] text-gray-500">連絡手段</div>
+                                            <div class="text-sm font-bold text-gray-800 mt-1">{{ $contactLabel }}</div>
+                                        </div>
+
+                                        <div class="rounded-xl bg-white px-3 py-3 border border-gray-100">
+                                            <div class="text-[11px] text-gray-500">送信回数</div>
                                             <div class="text-sm font-bold text-gray-800 mt-1">{{ $item->reminder_send_count ?? 0 }}回</div>
                                         </div>
 
@@ -235,7 +270,7 @@
                                             </button>
                                         </form>
                                         <p class="text-xs text-gray-400 mt-2 leading-6">
-                                            電話で確認が取れた場合はこちらで完了扱いにできます。
+                                            LINE・メールで返答がなく、電話で確認が取れた場合はこちらで完了扱いにできます。
                                         </p>
                                     @else
                                         <div class="mt-4 rounded-2xl bg-green-50 border border-green-100 px-4 py-3">
@@ -249,7 +284,6 @@
                         </div>
                     </div>
 
-                    {{-- メモ --}}
                     <div class="mt-5 pt-5 border-t border-gray-100">
                         <form method="POST" action="{{ route('company.reservation_change_notices.items.update_note', $item) }}">
                             @csrf

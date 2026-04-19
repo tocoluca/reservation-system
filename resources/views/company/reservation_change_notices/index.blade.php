@@ -54,18 +54,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-        <div class="mb-4 rounded-2xl bg-green-50 border border-green-200 text-green-700 px-4 py-3">
-            {{ session('success') }}
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="mb-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 px-4 py-3">
-            {{ session('error') }}
-        </div>
-    @endif
-
     @if($notices->count())
         <div class="space-y-5">
             @foreach($notices as $notice)

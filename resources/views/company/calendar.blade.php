@@ -558,7 +558,7 @@ function loadCalendar() {
                             style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
                             <div class="${wrapperClass}"
                                  ${clickable ? `onclick="startReservationFlow('${d} ${time}')"` : ''}>
-                                ${getStatusBadge(cell, d, time)}3                            </div>
+                                ${getStatusBadge(cell, d, time)}                            </div>
                         </td>
                     `;
                 });

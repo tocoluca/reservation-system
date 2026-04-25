@@ -132,18 +132,31 @@
         </div>
 
         {{-- PCテーブル --}}
-        <div class="hidden lg:block overflow-x-auto">
+        <div class="hidden lg:block max-h-[72vh] overflow-auto">
             <table class="w-full text-sm">
                 <thead class="bg-stone-50">
                     <tr class="text-left text-stone-600">
-                        <th class="px-5 py-4 border-b border-stone-200 whitespace-nowrap">投稿日</th>
-                        <th class="px-5 py-4 border-b border-stone-200 whitespace-nowrap">評価</th>
-                        <th class="px-5 py-4 border-b border-stone-200 whitespace-nowrap">ニックネーム</th>
-                        <th class="px-5 py-4 border-b border-stone-200">本文</th>
-                        <th class="px-5 py-4 border-b border-stone-200 whitespace-nowrap">状態</th>
-                        <th class="px-5 py-4 border-b border-stone-200 text-center whitespace-nowrap">操作</th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm whitespace-nowrap">
+                            投稿日
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm whitespace-nowrap">
+                            評価
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm whitespace-nowrap">
+                            ニックネーム
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm">
+                            本文
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm whitespace-nowrap">
+                            状態
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-5 py-4 border-b border-stone-300 shadow-sm text-center whitespace-nowrap">
+                            操作
+                        </th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @forelse ($reviews as $review)
                         <tr class="hover:bg-stone-50 transition">

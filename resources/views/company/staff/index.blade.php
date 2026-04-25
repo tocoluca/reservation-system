@@ -81,6 +81,7 @@
         </div>
     </div>
 
+    {{-- PC表示 --}}
     <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div class="flex items-center justify-between gap-3">
@@ -91,19 +92,34 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="max-h-[72vh] overflow-auto">
             <table class="w-full min-w-[980px] text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 bg-white border-b border-gray-100">
-                        <th class="px-6 py-4 font-semibold">担当者</th>
-                        <th class="px-4 py-4 font-semibold">コード</th>
-                        <th class="px-4 py-4 font-semibold">権限</th>
-                        <th class="px-4 py-4 font-semibold">状態</th>
-                        <th class="px-4 py-4 font-semibold">予約受付</th>
-                        <th class="px-4 py-4 font-semibold">表示順</th>
-                        <th class="px-6 py-4 font-semibold text-right">操作</th>
+                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            担当者
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            コード
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            権限
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            状態
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            予約受付
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            表示順
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold text-right border-b border-gray-200 shadow-sm">
+                            操作
+                        </th>
                     </tr>
                 </thead>
+
                 <tbody>
                 @forelse($staffs as $s)
                     @php
@@ -118,8 +134,12 @@
                                      style="background: {{ $theme }}">
                                     {{ mb_substr($s->name, 0, 1) }}
                                 </div>
+
                                 <div>
-                                    <div class="font-bold text-gray-900">{{ $s->name }}</div>
+                                    <div class="font-bold text-gray-900">
+                                        {{ $s->name }}
+                                    </div>
+
                                     @if(!empty($s->retired_at))
                                         <div class="text-xs text-gray-400 mt-1">
                                             退職日：{{ Carbon::parse($s->retired_at)->format('Y/m/d') }}
@@ -211,6 +231,7 @@
                                           onsubmit="return confirm('「{{ $s->name }}」を削除しますか？この操作は取り消せません。');">
                                         @csrf
                                         @method('DELETE')
+
                                         <button type="submit"
                                                 class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-900 text-white font-semibold shadow-sm hover:bg-black transition">
                                             削除
@@ -224,8 +245,14 @@
                     <tr>
                         <td colspan="7" class="px-6 py-16 text-center">
                             <div class="max-w-md mx-auto">
-                                <div class="text-lg font-bold text-gray-700">担当者がまだ登録されていません</div>
-                                <p class="text-sm text-gray-400 mt-2">まずは担当者を登録すると、予約やシフト管理が進めやすくなります。</p>
+                                <div class="text-lg font-bold text-gray-700">
+                                    担当者がまだ登録されていません
+                                </div>
+
+                                <p class="text-sm text-gray-400 mt-2">
+                                    まずは担当者を登録すると、予約やシフト管理が進めやすくなります。
+                                </p>
+
                                 <div class="mt-6">
                                     <a href="{{ route('company.staff.create') }}"
                                        class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
@@ -242,6 +269,7 @@
         </div>
     </div>
 
+    {{-- スマホ表示 --}}
     <div class="lg:hidden space-y-4">
         @forelse($staffs as $s)
             @php
@@ -260,8 +288,13 @@
                         <div class="min-w-0 flex-1">
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
-                                    <div class="text-lg font-bold text-gray-900 truncate">{{ $s->name }}</div>
-                                    <div class="mt-1 text-sm font-mono text-gray-500">{{ $s->staff_code }}</div>
+                                    <div class="text-lg font-bold text-gray-900 truncate">
+                                        {{ $s->name }}
+                                    </div>
+
+                                    <div class="mt-1 text-sm font-mono text-gray-500">
+                                        {{ $s->staff_code }}
+                                    </div>
                                 </div>
                             </div>
 
@@ -290,6 +323,7 @@
                     <div class="grid grid-cols-2 gap-3 mt-5">
                         <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
                             <div class="text-xs text-gray-500">予約受付</div>
+
                             <div class="mt-1 text-sm font-bold text-gray-900">
                                 @if($isRetired)
                                     対象外
@@ -303,7 +337,9 @@
 
                         <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
                             <div class="text-xs text-gray-500">表示順</div>
-                            <div class="mt-1 text-sm font-bold text-gray-900">{{ $s->priority_order }}</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">
+                                {{ $s->priority_order }}
+                            </div>
                         </div>
                     </div>
 
@@ -326,6 +362,7 @@
                             <form method="POST"
                                   action="{{ route('company.staff.reset-password', $s->id) }}">
                                 @csrf
+
                                 <button type="submit"
                                         onclick="return confirm('パスワードを初期化しますか？')"
                                         class="w-full bg-red-500 text-white py-3 rounded-2xl font-semibold shadow-sm">
@@ -340,6 +377,7 @@
                                   onsubmit="return confirm('「{{ $s->name }}」を削除しますか？この操作は取り消せません。');">
                                 @csrf
                                 @method('DELETE')
+
                                 <button type="submit"
                                         class="w-full bg-gray-900 text-white py-3 rounded-2xl font-semibold shadow-sm">
                                     削除する
@@ -351,8 +389,13 @@
             </div>
         @empty
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
-                <div class="text-lg font-bold text-gray-700">担当者がまだ登録されていません</div>
-                <p class="text-sm text-gray-400 mt-2">新規登録から担当者を追加してください。</p>
+                <div class="text-lg font-bold text-gray-700">
+                    担当者がまだ登録されていません
+                </div>
+
+                <p class="text-sm text-gray-400 mt-2">
+                    新規登録から担当者を追加してください。
+                </p>
             </div>
         @endforelse
     </div>

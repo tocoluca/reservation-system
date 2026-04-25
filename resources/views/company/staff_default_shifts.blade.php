@@ -78,13 +78,20 @@
                 <p class="text-sm text-gray-500 mt-1">各スタッフの曜日ごとの標準シフトを設定します。</p>
             </div>
 
-            <div class="overflow-x-auto p-4 sm:p-6">
-                <table class="min-w-full text-sm border-separate border-spacing-0">
+            <div class="max-h-[72vh] overflow-auto p-4 sm:p-6">
+                <table class="min-w-[980px] w-full text-sm border-separate border-spacing-0">
                     <thead>
-                        <tr style="background:{{ $theme }};color:white">
-                            <th class="p-4 text-left rounded-tl-2xl">スタッフ</th>
+                        <tr>
+                            <th class="sticky top-0 left-0 z-40 p-4 text-left rounded-tl-2xl border-b border-white/30 shadow-sm min-w-[180px]"
+                                style="background: {{ $theme }}; color: white;">
+                                スタッフ
+                            </th>
+
                             @foreach(['月','火','水','木','金','土','日'] as $i => $d)
-                                <th class="p-4 text-center {{ $loop->last ? 'rounded-tr-2xl' : '' }}">{{ $d }}</th>
+                                <th class="sticky top-0 z-30 p-4 text-center border-b border-white/30 shadow-sm min-w-[120px] {{ $loop->last ? 'rounded-tr-2xl' : '' }}"
+                                    style="background: {{ $theme }}; color: white;">
+                                    {{ $d }}
+                                </th>
                             @endforeach
                         </tr>
                     </thead>
@@ -92,7 +99,7 @@
                     <tbody>
                         @foreach($staffs as $staff)
                             <tr class="odd:bg-stone-50 even:bg-white">
-                                <td class="p-4 font-semibold text-stone-800 border-b border-stone-200">
+                                <td class="sticky left-0 z-20 p-4 font-semibold text-stone-800 border-b border-stone-200 border-r border-stone-200 shadow-sm min-w-[180px] {{ $loop->odd ? 'bg-stone-50' : 'bg-white' }}">
                                     {{ $staff->name }}
                                 </td>
 
@@ -104,7 +111,7 @@
                                             ->first();
                                     @endphp
 
-                                    <td class="p-3 border-b border-stone-200">
+                                    <td class="p-3 border-b border-stone-200 min-w-[120px]">
                                         <select
                                             name="shifts[{{ $staff->id }}][{{ $w % 7 }}]"
                                             class="border border-stone-300 rounded-xl p-3 w-full bg-white focus:outline-none focus:ring-2"

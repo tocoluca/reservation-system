@@ -22,8 +22,14 @@
              style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
-                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Menu Management</p>
-                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">メニュー管理</h1>
+                    <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">
+                        Menu Management
+                    </p>
+
+                    <h1 class="text-2xl sm:text-3xl font-bold mt-1">
+                        メニュー管理
+                    </h1>
+
                     <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
                         メニューの登録・検索・編集・削除を行えます。
                     </p>
@@ -48,20 +54,30 @@
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100"
              style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
-            <h2 class="font-bold text-lg text-gray-900">検索・絞り込み</h2>
-            <p class="text-sm text-gray-500 mt-1">カテゴリ・タグ・並び順で一覧を整理できます。</p>
+            <h2 class="font-bold text-lg text-gray-900">
+                検索・絞り込み
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-1">
+                カテゴリ・タグ・並び順で一覧を整理できます。
+            </p>
         </div>
 
         <div class="p-6">
             <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2">カテゴリ</label>
-                    <select name="category_id" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">
+                        カテゴリ
+                    </label>
+
+                    <select name="category_id"
+                            class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
                         <option value="">すべて</option>
+
                         @foreach($categories as $category)
                             <option value="{{ $category->id }}"
-                                @if(request('category_id')==$category->id) selected @endif>
+                                @if(request('category_id') == $category->id) selected @endif>
                                 {{ $category->name }}
                             </option>
                         @endforeach
@@ -69,12 +85,17 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2">タグ</label>
-                    <select name="tag_id" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">
+                        タグ
+                    </label>
+
+                    <select name="tag_id"
+                            class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
                         <option value="">すべて</option>
+
                         @foreach($tags as $tag)
                             <option value="{{ $tag->id }}"
-                                @if(request('tag_id')==$tag->id) selected @endif>
+                                @if(request('tag_id') == $tag->id) selected @endif>
                                 {{ $tag->name }}
                             </option>
                         @endforeach
@@ -82,11 +103,19 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 mb-2">並び替え</label>
-                    <select name="sort" class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
+                    <label class="block text-xs font-semibold text-gray-500 mb-2">
+                        並び替え
+                    </label>
+
+                    <select name="sort"
+                            class="border border-stone-300 rounded-2xl px-4 py-3 w-full">
                         <option value="">標準</option>
-                        <option value="name" @if(request('sort')=='name') selected @endif>名前順</option>
-                        <option value="price" @if(request('sort')=='price') selected @endif>料金順</option>
+                        <option value="name" @if(request('sort') == 'name') selected @endif>
+                            名前順
+                        </option>
+                        <option value="price" @if(request('sort') == 'price') selected @endif>
+                            料金順
+                        </option>
                     </select>
                 </div>
 
@@ -103,20 +132,42 @@
     {{-- メニュー一覧 --}}
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="font-bold text-lg text-gray-900">メニュー一覧</h2>
-            <p class="text-sm text-gray-500 mt-1">登録済みのメニューを確認できます。</p>
+            <h2 class="font-bold text-lg text-gray-900">
+                メニュー一覧
+            </h2>
+
+            <p class="text-sm text-gray-500 mt-1">
+                登録済みのメニューを確認できます。
+            </p>
         </div>
 
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
+        <div class="max-h-[72vh] overflow-auto">
+            <table class="w-full min-w-[900px] text-sm">
                 <thead class="bg-stone-50">
                     <tr>
-                        <th class="border-b border-stone-200 px-4 py-3 text-left">カテゴリ</th>
-                        <th class="border-b border-stone-200 px-4 py-3 text-left">名前</th>
-                        <th class="border-b border-stone-200 px-4 py-3 text-left">タグ</th>
-                        <th class="border-b border-stone-200 px-4 py-3 text-center w-28">時間</th>
-                        <th class="border-b border-stone-200 px-4 py-3 text-center w-32">料金</th>
-                        <th class="border-b border-stone-200 px-4 py-3 text-center w-40">操作</th>
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm whitespace-nowrap">
+                            カテゴリ
+                        </th>
+
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm whitespace-nowrap">
+                            名前
+                        </th>
+
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm">
+                            タグ
+                        </th>
+
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-28 shadow-sm whitespace-nowrap">
+                            時間
+                        </th>
+
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-32 shadow-sm whitespace-nowrap">
+                            料金
+                        </th>
+
+                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-40 shadow-sm whitespace-nowrap">
+                            操作
+                        </th>
                     </tr>
                 </thead>
 
@@ -142,23 +193,23 @@
                             </div>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3 text-center text-stone-700">
+                        <td class="border-b border-stone-100 px-4 py-3 text-center text-stone-700 whitespace-nowrap">
                             {{ $menu->duration }}分
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3 text-center font-medium text-stone-800">
+                        <td class="border-b border-stone-100 px-4 py-3 text-center font-medium text-stone-800 whitespace-nowrap">
                             ¥{{ number_format($menu->price) }}
                         </td>
 
                         <td class="border-b border-stone-100 px-4 py-3">
                             <div class="flex justify-center gap-2">
-                                <a href="{{ route('company.menu.edit',$menu->id) }}"
+                                <a href="{{ route('company.menu.edit', $menu->id) }}"
                                    class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition">
                                     編集
                                 </a>
 
                                 <form method="POST"
-                                      action="{{ route('company.menu.destroy',$menu->id) }}"
+                                      action="{{ route('company.menu.destroy', $menu->id) }}"
                                       onsubmit="return confirm('削除しますか？')">
                                     @csrf
                                     @method('DELETE')

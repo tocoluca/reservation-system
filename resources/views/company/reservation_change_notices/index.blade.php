@@ -17,9 +17,11 @@
                     <p class="text-xs font-semibold tracking-[0.2em] uppercase text-white/80">
                         Reservation Change Notice
                     </p>
+
                     <h1 class="text-2xl md:text-3xl font-bold mt-2">
                         予約変更連絡管理
                     </h1>
+
                     <p class="text-sm md:text-base text-white/85 mt-3 leading-7">
                         店都合による予約変更の連絡状況を、案件ごとに分かりやすく確認できます。
                     </p>
@@ -38,21 +40,52 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
                     <div class="text-xs text-gray-500">案件数</div>
-                    <div class="text-2xl font-bold text-gray-800 mt-1">{{ $notices->total() }}</div>
+                    <div class="text-2xl font-bold text-gray-800 mt-1">
+                        {{ $notices->total() }}
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
                     <div class="text-xs text-gray-500">対応の流れ</div>
-                    <div class="text-sm font-semibold text-gray-800 mt-1">対象抽出 → 送信 → 確認 → 完了</div>
+                    <div class="text-sm font-semibold text-gray-800 mt-1">
+                        対象抽出 → 送信 → 確認 → 完了
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
                     <div class="text-xs text-gray-500">用途</div>
-                    <div class="text-sm font-semibold text-gray-800 mt-1">休業・シフト変更・営業時間変更時の連絡</div>
+                    <div class="text-sm font-semibold text-gray-800 mt-1">
+                        休業・シフト変更・営業時間変更時の連絡
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- メッセージ --}}
+    @if (session('success'))
+        <div class="mb-6 rounded-2xl border px-4 py-3 text-sm shadow-sm"
+             style="background-color: #ecfdf5; border-color: #a7f3d0; color: #047857;">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="mb-6 rounded-2xl border px-4 py-3 text-sm shadow-sm"
+             style="background-color: #fef2f2; border-color: #fecaca; color: #b91c1c;">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    @if ($errors->any())
+        <div class="mb-6 rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm shadow-sm">
+            <ul class="space-y-1">
+                @foreach ($errors->all() as $error)
+                    <li>・{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
     @if($notices->count())
         <div class="space-y-5">
@@ -80,37 +113,52 @@
                                         作成日 {{ $notice->created_at->format('Y/m/d') }}
                                     </span>
 
-                                    @if($notice->target_date)
+                                    @if(!empty($notice->target_date))
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                                            対象日 {{ \Carbon\Carbon::parse($notice->target_date)->format('Y/m/d') }}
+                                        </span>
+                                    @endif
+
+                                    @if(!empty($notice->status))
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                            対象日 {{ optional($notice->target_date)->format('Y/m/d') }}
+                                            {{ $notice->status }}
                                         </span>
                                     @endif
                                 </div>
 
-                                <h2 class="text-xl md:text-2xl font-bold text-gray-900 leading-snug break-words">
+                                <h2 class="text-lg md:text-xl font-bold text-gray-800 leading-8 break-words">
                                     {{ $notice->title }}
                                 </h2>
 
-                                <div class="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                    <div class="rounded-2xl bg-gray-50 px-4 py-4 border border-gray-100">
-                                        <div class="text-[11px] text-gray-500">対象件数</div>
-                                        <div class="text-lg font-bold text-gray-800 mt-1">{{ number_format($total) }}件</div>
+                                @if(!empty($notice->reason_text))
+                                    <p class="mt-3 text-sm text-gray-500 leading-7 break-words">
+                                        {{ $notice->reason_text }}
+                                    </p>
+                                @endif
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
+                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
+                                        <div class="text-xs text-gray-500">対象件数</div>
+                                        <div class="text-2xl font-bold text-gray-800 mt-1">
+                                            {{ $total }}
+                                            <span class="text-xs font-medium text-gray-400">件</span>
+                                        </div>
                                     </div>
 
-                                    <div class="rounded-2xl bg-rose-50 px-4 py-4 border border-rose-100">
-                                        <div class="text-[11px] text-rose-500">確認待ち</div>
-                                        <div class="text-lg font-bold text-rose-700 mt-1">{{ number_format($pending) }}件</div>
+                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
+                                        <div class="text-xs text-gray-500">確認済み</div>
+                                        <div class="text-2xl font-bold text-green-700 mt-1">
+                                            {{ $confirmed }}
+                                            <span class="text-xs font-medium text-gray-400">件</span>
+                                        </div>
                                     </div>
 
-                                    <div class="rounded-2xl bg-green-50 px-4 py-4 border border-green-100">
-                                        <div class="text-[11px] text-green-500">確認済み</div>
-                                        <div class="text-lg font-bold text-green-700 mt-1">{{ number_format($confirmed) }}件</div>
-                                    </div>
-
-                                    <div class="rounded-2xl px-4 py-4 text-white"
-                                         style="background: linear-gradient(135deg, {{ $theme }}, {{ $theme }}cc);">
-                                        <div class="text-[11px] text-white/80">進捗率</div>
-                                        <div class="text-lg font-bold mt-1">{{ $progress }}%</div>
+                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
+                                        <div class="text-xs text-gray-500">確認待ち</div>
+                                        <div class="text-2xl font-bold {{ $pending > 0 ? 'text-rose-700' : 'text-gray-800' }} mt-1">
+                                            {{ $pending }}
+                                            <span class="text-xs font-medium text-gray-400">件</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -119,6 +167,7 @@
                                         <span>対応進捗</span>
                                         <span>{{ $confirmed }} / {{ $total }}</span>
                                     </div>
+
                                     <div class="w-full h-3 rounded-full bg-gray-100 overflow-hidden">
                                         <div class="h-full rounded-full transition-all duration-300"
                                              style="width: {{ $progress }}%; background: {{ $theme }};"></div>
@@ -137,13 +186,29 @@
                             <div class="xl:w-56 shrink-0">
                                 <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
                                     <p class="text-xs text-gray-500 mb-2">操作</p>
+
                                     <a href="{{ route('company.reservation_change_notices.show', $notice) }}"
                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
                                        style="background: {{ $theme }};">
                                         詳細を見る
                                     </a>
+
+                                    <form method="POST"
+                                          action="{{ route('company.reservation_change_notices.destroy', $notice) }}"
+                                          class="mt-3"
+                                          onsubmit="return confirm('この予約変更連絡管理を削除しますか？\n\nタイトル：{{ str_replace(["\r", "\n", "'"], [' ', ' ', "\\'"], $notice->title) }}\n対象件数：{{ $total }}件\n\n削除すると、この案件の連絡状況・メモも削除されます。\n予約データ自体は削除されません。');">
+                                        @csrf
+                                        @method('DELETE')
+
+                                        <button type="submit"
+                                                class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 font-bold hover:bg-red-100 transition">
+                                            削除する
+                                        </button>
+                                    </form>
+
                                     <p class="text-xs text-gray-400 mt-3 leading-6">
                                         顧客ごとの連絡手段、確認状況、メモを確認できます。
+                                        削除しても予約データ自体は残ります。
                                     </p>
                                 </div>
                             </div>
@@ -159,7 +224,11 @@
                  style="background: {{ $theme }};">
                 i
             </div>
-            <h2 class="text-xl font-bold text-gray-800 mb-2">まだ案件はありません</h2>
+
+            <h2 class="text-xl font-bold text-gray-800 mb-2">
+                まだ案件はありません
+            </h2>
+
             <p class="text-sm text-gray-500 leading-7 max-w-xl mx-auto">
                 営業日変更、休暇、シフト変更などで影響する予約が発生すると、ここに案件一覧が表示されます。
             </p>

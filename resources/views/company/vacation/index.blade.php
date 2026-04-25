@@ -75,148 +75,170 @@
         </div>
     </div>
 
+    {{-- PC表示 --}}
     <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <h2 class="text-lg font-bold text-gray-900">申請一覧</h2>
             <p class="text-sm text-gray-500 mt-1">状態確認と対応操作をまとめて行えます。</p>
         </div>
 
-        <div class="overflow-x-auto">
+        <div class="max-h-[72vh] overflow-auto">
             <table class="w-full min-w-[980px] text-sm">
                 <thead>
                     <tr class="text-left text-gray-500 bg-white border-b border-gray-100">
-                        <th class="px-6 py-4 font-semibold">担当者</th>
-                        <th class="px-4 py-4 font-semibold">開始</th>
-                        <th class="px-4 py-4 font-semibold">終了</th>
-                        <th class="px-4 py-4 font-semibold">状態</th>
-                        <th class="px-6 py-4 font-semibold text-right">操作</th>
+                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            担当者
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            開始
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            終了
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
+                            状態
+                        </th>
+                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold text-right border-b border-gray-200 shadow-sm">
+                            操作
+                        </th>
                     </tr>
                 </thead>
-                <tbody>
-                @forelse($vacationCollection as $vacation)
-                    @php
-                        $startAt = Carbon::parse($vacation->start_at);
-                        $endAt = Carbon::parse($vacation->end_at);
-                    @endphp
 
-                    <tr class="border-b border-gray-100 hover:bg-gray-50/70 transition">
-                        <td class="px-6 py-5">
-                            <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm"
-                                     style="background: {{ $theme }}">
-                                    {{ mb_substr($vacation->staff->name ?? '-', 0, 1) }}
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900">{{ $vacation->staff->name ?? '-' }}</div>
-                                    <div class="text-xs text-gray-400 mt-1">
-                                        申請ID：#{{ $vacation->id }}
+                <tbody>
+                    @forelse($vacationCollection as $vacation)
+                        @php
+                            $startAt = Carbon::parse($vacation->start_at);
+                            $endAt = Carbon::parse($vacation->end_at);
+                        @endphp
+
+                        <tr class="border-b border-gray-100 hover:bg-gray-50/70 transition">
+                            <td class="px-6 py-5">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm"
+                                         style="background: {{ $theme }}">
+                                        {{ mb_substr($vacation->staff->name ?? '-', 0, 1) }}
+                                    </div>
+
+                                    <div>
+                                        <div class="font-bold text-gray-900">
+                                            {{ $vacation->staff->name ?? '-' }}
+                                        </div>
+                                        <div class="text-xs text-gray-400 mt-1">
+                                            申請ID：#{{ $vacation->id }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
+                            </td>
 
-                        <td class="px-4 py-5 text-gray-700">
-                            <div class="font-semibold">{{ $startAt->format('Y/m/d') }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ $startAt->format('H:i') }}</div>
-                        </td>
+                            <td class="px-4 py-5 text-gray-700">
+                                <div class="font-semibold">{{ $startAt->format('Y/m/d') }}</div>
+                                <div class="text-xs text-gray-400 mt-1">{{ $startAt->format('H:i') }}</div>
+                            </td>
 
-                        <td class="px-4 py-5 text-gray-700">
-                            <div class="font-semibold">{{ $endAt->format('Y/m/d') }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ $endAt->format('H:i') }}</div>
-                        </td>
+                            <td class="px-4 py-5 text-gray-700">
+                                <div class="font-semibold">{{ $endAt->format('Y/m/d') }}</div>
+                                <div class="text-xs text-gray-400 mt-1">{{ $endAt->format('H:i') }}</div>
+                            </td>
 
-                        <td class="px-4 py-5">
-                            @if($vacation->status === 'pending')
-                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
-                                    申請中
-                                </span>
-                            @elseif($vacation->status === 'approved')
-                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                                    承認済み
-                                </span>
-                            @elseif($vacation->status === 'cancelled')
-                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
-                                    取消済み
-                                </span>
-                            @else
-                                <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                                    却下
-                                </span>
-                            @endif
-                        </td>
-
-                        <td class="px-6 py-5">
-                            <div class="flex justify-end items-center gap-2 flex-wrap">
-                                @if($current->role !== 'member' && $vacation->status === 'pending')
-                                    <form method="POST"
-                                          action="{{ route('company.vacation.approve', $vacation->id) }}"
-                                          class="m-0">
-                                        @csrf
-                                        <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-green-500 text-white font-semibold shadow-sm hover:bg-green-600 transition">
-                                            承認
-                                        </button>
-                                    </form>
-
-                                    <form method="POST"
-                                          action="{{ route('company.vacation.reject', $vacation->id) }}"
-                                          class="m-0">
-                                        @csrf
-                                        <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-red-500 text-white font-semibold shadow-sm hover:bg-red-600 transition">
-                                            却下
-                                        </button>
-                                    </form>
+                            <td class="px-4 py-5">
+                                @if($vacation->status === 'pending')
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-amber-100 text-amber-700">
+                                        申請中
+                                    </span>
+                                @elseif($vacation->status === 'approved')
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                                        承認済み
+                                    </span>
+                                @elseif($vacation->status === 'cancelled')
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
+                                        取消済み
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                                        却下
+                                    </span>
                                 @endif
+                            </td>
 
-                                @if(in_array($current->role, ['leader', 'area_leader', 'master']) && $vacation->status === 'approved')
+                            <td class="px-6 py-5">
+                                <div class="flex justify-end items-center gap-2 flex-wrap">
+                                    @if($current->role !== 'member' && $vacation->status === 'pending')
+                                        <form method="POST"
+                                              action="{{ route('company.vacation.approve', $vacation->id) }}"
+                                              class="m-0">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-green-500 text-white font-semibold shadow-sm hover:bg-green-600 transition">
+                                                承認
+                                            </button>
+                                        </form>
+
+                                        <form method="POST"
+                                              action="{{ route('company.vacation.reject', $vacation->id) }}"
+                                              class="m-0">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-red-500 text-white font-semibold shadow-sm hover:bg-red-600 transition">
+                                                却下
+                                            </button>
+                                        </form>
+                                    @endif
+
+                                    @if(in_array($current->role, ['leader', 'area_leader', 'master']) && $vacation->status === 'approved')
+                                        <form method="POST"
+                                              action="{{ route('company.vacation.cancel', $vacation->id) }}"
+                                              class="m-0">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold shadow-sm hover:bg-orange-600 transition">
+                                                取消
+                                            </button>
+                                        </form>
+                                    @endif
+
                                     <form method="POST"
-                                          action="{{ route('company.vacation.cancel', $vacation->id) }}"
-                                          class="m-0">
+                                          action="{{ route('company.vacation.destroy', $vacation->id) }}"
+                                          class="m-0"
+                                          onsubmit="return confirm('この休暇申請を削除しますか？');">
                                         @csrf
+                                        @method('DELETE')
                                         <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-orange-500 text-white font-semibold shadow-sm hover:bg-orange-600 transition">
-                                            取消
+                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-900 text-white font-semibold shadow-sm hover:bg-black transition">
+                                            削除
                                         </button>
                                     </form>
-                                @endif
-
-                                <form method="POST"
-                                      action="{{ route('company.vacation.destroy', $vacation->id) }}"
-                                      class="m-0"
-                                      onsubmit="return confirm('この休暇申請を削除しますか？');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit"
-                                            class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-900 text-white font-semibold shadow-sm hover:bg-black transition">
-                                        削除
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-16 text-center">
-                            <div class="max-w-md mx-auto">
-                                <div class="text-lg font-bold text-gray-700">休暇申請はまだありません</div>
-                                <p class="text-sm text-gray-400 mt-2">必要になったら休暇申請を登録してください。</p>
-                                <div class="mt-6">
-                                    <a href="{{ route('company.vacation.create') }}"
-                                       class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
-                                       style="background: {{ $theme }}">
-                                        ＋ 休暇申請
-                                    </a>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="max-w-md mx-auto">
+                                    <div class="text-lg font-bold text-gray-700">
+                                        休暇申請はまだありません
+                                    </div>
+
+                                    <p class="text-sm text-gray-400 mt-2">
+                                        必要になったら休暇申請を登録してください。
+                                    </p>
+
+                                    <div class="mt-6">
+                                        <a href="{{ route('company.vacation.create') }}"
+                                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
+                                           style="background: {{ $theme }}">
+                                            ＋ 休暇申請
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
     </div>
 
+    {{-- スマホ表示 --}}
     <div class="lg:hidden space-y-4">
         @forelse($vacationCollection as $vacation)
             @php
@@ -262,14 +284,22 @@
                     <div class="grid grid-cols-2 gap-3 mt-5">
                         <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
                             <div class="text-xs text-gray-500">開始</div>
-                            <div class="mt-1 text-sm font-bold text-gray-900">{{ $startAt->format('Y/m/d') }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ $startAt->format('H:i') }}</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">
+                                {{ $startAt->format('Y/m/d') }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">
+                                {{ $startAt->format('H:i') }}
+                            </div>
                         </div>
 
                         <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
                             <div class="text-xs text-gray-500">終了</div>
-                            <div class="mt-1 text-sm font-bold text-gray-900">{{ $endAt->format('Y/m/d') }}</div>
-                            <div class="text-xs text-gray-400 mt-1">{{ $endAt->format('H:i') }}</div>
+                            <div class="mt-1 text-sm font-bold text-gray-900">
+                                {{ $endAt->format('Y/m/d') }}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">
+                                {{ $endAt->format('H:i') }}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -322,8 +352,13 @@
             </div>
         @empty
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
-                <div class="text-lg font-bold text-gray-700">休暇申請はまだありません</div>
-                <p class="text-sm text-gray-400 mt-2">新規申請から登録してください。</p>
+                <div class="text-lg font-bold text-gray-700">
+                    休暇申請はまだありません
+                </div>
+
+                <p class="text-sm text-gray-400 mt-2">
+                    新規申請から登録してください。
+                </p>
             </div>
         @endforelse
     </div>

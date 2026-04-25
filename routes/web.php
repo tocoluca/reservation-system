@@ -450,6 +450,9 @@ Route::prefix('company')->group(function () {
             Route::post('/reservation-change-notices/{notice}/send-mails', [ReservationChangeNoticeController::class, 'sendMails'])
                 ->name('company.reservation_change_notices.send_mails');
 
+			Route::delete('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'destroy'])
+			    ->name('company.reservation_change_notices.destroy');
+
             Route::post('/reservation-change-notices/items/{item}/phone-confirmed', [ReservationChangeNoticeController::class, 'markPhoneConfirmed'])
                 ->name('company.reservation_change_notices.items.phone_confirmed');
 

@@ -246,4 +246,24 @@ class ReservationChangeNoticeController extends Controller
 
         return back()->with('success', 'メモを保存しました。');
     }
+
+	public function destroy(ReservationChangeNotice $notice)
+	{
+	    $company = auth()->guard('company')->user()->company;
+
+	    abort_unless((int) $notice->company_id === (int) $company->id, 403);
+
+	    DB::transaction(function () use ($notice) {
+	        // 紐づく明細を先に削除
+	        $notice->items()->delete();
+
+	        // 案件本体を削除
+	        $notice->delete();
+	    });
+
+	    return redirect()
+	        ->route('company.reservation_change_notices.index')
+	        ->with('success', '予約変更連絡管理を削除しました。');
+	}
+
 }

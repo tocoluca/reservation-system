@@ -215,19 +215,34 @@
         </div>
 
         {{-- PC表示 --}}
-        <div class="hidden lg:block">
+        <div class="hidden lg:block max-h-[72vh] overflow-y-auto">
             <table class="w-full text-sm table-fixed">
                 <thead class="bg-stone-50 border-b border-stone-200">
                     <tr class="text-left text-stone-600">
-                        <th class="px-4 py-3 font-semibold w-[165px]">予約日時</th>
-                        <th class="px-4 py-3 font-semibold w-[150px]">顧客名</th>
-                        <th class="px-4 py-3 font-semibold w-[150px]">電話番号</th>
-                        <th class="px-4 py-3 font-semibold w-[130px]">主担当</th>
-                        <th class="px-4 py-3 font-semibold">施術・担当内訳</th>
-                        <th class="px-4 py-3 font-semibold w-[110px]">状態</th>
-                        <th class="px-4 py-3 font-semibold w-[110px]">操作</th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[165px] shadow-sm border-b border-stone-300">
+                            予約日時
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[150px] shadow-sm border-b border-stone-300">
+                            顧客名
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[150px] shadow-sm border-b border-stone-300">
+                            電話番号
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[130px] shadow-sm border-b border-stone-300">
+                            主担当
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold shadow-sm border-b border-stone-300">
+                            施術・担当内訳
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[110px] shadow-sm border-b border-stone-300">
+                            状態
+                        </th>
+                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[110px] shadow-sm border-b border-stone-300">
+                            操作
+                        </th>
                     </tr>
                 </thead>
+
                 <tbody>
                     @forelse($reservations as $reservation)
                         @php

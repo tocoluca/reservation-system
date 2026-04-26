@@ -151,6 +151,20 @@
                                value="{{ old('line_channel_secret', $company->line_channel_secret) }}"
                                class="w-full border rounded-lg p-3">
                     </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block font-semibold mb-2">LINE Channel Access Token</label>
+                        <textarea name="line_channel_access_token"
+                                  rows="4"
+                                  class="w-full border rounded-lg p-3">{{ old('line_channel_access_token', $company->line_channel_access_token) }}</textarea>
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold mb-2">LINE Official Account ID</label>
+                        <input type="text" name="line_official_account_id"
+                               value="{{ old('line_official_account_id', $company->line_official_account_id) }}"
+                               class="w-full border rounded-lg p-3">
+                    </div>
                 </div>
             </div>
 

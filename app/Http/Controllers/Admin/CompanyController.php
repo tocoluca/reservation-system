@@ -304,6 +304,8 @@ class CompanyController extends Controller
             'line_login_enabled' => 'nullable|boolean',
             'line_channel_id' => 'nullable|string|max:255',
             'line_channel_secret' => 'nullable|string|max:255',
+            'line_channel_access_token' => 'nullable|string|max:5000',
+            'line_official_account_id' => 'nullable|string|max:255',
 
             'slot_minutes' => 'required|integer|min:5|max:120',
             'max_simultaneous_reservations' => 'required|integer|min:1|max:10',
@@ -397,6 +399,8 @@ class CompanyController extends Controller
             'line_login_enabled' => $lineLoginEnabled,
             'line_channel_id' => $lineLoginEnabled ? ($validated['line_channel_id'] ?? null) : null,
             'line_channel_secret' => $lineLoginEnabled ? ($validated['line_channel_secret'] ?? null) : null,
+            'line_channel_access_token' => $validated['line_channel_access_token'] ?? null,
+            'line_official_account_id' => $validated['line_official_account_id'] ?? null,
 
             'slot_minutes' => $validated['slot_minutes'],
             'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],

@@ -53,11 +53,15 @@ class CompanyController extends Controller
         if ((int) $company->line_login_enabled === 1) {
             $rules['line_channel_id'] = 'nullable|string|max:255';
             $rules['line_channel_secret'] = 'nullable|string|max:255';
+            $rules['line_channel_access_token'] = 'nullable|string|max:5000';
+            $rules['line_official_account_id'] = 'nullable|string|max:255';
         }
 
         $validated = $request->validate($rules, [
             'line_channel_id.max' => 'LINE Channel ID は255文字以内で入力してください。',
             'line_channel_secret.max' => 'LINE Channel Secret は255文字以内で入力してください。',
+            'line_channel_access_token.max' => 'LINE Channel Access Token は5000文字以内で入力してください。',
+            'line_official_account_id.max' => 'LINE Official Account ID は255文字以内で入力してください。',
             'revisit_reminder_days.integer' => '再来店促進メール送信日数は数字で入力してください。',
             'revisit_reminder_days.min' => '再来店促進メール送信日数は1日以上で入力してください。',
             'revisit_reminder_days.max' => '再来店促進メール送信日数は365日以内で入力してください。',
@@ -133,6 +137,8 @@ class CompanyController extends Controller
         if ((int) $company->line_login_enabled === 1) {
             $updateData['line_channel_id'] = $validated['line_channel_id'] ?? null;
             $updateData['line_channel_secret'] = $validated['line_channel_secret'] ?? null;
+            $updateData['line_channel_access_token'] = $validated['line_channel_access_token'] ?? null;
+            $updateData['line_official_account_id'] = $validated['line_official_account_id'] ?? null;
         }
 
         $company->update($updateData);

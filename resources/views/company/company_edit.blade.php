@@ -329,7 +329,7 @@
                         <div class="rounded-2xl border border-green-200 bg-green-50 p-4">
                             <h3 class="font-bold text-green-800 mb-2">LINEログイン設定</h3>
                             <p class="text-sm text-green-700 leading-6">
-                                LINEログインが有効になっているため、Channel ID と Channel Secret を設定できます。
+                                LINEログインが有効になっているため、Channel ID、Channel Secret、LINE Channel Access Token、LINE Official Account ID を設定できます。
                             </p>
                         </div>
                     </div>
@@ -354,6 +354,29 @@
                                class="w-full border rounded-2xl p-3 focus:ring-2"
                                style="--tw-ring-color: {{ $theme }};">
                         @error('line_channel_secret')
+                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block font-semibold mb-2">LINE Channel Access Token</label>
+                        <textarea name="line_channel_access_token"
+                                  rows="4"
+                                  class="w-full border rounded-2xl p-3 focus:ring-2"
+                                  style="--tw-ring-color: {{ $theme }};">{{ old('line_channel_access_token', $company->line_channel_access_token) }}</textarea>
+                        @error('line_channel_access_token')
+                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block font-semibold mb-2">LINE Official Account ID</label>
+                        <input type="text"
+                               name="line_official_account_id"
+                               value="{{ old('line_official_account_id', $company->line_official_account_id) }}"
+                               class="w-full border rounded-2xl p-3 focus:ring-2"
+                               style="--tw-ring-color: {{ $theme }};">
+                        @error('line_official_account_id')
                             <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                         @enderror
                     </div>

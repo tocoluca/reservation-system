@@ -25,6 +25,7 @@
 		    'card.style',
             'card.reviews',
             'card.notices',
+            'card.reservation_change_notices',
 		    'card.support',
             'card.vacation',
             'card.theme',

@@ -327,7 +327,36 @@ body {
         @if($can('card.reviews') && ($company->review_enabled ?? false))<a href="{{ route('company.reviews.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="star"></i></div><div><div class="font-bold">口コミ管理</div><div class="text-sm text-gray-500">評価確認・返信対応</div></div></a>@endif
         @if($can('card.style'))<a href="{{ route('company.style-posts.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">最新スタイル投稿</div><div class="text-sm text-gray-500">ヘアスタイルの発信</div></div></a>@endif
         @if($can('card.notices'))<a href="{{ route('company.notices.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="megaphone"></i></div><div><div class="font-bold">お知らせ情報管理</div><div class="text-sm text-gray-500">キャンペーン・重要告知</div></div></a>@endif
-        @if($can('card.reservation_change_notices'))<a href="{{ route('company.reservation_change_notices.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="refresh-cw"></i></div><div><div class="font-bold">予約変更連絡管理</div><div class="text-sm text-gray-500">変更通知・リマインド送信</div></div></a>@endif
+        @if($can('card.reservation_change_notices'))
+            <a href="{{ route('company.reservation_change_notices.index') }}" class="card card-link md:col-span-2 border-rose-100 bg-rose-50/60">
+                <div class="card-icon"><i data-lucide="refresh-cw"></i></div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="font-bold">予約変更連絡管理</div>
+                        @if($changeTotalActive > 0)
+                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">未対応 {{ number_format($changeTotalActive) }}件</span>
+                        @else
+                            <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">未対応なし</span>
+                        @endif
+                    </div>
+                    <div class="text-sm text-gray-500 mt-1">予約変更の連絡、電話対応、確認状況を管理します</div>
+                    <div class="grid grid-cols-3 gap-2 mt-4">
+                        <div class="rounded-2xl bg-white/85 border border-rose-100 px-3 py-2">
+                            <div class="text-[11px] font-bold text-gray-500">確認待ち</div>
+                            <div class="text-lg font-black text-rose-700">{{ number_format($changePending) }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-white/85 border border-amber-100 px-3 py-2">
+                            <div class="text-[11px] font-bold text-gray-500">電話待ち</div>
+                            <div class="text-lg font-black text-amber-700">{{ number_format($changePhonePending) }}</div>
+                        </div>
+                        <div class="rounded-2xl bg-white/85 border border-green-100 px-3 py-2">
+                            <div class="text-[11px] font-bold text-gray-500">確認済み</div>
+                            <div class="text-lg font-black text-green-700">{{ number_format($changeConfirmed) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        @endif
     </div>
 
     <div x-show="tab==='staff'" class="grid md:grid-cols-2 gap-4">

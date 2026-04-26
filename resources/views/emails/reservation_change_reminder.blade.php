@@ -3,7 +3,10 @@
     $startAt = $reservation && $reservation->start_at
         ? \Carbon\Carbon::parse($reservation->start_at)->format('Y/m/d H:i')
         : '';
-@endphp
+    $company = $item->company ?? $notice?->company ?? $reservation?->company ?? null;
+    $companyName = $company?->name ?? '店舗';
+    $companyPhone = $company?->phone ?? null;
+    $telLink = $companyPhone ? preg_replace('/[^0-9+]/', '', $companyPhone) : null;@endphp
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -76,7 +79,19 @@
                             ご不明な点がありましたら店舗までご連絡ください。<br>
                             何卒よろしくお願いいたします。
                         </p>
-                    </td>
+
+                        <div style="margin:0 0 24px;padding:18px 20px;background:#f8f1ea;border:1px solid #eadfd3;border-radius:16px;">
+                            <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#4b3f35;">お問い合わせ先</div>
+                            <div style="font-size:14px;line-height:1.9;color:#6b5b4d;">
+                                <div>店舗名：{{ $companyName }}</div>
+                                @if(!empty($companyPhone))
+                                    <div>電話番号：<a href="tel:{{ $telLink }}" style="color:#8c5f43;font-weight:bold;text-decoration:none;">{{ $companyPhone }}</a></div>
+                                    <div style="margin-top:8px;">ご不明点がございましたら、上記電話番号までお電話ください。</div>
+                                @else
+                                    <div>ご不明点がございましたら、店舗までご連絡ください。</div>
+                                @endif
+                            </div>
+                        </div>                    </td>
                 </tr>
 
                 <tr>

@@ -3,6 +3,15 @@
 @section('content')
 @php
     $theme = $company->theme_color ?? '#3b82f6';
+    $reservationStatusMeta = function ($status) {
+        return match ($status) {
+            'completed' => ['label' => '来店済', 'class' => 'bg-blue-100 text-blue-700'],
+            'cancelled' => ['label' => 'キャンセル', 'class' => 'bg-stone-200 text-stone-700'],
+            'no_show' => ['label' => '無断キャンセル', 'class' => 'bg-red-100 text-red-700'],
+            'reserved' => ['label' => '予約中', 'class' => 'bg-emerald-100 text-emerald-700'],
+            default => ['label' => $status, 'class' => 'bg-amber-100 text-amber-700'],
+        };
+    };
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -177,7 +186,9 @@
                             class="w-full rounded-2xl border border-stone-300 px-4 py-3 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-stone-200">
                         <option value="">すべて</option>
                         <option value="reserved" {{ $status === 'reserved' ? 'selected' : '' }}>予約中</option>
-                        <option value="cancelled" {{ $status === 'cancelled' ? 'selected' : '' }}>キャンセル済み</option>
+                        <option value="completed" {{ $status === 'completed' ? 'selected' : '' }}>来店済</option>
+                        <option value="cancelled" {{ $status === 'cancelled' ? 'selected' : '' }}>キャンセル</option>
+                        <option value="no_show" {{ $status === 'no_show' ? 'selected' : '' }}>無断キャンセル</option>
                     </select>
                 </div>
 
@@ -215,29 +226,29 @@
         </div>
 
         {{-- PC表示 --}}
-        <div class="hidden lg:block max-h-[72vh] overflow-y-auto">
+        <div class="hidden lg:block max-h-[72vh] overflow-y-auto overflow-x-hidden">
             <table class="w-full text-sm table-fixed">
                 <thead class="bg-stone-50 border-b border-stone-200">
                     <tr class="text-left text-stone-600">
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[165px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[120px] shadow-sm border-b border-stone-300">
                             予約日時
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[150px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[120px] shadow-sm border-b border-stone-300">
                             顧客名
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[150px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[120px] shadow-sm border-b border-stone-300">
                             電話番号
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[130px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[100px] shadow-sm border-b border-stone-300">
                             主担当
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold shadow-sm border-b border-stone-300">
                             施術・担当内訳
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[110px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[100px] shadow-sm border-b border-stone-300">
                             状態
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-4 py-3 font-semibold w-[110px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[112px] shadow-sm border-b border-stone-300">
                             操作
                         </th>
                     </tr>
@@ -278,24 +289,24 @@
                         @endphp
 
                         <tr class="border-b border-stone-100 hover:bg-amber-50/40 transition align-top">
-                            <td class="px-4 py-4 text-stone-800 font-semibold break-words">
+                            <td class="px-3 py-4 text-stone-800 font-semibold break-words">
                                 <div>{{ optional($reservation->start_at)->format('Y/m/d') }}</div>
                                 <div class="text-sm text-stone-500 mt-1">{{ optional($reservation->start_at)->format('H:i') }}</div>
                             </td>
 
-                            <td class="px-4 py-4 text-stone-800 break-words">
+                            <td class="px-3 py-4 text-stone-800 break-words">
                                 {{ $displayCustomerName }}
                             </td>
 
-                            <td class="px-4 py-4 text-stone-700 break-all">
+                            <td class="px-3 py-4 text-stone-700 break-all">
                                 {{ $displayPhone }}
                             </td>
 
-                            <td class="px-4 py-4 text-stone-700 break-words">
+                            <td class="px-3 py-4 text-stone-700 break-words">
                                 {{ optional($reservation->staff)->name ?: '未指定' }}
                             </td>
 
-                            <td class="px-4 py-4 text-stone-700">
+                            <td class="px-3 py-4 text-stone-700">
                                 @if($detailRows->isNotEmpty())
                                     <div class="space-y-2">
                                         @foreach($detailRows as $row)
@@ -319,34 +330,39 @@
                                 @endif
                             </td>
 
-                            <td class="px-4 py-4">
-                                @if($reservation->status === 'reserved')
-                                    <span class="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
-                                        予約中
-                                    </span>
-                                @elseif($reservation->status === 'cancelled')
-                                    <span class="inline-flex rounded-full bg-stone-200 text-stone-700 px-3 py-1 text-xs font-semibold">
-                                        キャンセル済み
-                                    </span>
-                                @else
-                                    <span class="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
-                                        {{ $reservation->status }}
-                                    </span>
-                                @endif
+                            <td class="px-3 py-4">
+                                @php
+                                    $statusMeta = $reservationStatusMeta($reservation->status);
+                                @endphp
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $statusMeta['class'] }}">
+                                    {{ $statusMeta['label'] }}
+                                </span>
                             </td>
 
-                            <td class="px-4 py-4">
-                                @if($reservation->status === 'reserved')
+                            <td class="px-3 py-4">
+                                @if(in_array($reservation->status, ['reserved', 'no_show'], true))
+                                    <div class="flex flex-col gap-2">
+                                        <form method="POST"
+                                              action="{{ route('company.reservations.complete', $reservation->id) }}"
+                                              onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap">
+                                                来店済
+                                            </button>
+                                        </form>
+
                                     <form method="POST"
                                           action="{{ route('company.reservations.cancel', $reservation->id) }}"
                                           onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
                                         @csrf
                                         <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-white text-xs font-semibold hover:opacity-90 transition shadow-sm"
+                                                class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap"
                                                 style="background: {{ $theme }};">
                                             キャンセル
                                         </button>
                                     </form>
+                                    </div>
                                 @else
                                     <span class="text-stone-400 text-xs">操作不可</span>
                                 @endif
@@ -408,19 +424,12 @@
                         </div>
 
                         <div>
-                            @if($reservation->status === 'reserved')
-                                <span class="inline-flex rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-semibold">
-                                    予約中
-                                </span>
-                            @elseif($reservation->status === 'cancelled')
-                                <span class="inline-flex rounded-full bg-stone-200 text-stone-700 px-3 py-1 text-xs font-semibold">
-                                    キャンセル済み
-                                </span>
-                            @else
-                                <span class="inline-flex rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-semibold">
-                                    {{ $reservation->status }}
-                                </span>
-                            @endif
+                            @php
+                                $statusMeta = $reservationStatusMeta($reservation->status);
+                            @endphp
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $statusMeta['class'] }}">
+                                {{ $statusMeta['label'] }}
+                            </span>
                         </div>
                     </div>
 
@@ -468,7 +477,18 @@
                     </div>
 
                     <div class="pt-1">
-                        @if($reservation->status === 'reserved')
+                        @if(in_array($reservation->status, ['reserved', 'no_show'], true))
+                            <form method="POST"
+                                  action="{{ route('company.reservations.complete', $reservation->id) }}"
+                                  class="mb-2"
+                                  onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
+                                    来店済みにする
+                                </button>
+                            </form>
+
                             <form method="POST"
                                   action="{{ route('company.reservations.cancel', $reservation->id) }}"
                                   onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">

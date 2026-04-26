@@ -169,10 +169,10 @@ body {
                 <div class="xl:w-[430px]">
                     <div class="mb-3 text-xs font-bold tracking-[0.18em] text-white/55">QUICK LAUNCH</div>
                     <div class="grid grid-cols-2 gap-3">
-                        @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="quick-card"><i data-lucide="calendar-check"></i><div class="mt-3 font-bold">予約管理</div><div class="text-xs text-white/55 mt-1">本日の受付確認</div></a>@endif
+                        @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="quick-card"><i data-lucide="calendar-check"></i><div class="mt-3 font-bold">予約カレンダー</div><div class="text-xs text-white/55 mt-1">空き状況と予約登録</div></a>@endif
+                        @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="quick-card"><i data-lucide="list-checks"></i><div class="mt-3 font-bold">予約一覧</div><div class="text-xs text-white/55 mt-1">予約状況と来店管理</div></a>@endif
                         @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="quick-card"><i data-lucide="users"></i><div class="mt-3 font-bold">顧客管理</div><div class="text-xs text-white/55 mt-1">来店履歴を確認</div></a>@endif
                         @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="quick-card"><i data-lucide="clock"></i><div class="mt-3 font-bold">勤務管理</div><div class="text-xs text-white/55 mt-1">シフト登録</div></a>@endif
-                        @if($can('dashboard.sales'))<button type="button" @click="tab='analytics'" class="quick-card"><i data-lucide="bar-chart-3"></i><div class="mt-3 font-bold">売上分析</div><div class="text-xs text-white/55 mt-1">推移とランキング</div></button>@endif
                     </div>
                 </div>
             </div>
@@ -319,7 +319,8 @@ body {
     </div>
 
     <div x-show="tab==='reserve'" class="grid md:grid-cols-2 gap-4">
-        @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-check"></i></div><div><div class="font-bold">予約管理</div><div class="text-sm text-gray-500">予約の確認・変更・キャンセル</div></div></a>@endif
+        @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-check"></i></div><div><div class="font-bold">予約カレンダー</div><div class="text-sm text-gray-500">空き状況の確認と予約登録</div></div></a>@endif
+        @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list-checks"></i></div><div><div class="font-bold">予約一覧</div><div class="text-sm text-gray-500">予約状況、来店済、キャンセル、無断キャンセルの管理</div></div></a>@endif
         @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">顧客管理</div><div class="text-sm text-gray-500">来店履歴・顧客情報の管理</div></div></a>@endif
     </div>
 

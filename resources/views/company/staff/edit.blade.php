@@ -222,11 +222,13 @@
                             <input type="file"
                                    name="image"
                                    accept="image/*"
-                                   class="block w-full text-sm text-gray-600
-                                          file:mr-4 file:py-3 file:px-4
-                                          file:rounded-xl file:border-0
-                                          file:text-sm file:font-semibold
-                                          file:text-white">
+                                   class="block w-full rounded-2xl border border-gray-200 bg-gray-50 p-2 text-sm text-gray-700 shadow-sm
+                                          file:mr-4 file:rounded-xl file:border-0 file:bg-stone-900
+                                          file:px-5 file:py-3
+                                          file:text-sm file:font-bold
+                                          file:text-white
+                                          hover:file:opacity-90"
+                                   style="color-scheme: light; --tw-ring-color: {{ $theme }}; --file-bg: {{ $theme }};">
                             @error('image')
                                 <div class="text-red-500 text-sm mt-2">{{ $message }}</div>
                             @enderror

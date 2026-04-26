@@ -8,6 +8,16 @@
     $themeSoft = $theme . '15';
 @endphp
 
+<style>
+form div:has(> input[name="retired_at"]) {
+    display: none;
+}
+
+form section:has(input[name="retired_at"]) > div:first-child p {
+    display: none;
+}
+</style>
+
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     {{-- ヘッダー --}}
@@ -230,12 +240,13 @@
                             <input type="file"
                                    name="image"
                                    accept="image/*"
-                                   class="block w-full text-sm text-gray-600
-                                          file:mr-4 file:py-3 file:px-4
-                                          file:rounded-xl file:border-0
-                                          file:text-sm file:font-semibold
-                                          file:text-white"
-                                   style="color-scheme: light;">
+                                   class="block w-full rounded-2xl border border-gray-200 bg-gray-50 p-2 text-sm text-gray-700 shadow-sm
+                                          file:mr-4 file:rounded-xl file:border-0 file:bg-stone-900
+                                          file:px-5 file:py-3
+                                          file:text-sm file:font-bold
+                                          file:text-white
+                                          hover:file:opacity-90"
+                                   style="color-scheme: light; --tw-ring-color: {{ $theme }}; --file-bg: {{ $theme }};">
                             <p class="text-xs text-gray-400 mt-2">
                                 担当者一覧や予約画面で使用するプロフィール画像です。
                             </p>

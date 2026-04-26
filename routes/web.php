@@ -396,6 +396,9 @@ Route::prefix('company')->group(function () {
             Route::get('customers/{id}', [CustomerController::class, 'show'])
                 ->name('company.customers.show');
 
+            Route::post('customers/{id}/profile', [CustomerController::class, 'updateProfile'])
+                ->name('company.customers.profile');
+
             Route::post('customers/{id}/note', [CustomerController::class, 'note'])
                 ->name('company.customers.note');
 
@@ -437,6 +440,9 @@ Route::prefix('company')->group(function () {
 
             Route::post('reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
                 ->name('company.reservations.cancel');
+
+            Route::post('reservations/{id}/complete', [\App\Http\Controllers\Company\ReservationController::class, 'completeFromList'])
+                ->name('company.reservations.complete');
 
             Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
                 ->name('company.reservation_change_notices.index');

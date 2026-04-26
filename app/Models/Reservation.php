@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Reservation extends Model
 {
+    public const STATUS_RESERVED = 'reserved';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_NO_SHOW = 'no_show';
 
     protected $fillable = [
         'company_id',

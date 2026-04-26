@@ -221,7 +221,7 @@
                     </div>
 
                     {{-- 中央：来店情報 --}}
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 flex-1">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 flex-1">
                         <div class="rounded-2xl bg-rose-50/60 px-4 py-3 border border-rose-100">
                             <div class="text-[11px] font-semibold text-gray-500">来店回数</div>
                             <div class="mt-1 text-lg font-bold text-gray-900">
@@ -255,6 +255,13 @@
                             <div class="text-[11px] font-semibold text-gray-500">フォロー状態</div>
                             <div class="mt-1 text-sm font-semibold text-gray-900">
                                 {{ $status ?: '対象外' }}
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl bg-red-50/70 px-4 py-3 border border-red-100">
+                            <div class="text-[11px] font-semibold text-gray-500">無断キャンセル回数</div>
+                            <div class="mt-1 text-lg font-bold text-red-700">
+                                {{ number_format($customer->no_show_count ?? 0) }}
                             </div>
                         </div>
                     </div>

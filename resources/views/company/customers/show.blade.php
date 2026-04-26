@@ -111,6 +111,68 @@
     {{-- 下段 --}}
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
+        {{-- 基本情報編集 --}}
+        <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden xl:col-span-2">
+            <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
+                <h2 class="text-lg font-bold text-gray-900">顧客基本情報</h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    顧客名、電話番号、メールアドレスを変更できます。
+                </p>
+            </div>
+
+            <div class="p-5 sm:p-6">
+                <form method="POST" action="{{ route('company.customers.profile',$customer->id) }}">
+                    @csrf
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">顧客名</label>
+                            <input type="text"
+                                   name="name"
+                                   value="{{ old('name', $customer->name) }}"
+                                   class="w-full border border-gray-300 rounded-2xl p-3 text-sm focus:outline-none focus:ring-4 focus:border-transparent"
+                                   style="--tw-ring-color: {{ $theme }}22;">
+                            @error('name')
+                                <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">電話番号</label>
+                            <input type="text"
+                                   name="phone"
+                                   value="{{ old('phone', $customer->phone) }}"
+                                   class="w-full border border-gray-300 rounded-2xl p-3 text-sm focus:outline-none focus:ring-4 focus:border-transparent"
+                                   style="--tw-ring-color: {{ $theme }}22;">
+                            @error('phone')
+                                <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">メールアドレス</label>
+                            <input type="email"
+                                   name="email"
+                                   value="{{ old('email', $customer->email) }}"
+                                   class="w-full border border-gray-300 rounded-2xl p-3 text-sm focus:outline-none focus:ring-4 focus:border-transparent"
+                                   style="--tw-ring-color: {{ $theme }}22;">
+                            @error('email')
+                                <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="mt-5">
+                        <button type="submit"
+                                style="background: {{ $theme }}"
+                                class="text-white px-6 py-3 rounded-2xl font-semibold shadow-sm hover:opacity-90 transition">
+                            保存する
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         {{-- メモ --}}
         <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden">
             <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white">

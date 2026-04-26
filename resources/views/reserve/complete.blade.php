@@ -33,7 +33,8 @@
 
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
             {{-- ヘッダー --}}
-            <div class="bg-gradient-to-br from-[#c9a27e] to-[#b7875c] px-6 sm:px-8 py-10 text-white text-center">
+            <div class="px-6 sm:px-8 py-10 text-white text-center"
+                 style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">RESERVATION COMPLETE</div>
                 <h1 class="mt-3 text-2xl sm:text-3xl font-bold leading-tight">ご予約が完了しました</h1>
                 <p class="mt-3 text-sm sm:text-base leading-7 opacity-95">
@@ -83,11 +84,11 @@
                         </section>
 
                         {{-- 閉じられない場合の案内 --}}
-                        <section id="closeHelpBox" class="hidden rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
-                            <div class="text-[15px] font-bold text-amber-900">
+                        <section id="closeHelpBox" class="hidden rounded-2xl border-2 border-red-300 bg-red-50 p-5 sm:p-6 shadow-lg ring-4 ring-red-100">
+                            <div class="text-[18px] sm:text-[20px] font-black text-red-900 leading-7">
                                 この画面は自動では閉じられませんでした
                             </div>
-                            <p class="mt-2 text-[13px] leading-7 text-amber-900">
+                            <p class="mt-3 text-[14px] sm:text-[15px] leading-8 font-semibold text-red-900">
                                 お手数ですが、ブラウザやアプリの閉じる操作でこの画面を終了してください。
                             </p>
                         </section>
@@ -366,7 +367,7 @@
                                     type="button"
                                     onclick="handleCompleteClose()"
                                     class="inline-flex items-center justify-center rounded-full px-6 py-4 text-white font-bold text-sm shadow-sm"
-                                    style="background:#b7875c;">
+                                    style="background: {{ $theme }};">
                                     閉じる
                                 </button>
                                 <p class="text-[12px] text-center text-[#9a8878] leading-6">
@@ -405,7 +406,7 @@
                 type="button"
                 onclick="handleCompleteClose()"
                 class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg text-center"
-                style="background:#b7875c;">
+                style="background: {{ $theme }};">
                 閉じる
             </button>
         </div>

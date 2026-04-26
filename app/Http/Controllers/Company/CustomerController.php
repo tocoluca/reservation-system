@@ -23,7 +23,12 @@ $company = auth()->guard('company')->user()->company;
 $query = Customer::where('company_id', $company->id)
     ->with(['photos' => function ($q) {
         $q->latest('id');
-    }]);
+    }])
+    ->withCount([
+        'reservations as no_show_count' => function ($q) {
+            $q->where('status', 'no_show');
+        },
+    ]);
 
 
 if($request->filled('keyword')){
@@ -61,6 +66,33 @@ $customer = Customer::where('company_id',$company->id)
 ->findOrFail($id);
 
 return view('company.customers.show',compact('customer'));
+
+}
+
+public function updateProfile(Request $request,$id)
+{
+
+$validated = $request->validate([
+'name'=>'required|string|max:255',
+'phone'=>'nullable|string|max:50',
+'email'=>'nullable|email|max:255',
+],[
+'name.required'=>'顧客名を入力してください。',
+'email.email'=>'メールアドレスの形式が正しくありません。',
+]);
+
+$company = auth()->guard('company')->user()->company;
+
+$customer = Customer::where('company_id',$company->id)
+->findOrFail($id);
+
+$customer->update([
+'name'=>$validated['name'],
+'phone'=>$validated['phone'] ?? null,
+'email'=>$validated['email'] ?? null,
+]);
+
+return back()->with('success','顧客情報を更新しました。');
 
 }
 

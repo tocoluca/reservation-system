@@ -112,18 +112,60 @@ class ReservationController extends Controller
                 ->withErrors(['reservation' => '予約が見つかりません。']);
         }
 
-        if ($reservation->status === 'cancelled') {
+        if ($reservation->status === Reservation::STATUS_CANCELLED) {
             return redirect()
                 ->route('company.reservations.index')
                 ->with('success', 'この予約はすでにキャンセル済みです。');
         }
 
-        $reservation->status = 'cancelled';
+        if ($reservation->status === Reservation::STATUS_COMPLETED) {
+            return redirect()
+                ->route('company.reservations.index')
+                ->withErrors(['reservation' => '来店済みの予約はキャンセルできません。']);
+        }
+
+        $reservation->status = Reservation::STATUS_CANCELLED;
+        $reservation->cancelled_at = now();
+        $reservation->cancelled_type = 'shop';
         $reservation->save();
 
         return redirect()
             ->route('company.reservations.index')
             ->with('success', '予約をキャンセルしました。');
+    }
+
+    public function completeFromList($id)
+    {
+        $company = auth()->guard('company')->user()->company;
+
+        $reservation = Reservation::where('id', $id)
+            ->where('company_id', $company->id)
+            ->first();
+
+        if (!$reservation) {
+            return redirect()
+                ->route('company.reservations.index')
+                ->withErrors(['reservation' => '予約が見つかりません。']);
+        }
+
+        if ($reservation->status === Reservation::STATUS_CANCELLED) {
+            return redirect()
+                ->route('company.reservations.index')
+                ->withErrors(['reservation' => 'キャンセル済みの予約は来店済みにできません。']);
+        }
+
+        if ($reservation->status === Reservation::STATUS_COMPLETED) {
+            return redirect()
+                ->route('company.reservations.index')
+                ->with('success', 'この予約はすでに来店済みです。');
+        }
+
+        $reservation->status = Reservation::STATUS_COMPLETED;
+        $reservation->save();
+
+        return redirect()
+            ->route('company.reservations.index')
+            ->with('success', '予約を来店済みにしました。');
     }
 
     private function getReservationLimits($company)
@@ -1109,7 +1151,9 @@ class ReservationController extends Controller
             ], 404);
         }
 
-        $reservation->status = 'cancelled';
+        $reservation->status = Reservation::STATUS_CANCELLED;
+        $reservation->cancelled_at = now();
+        $reservation->cancelled_type = 'shop';
         $reservation->save();
 
         return response()->json(['success' => true]);

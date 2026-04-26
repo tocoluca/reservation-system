@@ -27,7 +27,8 @@
     <div class="max-w-5xl mx-auto">
 
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
-            <div class="bg-gradient-to-br from-[#c9a27e] to-[#b7875c] px-6 sm:px-8 py-8 text-white text-center">
+            <div class="px-6 sm:px-8 py-8 text-white text-center"
+                 style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">RESERVATION CONFIRM</div>
                 <h1 class="mt-3 text-2xl sm:text-3xl font-bold leading-tight">ご予約内容の確認</h1>
                 <p class="mt-3 text-sm sm:text-base leading-7 opacity-95">

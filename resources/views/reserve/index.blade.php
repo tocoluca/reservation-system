@@ -11,7 +11,8 @@
 
         {{-- ヘッダー --}}
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm mb-6 sm:mb-8">
-            <div class="bg-gradient-to-br from-[#c9a27e] to-[#b7875c] px-6 sm:px-8 py-10 sm:py-12 text-white text-center">
+            <div class="px-6 sm:px-8 py-10 sm:py-12 text-white text-center"
+                 style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">ONLINE RESERVATION</div>
                 <h1 class="mt-3 text-3xl sm:text-4xl font-bold leading-tight">
                     ご予約

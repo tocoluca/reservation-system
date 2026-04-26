@@ -499,6 +499,9 @@ Route::prefix('r/{company_code}')
         Route::get('/', [ReserveController::class, 'index'])
             ->name('reserve.index');
 
+        Route::get('/styles', [ReserveController::class, 'stylesIndex'])
+            ->name('reserve.styles.index');
+
         Route::get('/line/redirect', [ReserveController::class, 'lineRedirect'])
             ->name('reserve.line.redirect');
 

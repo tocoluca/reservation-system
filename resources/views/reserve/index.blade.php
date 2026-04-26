@@ -609,31 +609,28 @@
                                             $styleImage = $style->image_url ?? (!empty($style->image_path) ? asset('storage/' . $style->image_path) : asset('images/noimage.png'));
                                         @endphp
 
-                                        @if(Route::has('reserve.styles.show'))
-                                            <a href="{{ route('reserve.styles.show', [$company->company_code, $style->id]) }}" class="style-preview-card block rounded-2xl border border-[#eadfd3] p-3 hover:bg-[#fcf8f4] transition">
-                                        @else
-                                            <div class="style-preview-card rounded-2xl border border-[#eadfd3] p-3">
-                                        @endif
-                                                <div class="flex gap-3">
-                                                    <img src="{{ $styleImage }}" alt="{{ $style->title ?? 'スタイル写真' }}" class="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#efe4d8] bg-white">
 
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="text-sm font-bold text-[#4b3f35] leading-6">
-                                                            {{ $style->title ?? 'スタイル写真' }}
+                                        <a href="{{ route('reserve.styles.index', $company->company_code) }}" class="style-preview-card block rounded-2xl border border-[#eadfd3] p-3 hover:bg-[#fcf8f4] transition group">
+                                            <div class="flex gap-3">
+                                                <img src="{{ $styleImage }}" alt="{{ $style->title ?? 'スタイル画像' }}" class="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#efe4d8] bg-white group-hover:scale-[1.02] transition">
+
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="text-sm font-bold text-[#4b3f35] leading-6">
+                                                        {{ $style->title ?? 'スタイル画像' }}
+                                                    </div>
+
+                                                    @if(!empty($style->comment))
+                                                        <div class="mt-1 text-sm text-[#7b6654] leading-6 line-clamp-3">
+                                                            {{ $style->comment }}
                                                         </div>
+                                                    @endif
 
-                                                        @if(!empty($style->comment))
-                                                            <div class="mt-1 text-sm text-[#7b6654] leading-6 line-clamp-3">
-                                                                {{ $style->comment }}
-                                                            </div>
-                                                        @endif
+                                                    <div class="mt-2 text-[11px] font-bold text-[#9a7d63]">
+                                                        画像一覧でコメントを見る
                                                     </div>
                                                 </div>
-                                        @if(Route::has('reserve.styles.show'))
-                                            </a>
-                                        @else
                                             </div>
-                                        @endif
+                                        </a>
                                     @endforeach
                                 </div>
                             @else

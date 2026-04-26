@@ -919,10 +919,12 @@ function selectAssignmentPatternByIndex(index) {
 
     highlightSelectedCandidate(index);
 
-    assignmentMode = (selectedMenuIds.length <= 1) ? 'single' : (assignmentMode || 'single');
-    selectedAssignments = toList(candidate.assignments);
+    selectedAssignments = Array.isArray(candidate.assignments)
+        ? candidate.assignments
+        : Object.values(candidate.assignments || {});
 
-    if (assignmentMode === 'single' && selectedAssignments.length > 0) {
+    // 👇 単一でも必ずstaff_idセット
+    if (selectedAssignments.length > 0) {
         selectedStaffId = selectedAssignments[0].staff_id;
     } else {
         selectedStaffId = null;
@@ -1006,6 +1008,7 @@ function submitReservation() {
         return;
     }
 
+    // 🔥 ここが最重要
     const payload = {
         start_at: selectedDatetime,
         customer_name: name,
@@ -1013,13 +1016,14 @@ function submitReservation() {
         menu_ids: selectedMenuIds
     };
 
-    if (assignmentMode === 'multi') {
+    // ✅ assignments優先（サーバー仕様に合わせる）
+    if (selectedAssignments.length > 0) {
         payload.assignments = selectedAssignments.map(row => ({
             menu_id: row.menu_id,
             staff_id: row.staff_id
         }));
     } else {
-        payload.staff_id = selectedStaffId || (selectedAssignments[0] ? selectedAssignments[0].staff_id : null);
+        payload.staff_id = selectedStaffId;
     }
 
     fetch('/company/reservation', {
@@ -1035,8 +1039,10 @@ function submitReservation() {
         if(result.success){
             closeModal();
 
+            // 初期化
             document.getElementById('modal_customer_name').value = '';
             document.getElementById('modal_customer_phone').value = '';
+
             selectedMenuIds = [];
             selectedAssignments = [];
             selectedStaffId = null;

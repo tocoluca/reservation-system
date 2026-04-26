@@ -178,6 +178,15 @@ class DashboardController extends Controller
             ->orderBy('start_at')
             ->get();
 
+		$tomorrow = $today->copy()->addDay();
+
+		$tomorrowReservations = Reservation::where('company_id', $company->id)
+		    ->whereDate('start_at', $tomorrow->toDateString())
+		    ->where('status', 'reserved')
+		    ->with(['staff', 'menus'])
+		    ->orderBy('start_at')
+		    ->get();
+
         $notices = CompanyDashboardNotice::visibleForCompany($company->id)
             ->orderByDesc('is_important')
             ->orderByDesc('is_new')
@@ -229,18 +238,19 @@ class DashboardController extends Controller
             $query->whereYear('start_at', $year);
         }
 
-        $monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year) {
-            $total = Reservation::where('company_id', $company->id)
-                ->whereYear('start_at', $year)
-                ->whereMonth('start_at', $chartMonth)
-                ->where('status', 'reserved')
-                ->sum('total_price');
+		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year) {
 
-            return (object) [
-                'month' => $chartMonth,
-                'total' => (int) $total,
-            ];
-        });
+		    $query = Reservation::where('company_id', $company->id)
+		        ->whereYear('start_at', $year)
+		        ->whereMonth('start_at', $chartMonth)
+		        ->where('status', 'reserved');
+
+		    return (object) [
+		        'month' => $chartMonth,
+		        'total' => (int) $query->sum('total_price'),
+		        'count' => (int) $query->count(),
+		    ];
+		});
 
         $staffRanking = (clone $query)
             ->select('staff_id', DB::raw('SUM(total_price) as total'))
@@ -334,7 +344,8 @@ class DashboardController extends Controller
             'changeNoticePhonePendingCount',
             'changeNoticeConfirmedCount',
             'changeNoticeTotalCount',
-            'hasChangeNoticeAlert'
+            'hasChangeNoticeAlert',
+			'tomorrowReservations'
         ));
     }
 

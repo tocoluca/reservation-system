@@ -1448,6 +1448,19 @@ public function store(Request $request, $company_code)
         return response()->json($menus);
     }
 
+    public function stylesIndex($company_code)
+    {
+        $company = Company::where('company_code', $company_code)->firstOrFail();
+
+        $styles = StylePost::where('company_id', $company->id)
+            ->where('is_public', true)
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->paginate(40)
+            ->withQueryString();
+
+        return view('reserve.styles.index', compact('company', 'styles'));
+    }
     public function noticeShow($company_code, $id)
     {
         $company = Company::where('company_code', $company_code)

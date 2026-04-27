@@ -506,19 +506,30 @@
 
                 <div>
                     <label class="block font-semibold mb-2">
-                        Webキャンセル締切（時間前）
+                        Webキャンセル締切
                         <span class="tooltip text-gray-400 text-sm ml-2" onclick="toggleTooltip(this)">❓
                             <span class="tooltip-text">
                                 予約完了メールからキャンセルできる期限です。それ以降はお電話案内に切り替わります。
                             </span>
                         </span>
                     </label>
+                    @php
+                        $cancelDeadlineType = old('web_cancel_deadline_type', $company->web_cancel_deadline_type ?? 'hours');
+                    @endphp
+                    <select name="web_cancel_deadline_type"
+                            class="w-full border rounded-2xl p-3 mb-3">
+                        <option value="hours" @selected($cancelDeadlineType === 'hours')>予約時間の指定時間前まで</option>
+                        <option value="business_open_minus_1_hour" @selected($cancelDeadlineType === 'business_open_minus_1_hour')>予約当日の営業開始1時間前まで</option>
+                    </select>
                     <input type="number"
                            name="web_cancel_deadline_hours"
                            value="{{ old('web_cancel_deadline_hours', $company->web_cancel_deadline_hours ?? 24) }}"
                            class="w-full border rounded-2xl p-3">
-                    <p class="text-xs text-gray-500 mt-2">例：24 → 24時間前までWebでキャンセル可能</p>
+                    <p class="text-xs text-gray-500 mt-2">「予約時間の指定時間前まで」を選ぶ場合に使います。例：24 → 24時間前までWebでキャンセル可能</p>
                     @error('web_cancel_deadline_hours')
+                        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                    @enderror
+                    @error('web_cancel_deadline_type')
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
                 </div>

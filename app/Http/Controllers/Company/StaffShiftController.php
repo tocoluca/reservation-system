@@ -324,7 +324,8 @@ class StaffShiftController extends Controller
         }
 
         $validStaffIds = Staff::where('company_id', $company->id)->pluck('id')->map(fn ($id) => (string) $id);
-        $validPatternIds = ShiftPattern::where('company_id', $company->id)->pluck('id')->map(fn ($id) => (string) $id);
+        $validPatterns = ShiftPattern::where('company_id', $company->id)->get()->keyBy('id');
+        $validPatternIds = $validPatterns->keys()->map(fn ($id) => (string) $id);
 
         foreach ($request->shifts as $staffId => $dates) {
             if (!$validStaffIds->contains((string) $staffId) || !is_array($dates)) {
@@ -347,8 +348,11 @@ class StaffShiftController extends Controller
                     ->whereDate('date', $dateString)
                     ->first();
 
+                $previousPatternId = null;
+
                 if ($existing) {
                     $wasWorking = (bool) $existing->is_work;
+                    $previousPatternId = $existing->shift_pattern_id ? (int) $existing->shift_pattern_id : null;
                 } else {
                     $weekday = Carbon::parse($dateString)->dayOfWeek;
 
@@ -357,9 +361,11 @@ class StaffShiftController extends Controller
                         ->first();
 
                     $wasWorking = (bool) ($defaultShift->is_work ?? false);
+                    $previousPatternId = $defaultShift?->shift_pattern_id ? (int) $defaultShift->shift_pattern_id : null;
                 }
 
                 $isWork = ($patternId !== null && $patternId !== '') ? 1 : 0;
+                $newPatternId = $isWork ? (int) $patternId : null;
 
                 StaffShift::updateOrCreate(
                     [
@@ -367,7 +373,7 @@ class StaffShiftController extends Controller
                         'date' => $dateString,
                     ],
                     [
-                        'shift_pattern_id' => $isWork ? $patternId : null,
+                        'shift_pattern_id' => $newPatternId,
                         'is_work' => $isWork,
                     ]
                 );
@@ -382,6 +388,25 @@ class StaffShiftController extends Controller
 
                     if ($notice) {
                         $createdNoticeCount++;
+                    }
+                }
+
+                if ($wasWorking && $isWork && $previousPatternId !== $newPatternId) {
+                    $newPattern = $validPatterns->get($newPatternId);
+
+                    if ($newPattern && $newPattern->start_time && $newPattern->end_time) {
+                        $notice = $this->changeNoticeService->createForStaffShiftTimeChange(
+                            company: $company,
+                            staff: $staff,
+                            date: $dateString,
+                            startTime: $newPattern->start_time,
+                            endTime: $newPattern->end_time,
+                            reasonText: $staff->name . ' のシフト時間変更により、ご予約内容の変更をお願いしております。'
+                        );
+
+                        if ($notice) {
+                            $createdNoticeCount++;
+                        }
                     }
                 }
             }

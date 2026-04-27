@@ -157,6 +157,49 @@ class ReservationChangeNoticeService
         );
     }
 
+    public function createForStaffShiftTimeChange(
+        Company $company,
+        Staff $staff,
+        string $date,
+        string $startTime,
+        string $endTime,
+        ?string $reasonText = null
+    ): ?ReservationChangeNotice {
+        $targetDate = Carbon::parse($date)->toDateString();
+        $shiftStart = Carbon::parse($targetDate . ' ' . $startTime);
+        $shiftEnd = Carbon::parse($targetDate . ' ' . $endTime);
+
+        $reservations = Reservation::query()
+            ->where('company_id', $company->id)
+            ->where('staff_id', $staff->id)
+            ->whereDate('start_at', $targetDate)
+            ->where('status', 'reserved')
+            ->get()
+            ->filter(function ($reservation) use ($shiftStart, $shiftEnd) {
+                $start = Carbon::parse($reservation->start_at);
+                $end = Carbon::parse($reservation->end_at);
+
+                return $start->lt($shiftStart) || $end->gt($shiftEnd);
+            })
+            ->values();
+
+        if ($reservations->isEmpty()) {
+            return null;
+        }
+
+        $title = $targetDate . ' ' . $staff->name . ' シフト変更による予約変更連絡';
+        $reasonText = $reasonText ?: $staff->name . ' のシフト変更のため、ご予約内容の変更をお願いしております。';
+
+        return $this->createNoticeWithReservations(
+            company: $company,
+            reservations: $reservations,
+            title: $title,
+            targetDate: $targetDate,
+            reasonType: 'staff_shift_changed',
+            reasonText: $reasonText
+        );
+    }
+
     protected function createNoticeWithReservations(
         Company $company,
         Collection $reservations,

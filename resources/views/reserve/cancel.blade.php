@@ -39,7 +39,7 @@
 
                 @if($canCancel)
                     <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4 text-sm text-blue-900 leading-7">
-                        Webでのキャンセルは、ご予約時間の{{ $cancelHours }}時間前まで可能です。<br>
+                        Webでのキャンセルは、{{ $cancelDescription }}可能です。<br>
                         この予約は現在、Webからキャンセルできます。
                     </div>
 

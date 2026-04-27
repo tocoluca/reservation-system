@@ -1,6 +1,6 @@
 @php
-    $cancelHours = $company->web_cancel_deadline_hours ?? 24;
     $cancelUrl = url('/cancel/' . $reservation->cancel_token);
+    $cancelDescription = app(\App\Services\WebCancelDeadlineService::class)->descriptionFor($reservation);
     $reservation->loadMissing(['details.menu', 'details.staff', 'staff']);
 @endphp
 <!DOCTYPE html>
@@ -116,7 +116,7 @@
                         <div style="margin:0 0 24px;padding:20px;background:#fffaf5;border:1px solid #f0e2d4;border-radius:16px;">
                             <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#6b533f;">キャンセルについて</div>
                             <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#6b5b4d;">
-                                ご予約のキャンセルは、ご予約時間の <strong>{{ $cancelHours }}時間前まで</strong>、下記ボタンまたはURLよりお手続きいただけます。
+                                ご予約のキャンセルは、<strong>{{ $cancelDescription }}</strong>、下記ボタンまたはURLよりお手続きいただけます。
                             </p>
 
                             <div style="text-align:center;margin:18px 0;">
@@ -130,7 +130,7 @@
                             </div>
 
                             <p style="margin:14px 0 0;font-size:13px;line-height:1.8;color:#8a7665;">
-                                ※ {{ $cancelHours }}時間を過ぎている場合は、お手数ですがお電話にてご連絡をお願いいたします。
+                                ※ Webキャンセル受付時間を過ぎている場合は、お手数ですがお電話にてご連絡をお願いいたします。
                             </p>
                         </div>
 

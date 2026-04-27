@@ -549,8 +549,6 @@ Route::post('/review/{token}', [ReviewController::class, 'store'])
 Route::get('/review/{token}/complete', [ReviewController::class, 'complete'])
     ->name('reviews.complete');
 
-Route::get('/cancel/{token}', [ReserveController::class, 'cancel']);
-
 Route::get('/cancel/{token}', [ReserveCancelController::class, 'show'])->name('reserve.cancel.show');
 Route::post('/cancel/{token}', [ReserveCancelController::class, 'cancel'])->name('reserve.cancel.execute');
 Route::get('/cancel/{token}/complete', [ReserveCancelController::class, 'complete'])->name('reserve.cancel.complete');

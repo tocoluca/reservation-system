@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Reservation;
-use Carbon\Carbon;
+use App\Services\WebCancelDeadlineService;
 use Illuminate\Http\Request;
 
 class ReserveCancelController extends Controller
@@ -15,14 +15,15 @@ class ReserveCancelController extends Controller
             ->firstOrFail();
 
         $company = $reservation->company;
-        $cancelHours = (int) ($company->web_cancel_deadline_hours ?? 24);
-        $deadline = Carbon::parse($reservation->start_at)->subHours($cancelHours);
+        $deadlineService = app(WebCancelDeadlineService::class);
+        $cancelDescription = $deadlineService->descriptionFor($reservation);
+        $deadline = $deadlineService->deadlineFor($reservation);
         $canCancel = now()->lte($deadline) && $reservation->status === 'reserved';
 
         return view('reserve.cancel', compact(
             'reservation',
             'company',
-            'cancelHours',
+            'cancelDescription',
             'deadline',
             'canCancel'
         ));
@@ -34,9 +35,9 @@ class ReserveCancelController extends Controller
             ->where('cancel_token', $token)
             ->firstOrFail();
 
-        $company = $reservation->company;
-        $cancelHours = (int) ($company->web_cancel_deadline_hours ?? 24);
-        $deadline = Carbon::parse($reservation->start_at)->subHours($cancelHours);
+        $deadlineService = app(WebCancelDeadlineService::class);
+        $cancelDescription = $deadlineService->descriptionFor($reservation);
+        $deadline = $deadlineService->deadlineFor($reservation);
 
         if ($reservation->status !== 'reserved') {
             return redirect()
@@ -47,7 +48,7 @@ class ReserveCancelController extends Controller
         if (now()->gt($deadline)) {
             return redirect()
                 ->back()
-                ->with('error', "Webでのキャンセルは予約時間の{$cancelHours}時間前までです。それ以降はお電話でご連絡ください。");
+                ->with('error', "Webでのキャンセルは{$cancelDescription}です。それ以降はお電話でご連絡ください。");
         }
 
         $reservation->update([

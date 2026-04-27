@@ -19,6 +19,7 @@ class Company extends Authenticatable
         'password',
         'theme_color',
         'logo_path',
+        'slot_minutes',
 
         // 予約設定
         'slot_minutes',
@@ -29,6 +30,8 @@ class Company extends Authenticatable
         'reservation_month_limit',
         'reservation_open_days',
         'reservation_close_hours',
+        'web_cancel_deadline_hours',
+        'web_cancel_deadline_type',
 
         // Stripe / Billing
         'stripe_id',
@@ -59,6 +62,9 @@ class Company extends Authenticatable
         'line_channel_secret',
         'line_channel_access_token',
         'line_official_account_id',
+        'review_enabled',
+        'menu_time_priority_flag',
+        'prefer_less_capable_staff_for_menu_assignment',
 
         // 口コミ・再来店設定
         'review_enabled',
@@ -79,6 +85,8 @@ class Company extends Authenticatable
         'is_billing_active' => 'boolean',
         'line_login_enabled' => 'boolean',
         'review_enabled' => 'boolean',
+        'menu_time_priority_flag' => 'boolean',
+        'prefer_less_capable_staff_for_menu_assignment' => 'boolean',
         'trial_ends_at' => 'datetime',
         'current_period_end' => 'datetime',
         'subscribed_at' => 'datetime',

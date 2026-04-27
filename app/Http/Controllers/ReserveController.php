@@ -952,7 +952,7 @@ public function store(Request $request, $company_code)
     try {
         $reservation->load(['customer', 'staff', 'menus']);
         if (!empty($reservation->customer_email)) {
-            Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($reservation));
+            Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($company, $reservation));
         }
     } catch (\Throwable $e) {
         Log::error('予約完了メール送信失敗', [

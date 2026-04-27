@@ -93,7 +93,7 @@ class DashboardController extends Controller
                 ->exists();
         }
 
-        $setupShiftDone = $setupShiftPatternDone && ($setupDefaultShiftDone || $setupMonthlyShiftDone);
+        $setupShiftDone = $setupMonthlyShiftDone || ($setupShiftPatternDone && $setupDefaultShiftDone);
         $setupReserveDone = $setupCompanyInfoDone && $setupStaffDone && $setupMenuDone && $setupShiftDone;
 
         $setupStatusList = [

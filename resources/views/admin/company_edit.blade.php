@@ -305,6 +305,32 @@
                     </div>
 
                     <div>
+                        <label class="block font-semibold mb-2">Subscription Status</label>
+                        <select name="subscription_status" class="w-full border rounded-lg p-3">
+                            @foreach([
+                                'incomplete',
+                                'incomplete_expired',
+                                'trialing',
+                                'active',
+                                'past_due',
+                                'canceled',
+                                'unpaid',
+                            ] as $status)
+                                <option value="{{ $status }}" @selected(old('subscription_status', $company->subscription_status) === $status)>
+                                    {{ $status }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 flex items-center gap-3">
+                        <input type="hidden" name="is_billing_active" value="0">
+                        <input type="checkbox" id="is_billing_active" name="is_billing_active" value="1"
+                               {{ old('is_billing_active', $company->is_billing_active) ? 'checked' : '' }}>
+                        <label for="is_billing_active" class="font-semibold">Billing Active</label>
+                    </div>
+
+                    <div>
                         <label class="block font-semibold mb-2">Stripe Customer ID</label>
                         <input type="text" name="stripe_customer_id"
                                value="{{ old('stripe_customer_id', $company->stripe_customer_id) }}"

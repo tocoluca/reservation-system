@@ -214,6 +214,34 @@
                     </label>
                     <input type="date" name="grace_until" class="w-full border rounded-lg p-3">
                 </div>
+                <div class="border rounded-xl p-4">
+                    <label class="flex items-center gap-2 font-semibold mb-3">
+                        <input type="hidden" name="apply_subscription_status" value="0">
+                        <input type="checkbox" name="apply_subscription_status" value="1">
+                        Subscription Status を一括更新
+                    </label>
+                    <select name="subscription_status" class="w-full border rounded-lg p-3">
+                        <option value="incomplete">incomplete</option>
+                        <option value="incomplete_expired">incomplete_expired</option>
+                        <option value="trialing">trialing</option>
+                        <option value="active">active</option>
+                        <option value="past_due">past_due</option>
+                        <option value="canceled">canceled</option>
+                        <option value="unpaid">unpaid</option>
+                    </select>
+                </div>
+
+                <div class="border rounded-xl p-4">
+                    <label class="flex items-center gap-2 font-semibold mb-3">
+                        <input type="hidden" name="apply_is_billing_active" value="0">
+                        <input type="checkbox" name="apply_is_billing_active" value="1">
+                        Billing Active を一括更新
+                    </label>
+                    <select name="is_billing_active" class="w-full border rounded-lg p-3">
+                        <option value="1">ON</option>
+                        <option value="0">OFF</option>
+                    </select>
+                </div>
 
                 <div class="border rounded-xl p-4">
                     <label class="flex items-center gap-2 font-semibold mb-3">

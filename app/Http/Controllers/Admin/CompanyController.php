@@ -209,6 +209,12 @@ class CompanyController extends Controller
             'apply_grace_until' => 'nullable|boolean',
             'grace_until' => 'nullable|date',
 
+            'apply_subscription_status' => 'nullable|boolean',
+            'subscription_status' => 'nullable|in:incomplete,incomplete_expired,trialing,active,past_due,canceled,unpaid',
+
+            'apply_is_billing_active' => 'nullable|boolean',
+            'is_billing_active' => 'nullable|boolean',
+
             'apply_stripe_customer_id' => 'nullable|boolean',
             'stripe_customer_id' => 'nullable|string|max:255',
 
@@ -233,6 +239,8 @@ class CompanyController extends Controller
             'reservation_close_hours',
             'holiday_is_closed',
             'grace_until',
+            'subscription_status',
+            'is_billing_active',
             'stripe_customer_id',
             'stripe_subscription_id',
         ];
@@ -320,6 +328,8 @@ class CompanyController extends Controller
             'open_patterns' => 'nullable|array',
 
             'grace_until' => 'nullable|date',
+            'subscription_status' => 'nullable|in:incomplete,incomplete_expired,trialing,active,past_due,canceled,unpaid',
+            'is_billing_active' => 'nullable|boolean',
             'stripe_customer_id' => 'nullable|string|max:255',
             'stripe_subscription_id' => 'nullable|string|max:255',
         ];
@@ -415,6 +425,8 @@ class CompanyController extends Controller
             'open_patterns' => $patterns,
 
             'grace_until' => $validated['grace_until'] ?? null,
+            'subscription_status' => $validated['subscription_status'] ?? null,
+            'is_billing_active' => $request->boolean('is_billing_active'),
             'stripe_customer_id' => $validated['stripe_customer_id'] ?? null,
             'stripe_subscription_id' => $validated['stripe_subscription_id'] ?? null,
         ];

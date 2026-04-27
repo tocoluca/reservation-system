@@ -77,7 +77,7 @@ class SetupController extends Controller
                 ->exists();
         }
 
-        $shiftDone = $shiftPatternDone && ($defaultShiftDone || $monthlyShiftDone);
+        $shiftDone = $monthlyShiftDone || ($shiftPatternDone && $defaultShiftDone);
 
         /*
         |--------------------------------------------------------------------------

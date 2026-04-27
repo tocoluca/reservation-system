@@ -15,10 +15,16 @@ class Company extends Authenticatable
     protected $fillable = [
         'company_code',
         'name',
+        'industry_type',
         'email',
         'password',
         'theme_color',
         'logo_path',
+        'address',
+        'phone',
+        'homepage',
+        'is_active',
+        'is_initialized',
         'slot_minutes',
 
         // 予約設定
@@ -38,6 +44,7 @@ class Company extends Authenticatable
         'pm_type',
         'pm_last_four',
         'stripe_subscription_id',
+        'stripe_customer_id',
         'stripe_price_id',
         'subscription_status',
         'plan_code',

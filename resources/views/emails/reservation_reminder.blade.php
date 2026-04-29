@@ -3,6 +3,10 @@
     $customer = $reservation->customer;
     $staff = $reservation->staff;
     $menus = $reservation->menus ?? collect();
+    $cancelUrl = !empty($reservation->cancel_token) ? url('/cancel/' . $reservation->cancel_token) : null;
+    $cancelDeadlineAt = app(\App\Services\WebCancelDeadlineService::class)->deadlineFor($reservation);
+    $cancelDeadlineText = $cancelDeadlineAt->format('Y年n月j日 G時')
+        . ($cancelDeadlineAt->minute > 0 ? $cancelDeadlineAt->format('i分') : '');
 @endphp
 <!DOCTYPE html>
 <html lang="ja">
@@ -69,11 +73,38 @@
                             </table>
                         </div>
 
-                        <div style="margin:0 0 24px;padding:18px 20px;background:#fffaf5;border:1px solid #f0e2d4;border-radius:16px;">
+                        <div style="margin:0 0 24px;padding:20px;background:#fffaf5;border:1px solid #f0e2d4;border-radius:16px;">
+                            <div style="font-size:14px;font-weight:bold;margin-bottom:10px;color:#6b533f;">キャンセルについて</div>
+                            @if($cancelUrl)
+                                <p style="margin:0 0 14px;font-size:14px;line-height:1.9;color:#6b5b4d;">
+                                    キャンセルについては、下記URLにて <strong>{{ $cancelDeadlineText }}</strong> までに行ってください。
+                                </p>
+
+                                <div style="text-align:center;margin:18px 0;">
+                                    <a href="{{ $cancelUrl }}" style="display:inline-block;background:#b7875c;color:#ffffff;text-decoration:none;font-size:14px;font-weight:bold;padding:14px 28px;border-radius:999px;">
+                                        キャンセル手続きへ
+                                    </a>
+                                </div>
+
+                                <div style="word-break:break-all;background:#ffffff;border:1px solid #eadfd3;border-radius:12px;padding:14px;font-size:13px;line-height:1.8;color:#7b6654;">
+                                    {{ $cancelUrl }}
+                                </div>
+
+                                <p style="margin:14px 0 0;font-size:13px;line-height:1.8;color:#8a7665;">
+                                    ※ {{ $cancelDeadlineText }} 以降のキャンセルは、店舗へご連絡願います。
+                                </p>
+                            @else
+                                <p style="margin:0;font-size:13px;line-height:1.9;color:#7b6654;">
+                                    ※ ご予約内容の変更・キャンセルをご希望の場合は、店舗までご連絡ください。
+                                </p>
+                            @endif
+                        </div>
+
+                        {{--
                             <p style="margin:0;font-size:13px;line-height:1.9;color:#7b6654;">
                                 ※ ご予約内容の変更・キャンセルをご希望の場合は、店舗までご連絡ください。
                             </p>
-                        </div>
+                        --}}
 
                         <div style="padding:18px 20px;background:#f8f2eb;border-radius:16px;">
                             <div style="font-size:13px;font-weight:bold;margin-bottom:10px;color:#7a614d;">店舗情報</div>

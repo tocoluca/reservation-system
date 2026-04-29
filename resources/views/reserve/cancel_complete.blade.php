@@ -68,7 +68,7 @@
                 </div>
 
                 <div class="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-700 leading-7 mb-6">
-                    ご予約はキャンセル済みです。<br>
+                    既にご予約はキャンセル済みです。<br>
                     もう一度ご予約される場合は、予約画面からあらためてお手続きください。
                 </div>
 
@@ -76,7 +76,7 @@
                     <a href="{{ url('/r/'.$company->company_code) }}"
                        class="block text-white py-4 rounded-2xl text-center font-semibold"
                        style="background: {{ $theme }}">
-                        予約トップへ戻る
+                        予約画面へ戻る
                     </a>
 
                     <button onclick="closePage()"

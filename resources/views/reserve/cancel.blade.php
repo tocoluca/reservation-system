@@ -37,7 +37,20 @@
                     <div><span class="text-gray-400">ステータス：</span>{{ $reservation->status }}</div>
                 </div>
 
-                @if($canCancel)
+                @if($isAlreadyCancelled)
+                    <div class="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-700 leading-7">
+                        既にご予約はキャンセル済みです。<br>
+                        もう一度ご予約される場合は、予約画面からあらためてお手続きください。
+                    </div>
+
+                    <div class="text-center">
+                        <a href="{{ route('reserve.index', $company->company_code) }}"
+                           class="inline-block px-6 py-3 rounded-2xl text-white font-bold"
+                           style="background: {{ $theme }}">
+                            予約画面へ戻る
+                        </a>
+                    </div>
+                @elseif($canCancel)
                     <div class="rounded-2xl bg-blue-50 border border-blue-100 p-4 text-sm text-blue-900 leading-7">
                         Webでのキャンセルは、{{ $cancelDescription }}可能です。<br>
                         この予約は現在、Webからキャンセルできます。

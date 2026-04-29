@@ -18,14 +18,18 @@ class ReserveCancelController extends Controller
         $deadlineService = app(WebCancelDeadlineService::class);
         $cancelDescription = $deadlineService->descriptionFor($reservation);
         $deadline = $deadlineService->deadlineFor($reservation);
-        $canCancel = now()->lte($deadline) && $reservation->status === 'reserved';
+        $isAlreadyCancelled = in_array($reservation->status, [Reservation::STATUS_CANCELLED, 'canceled'], true);
+        $canCancel = ! $isAlreadyCancelled
+            && now()->lte($deadline)
+            && $reservation->status === Reservation::STATUS_RESERVED;
 
         return view('reserve.cancel', compact(
             'reservation',
             'company',
             'cancelDescription',
             'deadline',
-            'canCancel'
+            'canCancel',
+            'isAlreadyCancelled'
         ));
     }
 
@@ -39,7 +43,7 @@ class ReserveCancelController extends Controller
         $cancelDescription = $deadlineService->descriptionFor($reservation);
         $deadline = $deadlineService->deadlineFor($reservation);
 
-        if ($reservation->status !== 'reserved') {
+        if ($reservation->status !== Reservation::STATUS_RESERVED) {
             return redirect()
                 ->back()
                 ->with('error', 'この予約はすでにキャンセル済み、またはキャンセルできません。');
@@ -52,7 +56,7 @@ class ReserveCancelController extends Controller
         }
 
         $reservation->update([
-            'status' => 'cancelled',
+            'status' => Reservation::STATUS_CANCELLED,
         ]);
 
         return redirect()

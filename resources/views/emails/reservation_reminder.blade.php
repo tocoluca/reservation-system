@@ -86,10 +86,6 @@
                                     </a>
                                 </div>
 
-                                <div style="word-break:break-all;background:#ffffff;border:1px solid #eadfd3;border-radius:12px;padding:14px;font-size:13px;line-height:1.8;color:#7b6654;">
-                                    {{ $cancelUrl }}
-                                </div>
-
                                 <p style="margin:14px 0 0;font-size:13px;line-height:1.8;color:#8a7665;">
                                     ※ {{ $cancelDeadlineText }} 以降のキャンセルは、店舗へご連絡願います。
                                 </p>

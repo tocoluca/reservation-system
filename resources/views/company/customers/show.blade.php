@@ -76,22 +76,27 @@
     </div>
 
     {{-- プロフィール --}}
-    <div class="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-rose-50 via-white to-amber-50 shadow-sm mb-6">
-        <div class="absolute top-0 left-0 w-full h-1.5" style="background: {{ $theme }};"></div>
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
 
-        <div class="px-5 sm:px-8 py-6 sm:py-8">
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
             <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_320px] gap-6 items-center">
                 <div class="min-w-0">
-                    <div class="inline-flex items-center gap-2 rounded-full bg-white border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ $theme }}"></span>
                         CUSTOMER PROFILE
                     </div>
 
-                    <h1 class="mt-4 text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                    <h1 class="mt-4 text-2xl sm:text-3xl font-bold text-white tracking-tight">
                         {{ $customer->name }}
                     </h1>
 
-                    <p class="mt-2 text-sm text-gray-500">
+                    <p class="mt-2 text-sm text-white/85">
                         顧客情報とメモ、写真をまとめて管理できます。
                     </p>
 

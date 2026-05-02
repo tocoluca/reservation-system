@@ -8,7 +8,7 @@
 
 <body class="bg-gray-100">
 
-<div class="max-w-2xl mx-auto mt-6 md:mt-16 bg-white p-4 md:p-8 rounded-2xl shadow-lg">
+<div class="max-w-2xl mx-3 sm:mx-auto mt-3 md:mt-16 bg-white p-4 md:p-8 rounded-2xl shadow-lg">
 
 
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
@@ -127,5 +127,6 @@
     </form>
 </div>
 
+@include('admin.partials.mobile_nav')
 </body>
 </html>

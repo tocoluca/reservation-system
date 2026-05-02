@@ -49,9 +49,15 @@ function toggleVacationMode() {
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
-    <div class="rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-white mb-6">
-        <div class="px-5 sm:px-8 py-7 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #1f2937 100%);">
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
+
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
@@ -69,11 +75,11 @@ function toggleVacationMode() {
 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <a href="{{ route('company.vacation.index') }}"
-                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold transition">
+                       class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm text-white font-semibold transition">
                         ← 一覧へ戻る
                     </a>
 
-                    <div class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white text-gray-900 font-bold shadow">
+                    <div class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 backdrop-blur-sm text-white font-bold">
                         申請者：{{ $staff->name }}
                     </div>
                 </div>

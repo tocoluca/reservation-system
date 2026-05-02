@@ -136,5 +136,6 @@
         </div>
     </div>
 </div>
+@include('admin.partials.mobile_nav')
 </body>
 </html>

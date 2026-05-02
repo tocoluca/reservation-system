@@ -235,7 +235,7 @@
                     <label class="flex items-center gap-2 font-semibold mb-3">
                         <input type="hidden" name="apply_is_billing_active" value="0">
                         <input type="checkbox" name="apply_is_billing_active" value="1">
-                        Billing Active を一括更新
+                        請求開始を一括更新
                     </label>
                     <select name="is_billing_active" class="w-full border rounded-lg p-3">
                         <option value="1">ON</option>
@@ -286,5 +286,6 @@ function toggleBulkLineArea() {
 toggleBulkLineArea();
 </script>
 
+@include('admin.partials.mobile_nav')
 </body>
 </html>

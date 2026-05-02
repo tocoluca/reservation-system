@@ -115,14 +115,27 @@ body {
 }
 .tab-nav {
     border-radius: 26px;
-    padding: 12px;
+    padding: 14px;
     background:
-        linear-gradient(135deg, rgba(255,255,255,.92), rgba(248,250,252,.78)),
-        radial-gradient(circle at top right, {{ $theme }}1f, transparent 18rem);
-    border: 1px solid rgba(226,232,240,.9);
-    box-shadow: 0 18px 44px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.78);
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(241,245,249,.84)),
+        radial-gradient(circle at top right, {{ $theme }}36, transparent 18rem),
+        linear-gradient(90deg, {{ $theme }}14, rgba(15,23,42,.04));
+    border: 1px solid rgba(148,163,184,.24);
+    box-shadow: 0 20px 50px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.82);
     backdrop-filter: blur(16px);
     overflow-x: auto;
+    position: relative;
+}
+.tab-nav::before {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 0;
+    height: 3px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, {{ $theme }}, #111827);
+    opacity: .78;
 }
 .tab-nav-grid {
     display: grid;
@@ -144,9 +157,9 @@ body {
     padding: 13px 10px;
     border-radius: 18px;
     font-weight: 800;
-    background: rgba(255,255,255,.72);
-    border: 1px solid rgba(148,163,184,.24);
-    color: #475569;
+    background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(248,250,252,.74));
+    border: 1px solid rgba(148,163,184,.26);
+    color: #334155;
     transition: .22s;
     display: flex;
     flex-direction: column;
@@ -157,6 +170,13 @@ body {
     position: relative;
 }
 .tab-btn svg { width: 19px; height: 19px; }
+.tab-btn > svg {
+    padding: 7px;
+    box-sizing: content-box;
+    border-radius: 14px;
+    background: {{ $theme }}14;
+    color: {{ $theme }};
+}
 .tab-btn .tab-sub {
     font-size: 10px;
     line-height: 1;
@@ -167,12 +187,18 @@ body {
     transform: translateY(-1px);
     background: rgba(255,255,255,.95);
     color: #111827;
+    border-color: {{ $theme }}55;
+    box-shadow: 0 12px 26px rgba(15,23,42,.08);
 }
 .tab-btn.active {
     background: linear-gradient(135deg, #111827, #1f2937 70%, {{ $theme }});
     color: #fff;
     border-color: rgba(255,255,255,.16);
     box-shadow: 0 16px 34px rgba(15,23,42,.22);
+}
+.tab-btn.active > svg {
+    background: rgba(255,255,255,.16);
+    color: #fff;
 }
 .tab-btn.active .tab-sub { color: rgba(255,255,255,.68); }
 .tab-btn.active::after {
@@ -191,12 +217,30 @@ body {
     align-items: end;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: .75rem;
+    margin-bottom: .9rem;
+    border-radius: 24px;
+    border: 1px solid rgba(148,163,184,.18);
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.82), rgba(248,250,252,.62)),
+        radial-gradient(circle at left, {{ $theme }}1f, transparent 18rem);
+    padding: 16px 18px;
+    box-shadow: 0 12px 30px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.8);
 }
 .tab-category-heading h2 {
     font-size: 1.05rem;
     font-weight: 900;
     color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+}
+.tab-category-heading h2::before {
+    content: "";
+    width: .7rem;
+    height: 1.8rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, {{ $theme }}, #111827);
+    box-shadow: 0 8px 16px {{ $theme }}44;
 }
 .tab-category-heading p {
     margin-top: .25rem;
@@ -205,13 +249,24 @@ body {
 }
 .tab-category-heading .hint {
     border-radius: 999px;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    background: #111827;
+    border: 1px solid rgba(255,255,255,.18);
     padding: .55rem .8rem;
     font-size: .75rem;
     font-weight: 800;
-    color: #64748b;
+    color: #fff;
     white-space: nowrap;
+    box-shadow: 0 10px 20px rgba(15,23,42,.16);
+}
+@media (max-width: 640px) {
+    .tab-category-heading {
+        align-items: stretch;
+        flex-direction: column;
+        padding: 14px;
+    }
+    .tab-category-heading .hint {
+        width: fit-content;
+    }
 }
 .table-apple { width: 100%; border-spacing: 0 8px; border-collapse: separate; }
 .table-apple tr { background: white; border-radius: 14px; box-shadow: 0 4px 12px rgba(15,23,42,.05); }

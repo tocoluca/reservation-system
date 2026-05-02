@@ -7,6 +7,12 @@
     <script>
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('sidebarBackdrop').classList.toggle('hidden');
+        }
+
+        function closeMenu() {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebarBackdrop').classList.add('hidden');
         }
     </script>
 </head>
@@ -14,11 +20,21 @@
 
 <div class="flex min-h-screen">
 
+    <button id="sidebarBackdrop"
+            type="button"
+            onclick="closeMenu()"
+            class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"
+            aria-label="メニューを閉じる"></button>
+
     <!-- スマホ用オーバーレイ -->
     <div id="sidebar"
          class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white p-6 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-50">
 
         <h1 class="text-xl font-bold mb-8">管理者</h1>
+
+        <button type="button" onclick="closeMenu()" class="mb-4 md:hidden rounded-lg border border-gray-600 px-3 py-2 text-sm">
+            閉じる
+        </button>
 
         <ul class="space-y-4">
             <li>
@@ -140,6 +156,7 @@
             </div>
 
             <!-- キャンペーン請求開始日 -->
+            @if($billingStartCampaignEnabled ?? true)
             <div class="bg-white p-6 rounded-xl shadow mb-8 border border-blue-100">
                 <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
                     <div class="xl:w-1/2">
@@ -195,6 +212,8 @@
             </div>
 
             <!-- 企業管理ミニダッシュボード -->
+            @endif
+
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
                 <div class="xl:col-span-1 bg-white p-6 rounded-xl shadow border border-amber-100">
                     <div class="flex items-start justify-between gap-4 mb-5">
@@ -500,5 +519,6 @@
         </div>
     </div>
 </div>
+@include('admin.partials.mobile_nav')
 </body>
 </html>

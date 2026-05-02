@@ -80,6 +80,20 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        if ((bool) $request->session()->get('admin_impersonating_company', false)) {
+            Auth::guard('company')->logout();
+
+            $request->session()->forget([
+                'admin_impersonating_company',
+                'admin_impersonated_company_id',
+                'admin_impersonated_staff_id',
+            ]);
+            $request->session()->regenerateToken();
+
+            return redirect()->route('admin.company.index')
+                ->with('success', '代理ログインを終了しました。');
+        }
+
         Auth::guard('company')->logout();
 
         $request->session()->invalidate();

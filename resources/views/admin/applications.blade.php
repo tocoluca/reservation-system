@@ -345,5 +345,6 @@ document.getElementById('rejectModal').addEventListener('click', function(e) {
 });
 </script>
 
+@include('admin.partials.mobile_nav')
 </body>
 </html>

@@ -25,6 +25,11 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
+            <a href="{{ route('admin.company.impersonate', $company->id) }}"
+               class="w-full md:w-auto px-4 py-2 rounded-lg bg-gray-900 text-white hover:bg-black"
+               onclick="return confirm(@js($company->name . ' の企業管理画面へマスター権限で代理ログインしますか？'));">
+                企業画面へ
+            </a>
             <a href="{{ $companyIndexUrl }}"
                class="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
                 企業一覧へ戻る
@@ -329,7 +334,7 @@
                         <input type="hidden" name="is_billing_active" value="0">
                         <input type="checkbox" id="is_billing_active" name="is_billing_active" value="1"
                                {{ old('is_billing_active', $company->is_billing_active) ? 'checked' : '' }}>
-                        <label for="is_billing_active" class="font-semibold">Billing Active</label>
+                        <label for="is_billing_active" class="font-semibold">請求開始</label>
                     </div>
 
                     <div>
@@ -401,5 +406,6 @@ function removeRow(button) {
 toggleLineFields();
 </script>
 
+@include('admin.partials.mobile_nav')
 </body>
 </html>

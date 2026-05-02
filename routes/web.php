@@ -136,6 +136,8 @@ Route::prefix('admin')->group(function () {
 
         Route::post('/companies/billing-start-campaign', [CompanyController::class, 'updateBillingStartCampaign'])->name('admin.company.billing-start-campaign');
 
+        Route::match(['get', 'post'], '/companies/{id}/impersonate', [CompanyController::class, 'impersonate'])->name('admin.company.impersonate');
+
         Route::post('/companies/{id}/toggle', [CompanyController::class, 'toggle'])->name('admin.company.toggle');
 
 

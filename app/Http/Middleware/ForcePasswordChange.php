@@ -9,6 +9,10 @@ class ForcePasswordChange
 {
     public function handle($request, Closure $next)
     {
+        if ((bool) $request->session()->get('admin_impersonating_company', false)) {
+            return $next($request);
+        }
+
         if (Auth::guard('company')->check()) {
 
             $staff = Auth::guard('company')->user();

@@ -19,6 +19,10 @@ class EnsureCompanyBillingIsActive
 
         $company = $staff->company;
 
+        if ((bool) $request->session()->get('admin_impersonating_company', false)) {
+            return $next($request);
+        }
+
         if ($company->isSubscriptionAvailable()) {
             return $next($request);
         }

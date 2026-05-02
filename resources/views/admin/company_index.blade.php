@@ -8,7 +8,7 @@
 
 <body class="bg-gray-100">
 
-<div class="max-w-7xl mx-auto mt-6 md:mt-10 bg-white p-4 md:p-8 rounded-xl shadow">
+<div class="max-w-7xl mx-3 sm:mx-auto mt-3 md:mt-10 bg-white p-4 md:p-8 rounded-xl shadow">
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <a href="{{ route('admin.dashboard') }}"
@@ -67,6 +67,63 @@
     </div>
 
     {{-- 検索・状態フィルタ --}}
+    @if(($billingAttentionCompanies ?? collect())->isNotEmpty())
+        <div class="sticky top-2 z-20 mb-5 rounded-2xl border border-amber-200 bg-amber-50/95 p-4 shadow-lg backdrop-blur">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
+                <div>
+                    <div class="text-sm font-black text-amber-800">請求確認が必要な企業</div>
+                    <div class="text-xs text-amber-700 mt-1">停止前・未払い・請求開始済み未確認の企業を上部に固定表示しています。</div>
+                </div>
+                <a href="{{ route('admin.company.index', ['status' => 'billing_attention']) }}"
+                   class="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700">
+                    すべて見る
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-3">
+                @foreach($billingAttentionCompanies as $attentionCompany)
+                    <div class="rounded-xl border border-amber-200 bg-white p-3 shadow-sm">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <div class="text-xs text-gray-500 font-mono">{{ $attentionCompany->company_code }}</div>
+                                <div class="mt-1 font-bold text-gray-900 truncate">{{ $attentionCompany->name }}</div>
+                            </div>
+                            @if(!$attentionCompany->is_active)
+                                <span class="shrink-0 rounded-full bg-red-100 px-2 py-1 text-[11px] font-bold text-red-700">停止</span>
+                            @elseif(!$attentionCompany->is_billing_active)
+                                <span class="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">確認</span>
+                            @endif
+                        </div>
+
+                        <div class="mt-2 text-xs text-gray-600">
+                            {{ $attentionCompany->subscription_status_label }}
+                        </div>
+                        @if($attentionCompany->billing_starts_at)
+                            <div class="mt-1 text-xs text-gray-500">
+                                請求開始 {{ $attentionCompany->billing_starts_at->format('Y/m/d') }}
+                            </div>
+                        @endif
+                        <div class="mt-1 text-xs text-gray-500">
+                            利用開始 {{ optional($attentionCompany->usage_started_at)->format('Y/m/d') ?? '-' }}
+                            <span class="text-gray-400">（{{ $attentionCompany->usage_started_source_label }}）</span>
+                        </div>
+
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <a href="{{ route('admin.company.edit', ['id' => $attentionCompany->id, 'return_to' => request()->fullUrl()]) }}"
+                               class="rounded-lg bg-gray-800 px-3 py-2 text-center text-xs font-bold text-white hover:bg-gray-900">
+                                編集
+                            </a>
+                            <a href="{{ route('admin.company.index', ['keyword' => $attentionCompany->company_code]) }}"
+                               class="rounded-lg border border-gray-200 bg-white px-3 py-2 text-center text-xs font-bold text-gray-700 hover:bg-gray-50">
+                                一覧
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     <form method="GET" action="{{ route('admin.company.index') }}" class="mb-6 grid grid-cols-1 lg:grid-cols-[1fr_220px_auto_auto] gap-3">
         <input type="text"
                name="keyword"
@@ -107,18 +164,140 @@
     </div>
 
     {{-- 一括編集フォーム --}}
-    <form method="POST" action="{{ route('admin.company.bulk-edit') }}">
+    <form id="company-bulk-edit-form" method="POST" action="{{ route('admin.company.bulk-edit') }}">
         @csrf
+    </form>
 
         <div class="mb-4 flex justify-end">
             <button type="submit"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg transition">
+                    form="company-bulk-edit-form"
+                    class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 sm:py-2 rounded-lg transition">
                 選択した企業を一括編集
             </button>
         </div>
 
         {{-- テーブル --}}
-        <div class="overflow-x-auto">
+        <div class="md:hidden space-y-3">
+            @forelse($companies as $company)
+                <div class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+                    <div class="flex items-start gap-3">
+                        <input type="checkbox"
+                               form="company-bulk-edit-form"
+                               name="company_ids[]"
+                               value="{{ $company->id }}"
+                               class="mt-1 h-5 w-5">
+
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="min-w-0">
+                                    <div class="text-xs text-gray-500 font-mono">ID {{ $company->id }} / {{ $company->company_code }}</div>
+                                    <div class="mt-1 font-bold text-gray-900 break-words">{{ $company->name }}</div>
+                                    @if(!empty($company->email))
+                                        <div class="mt-1 text-xs text-gray-500 break-all">{{ $company->email }}</div>
+                                    @endif
+                                </div>
+
+                                @if($company->is_active)
+                                    <span class="shrink-0 rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">利用中</span>
+                                @else
+                                    <span class="shrink-0 rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">停止中</span>
+                                @endif
+                            </div>
+
+                            <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                <div class="rounded-xl bg-gray-50 p-3">
+                                    <div class="font-bold text-gray-500">業種</div>
+                                    <div class="mt-1">{{ $company->industry_type ?: '-' }}</div>
+                                </div>
+                                <div class="rounded-xl bg-gray-50 p-3">
+                                    <div class="font-bold text-gray-500">契約</div>
+                                    <div class="mt-1">{{ $company->subscription_status_label }}</div>
+                                </div>
+                                <div class="rounded-xl bg-gray-50 p-3">
+                                    <div class="font-bold text-gray-500">利用開始</div>
+                                    <div class="mt-1">{{ optional($company->usage_started_at)->format('Y/m/d') ?? '-' }}</div>
+                                    <div class="mt-1 text-[11px] text-gray-400">{{ $company->usage_started_source_label }}</div>
+                                </div>
+                                <div class="rounded-xl bg-gray-50 p-3">
+                                    <div class="font-bold text-gray-500">利用数</div>
+                                    <div class="mt-1">スタッフ {{ number_format($company->staff_count ?? 0) }}</div>
+                                    <div>予約 {{ number_format($company->reservations_count ?? 0) }}</div>
+                                    <div>顧客 {{ number_format($company->customers_count ?? 0) }}</div>
+                                </div>
+                                <div class="rounded-xl bg-gray-50 p-3">
+                                    <div class="font-bold text-gray-500">LINE</div>
+                                    <div class="mt-1">{{ $company->line_login_enabled ? 'ON' : 'OFF' }}</div>
+                                </div>
+                            </div>
+
+                            @if($company->billing_starts_at && $company->billing_starts_at->isFuture())
+                                <div class="mt-3 inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700">
+                                    請求開始 {{ $company->billing_starts_at->format('Y/m/d') }}
+                                </div>
+                            @endif
+                            @if(!$company->is_billing_active)
+                                <div class="mt-3 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                                    請求確認
+                                </div>
+                            @endif
+
+                            <div class="mt-4">
+                                <input
+                                    id="mobile_url_{{ $company->id }}"
+                                    type="text"
+                                    value="{{ url('/r/'.$company->company_code) }}"
+                                    class="w-full rounded-lg border p-2 text-xs"
+                                    readonly>
+                                <div class="mt-2 grid grid-cols-3 gap-2">
+                                    <button type="button"
+                                            onclick="copyUrl('mobile_url_{{ $company->id }}')"
+                                            class="rounded-lg bg-blue-500 px-3 py-2 text-xs font-semibold text-white">
+                                        コピー
+                                    </button>
+                                    <a href="{{ url('/r/'.$company->company_code) }}"
+                                       target="_blank"
+                                       class="rounded-lg bg-gray-700 px-3 py-2 text-center text-xs font-semibold text-white">
+                                        開く
+                                    </a>
+                                    <button type="button"
+                                            onclick="showQR('{{ url('/r/'.$company->company_code) }}')"
+                                            class="rounded-lg bg-green-500 px-3 py-2 text-xs font-semibold text-white">
+                                        QR
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 grid grid-cols-2 gap-2">
+                                <a href="{{ route('admin.company.edit', ['id' => $company->id, 'return_to' => request()->fullUrl()]) }}"
+                                   class="rounded-lg bg-blue-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                                    編集
+                                </a>
+
+                                <form method="POST"
+                                      action="{{ route('admin.company.toggle', $company->id) }}"
+                                      onsubmit="return confirm(@js($company->name . 'を' . ($company->is_active ? '利用停止' : '再開') . 'しますか？'));">
+                                    @csrf
+                                    <button class="w-full rounded-lg px-4 py-3 text-sm font-semibold text-white {{ $company->is_active ? 'bg-red-500' : 'bg-green-500' }}">
+                                        {{ $company->is_active ? '停止' : '再開' }}
+                                    </button>
+                                </form>
+                            </div>
+                            <a href="{{ route('admin.company.impersonate', $company->id) }}"
+                               class="mt-2 block w-full rounded-lg bg-gray-900 px-4 py-3 text-center text-sm font-semibold text-white"
+                               onclick="return confirm(@js($company->name . ' の企業管理画面へマスター権限で代理ログインしますか？'));">
+                                企業画面へ
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="rounded-2xl border border-gray-200 p-6 text-center text-gray-500">
+                    企業データがありません。
+                </div>
+            @endforelse
+        </div>
+
+        <div class="hidden md:block overflow-x-auto">
             <table class="min-w-full border border-gray-200 text-sm md:text-base">
                 <thead class="bg-gray-100">
                     <tr>
@@ -132,6 +311,7 @@
                         <th class="p-3 border text-left">予約URL</th>
                         <th class="p-3 border text-center">状態</th>
                         <th class="p-3 border text-center">契約</th>
+                        <th class="p-3 border text-center">利用開始</th>
                         <th class="p-3 border text-center">利用数</th>
                         <th class="p-3 border text-center">LINE</th>
                         <th class="p-3 border text-center">操作</th>
@@ -142,7 +322,7 @@
                     @forelse($companies as $company)
                         <tr class="hover:bg-gray-50 align-top">
                             <td class="border p-3 text-center">
-                                <input type="checkbox" name="company_ids[]" value="{{ $company->id }}">
+                                <input type="checkbox" form="company-bulk-edit-form" name="company_ids[]" value="{{ $company->id }}">
                             </td>
 
                             <td class="border p-3">{{ $company->id }}</td>
@@ -234,6 +414,15 @@
                                 @endif
                             </td>
 
+                            <td class="border p-3 text-center text-sm">
+                                <div class="font-semibold text-gray-800">
+                                    {{ optional($company->usage_started_at)->format('Y/m/d') ?? '-' }}
+                                </div>
+                                <div class="mt-1 text-xs text-gray-500">
+                                    {{ $company->usage_started_source_label }}
+                                </div>
+                            </td>
+
                             <td class="border p-3 text-center text-xs text-gray-600">
                                 <div>スタッフ {{ number_format($company->staff_count ?? 0) }}</div>
                                 <div class="mt-1">予約 {{ number_format($company->reservations_count ?? 0) }}</div>
@@ -259,6 +448,12 @@
                                         個別編集
                                     </a>
 
+                                    <a href="{{ route('admin.company.impersonate', $company->id) }}"
+                                       class="w-full px-4 py-2 rounded-lg bg-gray-900 hover:bg-black text-white transition text-sm"
+                                       onclick="return confirm(@js($company->name . ' の企業管理画面へマスター権限で代理ログインしますか？'));">
+                                        企業画面へ
+                                    </a>
+
                                     <form method="POST"
                                           action="{{ route('admin.company.toggle', $company->id) }}"
                                           onsubmit="return confirm(@js($company->name . 'を' . ($company->is_active ? '利用停止' : '再開') . 'しますか？'));">
@@ -273,7 +468,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="border p-6 text-center text-gray-500">
+                            <td colspan="12" class="border p-6 text-center text-gray-500">
                                 企業データがありません。
                             </td>
                         </tr>
@@ -281,8 +476,6 @@
                 </tbody>
             </table>
         </div>
-    </form>
-
     <div class="mt-6">
         {{ $companies->links() }}
     </div>
@@ -356,5 +549,6 @@ function downloadQR() {
     </div>
 </div>
 
+@include('admin.partials.mobile_nav')
 </body>
 </html>

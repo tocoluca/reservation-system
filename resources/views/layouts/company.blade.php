@@ -30,18 +30,21 @@
             position: sticky;
             top: 0;
             z-index: 40;
-            border-bottom: 1px solid rgba(255,255,255,.72);
-            background: rgba(248,250,252,.78);
+            border-bottom: 1px solid rgba(148,163,184,.28);
+            background:
+                linear-gradient(135deg, rgba(255,255,255,.94), rgba(248,250,252,.86)),
+                radial-gradient(circle at top left, {{ $theme }}2b, transparent 26rem);
             backdrop-filter: blur(18px);
-            box-shadow: 0 16px 42px rgba(15,23,42,.08);
+            box-shadow: 0 18px 46px rgba(15,23,42,.12);
         }
         .company-brand-shell {
             border-radius: 24px;
-            border: 1px solid rgba(255,255,255,.72);
+            border: 1px solid rgba(148,163,184,.22);
             background:
-                linear-gradient(135deg, rgba(255,255,255,.92), rgba(255,255,255,.68)),
-                radial-gradient(circle at top right, {{ $theme }}24, transparent 18rem);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 12px 32px rgba(15,23,42,.06);
+                linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,255,255,.76)),
+                radial-gradient(circle at top right, {{ $theme }}38, transparent 18rem),
+                linear-gradient(90deg, {{ $theme }}12, rgba(15,23,42,.04));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 14px 34px rgba(15,23,42,.09);
         }
         .company-logo-frame {
             width: 48px;
@@ -80,11 +83,13 @@
             gap: .5rem;
             min-width: 0;
             overflow-x: auto;
-            padding: .45rem;
-            border-radius: 18px;
-            border: 1px solid rgba(226,232,240,.8);
-            background: rgba(248,250,252,.78);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+            padding: .55rem;
+            border-radius: 20px;
+            border: 1px solid rgba(148,163,184,.24);
+            background:
+                linear-gradient(135deg, rgba(241,245,249,.92), rgba(255,255,255,.78)),
+                radial-gradient(circle at top right, {{ $theme }}1f, transparent 16rem);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 10px 24px rgba(15,23,42,.06);
         }
         .company-primary-nav a {
             display: inline-flex;
@@ -94,20 +99,26 @@
             flex: none;
             border-radius: 16px;
             padding: .68rem 1rem;
-            color: #475569;
+            color: #334155;
             font-size: .84rem;
             font-weight: 900;
             white-space: nowrap;
             transition: .18s;
+            border: 1px solid transparent;
         }
         .company-primary-nav a:hover {
             color: #0f172a;
-            background: rgba(248,250,252,.96);
+            background: rgba(255,255,255,.96);
+            border-color: rgba(148,163,184,.28);
+            box-shadow: 0 8px 18px rgba(15,23,42,.07);
         }
         .company-primary-nav a.active {
             color: #fff;
-            background: linear-gradient(135deg, var(--main-color), #111827);
-            box-shadow: 0 10px 22px rgba(15,23,42,.14);
+            background:
+                linear-gradient(135deg, var(--main-color), #111827 88%),
+                linear-gradient(90deg, rgba(255,255,255,.2), transparent);
+            box-shadow: 0 12px 26px rgba(15,23,42,.2), 0 8px 18px {{ $theme }}33;
+            border-color: rgba(255,255,255,.26);
         }
         @media (min-width: 1024px) {
             .company-primary-nav {
@@ -151,6 +162,11 @@
 @endphp
 
 @if($company)
+@if(session('admin_impersonating_company'))
+    <div class="sticky top-0 z-50 bg-amber-500 px-4 py-2 text-center text-sm font-bold text-white shadow">
+        管理者代理ログイン中です。終了する場合はログアウトしてください。
+    </div>
+@endif
 <header class="company-topbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div class="company-brand-shell px-3 sm:px-4 py-3 space-y-3">

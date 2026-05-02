@@ -33,7 +33,7 @@ class CompanyInit
         }
 
         // 初回パスワード変更が必要なら、そちらを優先
-        if ($staff->force_password_change) {
+        if ($staff->force_password_change && !(bool) $request->session()->get('admin_impersonating_company', false)) {
             if (
                 !$request->routeIs('company.password.change') &&
                 !$request->routeIs('company.password.change.update') &&

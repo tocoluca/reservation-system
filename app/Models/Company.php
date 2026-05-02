@@ -211,4 +211,14 @@ class Company extends Authenticatable
             default => '未契約',
         };
     }
+
+    public function getUsageStartedAtAttribute()
+    {
+        return $this->subscribed_at ?: $this->created_at;
+    }
+
+    public function getUsageStartedSourceLabelAttribute(): string
+    {
+        return $this->subscribed_at ? '契約開始' : '登録日';
+    }
 }

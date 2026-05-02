@@ -12,6 +12,8 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 class CompanyController extends Controller
@@ -100,6 +102,8 @@ class CompanyController extends Controller
 
     public function index(Request $request)
     {
+        $attentionStatuses = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'];
+        $hasBillingStartsAt = Schema::hasColumn('companies', 'billing_starts_at');
         $query = Company::query();
 
         if ($request->filled('keyword')) {
@@ -118,17 +122,22 @@ class CompanyController extends Controller
                 'active' => $query->where('is_active', true),
                 'inactive' => $query->where('is_active', false),
                 'uninitialized' => $query->where('is_initialized', false),
-                'billing_attention' => $query->where(function ($q) {
-                    $q->where(function ($billingQuery) {
-                        $billingQuery->whereNull('billing_starts_at')
-                            ->orWhere('billing_starts_at', '<=', now());
-                    })
-                        ->where(function ($billingQuery) {
-                            $billingQuery->where('is_billing_active', false)
-                                ->orWhereIn('subscription_status', ['past_due', 'unpaid', 'incomplete', 'incomplete_expired']);
+                'billing_attention' => $query->where(function ($q) use ($attentionStatuses, $hasBillingStartsAt) {
+                    if ($hasBillingStartsAt) {
+                        $q->where(function ($billingQuery) {
+                            $billingQuery->whereNull('billing_starts_at')
+                                ->orWhere('billing_starts_at', '<=', now());
                         });
+                    }
+
+                    $q->where(function ($billingQuery) use ($attentionStatuses) {
+                        $billingQuery->where('is_billing_active', false)
+                            ->orWhereIn('subscription_status', $attentionStatuses);
+                    });
                 }),
-                'billing_campaign' => $query->whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now()),
+                'billing_campaign' => $hasBillingStartsAt
+                    ? $query->whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now())
+                    : $query->whereRaw('1 = 0'),
                 'line_enabled' => $query->where('line_login_enabled', true),
                 default => null,
             };
@@ -140,25 +149,49 @@ class CompanyController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $billingAttentionCompanies = Company::query()
+            ->withCount(['staff', 'reservations', 'customers'])
+            ->where(function ($q) use ($attentionStatuses, $hasBillingStartsAt) {
+                if ($hasBillingStartsAt) {
+                    $q->where(function ($billingQuery) {
+                        $billingQuery->whereNull('billing_starts_at')
+                            ->orWhere('billing_starts_at', '<=', now());
+                    });
+                }
+
+                $q->where(function ($billingQuery) use ($attentionStatuses) {
+                    $billingQuery->where('is_billing_active', false)
+                        ->orWhereIn('subscription_status', $attentionStatuses);
+                });
+            })
+            ->latest()
+            ->limit(5)
+            ->get();
+
         $summary = [
             'total' => Company::count(),
             'active' => Company::where('is_active', true)->count(),
             'inactive' => Company::where('is_active', false)->count(),
             'uninitialized' => Company::where('is_initialized', false)->count(),
-            'billing_attention' => Company::where(function ($q) {
-                $q->where(function ($billingQuery) {
-                    $billingQuery->whereNull('billing_starts_at')
-                        ->orWhere('billing_starts_at', '<=', now());
-                })
-                    ->where(function ($billingQuery) {
-                        $billingQuery->where('is_billing_active', false)
-                            ->orWhereIn('subscription_status', ['past_due', 'unpaid', 'incomplete', 'incomplete_expired']);
+            'billing_attention' => Company::where(function ($q) use ($attentionStatuses, $hasBillingStartsAt) {
+                if ($hasBillingStartsAt) {
+                    $q->where(function ($billingQuery) {
+                        $billingQuery->whereNull('billing_starts_at')
+                            ->orWhere('billing_starts_at', '<=', now());
                     });
+                }
+
+                $q->where(function ($billingQuery) use ($attentionStatuses) {
+                    $billingQuery->where('is_billing_active', false)
+                        ->orWhereIn('subscription_status', $attentionStatuses);
+                });
             })->count(),
-            'billing_campaign' => Company::whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now())->count(),
+            'billing_campaign' => $hasBillingStartsAt
+                ? Company::whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now())->count()
+                : 0,
         ];
 
-        return view('admin.company_index', compact('companies', 'summary'));
+        return view('admin.company_index', compact('companies', 'summary', 'billingAttentionCompanies'));
     }
 
     public function updateBillingStartCampaign(Request $request)
@@ -358,6 +391,33 @@ class CompanyController extends Controller
         $company->save();
 
         return back()->with('success', '状態を更新しました。');
+    }
+
+    public function impersonate(Request $request, $id)
+    {
+        $company = Company::findOrFail($id);
+
+        $staff = Staff::where('company_id', $company->id)
+            ->where('role', 'master')
+            ->orderBy('id')
+            ->first();
+
+        if (!$staff) {
+            return back()->with('error', 'この企業にはマスター権限の担当者が登録されていません。');
+        }
+
+        Auth::guard('company')->login($staff);
+
+        $request->session()->regenerate();
+        $request->session()->put('admin_impersonating_company', true);
+        $request->session()->put('admin_impersonated_company_id', $company->id);
+        $request->session()->put('admin_impersonated_staff_id', $staff->id);
+
+        if (!$company->is_initialized) {
+            return redirect()->route('company.setup');
+        }
+
+        return redirect()->route('company.dashboard');
     }
 
     private function rules($ignoreId = null)

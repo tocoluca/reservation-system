@@ -10,29 +10,33 @@
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     {{-- ヘッダー --}}
-    <div class="relative overflow-hidden rounded-[2rem] border border-white/70 bg-gradient-to-br from-amber-50 via-white to-sky-50 shadow-sm mb-6">
-        <div class="absolute inset-x-0 top-0 h-1.5" style="background: {{ $theme }};"></div>
+    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+        <div class="absolute inset-0 opacity-10"
+             style="background:
+                radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
+                radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);">
+        </div>
 
-        <div class="px-5 sm:px-8 py-6 sm:py-8">
+        <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
+             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
-                    <div class="inline-flex items-center gap-2 rounded-full bg-white/90 border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm">
+                    <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ $theme }}"></span>
                         COMPANY LOGO
                     </div>
 
-                    <h1 class="mt-4 text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+                    <h1 class="mt-4 text-2xl sm:text-3xl font-bold text-white tracking-tight">
                         企業ロゴ
                     </h1>
 
-                    <p class="text-gray-500 text-sm sm:text-base mt-2 leading-7">
+                    <p class="text-white/85 text-sm sm:text-base mt-2 leading-7">
                         企業ロゴの設定・変更ができます。登録したロゴは画面や案内で利用されます。
                     </p>
                 </div>
 
                 <a href="{{ route('company.dashboard') }}"
-                   class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white text-sm font-semibold shadow-sm border hover:bg-gray-50 transition"
-                   style="border-color: {{ $theme }}22; color: {{ $theme }};">
+                   class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-semibold text-white">
                     ダッシュボードへ戻る
                 </a>
             </div>

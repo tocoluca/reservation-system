@@ -6,12 +6,12 @@
     $theme = $company->theme_color ?? '#b7875c';
 @endphp
 
-<div class="min-h-screen isolate bg-[#f7f3ee] pb-28">
+<div class="reserve-page min-h-screen isolate bg-[#f7f3ee] pb-28">
     <div class="max-w-5xl mx-auto px-4 sm:px-5 py-5 sm:py-8">
 
         {{-- ヘッダー --}}
-        <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm mb-6 sm:mb-8">
-            <div class="px-6 sm:px-8 py-10 sm:py-12 text-white text-center"
+        <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm mb-4 sm:mb-5">
+            <div class="px-6 sm:px-8 py-7 sm:py-9 text-white text-center"
                  style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">ONLINE RESERVATION</div>
                 <h1 class="mt-3 text-3xl sm:text-4xl font-bold leading-tight">
@@ -47,8 +47,9 @@
             </div>
         @endif
 
+        <div class="{{ ($lineLoginEnabled ?? false) ? 'grid md:grid-cols-[0.95fr_1.05fr] gap-4 sm:gap-5 mb-6' : 'mb-6' }}">
         @if($lineLoginEnabled ?? false)
-            <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5 mb-6">
+            <div class="relative z-10 h-full bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h2 class="text-base sm:text-lg font-bold text-[#4b3f35] mb-1">
@@ -95,7 +96,7 @@
         @endif
 
         {{-- お知らせ --}}
-        <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5 mb-6">
+        <div class="relative z-10 h-full bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
             <div class="flex items-center justify-between mb-3">
                 <h2 class="text-base sm:text-lg font-bold text-[#4b3f35]">お知らせ</h2>
                 <span class="text-xs text-[#9a7d63]">INFORMATION</span>
@@ -137,6 +138,7 @@
                     現在お知らせはありません
                 </p>
             @endforelse
+        </div>
         </div>
 
         <form method="POST" action="/r/{{ $company->company_code }}/confirm" id="reserveForm">
@@ -474,7 +476,7 @@
 
                 {{-- 右カラム --}}
                 <div class="space-y-6">
-                    <div class="lg:sticky lg:top-6 space-y-6">
+                    <div class="lg:sticky lg:top-32 space-y-6">
 
                         <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
                             <div class="flex items-center justify-between mb-4">
@@ -734,6 +736,16 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+    .reserve-page .text-\[\#9a7d63\],
+    .reserve-page .text-\[\#9a8878\],
+    .reserve-page .text-\[\#8a7665\] {
+        color: #6f5743;
+    }
+
+    .reserve-page .text-\[\#7b6654\] {
+        color: #5f4d3e;
+    }
+
     .menu-check:checked + .menu-card,
     .staff-radio:checked + .staff-card {
         border-color: {{ $theme }};

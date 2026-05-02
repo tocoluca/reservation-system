@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'stripe-webhook',
+            'company/logout',
         ]);
 
         $middleware->redirectGuestsTo(function ($request) {
@@ -38,6 +39,20 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+            if ($request->is('company/*')) {
+                return redirect()
+                    ->route('company.login')
+                    ->with('error', 'セッションの有効期限が切れました。もう一度ログインしてください。');
+            }
+
+            if ($request->is('admin/*')) {
+                return redirect()
+                    ->route('admin.login')
+                    ->with('error', 'セッションの有効期限が切れました。もう一度ログインしてください。');
+            }
+
+            return null;
+        });
     })
     ->create();

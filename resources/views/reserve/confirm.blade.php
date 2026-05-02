@@ -23,7 +23,7 @@
     $grandTotal = $totalPrice + $nominationFee;
 @endphp
 
-<div class="min-h-screen bg-[#f7f3ee] py-8 px-4">
+<div class="reserve-confirm-page min-h-screen bg-[#f7f3ee] py-8 px-4">
     <div class="max-w-5xl mx-auto">
 
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
@@ -306,7 +306,7 @@
                                             メールアドレス
                                             <span class="ml-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
                                                   style="background: {{ $theme }};">
-                                                入力推奨
+                                                任意・おすすめ
                                             </span>
                                         </label>
 
@@ -338,7 +338,7 @@
                         </div>
 
                         <div class="space-y-6">
-                            <div class="lg:sticky lg:top-6 space-y-6">
+                            <div class="lg:sticky lg:top-32 space-y-6">
 
                                 <section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
                                     <div class="text-[14px] font-bold mb-4 text-[#6b533f]">最終確認</div>
@@ -442,3 +442,18 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .reserve-confirm-page .text-\[\#9a7d63\],
+    .reserve-confirm-page .text-\[\#9a8878\],
+    .reserve-confirm-page .text-\[\#8a7665\] {
+        color: #6f5743;
+    }
+
+    .reserve-confirm-page .text-\[\#7b6654\],
+    .reserve-confirm-page .text-\[\#6b5b4d\] {
+        color: #5f4d3e;
+    }
+</style>
+@endpush

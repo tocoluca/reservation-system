@@ -28,7 +28,7 @@
     }
 @endphp
 
-<div class="min-h-screen bg-[#f7f3ee] py-8 px-4 pb-24">
+<div class="reserve-complete-page min-h-screen bg-[#f7f3ee] py-8 px-4 pb-24">
     <div class="max-w-5xl mx-auto">
 
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
@@ -303,7 +303,7 @@
 
                     {{-- 右カラム --}}
                     <div class="space-y-6">
-                        <div class="lg:sticky lg:top-6 space-y-6">
+                        <div class="lg:sticky lg:top-32 space-y-6">
 
                             <section class="rounded-2xl border border-[#eadfd3] bg-white p-5 sm:p-6">
                                 <div class="text-[14px] font-bold mb-4 text-[#6b533f]">ご予約サマリー</div>
@@ -363,6 +363,24 @@
                             </section>
 
                             <div class="hidden lg:flex flex-col gap-3">
+                                @if(Route::has('reserve.index'))
+                                    <a
+                                        href="{{ route('reserve.index', $company->company_code) }}"
+                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 border border-[#d6c5b5] text-[#6b533f] font-bold text-sm bg-white hover:bg-[#f8f3ee] transition">
+                                        予約ページへ戻る
+                                    </a>
+                                @endif
+
+                                @if(!empty($googleCalendarUrl))
+                                    <a
+                                        href="{{ $googleCalendarUrl }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="inline-flex items-center justify-center rounded-full px-6 py-4 border border-sky-200 bg-sky-50 text-sky-900 font-bold text-sm hover:bg-sky-100 transition">
+                                        Googleカレンダーに追加
+                                    </a>
+                                @endif
+
                                 <button
                                     type="button"
                                     onclick="handleCompleteClose()"
@@ -407,8 +425,16 @@
                 onclick="handleCompleteClose()"
                 class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg text-center"
                 style="background: {{ $theme }};">
-                閉じる
+                                閉じる
             </button>
+
+            @if(Route::has('reserve.index'))
+                <a
+                    href="{{ route('reserve.index', $company->company_code) }}"
+                    class="hidden sm:inline-flex shrink-0 items-center justify-center px-5 py-3.5 rounded-full border border-[#d6c5b5] bg-white text-[#6b533f] text-sm sm:text-base font-bold">
+                    戻る
+                </a>
+            @endif
         </div>
     </div>
 </div>
@@ -430,3 +456,18 @@
     }
 </script>
 @endsection
+
+@push('styles')
+<style>
+    .reserve-complete-page .text-\[\#9a7d63\],
+    .reserve-complete-page .text-\[\#9a8878\],
+    .reserve-complete-page .text-\[\#8a7665\] {
+        color: #6f5743;
+    }
+
+    .reserve-complete-page .text-\[\#7b6654\],
+    .reserve-complete-page .text-\[\#6b5b4d\] {
+        color: #5f4d3e;
+    }
+</style>
+@endpush

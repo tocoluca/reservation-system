@@ -97,16 +97,16 @@ $themeSoft = $theme . '15';
                 </div>
             </div>
 
-            <div class="max-h-[72vh] overflow-auto">
+            <div class="relative z-0 max-h-[72vh] overflow-auto">
                 <table class="min-w-full text-sm">
                     <thead style="background: {{ $theme }}; color:white">
                         <tr>
-                            <th class="p-4 text-left sticky top-0 left-0 bg-white text-stone-800 z-40 border-r border-b border-stone-200 shadow-sm min-w-[220px]">
+                            <th class="p-4 text-left sticky top-0 left-0 bg-white text-stone-800 z-20 border-r border-b border-stone-200 shadow-sm min-w-[220px]">
                                 メニュー
                             </th>
 
                             @foreach($staffs as $staff)
-                                <th class="p-4 text-center sticky top-0 z-30 border-b border-white/30 shadow-sm min-w-[120px]"
+                                <th class="p-4 text-center sticky top-0 z-10 border-b border-white/30 shadow-sm min-w-[120px]"
                                     style="background: {{ $theme }}; color:white;">
                                     <div class="flex flex-col items-center gap-2">
                                         <span class="font-semibold">{{ $staff->name }}</span>
@@ -128,7 +128,7 @@ $themeSoft = $theme . '15';
                     <tbody class="divide-y divide-stone-200">
                         @foreach($menus as $menu)
                             <tr class="hover:bg-stone-50 transition">
-                                <td class="p-4 font-semibold sticky left-0 bg-white z-20 border-r border-stone-200 shadow-sm">
+                                <td class="p-4 font-semibold sticky left-0 bg-white z-10 border-r border-stone-200 shadow-sm">
                                     <div class="flex items-center gap-3">
                                         <input
                                             type="checkbox"

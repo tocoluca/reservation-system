@@ -102,6 +102,10 @@ function toggleVacationMode() {
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._vacation_shift_nav', ['current' => 'create'])
+    </div>
+
     <form method="POST" action="{{ route('company.vacation.store') }}">
         @csrf
         <input type="hidden" name="staff_id" value="{{ $staff->id }}">

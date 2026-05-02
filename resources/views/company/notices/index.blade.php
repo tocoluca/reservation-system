@@ -47,6 +47,10 @@
         </div>
     </div>
 
+    <div class="mb-5">
+        @include('company.notices._notice_nav', ['current' => 'index'])
+    </div>
+
     {{-- 件数 --}}
     <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
         <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">

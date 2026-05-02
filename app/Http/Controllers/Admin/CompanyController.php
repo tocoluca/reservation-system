@@ -12,6 +12,7 @@ use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class CompanyController extends Controller
 {
@@ -112,9 +113,74 @@ class CompanyController extends Controller
             });
         }
 
-        $companies = $query->orderBy('id', 'desc')->paginate(20);
+        if ($request->filled('status')) {
+            match ($request->status) {
+                'active' => $query->where('is_active', true),
+                'inactive' => $query->where('is_active', false),
+                'uninitialized' => $query->where('is_initialized', false),
+                'billing_attention' => $query->where(function ($q) {
+                    $q->where(function ($billingQuery) {
+                        $billingQuery->whereNull('billing_starts_at')
+                            ->orWhere('billing_starts_at', '<=', now());
+                    })
+                        ->where(function ($billingQuery) {
+                            $billingQuery->where('is_billing_active', false)
+                                ->orWhereIn('subscription_status', ['past_due', 'unpaid', 'incomplete', 'incomplete_expired']);
+                        });
+                }),
+                'billing_campaign' => $query->whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now()),
+                'line_enabled' => $query->where('line_login_enabled', true),
+                default => null,
+            };
+        }
 
-        return view('admin.company_index', compact('companies'));
+        $companies = $query
+            ->withCount(['staff', 'reservations', 'customers'])
+            ->orderBy('id', 'desc')
+            ->paginate(20)
+            ->withQueryString();
+
+        $summary = [
+            'total' => Company::count(),
+            'active' => Company::where('is_active', true)->count(),
+            'inactive' => Company::where('is_active', false)->count(),
+            'uninitialized' => Company::where('is_initialized', false)->count(),
+            'billing_attention' => Company::where(function ($q) {
+                $q->where(function ($billingQuery) {
+                    $billingQuery->whereNull('billing_starts_at')
+                        ->orWhere('billing_starts_at', '<=', now());
+                })
+                    ->where(function ($billingQuery) {
+                        $billingQuery->where('is_billing_active', false)
+                            ->orWhereIn('subscription_status', ['past_due', 'unpaid', 'incomplete', 'incomplete_expired']);
+                    });
+            })->count(),
+            'billing_campaign' => Company::whereNotNull('billing_starts_at')->where('billing_starts_at', '>', now())->count(),
+        ];
+
+        return view('admin.company_index', compact('companies', 'summary'));
+    }
+
+    public function updateBillingStartCampaign(Request $request)
+    {
+        $validated = $request->validate([
+            'company_id' => ['required', 'integer', 'exists:companies,id'],
+            'billing_starts_at' => ['required', 'date'],
+        ], [
+            'company_id.required' => '企業を選択してください。',
+            'billing_starts_at.required' => '請求開始日を入力してください。',
+            'billing_starts_at.date' => '請求開始日の形式が正しくありません。',
+        ]);
+
+        $company = Company::findOrFail($validated['company_id']);
+        $billingStartsAt = Carbon::parse($validated['billing_starts_at'])->startOfDay();
+
+        $company->billing_starts_at = $billingStartsAt;
+        $company->save();
+
+        return redirect()
+            ->route('admin.dashboard')
+            ->with('success', $company->name . ' の請求開始日を ' . $billingStartsAt->format('Y/m/d') . ' に設定しました。');
     }
 
     public function edit($id)

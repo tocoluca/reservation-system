@@ -38,17 +38,60 @@
         </div>
     @endif
 
-    {{-- 検索 --}}
-    <form method="GET" action="{{ route('admin.company.index') }}" class="mb-6 flex flex-col sm:flex-row gap-3">
+    {{-- サマリー --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
+        <a href="{{ route('admin.company.index') }}" class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+            <div class="text-xs font-bold text-gray-500">全企業</div>
+            <div class="mt-1 text-2xl font-black text-gray-900">{{ number_format($summary['total'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('admin.company.index', ['status' => 'active']) }}" class="rounded-xl border border-green-100 bg-green-50 p-4">
+            <div class="text-xs font-bold text-green-700">利用中</div>
+            <div class="mt-1 text-2xl font-black text-green-700">{{ number_format($summary['active'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('admin.company.index', ['status' => 'inactive']) }}" class="rounded-xl border border-red-100 bg-red-50 p-4">
+            <div class="text-xs font-bold text-red-700">停止中</div>
+            <div class="mt-1 text-2xl font-black text-red-700">{{ number_format($summary['inactive'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('admin.company.index', ['status' => 'uninitialized']) }}" class="rounded-xl border border-sky-100 bg-sky-50 p-4">
+            <div class="text-xs font-bold text-sky-700">初期設定未完了</div>
+            <div class="mt-1 text-2xl font-black text-sky-700">{{ number_format($summary['uninitialized'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('admin.company.index', ['status' => 'billing_attention']) }}" class="rounded-xl border border-amber-100 bg-amber-50 p-4">
+            <div class="text-xs font-bold text-amber-700">請求確認</div>
+            <div class="mt-1 text-2xl font-black text-amber-700">{{ number_format($summary['billing_attention'] ?? 0) }}</div>
+        </a>
+        <a href="{{ route('admin.company.index', ['status' => 'billing_campaign']) }}" class="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div class="text-xs font-bold text-blue-700">請求開始前</div>
+            <div class="mt-1 text-2xl font-black text-blue-700">{{ number_format($summary['billing_campaign'] ?? 0) }}</div>
+        </a>
+    </div>
+
+    {{-- 検索・状態フィルタ --}}
+    <form method="GET" action="{{ route('admin.company.index') }}" class="mb-6 grid grid-cols-1 lg:grid-cols-[1fr_220px_auto_auto] gap-3">
         <input type="text"
                name="keyword"
                value="{{ request('keyword') }}"
                placeholder="企業名・企業コード・業種・メールアドレスで検索"
-               class="border border-gray-300 p-3 rounded-lg w-full sm:w-96 focus:outline-none focus:ring-2 focus:ring-blue-400">
+               class="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+
+        <select name="status" class="border border-gray-300 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">すべての状態</option>
+            <option value="active" @selected(request('status') === 'active')>利用中</option>
+            <option value="inactive" @selected(request('status') === 'inactive')>停止中</option>
+            <option value="uninitialized" @selected(request('status') === 'uninitialized')>初期設定未完了</option>
+            <option value="billing_attention" @selected(request('status') === 'billing_attention')>請求確認</option>
+            <option value="billing_campaign" @selected(request('status') === 'billing_campaign')>請求開始前</option>
+            <option value="line_enabled" @selected(request('status') === 'line_enabled')>LINE有効</option>
+        </select>
 
         <button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition">
             検索
         </button>
+
+        <a href="{{ route('admin.company.index') }}"
+           class="inline-flex items-center justify-center border border-gray-300 bg-white text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition">
+            リセット
+        </a>
     </form>
 
     {{-- 上部操作 --}}
@@ -88,6 +131,8 @@
                         <th class="p-3 border text-left">業種</th>
                         <th class="p-3 border text-left">予約URL</th>
                         <th class="p-3 border text-center">状態</th>
+                        <th class="p-3 border text-center">契約</th>
+                        <th class="p-3 border text-center">利用数</th>
                         <th class="p-3 border text-center">LINE</th>
                         <th class="p-3 border text-center">操作</th>
                     </tr>
@@ -154,14 +199,45 @@
 
                             <td class="border p-3 text-center">
                                 @if($company->is_active)
-                                    <span class="text-green-600 font-semibold">
+                                    <span class="inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-700">
                                         利用中
                                     </span>
                                 @else
-                                    <span class="text-red-600 font-semibold">
+                                    <span class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
                                         停止
                                     </span>
                                 @endif
+                                @if(!$company->is_initialized)
+                                    <div class="mt-2">
+                                        <span class="inline-flex rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-700">
+                                            初期未完了
+                                        </span>
+                                    </div>
+                                @endif
+                            </td>
+
+                            <td class="border p-3 text-center">
+                                <div class="text-sm font-semibold text-gray-700">{{ $company->subscription_status_label }}</div>
+                                @if($company->billing_starts_at && $company->billing_starts_at->isFuture())
+                                    <div class="mt-2">
+                                        <span class="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-bold text-blue-700">
+                                            {{ $company->billing_starts_at->format('Y/m/d') }} 開始
+                                        </span>
+                                    </div>
+                                @endif
+                                @if(!$company->is_billing_active)
+                                    <div class="mt-2">
+                                        <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                                            請求確認
+                                        </span>
+                                    </div>
+                                @endif
+                            </td>
+
+                            <td class="border p-3 text-center text-xs text-gray-600">
+                                <div>スタッフ {{ number_format($company->staff_count ?? 0) }}</div>
+                                <div class="mt-1">予約 {{ number_format($company->reservations_count ?? 0) }}</div>
+                                <div class="mt-1">顧客 {{ number_format($company->customers_count ?? 0) }}</div>
                             </td>
 
                             <td class="border p-3 text-center">
@@ -183,7 +259,9 @@
                                         個別編集
                                     </a>
 
-                                    <form method="POST" action="{{ route('admin.company.toggle', $company->id) }}">
+                                    <form method="POST"
+                                          action="{{ route('admin.company.toggle', $company->id) }}"
+                                          onsubmit="return confirm(@js($company->name . 'を' . ($company->is_active ? '利用停止' : '再開') . 'しますか？'));">
                                         @csrf
                                         <button class="w-full px-4 py-2 rounded-lg text-white transition text-sm
                                             {{ $company->is_active ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }}">
@@ -195,7 +273,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="border p-6 text-center text-gray-500">
+                            <td colspan="11" class="border p-6 text-center text-gray-500">
                                 企業データがありません。
                             </td>
                         </tr>

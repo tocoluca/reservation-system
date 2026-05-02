@@ -86,6 +86,12 @@
                 </div>
             @endif
 
+            @if($errors->any())
+                <div class="bg-red-100 text-red-700 p-3 mb-6 rounded">
+                    {{ $errors->first() }}
+                </div>
+            @endif
+
             <h2 class="text-2xl md:text-3xl font-bold mb-6 md:mb-8">
                 ダッシュボード
             </h2>
@@ -131,6 +137,191 @@
                     </div>
                 </div>
 
+            </div>
+
+            <!-- キャンペーン請求開始日 -->
+            <div class="bg-white p-6 rounded-xl shadow mb-8 border border-blue-100">
+                <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
+                    <div class="xl:w-1/2">
+                        <h3 class="text-lg md:text-xl font-bold">キャンペーン請求開始日</h3>
+                        <p class="text-sm text-gray-500 mt-2 leading-6">
+                            キャンペーン対象企業の請求開始日を設定します。設定日までは契約管理の制限対象から外れます。
+                        </p>
+
+                        <form method="POST"
+                              action="{{ route('admin.company.billing-start-campaign') }}"
+                              class="mt-5 grid grid-cols-1 lg:grid-cols-[1fr_180px_auto] gap-3"
+                              onsubmit="return confirm('選択した企業の請求開始日を設定しますか？');">
+                            @csrf
+                            <select name="company_id" class="border border-gray-300 rounded-lg p-3 bg-white">
+                                <option value="">企業を選択</option>
+                                @foreach($companyOptions as $company)
+                                    <option value="{{ $company->id }}" @selected(old('company_id') == $company->id)>
+                                        {{ $company->name }}（{{ $company->company_code }}）
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <input type="date"
+                                   name="billing_starts_at"
+                                   value="{{ old('billing_starts_at') }}"
+                                   class="border border-gray-300 rounded-lg p-3">
+
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg font-semibold">
+                                設定する
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="xl:w-1/2 rounded-xl bg-blue-50 border border-blue-100 p-5">
+                        <div class="text-sm font-bold text-blue-800 mb-3">設定中の企業</div>
+                        <div class="space-y-3">
+                            @forelse($billingCampaignCompanies as $company)
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg bg-white border border-blue-100 px-4 py-3">
+                                    <div>
+                                        <div class="font-bold text-gray-900">{{ $company->name }}</div>
+                                        <div class="text-xs text-gray-500 mt-1">{{ $company->company_code }}</div>
+                                    </div>
+                                    <div class="text-sm font-bold text-blue-700">
+                                        {{ optional($company->billing_starts_at)->format('Y/m/d') }} 開始
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-sm text-blue-700">現在、請求開始日が設定されている企業はありません。</div>
+                            @endforelse
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 企業管理ミニダッシュボード -->
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+                <div class="xl:col-span-1 bg-white p-6 rounded-xl shadow border border-amber-100">
+                    <div class="flex items-start justify-between gap-4 mb-5">
+                        <div>
+                            <h3 class="text-lg md:text-xl font-bold">注意が必要な企業</h3>
+                            <p class="text-sm text-gray-500 mt-1">停止中、初期設定未完了、請求確認が必要な企業です。</p>
+                        </div>
+                        <a href="{{ route('admin.company.index', ['status' => 'billing_attention']) }}"
+                           class="text-sm font-semibold text-amber-700 hover:underline whitespace-nowrap">
+                            一覧
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 xl:grid-cols-1 gap-3 mb-5">
+                        <a href="{{ route('admin.company.index', ['status' => 'inactive']) }}"
+                           class="block rounded-xl border border-red-100 bg-red-50 p-4">
+                            <div class="text-xs font-bold text-red-700">利用停止中</div>
+                            <div class="mt-1 text-2xl font-black text-red-700">{{ $inactiveCount ?? 0 }}</div>
+                        </a>
+                        <a href="{{ route('admin.company.index', ['status' => 'uninitialized']) }}"
+                           class="block rounded-xl border border-sky-100 bg-sky-50 p-4">
+                            <div class="text-xs font-bold text-sky-700">初期設定未完了</div>
+                            <div class="mt-1 text-2xl font-black text-sky-700">{{ $uninitializedCount ?? 0 }}</div>
+                        </a>
+                        <a href="{{ route('admin.company.index', ['status' => 'billing_attention']) }}"
+                           class="block rounded-xl border border-amber-100 bg-amber-50 p-4">
+                            <div class="text-xs font-bold text-amber-700">請求確認</div>
+                            <div class="mt-1 text-2xl font-black text-amber-700">{{ $billingAttentionCount ?? 0 }}</div>
+                        </a>
+                    </div>
+
+                    <div class="space-y-3">
+                        @forelse($attentionCompanies as $company)
+                            <div class="rounded-xl border border-gray-200 p-4">
+                                <div class="font-bold text-gray-900">{{ $company->name }}</div>
+                                <div class="mt-1 text-xs text-gray-500">{{ $company->company_code }} / {{ $company->subscription_status_label }}</div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    @if(!$company->is_active)
+                                        <span class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">停止中</span>
+                                    @endif
+                                    @if(!$company->is_initialized)
+                                        <span class="rounded-full bg-sky-100 px-2.5 py-1 text-xs font-bold text-sky-700">初期設定未完了</span>
+                                    @endif
+                                    @if(!$company->is_billing_active)
+                                        <span class="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">請求確認</span>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-sm text-gray-400 py-6 text-center">注意が必要な企業はありません</div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="xl:col-span-2 bg-white p-6 rounded-xl shadow">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5">
+                        <div>
+                            <h3 class="text-lg md:text-xl font-bold">企業一覧</h3>
+                            <p class="text-sm text-gray-500 mt-1">直近登録された企業を確認し、利用停止/再開できます。</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <a href="{{ route('admin.company.index') }}"
+                               class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-center font-semibold text-sm">
+                                すべて見る
+                            </a>
+                            <a href="{{ route('admin.company.create') }}"
+                               class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2.5 rounded-lg text-center font-semibold text-sm">
+                                ＋ 企業登録
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm border border-gray-200">
+                            <thead class="bg-gray-50 text-gray-600">
+                                <tr>
+                                    <th class="p-3 text-left border">企業</th>
+                                    <th class="p-3 text-center border">状態</th>
+                                    <th class="p-3 text-center border">契約</th>
+                                    <th class="p-3 text-center border">利用数</th>
+                                    <th class="p-3 text-center border">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($latestCompanies as $company)
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="p-3 border">
+                                            <div class="font-bold text-gray-900">{{ $company->name }}</div>
+                                            <div class="text-xs text-gray-500 mt-1">{{ $company->company_code }}</div>
+                                        </td>
+                                        <td class="p-3 border text-center">
+                                            <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $company->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                                                {{ $company->is_active ? '利用中' : '停止中' }}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 border text-center text-xs text-gray-600">
+                                            {{ $company->subscription_status_label }}
+                                        </td>
+                                        <td class="p-3 border text-center text-xs text-gray-600">
+                                            スタッフ {{ $company->staff_count }} / 予約 {{ $company->reservations_count }} / 顧客 {{ $company->customers_count }}
+                                        </td>
+                                        <td class="p-3 border">
+                                            <div class="flex flex-col gap-2 min-w-[100px]">
+                                                <a href="{{ route('admin.company.edit', $company->id) }}"
+                                                   class="rounded-lg bg-gray-700 px-3 py-2 text-center text-xs font-bold text-white hover:bg-gray-800">
+                                                    編集
+                                                </a>
+                                                <form method="POST"
+                                                      action="{{ route('admin.company.toggle', $company->id) }}"
+                                                      onsubmit="return confirm(@js($company->name . 'を' . ($company->is_active ? '利用停止' : '再開') . 'しますか？'));">
+                                                    @csrf
+                                                    <button class="w-full rounded-lg px-3 py-2 text-xs font-bold text-white {{ $company->is_active ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600' }}">
+                                                        {{ $company->is_active ? '停止' : '再開' }}
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="p-8 text-center text-gray-400">企業データがありません</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <!-- クイックアクション -->

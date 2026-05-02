@@ -12,6 +12,10 @@
             default => ['label' => $status, 'class' => 'bg-amber-100 text-amber-700'],
         };
     };
+
+    $currentReservationFilters = collect(request()->only(['keyword', 'date_from', 'date_to', 'status']))
+        ->filter(fn ($value) => filled($value))
+        ->all();
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -391,6 +395,9 @@
                                               action="{{ route('company.reservations.complete', $reservation->id) }}"
                                               onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
                                             @csrf
+                                            @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                                <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                            @endforeach
                                             <button type="submit"
                                                     class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap">
                                                 来店済
@@ -401,6 +408,9 @@
                                           action="{{ route('company.reservations.cancel', $reservation->id) }}"
                                           onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
                                         @csrf
+                                        @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                            <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                        @endforeach
                                         <button type="submit"
                                                 class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap"
                                                 style="background: {{ $theme }};">
@@ -528,6 +538,9 @@
                                   class="mb-2"
                                   onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
                                 @csrf
+                                @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                    <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                @endforeach
                                 <button type="submit"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
                                     来店済みにする
@@ -538,6 +551,9 @@
                                   action="{{ route('company.reservations.cancel', $reservation->id) }}"
                                   onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
                                 @csrf
+                                @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                    <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                @endforeach
                                 <button type="submit"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl text-white text-sm font-semibold hover:opacity-90 transition shadow-sm"
                                         style="background: {{ $theme }};">

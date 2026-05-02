@@ -254,6 +254,33 @@
         </div>
      </div>
 
+    <div class="mb-6 rounded-[1.75rem] border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <p class="text-xs font-bold tracking-[0.18em] uppercase text-gray-400">Calendar Navigation</p>
+                <h2 class="mt-1 text-lg font-black text-gray-900">営業日管理の表示切替</h2>
+                <p class="mt-1 text-sm text-gray-500">月ごとの編集と年間確認を切り替えできます。</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[520px]">
+                <a href="{{ route('company.calendar.index', ['year' => now()->year, 'month' => now()->month]) }}"
+                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
+                    <div class="text-sm font-black">今月</div>
+                    <div class="mt-1 text-xs text-gray-500">今日の月へ戻る</div>
+                </a>
+                <div class="rounded-2xl border px-4 py-3 text-white shadow-sm"
+                     style="background: {{ $theme }}; border-color: {{ $theme }};">
+                    <div class="text-sm font-black">月間カレンダー</div>
+                    <div class="mt-1 text-xs text-white/80">{{ $year }}年 {{ $month }}月を編集中</div>
+                </div>
+                <a href="{{ route('company.calendar.year', ['year' => $year]) }}"
+                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
+                    <div class="text-sm font-black">年間カレンダー</div>
+                    <div class="mt-1 text-xs text-gray-500">{{ $year }}年を一覧確認</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="sticky top-24 z-30 mb-4 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>

@@ -53,6 +53,7 @@ class Company extends Authenticatable
         'subscribed_at',
         'canceled_at',
         'grace_until',
+        'billing_starts_at',
         'is_billing_active',
 
         // サロン情報
@@ -99,6 +100,7 @@ class Company extends Authenticatable
         'subscribed_at' => 'datetime',
         'canceled_at' => 'datetime',
         'grace_until' => 'datetime',
+        'billing_starts_at' => 'datetime',
         'email_verified_at' => 'datetime',
     ];
 
@@ -157,11 +159,18 @@ class Company extends Authenticatable
             && $this->grace_until->isFuture();
     }
 
+    public function isInBillingStartCampaign(): bool
+    {
+        return !is_null($this->billing_starts_at)
+            && $this->billing_starts_at->isFuture();
+    }
+
     public function isSubscriptionAvailable(): bool
     {
         return $this->isSubscribed()
             || $this->isOnTrial()
-            || $this->isInGracePeriod();
+            || $this->isInGracePeriod()
+            || $this->isInBillingStartCampaign();
     }
 
     public function shouldBeLockedForBilling(): bool
@@ -185,6 +194,10 @@ class Company extends Authenticatable
 
     public function getSubscriptionStatusLabelAttribute(): string
     {
+        if ($this->isInBillingStartCampaign()) {
+            return '請求開始前';
+        }
+
         return match ($this->subscription_status) {
             'active' => '有効',
             'trialing' => 'トライアル中',

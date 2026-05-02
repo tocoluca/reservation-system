@@ -60,6 +60,10 @@
         ])
     </div>
 
+    <div class="mb-6">
+        @include('company._vacation_shift_nav', ['current' => 'shift'])
+    </div>
+
     {{-- ガイド --}}
     <div class="mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

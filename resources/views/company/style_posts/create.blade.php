@@ -7,6 +7,8 @@
 @endphp
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+    @include('company.style_posts._style_nav', ['current' => 'create'])
+
     <div class="overflow-hidden rounded-[28px] border border-stone-200 bg-white shadow-[0_18px_50px_rgba(15,23,42,0.06)]">
         <div class="px-6 sm:px-8 py-6 border-b border-stone-200"
              style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">

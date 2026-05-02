@@ -72,6 +72,33 @@
         </div>
     </div>
 
+    <div class="mb-6 rounded-[1.75rem] border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div>
+                <p class="text-xs font-bold tracking-[0.18em] uppercase text-gray-400">Calendar Navigation</p>
+                <h2 class="mt-1 text-lg font-black text-gray-900">営業日管理の表示切替</h2>
+                <p class="mt-1 text-sm text-gray-500">年間で見てから、編集したい月へ移動できます。</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[520px]">
+                <a href="{{ route('company.calendar.index', ['year' => now()->year, 'month' => now()->month]) }}"
+                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
+                    <div class="text-sm font-black">今月</div>
+                    <div class="mt-1 text-xs text-gray-500">今日の月を編集</div>
+                </a>
+                <a href="{{ route('company.calendar.index', ['year' => $year, 'month' => now()->year == $year ? now()->month : 1]) }}"
+                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
+                    <div class="text-sm font-black">月間カレンダー</div>
+                    <div class="mt-1 text-xs text-gray-500">{{ $year }}年の月を編集</div>
+                </a>
+                <div class="rounded-2xl border px-4 py-3 text-white shadow-sm"
+                     style="background: {{ $theme }}; border-color: {{ $theme }};">
+                    <div class="text-sm font-black">年間カレンダー</div>
+                    <div class="mt-1 text-xs text-white/80">{{ $year }}年を表示中</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- 月一覧 --}}
     <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-white to-gray-50">

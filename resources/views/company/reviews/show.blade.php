@@ -42,6 +42,8 @@
         </div>
     @endif
 
+    @include('company.reviews._review_nav', ['current' => 'detail'])
+
     {{-- ヘッダー --}}
     <div class="relative overflow-hidden rounded-3xl shadow-lg">
         <div class="absolute inset-0 opacity-10"

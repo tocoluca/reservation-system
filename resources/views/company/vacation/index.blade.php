@@ -75,6 +75,10 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._vacation_shift_nav', ['current' => 'vacation'])
+    </div>
+
     @if($pendingCount > 0)
         <div class="mb-6 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

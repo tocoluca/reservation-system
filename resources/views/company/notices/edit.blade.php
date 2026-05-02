@@ -22,6 +22,10 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company.notices._notice_nav', ['current' => 'edit'])
+    </div>
+
     <form method="POST"
           action="{{ route('company.notices.update', $notice->id) }}"
           enctype="multipart/form-data"

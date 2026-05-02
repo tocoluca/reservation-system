@@ -190,6 +190,15 @@
                         </div>
                     </div>
 
+                    <a href="{{ url('/r/'.$company->company_code) }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition"
+                       style="background: linear-gradient(135deg, {{ $theme }}, #111827);">
+                        <i data-lucide="calendar-check" class="w-4 h-4"></i>
+                        予約画面
+                    </a>
+
                     <a href="{{ route('company.support.index') }}"
                        class="hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
                         <i data-lucide="circle-help" class="w-4 h-4"></i>

@@ -52,6 +52,8 @@
         </div>
     @endif
 
+    @include('company.reviews._review_nav', ['current' => 'index'])
+
     {{-- サマリー --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
@@ -92,15 +94,6 @@
                     ★2以下
                 </span>
             </div>
-        </div>
-    </div>
-
-    <div class="rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-sm">
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('company.reviews.index') }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') ? 'bg-stone-100 text-stone-700' : 'text-white' }}" style="{{ request('status') ? '' : 'background: '.$theme }}">すべて</a>
-            <a href="{{ route('company.reviews.index', ['status' => 'pending']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'pending' ? 'text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100' }}" style="{{ request('status') === 'pending' ? 'background: '.$theme : '' }}">確認待ち</a>
-            <a href="{{ route('company.reviews.index', ['status' => 'approved']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'approved' ? 'text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }}" style="{{ request('status') === 'approved' ? 'background: '.$theme : '' }}">公開中</a>
-            <a href="{{ route('company.reviews.index', ['status' => 'rejected']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'rejected' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}" style="{{ request('status') === 'rejected' ? 'background: '.$theme : '' }}">非公開</a>
         </div>
     </div>
 
@@ -218,7 +211,7 @@
                             </td>
 
                             <td class="px-5 py-5 border-b border-stone-100 text-center">
-                                <a href="{{ route('company.reviews.show', $review) }}"
+                                <a href="{{ route('company.reviews.show', ['review' => $review, 'from_status' => request('status')]) }}"
                                    class="inline-flex items-center rounded-2xl border px-4 py-2.5 text-sm font-medium bg-white hover:bg-stone-50 transition"
                                    style="border-color: {{ $theme }}; color: {{ $theme }};">
                                     詳細を見る
@@ -276,7 +269,7 @@
                     </div>
 
                     <div>
-                        <a href="{{ route('company.reviews.show', $review) }}"
+                        <a href="{{ route('company.reviews.show', ['review' => $review, 'from_status' => request('status')]) }}"
                            class="inline-flex items-center justify-center w-full rounded-2xl border px-4 py-3 text-sm font-medium bg-white hover:bg-stone-50 transition"
                            style="border-color: {{ $theme }}; color: {{ $theme }};">
                             詳細を見る

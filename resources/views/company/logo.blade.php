@@ -39,6 +39,10 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._storefront_settings_nav', ['current' => 'logo'])
+    </div>
+
     <div class="bg-white p-5 sm:p-8 rounded-[2rem] shadow-sm border border-gray-100">
 
         <div class="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-8 items-start">

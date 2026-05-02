@@ -98,9 +98,10 @@ class ReservationController extends Controller
         ]);
     }
 
-    public function cancelFromList($id)
+    public function cancelFromList(Request $request, $id)
     {
         $company = auth()->guard('company')->user()->company;
+        $redirectParams = $this->reservationIndexRedirectParams($request);
 
         $reservation = Reservation::where('id', $id)
             ->where('company_id', $company->id)
@@ -108,19 +109,19 @@ class ReservationController extends Controller
 
         if (!$reservation) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => '予約が見つかりません。']);
         }
 
         if ($reservation->status === Reservation::STATUS_CANCELLED) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->with('success', 'この予約はすでにキャンセル済みです。');
         }
 
         if ($reservation->status === Reservation::STATUS_COMPLETED) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => '来店済みの予約はキャンセルできません。']);
         }
 
@@ -130,13 +131,14 @@ class ReservationController extends Controller
         $reservation->save();
 
         return redirect()
-            ->route('company.reservations.index')
+            ->route('company.reservations.index', $redirectParams)
             ->with('success', '予約をキャンセルしました。');
     }
 
-    public function completeFromList($id)
+    public function completeFromList(Request $request, $id)
     {
         $company = auth()->guard('company')->user()->company;
+        $redirectParams = $this->reservationIndexRedirectParams($request);
 
         $reservation = Reservation::where('id', $id)
             ->where('company_id', $company->id)
@@ -144,19 +146,19 @@ class ReservationController extends Controller
 
         if (!$reservation) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => '予約が見つかりません。']);
         }
 
         if ($reservation->status === Reservation::STATUS_CANCELLED) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => 'キャンセル済みの予約は来店済みにできません。']);
         }
 
         if ($reservation->status === Reservation::STATUS_COMPLETED) {
             return redirect()
-                ->route('company.reservations.index')
+                ->route('company.reservations.index', $redirectParams)
                 ->with('success', 'この予約はすでに来店済みです。');
         }
 
@@ -164,8 +166,22 @@ class ReservationController extends Controller
         $reservation->save();
 
         return redirect()
-            ->route('company.reservations.index')
+            ->route('company.reservations.index', $redirectParams)
             ->with('success', '予約を来店済みにしました。');
+    }
+
+    private function reservationIndexRedirectParams(Request $request): array
+    {
+        $filters = $request->input('filters', []);
+
+        if (!is_array($filters)) {
+            return [];
+        }
+
+        return collect($filters)
+            ->only(['keyword', 'date_from', 'date_to', 'status'])
+            ->filter(fn ($value) => filled($value))
+            ->all();
     }
 
     private function getReservationLimits($company)

@@ -65,6 +65,8 @@
         </div>
     </div>
 
+    @include('company.style_posts._style_nav', ['current' => 'index'])
+
     @if($styles->count())
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             @foreach($styles as $style)

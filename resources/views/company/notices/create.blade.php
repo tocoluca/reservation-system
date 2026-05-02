@@ -22,6 +22,10 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company.notices._notice_nav', ['current' => 'create'])
+    </div>
+
     <form method="POST"
           action="{{ route('company.notices.store') }}"
           enctype="multipart/form-data"

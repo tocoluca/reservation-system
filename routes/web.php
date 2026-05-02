@@ -134,6 +134,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/companies/bulk-edit', [CompanyController::class, 'bulkEdit'])->name('admin.company.bulk-edit');
         Route::post('/companies/bulk-update', [CompanyController::class, 'bulkUpdate'])->name('admin.company.bulk-update');
 
+        Route::post('/companies/billing-start-campaign', [CompanyController::class, 'updateBillingStartCampaign'])->name('admin.company.billing-start-campaign');
+
         Route::post('/companies/{id}/toggle', [CompanyController::class, 'toggle'])->name('admin.company.toggle');
 
 

@@ -8,7 +8,7 @@
     $themeSoft = $theme . '15';
 @endphp
 
-<div class="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+<div class="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
     {{-- ヘッダー --}}
     <div class="relative overflow-hidden rounded-3xl shadow-lg">
@@ -33,6 +33,20 @@
                    class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm transition text-sm font-medium">
                     ← メニュー一覧
                 </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="sticky top-24 z-30 rounded-[1.75rem] border border-white/80 bg-white/90 p-4 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-bold text-gray-900">予約画面プレビュー</div>
+                <div class="text-xs text-gray-500 mt-1">変更後のメニュー表示を確認しながら更新できます。</div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span id="menuPreviewName" class="rounded-2xl bg-stone-100 px-4 py-2 text-sm font-bold text-stone-800">{{ $menu->name }}</span>
+                <span id="menuPreviewDuration" class="rounded-2xl bg-blue-50 px-4 py-2 text-sm font-bold text-blue-700">{{ $menu->duration }}分</span>
+                <span id="menuPreviewPrice" class="rounded-2xl bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">¥{{ number_format($menu->price) }}</span>
             </div>
         </div>
     </div>
@@ -129,6 +143,26 @@
 
         </form>
     </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const nameInput = document.querySelector('[name="name"]');
+    const durationInput = document.querySelector('[name="duration"]');
+    const priceInput = document.querySelector('[name="price"]');
+    const namePreview = document.getElementById('menuPreviewName');
+    const durationPreview = document.getElementById('menuPreviewDuration');
+    const pricePreview = document.getElementById('menuPreviewPrice');
+
+    function refreshMenuPreview() {
+        if (namePreview) namePreview.textContent = nameInput?.value || 'メニュー名';
+        if (durationPreview) durationPreview.textContent = `${durationInput?.value || 0}分`;
+        if (pricePreview) pricePreview.textContent = `¥${Number(priceInput?.value || 0).toLocaleString()}`;
+    }
+
+    [nameInput, durationInput, priceInput].forEach(input => input?.addEventListener('input', refreshMenuPreview));
+    refreshMenuPreview();
+});
+</script>
 
 </div>
 

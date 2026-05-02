@@ -113,6 +113,26 @@
         </div>
     </div>
 
+    <div class="sticky top-24 z-30 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur mb-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-bold text-gray-900">接客前チェック</div>
+                <div class="text-xs text-gray-500 mt-1">表示中の顧客から、フォロー対象や注意が必要な顧客を見つけやすくします。</div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center rounded-2xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-bold text-red-700">
+                    再来店フォロー {{ number_format($targetCount) }}件
+                </span>
+                <span class="inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700">
+                    次回来店あり {{ number_format($reservedCount) }}件
+                </span>
+                <span class="inline-flex items-center rounded-2xl bg-blue-50 border border-blue-100 px-4 py-2.5 text-sm font-bold text-blue-700">
+                    送信済み {{ number_format($sentCount) }}件
+                </span>
+            </div>
+        </div>
+    </div>
+
     {{-- 検索 --}}
     <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 p-5 sm:p-6 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-4">

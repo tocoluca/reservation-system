@@ -13,6 +13,12 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
+        if (Auth::guard('company')->check()) {
+            Auth::guard('company')->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+        }
+
         return view('company.login');
     }
 

@@ -23,7 +23,11 @@
     $notices = $notices ?? collect();
     $todayReservationCount = $todayReservations->count();
     $tomorrowReservationCount = $tomorrowReservations->count();
-    $todayCustomerCount = $todayReservations->pluck('customer_name')->filter()->unique()->count();
+    $todayReservationListUrl = route('company.reservations.index', [
+        'date_from' => now()->toDateString(),
+        'date_to' => now()->toDateString(),
+        'status' => 'reserved',
+    ]);
     $dashboardPermissions = $dashboardPermissions ?? [];
     $can = function ($key, $default = false) use ($dashboardPermissions) {
         return (bool) ($dashboardPermissions[$key] ?? $default);
@@ -75,11 +79,35 @@ body {
     color: #fff; box-shadow: 0 10px 24px {{ $theme }}55; flex: none;
 }
 .card-icon svg { width: 21px; height: 21px; }
-.quick-card {
-    border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08);
-    color: white; border-radius: 20px; padding: 16px; transition: .25s; text-align: left;
+.action-panel {
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.08);
+    color: white;
+    border-radius: 24px;
+    padding: 18px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
 }
-.quick-card:hover { transform: translateY(-2px); background: rgba(255,255,255,.14); }
+.action-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-radius: 18px;
+    padding: 13px 14px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.12);
+    transition: .22s;
+}
+.action-item:hover { transform: translateY(-1px); background: rgba(255,255,255,.14); }
+.action-count {
+    min-width: 3rem;
+    text-align: center;
+    border-radius: 999px;
+    padding: .35rem .65rem;
+    background: rgba(255,255,255,.16);
+    font-size: .85rem;
+    font-weight: 900;
+}
 .kpi {
     border-radius: 22px; padding: 24px;
     background: linear-gradient(135deg, rgba(255,255,255,.9), {{ $theme }}18);
@@ -87,10 +115,12 @@ body {
 }
 .tab-nav {
     border-radius: 26px;
-    padding: 10px;
-    background: rgba(255,255,255,.72);
-    border: 1px solid rgba(255,255,255,.68);
-    box-shadow: 0 18px 44px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.75);
+    padding: 12px;
+    background:
+        linear-gradient(135deg, rgba(255,255,255,.92), rgba(248,250,252,.78)),
+        radial-gradient(circle at top right, {{ $theme }}1f, transparent 18rem);
+    border: 1px solid rgba(226,232,240,.9);
+    box-shadow: 0 18px 44px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.78);
     backdrop-filter: blur(16px);
     overflow-x: auto;
 }
@@ -110,12 +140,12 @@ body {
     }
 }
 .tab-btn {
-    min-height: 74px;
-    padding: 12px 10px;
+    min-height: 86px;
+    padding: 13px 10px;
     border-radius: 18px;
     font-weight: 800;
-    background: rgba(248,250,252,.72);
-    border: 1px solid rgba(148,163,184,.18);
+    background: rgba(255,255,255,.72);
+    border: 1px solid rgba(148,163,184,.24);
     color: #475569;
     transition: .22s;
     display: flex;
@@ -124,8 +154,15 @@ body {
     justify-content: center;
     gap: 7px;
     white-space: nowrap;
+    position: relative;
 }
 .tab-btn svg { width: 19px; height: 19px; }
+.tab-btn .tab-sub {
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 800;
+    color: #94a3b8;
+}
 .tab-btn:hover {
     transform: translateY(-1px);
     background: rgba(255,255,255,.95);
@@ -136,6 +173,45 @@ body {
     color: #fff;
     border-color: rgba(255,255,255,.16);
     box-shadow: 0 16px 34px rgba(15,23,42,.22);
+}
+.tab-btn.active .tab-sub { color: rgba(255,255,255,.68); }
+.tab-btn.active::after {
+    content: "";
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -8px;
+    height: 4px;
+    border-radius: 999px;
+    background: {{ $theme }};
+    box-shadow: 0 8px 18px {{ $theme }}66;
+}
+.tab-category-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: .75rem;
+}
+.tab-category-heading h2 {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+.tab-category-heading p {
+    margin-top: .25rem;
+    font-size: .8rem;
+    color: #64748b;
+}
+.tab-category-heading .hint {
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    padding: .55rem .8rem;
+    font-size: .75rem;
+    font-weight: 800;
+    color: #64748b;
+    white-space: nowrap;
 }
 .table-apple { width: 100%; border-spacing: 0 8px; border-collapse: separate; }
 .table-apple tr { background: white; border-radius: 14px; box-shadow: 0 4px 12px rgba(15,23,42,.05); }
@@ -155,9 +231,17 @@ body {
                     </div>
                     <h1 class="mt-5 text-2xl sm:text-4xl font-black tracking-tight">{{ $staff->company->name ?? $company->name }}</h1>
                     <p class="mt-2 text-sm sm:text-base text-white/70">{{ $staff->name }} / {{ $roleLabel ?? $staff->role }}</p>
-                    <div class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-3xl">
-                        <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">今日の予約</div><div class="mt-1 text-3xl font-black">{{ number_format($todayReservationCount) }}</div></div>
-                        <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">来店予定人数</div><div class="mt-1 text-3xl font-black">{{ number_format($todayCustomerCount) }}</div></div>
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl">
+                        <a href="{{ $todayReservationListUrl }}"
+                           class="rounded-2xl bg-white/10 border border-white/15 p-4 hover:bg-white/15 transition block">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-xs text-white/60">今日の予約</div>
+                                    <div class="mt-1 text-3xl font-black">{{ number_format($todayReservationCount) }}</div>
+                                </div>
+                                <i data-lucide="arrow-up-right" class="w-5 h-5 text-white/55"></i>
+                            </div>
+                        </a>
                         <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">予約変更連絡</div><div class="mt-1 text-3xl font-black {{ $changeTotalActive > 0 ? 'text-rose-200' : '' }}">{{ number_format($changeTotalActive) }}</div></div>
                         @if($can('dashboard.sales'))
                             <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">今日売上</div><div class="mt-1 text-3xl font-black">¥{{ number_format($todaySales) }}</div></div>
@@ -167,12 +251,80 @@ body {
                     </div>
                 </div>
                 <div class="xl:w-[430px]">
-                    <div class="mb-3 text-xs font-bold tracking-[0.18em] text-white/55">QUICK LAUNCH</div>
-                    <div class="grid grid-cols-2 gap-3">
-                        @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="quick-card"><i data-lucide="calendar-check"></i><div class="mt-3 font-bold">予約カレンダー</div><div class="text-xs text-white/55 mt-1">空き状況と予約登録</div></a>@endif
-                        @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="quick-card"><i data-lucide="list-checks"></i><div class="mt-3 font-bold">予約一覧</div><div class="text-xs text-white/55 mt-1">予約状況と来店管理</div></a>@endif
-                        @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="quick-card"><i data-lucide="users"></i><div class="mt-3 font-bold">顧客管理</div><div class="text-xs text-white/55 mt-1">来店履歴を確認</div></a>@endif
-                        @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="quick-card"><i data-lucide="clock"></i><div class="mt-3 font-bold">勤務管理</div><div class="text-xs text-white/55 mt-1">シフト登録</div></a>@endif
+                    <div class="mb-3 text-xs font-bold tracking-[0.18em] text-white/55">NEEDS ATTENTION</div>
+                    <div class="action-panel space-y-3">
+                        @if(($showSetupGuide ?? false) && $setupTotalCount > 0)
+                            <a href="{{ url('/company/setup') }}" class="action-item">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="alert-circle" class="w-5 h-5 text-amber-200 shrink-0"></i>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-bold">初期設定</span>
+                                        <span class="block text-xs text-white/55 truncate">{{ $setupDoneCount }} / {{ $setupTotalCount }} 完了</span>
+                                    </span>
+                                </span>
+                                <span class="action-count">{{ max($setupTotalCount - $setupDoneCount, 0) }}</span>
+                            </a>
+                        @endif
+
+                        @if($changeTotalActive > 0)
+                            <a href="{{ route('company.reservation_change_notices.index') }}" class="action-item">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="refresh-cw" class="w-5 h-5 text-rose-200 shrink-0"></i>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-bold">予約変更連絡</span>
+                                        <span class="block text-xs text-white/55 truncate">確認待ち・電話対応待ちがあります</span>
+                                    </span>
+                                </span>
+                                <span class="action-count">{{ number_format($changeTotalActive) }}</span>
+                            </a>
+                        @endif
+
+                        @if($supportUnreadCount > 0)
+                            <a href="{{ route('company.support.index') }}" class="action-item">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="message-circle" class="w-5 h-5 text-sky-200 shrink-0"></i>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-bold">サポート回答</span>
+                                        <span class="block text-xs text-white/55 truncate">未読の回答があります</span>
+                                    </span>
+                                </span>
+                                <span class="action-count">{{ number_format($supportUnreadCount) }}</span>
+                            </a>
+                        @endif
+
+                        @if($hasBusinessAlert)
+                            <a href="{{ route('company.calendar.index') }}" class="action-item">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="calendar-days" class="w-5 h-5 text-amber-200 shrink-0"></i>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-bold">営業日設定</span>
+                                        <span class="block text-xs text-white/55 truncate">予約可能期間の登録を確認してください</span>
+                                    </span>
+                                </span>
+                                <span class="action-count">!</span>
+                            </a>
+                        @endif
+
+                        @if($hasShiftAlert)
+                            <a href="{{ route('company.staff-shifts') }}" class="action-item">
+                                <span class="flex items-center gap-3 min-w-0">
+                                    <i data-lucide="clock" class="w-5 h-5 text-amber-200 shrink-0"></i>
+                                    <span class="min-w-0">
+                                        <span class="block text-sm font-bold">勤務日程</span>
+                                        <span class="block text-xs text-white/55 truncate">シフト登録期間を確認してください</span>
+                                    </span>
+                                </span>
+                                <span class="action-count">!</span>
+                            </a>
+                        @endif
+
+                        @if(!($showSetupGuide ?? false) && $changeTotalActive === 0 && $supportUnreadCount === 0 && !$hasBusinessAlert && !$hasShiftAlert)
+                            <div class="rounded-2xl border border-white/12 bg-white/8 px-4 py-6 text-center">
+                                <i data-lucide="check-circle-2" class="w-8 h-8 mx-auto text-emerald-200"></i>
+                                <div class="mt-3 text-sm font-bold">対応が必要なものはありません</div>
+                                <div class="mt-1 text-xs text-white/55">通常運用に集中できます。</div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -219,49 +371,57 @@ body {
         @endif
     </div>
 
-    <nav class="tab-nav mb-6" aria-label="ダッシュボードメニュー">
+    <div class="tab-category-heading">
+        <div>
+            <h2>カードカテゴリ</h2>
+            <p>クイックランチは主要操作、こちらは各機能カードのまとまりです。</p>
+        </div>
+        <div class="hint hidden sm:block">タブを選ぶと下のカードが切り替わります</div>
+    </div>
+
+    <nav class="tab-nav mb-6" aria-label="カードカテゴリ">
         <div class="tab-nav-grid">
             <button type="button" @click="tab='dashboard'" :class="tab==='dashboard' ? 'tab-btn active' : 'tab-btn'">
-                <i data-lucide="layout-dashboard"></i><span>ダッシュボード</span>
+                <i data-lucide="layout-dashboard"></i><span>概要</span><span class="tab-sub">状況確認</span>
             </button>
             @if($canAny(['card.reserve', 'card.customers']))
                 <button type="button" @click="tab='reserve'" :class="tab==='reserve' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="calendar-check"></i><span>予約・顧客</span>
+                    <i data-lucide="calendar-check"></i><span>予約・顧客</span><span class="tab-sub">日常運用</span>
                 </button>
             @endif
             @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices']))
                 <button type="button" @click="tab='notice'" :class="tab==='notice' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="bell"></i><span>通知</span>
+                    <i data-lucide="bell"></i><span>通知</span><span class="tab-sub">発信・連絡</span>
                 </button>
             @endif
             @if($canAny(['card.staff', 'card.vacation', 'card.my_profile']))
                 <button type="button" @click="tab='staff'" :class="tab==='staff' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="users"></i><span>スタッフ</span>
+                    <i data-lucide="users"></i><span>スタッフ</span><span class="tab-sub">人員管理</span>
                 </button>
             @endif
             @if($canAny(['card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
                 <button type="button" @click="tab='shift'" :class="tab==='shift' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="calendar-days"></i><span>営業日・シフト</span>
+                    <i data-lucide="calendar-days"></i><span>営業日・シフト</span><span class="tab-sub">受付準備</span>
                 </button>
             @endif
             @if($canAny(['card.menu_category_tag', 'card.menu', 'card.menu_staff']))
                 <button type="button" @click="tab='menu'" :class="tab==='menu' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="list-tree"></i><span>メニュー</span>
+                    <i data-lucide="list-tree"></i><span>メニュー</span><span class="tab-sub">商品設定</span>
                 </button>
             @endif
             @if($canAny(['card.billing', 'card.support']))
                 <button type="button" @click="tab='contract'" :class="tab==='contract' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="badge-help"></i><span>契約・QA</span>
+                    <i data-lucide="badge-help"></i><span>契約・QA</span><span class="tab-sub">サポート</span>
                 </button>
             @endif
             @if($canAny(['card.company_info', 'card.theme', 'card.logo', 'dashboard.manage']))
                 <button type="button" @click="tab='settings'" :class="tab==='settings' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="settings"></i><span>設定</span>
+                    <i data-lucide="settings"></i><span>設定</span><span class="tab-sub">店舗情報</span>
                 </button>
             @endif
             @if($can('dashboard.sales'))
                 <button type="button" @click="tab='analytics'" :class="tab==='analytics' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="bar-chart-3"></i><span>分析</span>
+                    <i data-lucide="bar-chart-3"></i><span>分析</span><span class="tab-sub">売上確認</span>
                 </button>
             @endif
         </div>
@@ -269,7 +429,14 @@ body {
 
     <div x-show="tab==='dashboard'" class="space-y-6">
         <div class="grid md:grid-cols-2 gap-4">
-            <div class="kpi flex items-center justify-between gap-4"><div><div class="metric-label">今日の予約</div><div class="text-4xl font-black mt-1">{{ number_format($todayReservationCount) }}</div></div><div class="card-icon"><i data-lucide="calendar"></i></div></div>
+            <a href="{{ $todayReservationListUrl }}" class="kpi flex items-center justify-between gap-4 hover:shadow-lg transition">
+                <div>
+                    <div class="metric-label">今日の予約</div>
+                    <div class="text-4xl font-black mt-1">{{ number_format($todayReservationCount) }}</div>
+                    <div class="text-xs text-gray-400 mt-1">クリックで予約一覧を表示</div>
+                </div>
+                <div class="card-icon"><i data-lucide="calendar"></i></div>
+            </a>
             <div class="kpi flex items-center justify-between gap-4 cursor-pointer" @click="showTomorrow=!showTomorrow"><div><div class="metric-label">明日の予約</div><div class="text-4xl font-black mt-1">{{ number_format($tomorrowReservationCount) }}</div><div class="text-xs text-gray-400 mt-1">クリックで一覧表示</div></div><div class="card-icon"><i data-lucide="clock"></i></div></div>
         </div>
         <div class="grid xl:grid-cols-2 gap-6">

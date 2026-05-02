@@ -51,39 +51,40 @@
     </div>
 
     {{-- 操作の流れ --}}
-    <div class="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 sm:p-6 mb-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h2 class="text-base font-bold text-stone-800 mb-2">操作の流れ</h2>
-                <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm text-stone-600">
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">1. 日付を選ぶ</span>
-                    <span class="text-stone-300">→</span>
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">2. 空き枠を押す</span>
-                    <span class="text-stone-300">→</span>
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">3. メニューを選ぶ</span>
-                    <span class="text-stone-300">→</span>
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">4. 担当パターンを選ぶ</span>
-                    <span class="text-stone-300">→</span>
-                    <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">5. 予約確定</span>
-                </div>
-            </div>
+    <details class="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 sm:p-6 mb-6">
+        <summary class="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>
+                <span class="block text-base font-bold text-stone-800">操作の流れ</span>
+                <span class="block text-sm text-stone-500 mt-1">必要な時だけ開いて確認できます。</span>
+            </span>
+            <span class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
+                    <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
+                </span>
+            </span>
+        </summary>
 
-				<div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-				    <span class="inline-flex items-center gap-2 rounded-full bg-green-50 text-green-700 px-3 py-1">
-				        <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>予約可能
-				    </span>
-				    <span class="inline-flex items-center gap-2 rounded-full bg-red-50 text-red-700 px-3 py-1">
-				        <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>予約あり
-				    </span>
-				    <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 text-stone-500 px-3 py-1">
-				        <span class="w-2.5 h-2.5 rounded-full bg-stone-400"></span>受付不可
-				    </span>
-				</div>
+        <div class="mt-5 flex flex-wrap items-center gap-2 text-xs sm:text-sm text-stone-600">
+            <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">1. 日付を選ぶ</span>
+            <span class="text-stone-300">→</span>
+            <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">2. 空き枠を押す</span>
+            <span class="text-stone-300">→</span>
+            <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">3. メニューを選ぶ</span>
+            <span class="text-stone-300">→</span>
+            <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">4. 担当パターンを選ぶ</span>
+            <span class="text-stone-300">→</span>
+            <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">5. 予約確定</span>
         </div>
-    </div>
+    </details>
 
     {{-- 操作エリア --}}
-    <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6">
+    <div class="sticky top-24 z-40 grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6 rounded-[2rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="xl:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
             <div class="text-xs font-semibold text-stone-500 mb-2">日付操作</div>
 
@@ -91,9 +92,10 @@
                 <div class="flex items-center gap-2">
                     <button type="button"
                             onclick="navigateCurrent(-1)"
-                            class="px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
+                            class="inline-flex items-center gap-1 px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
                             style="background: {{ $theme }};">
-                        ◀ 前へ
+                        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+                        <span>前へ</span>
                     </button>
 
                     <button type="button"
@@ -105,9 +107,10 @@
 
                     <button type="button"
                             onclick="navigateCurrent(1)"
-                            class="px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
+                            class="inline-flex items-center gap-1 px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
                             style="background: {{ $theme }};">
-                        次へ ▶
+                        <span>次へ</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4"></i>
                     </button>
                 </div>
 
@@ -504,7 +507,7 @@ function loadCalendar() {
                         </colgroup>
                         <thead>
                             <tr class="bg-stone-50">
-                                <th class="sticky top-0 left-0 z-30 px-2 py-3 border-b border-r bg-stone-50 text-center font-bold text-stone-700 whitespace-nowrap"
+                                <th class="sticky top-0 left-0 z-20 px-2 py-3 border-b border-r bg-stone-50 text-center font-bold text-stone-700 whitespace-nowrap"
                                     style="width:${timeColWidth}px; min-width:${timeColWidth}px; max-width:${timeColWidth}px;">
                                     時間
                                 </th>
@@ -516,7 +519,7 @@ function loadCalendar() {
                 let dayClass = day === 0 ? 'text-red-500' : (day === 6 ? 'text-blue-500' : 'text-stone-700');
 
                 html += `
-                    <th class="sticky top-0 z-20 px-2 py-3 border-b bg-white text-center align-middle"
+                    <th class="sticky top-0 z-10 px-2 py-3 border-b bg-white text-center align-middle"
                         style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
                         <div class="text-sm font-bold ${dayClass} whitespace-nowrap">${d}</div>
                         <div class="text-xs ${dayClass} mt-1">${w}</div>
@@ -693,13 +696,13 @@ function loadDayCalendar() {
 
             let headerRow = `
                 <tr class="bg-stone-50">
-                    <th class="p-4 sticky top-0 left-0 z-30 text-left border-b border-r bg-stone-50 text-stone-700 min-w-[90px] whitespace-nowrap">
+                    <th class="p-4 sticky top-0 left-0 z-20 text-left border-b border-r bg-stone-50 text-stone-700 min-w-[90px] whitespace-nowrap">
                         時間
                     </th>`;
 
             data.staffs.forEach(staff => {
                 headerRow += `
-                    <th class="p-4 border-b text-center sticky top-0 bg-white z-20 min-w-[120px]">
+                    <th class="p-4 border-b text-center sticky top-0 bg-white z-10 min-w-[120px]">
                         <div class="font-semibold text-stone-800 whitespace-nowrap">${staff.name}</div>
                     </th>`;
             });
@@ -1270,7 +1273,7 @@ function formatTel(input) {
 
 {{-- 予約確定 --}}
 <div id="reserveModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white w-full max-w-lg rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white w-full max-w-2xl rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
 
         <div class="mb-4">
             <div class="flex items-center gap-2 text-xs text-stone-500 mb-2">
@@ -1280,28 +1283,41 @@ function formatTel(input) {
             <h2 class="text-lg font-bold text-stone-800">予約内容の確認</h2>
         </div>
 
-        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
-            <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
-            <div id="reserveDatetime" class="font-bold text-stone-800"></div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 sm:col-span-2">
+                <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
+                <div id="reserveDatetime" class="font-bold text-stone-800"></div>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+                <div class="text-xs text-emerald-700 mb-1">予約内容</div>
+                <div class="text-sm font-bold text-emerald-900">
+                    <span id="finalTotalDuration">0</span>分 / ¥<span id="finalTotalPrice">0</span>
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="block text-sm font-semibold text-stone-700 mb-1">お名前</label>
-            <input type="text"
-                   id="modal_customer_name"
-                   class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
-                   style="--tw-ring-color: {{ $theme }};"
-                   placeholder="例：山田 花子">
-        </div>
+        <div class="rounded-2xl border border-stone-200 p-4">
+            <div class="text-sm font-bold text-stone-800 mb-3">顧客情報</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-semibold text-stone-700 mb-1">お名前</label>
+                    <input type="text"
+                           id="modal_customer_name"
+                           class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                           style="--tw-ring-color: {{ $theme }};"
+                           placeholder="例：山田 花子">
+                </div>
 
-        <div class="mb-4">
-            <label class="block text-sm font-semibold text-stone-700 mb-1">電話番号（数字と-のみ）</label>
-            <input type="text"
-                   id="modal_customer_phone"
-                   class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
-                   style="--tw-ring-color: {{ $theme }};"
-                   placeholder="例：090-1234-5678"
-                   oninput="formatTel(this)">
+                <div>
+                    <label class="block text-sm font-semibold text-stone-700 mb-1">電話番号（数字と-のみ）</label>
+                    <input type="text"
+                           id="modal_customer_phone"
+                           class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                           style="--tw-ring-color: {{ $theme }};"
+                           placeholder="例：090-1234-5678"
+                           oninput="formatTel(this)">
+                </div>
+            </div>
         </div>
 
         <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4">
@@ -1310,13 +1326,11 @@ function formatTel(input) {
         </div>
 
         <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">
-            <div class="flex items-center justify-between">
-                <span>合計時間</span>
-                <span><span id="finalTotalDuration">0</span>分</span>
-            </div>
-            <div class="flex items-center justify-between mt-2 font-semibold">
-                <span>合計料金</span>
-                <span>¥<span id="finalTotalPrice">0</span></span>
+            <div class="font-bold text-stone-800 mb-2">確定前チェック</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                <div class="rounded-xl bg-white border border-stone-100 px-3 py-2">日時を確認</div>
+                <div class="rounded-xl bg-white border border-stone-100 px-3 py-2">担当割り当てを確認</div>
+                <div class="rounded-xl bg-white border border-stone-100 px-3 py-2">名前・電話番号を確認</div>
             </div>
         </div>
 

@@ -81,6 +81,26 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._staff_menu_nav', [
+            'currentStep' => 'staff',
+        ])
+    </div>
+
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-bold text-gray-900">状態別の確認</div>
+                <div class="text-xs text-gray-500 mt-1">予約受付対象と退職予定を見落とさないための確認バーです。</div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700">在籍中 {{ number_format($activeCount) }}</span>
+                <span class="rounded-2xl bg-green-50 border border-green-100 px-4 py-2.5 text-sm font-bold text-green-700">予約受付 {{ number_format($reservableCount) }}</span>
+                <span class="rounded-2xl bg-gray-100 border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700">退職済み {{ number_format($retiredCount) }}</span>
+            </div>
+        </div>
+    </div>
+
     {{-- PC表示 --}}
     <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">

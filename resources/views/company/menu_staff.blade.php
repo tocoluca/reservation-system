@@ -39,6 +39,21 @@ $themeSoft = $theme . '15';
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company.menu._setup_nav', [
+            'currentStep' => 3,
+            'links' => [
+                ['label' => 'メニュー管理へ', 'route' => 'company.menu.index', 'icon' => 'arrow-left'],
+            ],
+        ])
+    </div>
+
+    <div class="mb-6">
+        @include('company._staff_menu_nav', [
+            'currentStep' => 'menu_staff',
+        ])
+    </div>
+
     {{-- ガイド --}}
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-6 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

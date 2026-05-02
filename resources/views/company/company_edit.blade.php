@@ -106,11 +106,29 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('company.info.update') }}" class="space-y-6">
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-wrap gap-2">
+                <a href="#company-basic" class="rounded-2xl bg-stone-100 px-4 py-2.5 text-sm font-bold text-stone-700 hover:bg-stone-200">基本情報</a>
+                <a href="#company-reserve" class="rounded-2xl bg-stone-100 px-4 py-2.5 text-sm font-bold text-stone-700 hover:bg-stone-200">予約設定</a>
+                <a href="#company-hours" class="rounded-2xl bg-stone-100 px-4 py-2.5 text-sm font-bold text-stone-700 hover:bg-stone-200">営業時間</a>
+            </div>
+
+            <button type="submit"
+                    form="companyInfoForm"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm"
+                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                保存する
+            </button>
+        </div>
+    </div>
+
+    <form id="companyInfoForm" method="POST" action="{{ route('company.info.update') }}" class="space-y-6">
         @csrf
 
         {{-- 基本情報 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
+        <section id="company-basic" class="scroll-mt-40 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
             <div class="px-6 py-4 border-b border-gray-100 relative z-10"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900">基本情報</h2>
@@ -385,7 +403,7 @@
         </section>
 
         {{-- 予約設定 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
+        <section id="company-reserve" class="scroll-mt-40 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative">
             <div class="px-6 py-4 border-b border-gray-100 relative z-10"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900">予約設定</h2>
@@ -537,7 +555,7 @@
         </section>
 
         {{-- 曜日別営業時間 --}}
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative z-20">
+        <section id="company-hours" class="scroll-mt-40 bg-white rounded-3xl shadow-sm border border-gray-100 overflow-visible relative z-20">
             <div class="px-6 py-4 border-b border-gray-100 relative z-30"
                  style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
                 <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">

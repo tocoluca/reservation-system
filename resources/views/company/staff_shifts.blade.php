@@ -51,6 +51,15 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._shift_setup_nav', [
+            'currentStep' => 3,
+            'links' => [
+                ['label' => '基本シフトへ', 'route' => 'company.staff-default-shifts', 'icon' => 'arrow-left'],
+            ],
+        ])
+    </div>
+
     {{-- ガイド --}}
     <div class="mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -146,6 +155,33 @@
                     適用
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span id="shiftDirtyBadge" class="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">未保存の変更あり</span>
+                    <span class="text-sm font-bold text-gray-900">シフト編集</span>
+                </div>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">休み</span>
+                    @foreach($patterns as $p)
+                        <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                            <span class="h-2.5 w-2.5 rounded-full" style="background: {{ $p->color ?: '#64748b' }}"></span>
+                            {{ $p->name }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+
+            <button form="shiftForm"
+                    class="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
+                    style="background: {{ $theme }}">
+                <i data-lucide="save" class="w-4 h-4"></i>
+                保存する
+            </button>
         </div>
     </div>
 
@@ -329,6 +365,16 @@
 </div>
 
 <script>
+let shiftHasUnsavedChanges = false;
+
+function markShiftDirty() {
+    shiftHasUnsavedChanges = true;
+    const badge = document.getElementById('shiftDirtyBadge');
+    if (badge) {
+        badge.classList.remove('hidden');
+    }
+}
+
 function setButtonInactiveStyle(btn) {
     btn.style.background = '';
     btn.style.color = '';
@@ -404,12 +450,18 @@ function updateCellUI(input) {
 function setCellValue(staffId, day, value) {
     const input = document.querySelector(`.shift-input[data-staff="${staffId}"][data-day="${day}"]`);
     if (!input) return;
+    if (input.value !== value) {
+        markShiftDirty();
+    }
     input.value = value;
     updateCellUI(input);
 }
 
 function setStaffShift(staffId, value) {
     document.querySelectorAll(`.shift-input[data-staff="${staffId}"]`).forEach(input => {
+        if (input.value !== value) {
+            markShiftDirty();
+        }
         input.value = value;
         updateCellUI(input);
     });
@@ -417,6 +469,9 @@ function setStaffShift(staffId, value) {
 
 function setDayShift(day, value) {
     document.querySelectorAll(`.shift-input[data-day="${day}"]`).forEach(input => {
+        if (input.value !== value) {
+            markShiftDirty();
+        }
         input.value = value;
         updateCellUI(input);
     });
@@ -435,6 +490,9 @@ function applyWeekdayShift() {
             document.querySelectorAll('tbody tr').forEach(row => {
                 const input = row.children[index + 1]?.querySelector('.shift-input');
                 if (input) {
+                    if (input.value !== shift) {
+                        markShiftDirty();
+                    }
                     input.value = shift;
                     updateCellUI(input);
                 }
@@ -456,6 +514,16 @@ document.addEventListener('click', function (e) {
 
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.shift-input').forEach(updateCellUI);
+});
+
+document.getElementById('shiftForm')?.addEventListener('submit', function () {
+    shiftHasUnsavedChanges = false;
+});
+
+window.addEventListener('beforeunload', function (event) {
+    if (!shiftHasUnsavedChanges) return;
+    event.preventDefault();
+    event.returnValue = '';
 });
 </script>
 

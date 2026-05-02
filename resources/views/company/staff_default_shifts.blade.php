@@ -39,6 +39,16 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._shift_setup_nav', [
+            'currentStep' => 2,
+            'links' => [
+                ['label' => 'シフトパターンへ', 'route' => 'company.shift-patterns', 'icon' => 'arrow-left'],
+                ['label' => '勤務管理へ', 'route' => 'company.staff-shifts', 'icon' => 'arrow-right'],
+            ],
+        ])
+    </div>
+
     {{-- ガイド --}}
     <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5 sm:p-6 mb-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">

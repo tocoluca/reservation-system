@@ -6,6 +6,10 @@
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
     $themeSoft = $theme . '15';
+    $menuCollection = collect($menus ?? []);
+    $menuCount = $menuCollection->count();
+    $averagePrice = $menuCount > 0 ? (int) round($menuCollection->avg('price')) : 0;
+    $averageDuration = $menuCount > 0 ? (int) round($menuCollection->avg('duration')) : 0;
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -47,6 +51,44 @@
                     </a>
                 </div>
             </div>
+        </div>
+    </div>
+
+    @include('company.menu._setup_nav', [
+        'currentStep' => 2,
+        'links' => [
+            ['label' => 'カテゴリー・タグ管理へ', 'route' => 'company.menu.settings', 'icon' => 'arrow-left'],
+            ['label' => 'メニュー対応スタッフ設定へ', 'route' => 'company.menu-staff.index', 'icon' => 'arrow-right'],
+        ],
+    ])
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">表示中メニュー</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">{{ number_format($menuCount) }}</div>
+        </div>
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">平均時間</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">{{ number_format($averageDuration) }}分</div>
+        </div>
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">平均料金</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">¥{{ number_format($averagePrice) }}</div>
+        </div>
+    </div>
+
+    <div class="rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-sm">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('company.menu.index') }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('category_id') ? 'bg-stone-100 text-stone-700' : 'text-white' }}" style="{{ request('category_id') ? '' : 'background: '.$theme }}">
+                すべて
+            </a>
+            @foreach($categories as $category)
+                <a href="{{ route('company.menu.index', array_filter(['category_id' => $category->id, 'tag_id' => request('tag_id'), 'sort' => request('sort')])) }}"
+                   class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ (string) request('category_id') === (string) $category->id ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}"
+                   style="{{ (string) request('category_id') === (string) $category->id ? 'background: '.$theme : '' }}">
+                    {{ $category->name }}
+                </a>
+            @endforeach
         </div>
     </div>
 

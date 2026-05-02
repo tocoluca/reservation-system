@@ -5,6 +5,7 @@
 @php
     $company = $reservation->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $isFreshCancel = session('success');
 @endphp
 
 <div class="min-h-screen bg-gradient-to-b from-white to-gray-50">
@@ -19,11 +20,11 @@
                 </div>
 
                 <h1 class="text-2xl sm:text-3xl font-bold mb-2">
-                    予約をキャンセルしました
+                    {{ $isFreshCancel ? '予約をキャンセルしました' : 'ご予約はキャンセル済みです' }}
                 </h1>
 
                 <p class="text-sm sm:text-base text-white/80 leading-6">
-                    キャンセル手続きが完了しました
+                    {{ $isFreshCancel ? 'キャンセル手続きが完了しました' : 'キャンセル済みの予約です' }}
                 </p>
             </div>
 
@@ -68,7 +69,7 @@
                 </div>
 
                 <div class="rounded-2xl bg-red-50 border border-red-100 p-4 text-sm text-red-700 leading-7 mb-6">
-                    既にご予約はキャンセル済みです。<br>
+                    {{ $isFreshCancel ? 'ご予約をキャンセルしました。' : '既にご予約はキャンセル済みです。' }}<br>
                     もう一度ご予約される場合は、予約画面からあらためてお手続きください。
                 </div>
 

@@ -41,6 +41,33 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._staff_menu_nav', [
+            'currentStep' => 'staff',
+        ])
+    </div>
+
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-4 shadow-lg backdrop-blur">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div class="rounded-2xl bg-stone-50 border border-stone-100 px-4 py-3">
+                <div class="text-xs font-bold text-stone-500">担当者</div>
+                <div class="mt-1 text-sm font-bold text-stone-900 truncate">{{ $staff->name }}</div>
+            </div>
+            <div class="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3">
+                <div class="text-xs font-bold text-blue-700">コード</div>
+                <div class="mt-1 text-sm font-bold text-blue-900">{{ $staff->staff_code }}</div>
+            </div>
+            <div class="rounded-2xl {{ $staff->is_reservable ? 'bg-emerald-50 border-emerald-100' : 'bg-gray-50 border-gray-100' }} border px-4 py-3">
+                <div class="text-xs font-bold {{ $staff->is_reservable ? 'text-emerald-700' : 'text-gray-500' }}">予約受付</div>
+                <div class="mt-1 text-sm font-bold text-gray-900">{{ $staff->is_reservable ? '受付中' : '停止中' }}</div>
+            </div>
+            <div class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3">
+                <div class="text-xs font-bold text-amber-700">権限</div>
+                <div class="mt-1 text-sm font-bold text-amber-900">{{ $staff->role }}</div>
+            </div>
+        </div>
+    </div>
+
     <form method="POST"
           action="{{ route('company.staff.update', $staff->id) }}"
           enctype="multipart/form-data"

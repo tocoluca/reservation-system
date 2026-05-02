@@ -50,6 +50,29 @@ form section:has(input[name="retired_at"]) > div:first-child p {
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._staff_menu_nav', [
+            'currentStep' => 'staff',
+        ])
+    </div>
+
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-4 shadow-lg backdrop-blur">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="rounded-2xl bg-stone-50 border border-stone-100 px-4 py-3">
+                <div class="text-xs font-bold text-stone-500">登録後の状態</div>
+                <div class="mt-1 text-sm font-bold text-stone-900">在籍中</div>
+            </div>
+            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+                <div class="text-xs font-bold text-emerald-700">予約受付</div>
+                <div class="mt-1 text-sm font-bold text-emerald-900">初期値は受付対象</div>
+            </div>
+            <div class="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3">
+                <div class="text-xs font-bold text-blue-700">コード</div>
+                <div class="mt-1 text-sm font-bold text-blue-900">権限に応じて自動採番</div>
+            </div>
+        </div>
+    </div>
+
     <form method="POST" action="{{ route('company.staff.store') }}" enctype="multipart/form-data" class="space-y-6">
         @csrf
 

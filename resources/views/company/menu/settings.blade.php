@@ -57,6 +57,13 @@
         </div>
     </div>
 
+    @include('company.menu._setup_nav', [
+        'currentStep' => 1,
+        'links' => [
+            ['label' => 'メニュー管理へ', 'route' => 'company.menu.index', 'icon' => 'arrow-right'],
+        ],
+    ])
+
     @if(session('error'))
         <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl">
             {{ session('error') }}

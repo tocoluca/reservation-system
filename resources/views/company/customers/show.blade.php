@@ -6,6 +6,17 @@
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
     $mainPhoto = $customer->photos->first();
+    $latestNote = $customer->notes->sortByDesc('created_at')->first();
+    $nextReservation = $customer->reservations
+        ->where('status', 'reserved')
+        ->filter(fn ($reservation) => $reservation->start_at && \Carbon\Carbon::parse($reservation->start_at)->isFuture())
+        ->sortBy('start_at')
+        ->first();
+    $lastReservation = $customer->reservations
+        ->filter(fn ($reservation) => $reservation->start_at)
+        ->sortByDesc('start_at')
+        ->first();
+    $noShowCount = $customer->reservations->where('status', 'no_show')->count();
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -27,6 +38,33 @@
             </svg>
             顧客一覧に戻る
         </a>
+    </div>
+
+    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+                <div class="text-xs font-bold text-emerald-700">次回予約</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900">
+                    {{ $nextReservation ? \Carbon\Carbon::parse($nextReservation->start_at)->format('Y/m/d H:i') : '未定' }}
+                </div>
+            </div>
+            <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+                <div class="text-xs font-bold text-gray-500">最終予約</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900">
+                    {{ $lastReservation ? \Carbon\Carbon::parse($lastReservation->start_at)->format('Y/m/d H:i') : '-' }}
+                </div>
+            </div>
+            <div class="rounded-2xl {{ $noShowCount > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100' }} border px-4 py-3">
+                <div class="text-xs font-bold {{ $noShowCount > 0 ? 'text-red-700' : 'text-gray-500' }}">注意</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900">無断キャンセル {{ number_format($noShowCount) }}回</div>
+            </div>
+            <div class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3">
+                <div class="text-xs font-bold text-amber-700">最新メモ</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900 truncate">
+                    {{ $latestNote ? \Illuminate\Support\Str::limit($latestNote->note, 42) : '未登録' }}
+                </div>
+            </div>
+        </div>
     </div>
 
     {{-- プロフィール --}}

@@ -3,6 +3,14 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $today = now()->toDateString();
+    $noticeCollection = collect($notices ?? []);
+    $publishedCount = $noticeCollection->filter(function ($notice) use ($today) {
+        return (empty($notice->start_date) || $notice->start_date <= $today)
+            && (empty($notice->end_date) || $notice->end_date >= $today);
+    })->count();
+    $importantCount = $noticeCollection->where('is_important', true)->count();
+    $scheduledCount = $noticeCollection->filter(fn ($notice) => !empty($notice->start_date) && $notice->start_date > $today)->count();
 @endphp
 
 @section('content')
@@ -40,9 +48,22 @@
     </div>
 
     {{-- 件数 --}}
-    <div class="flex items-center justify-between mb-5">
-        <div class="text-sm text-gray-600">
-            全 <span class="font-bold text-gray-900">{{ $notices->count() }}</span> 件
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-5">
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">全件</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">{{ $notices->count() }}</div>
+        </div>
+        <div class="rounded-3xl bg-emerald-50 border border-emerald-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-emerald-700">掲載中</div>
+            <div class="mt-2 text-3xl font-black text-emerald-700">{{ $publishedCount }}</div>
+        </div>
+        <div class="rounded-3xl bg-red-50 border border-red-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-red-700">重要</div>
+            <div class="mt-2 text-3xl font-black text-red-700">{{ $importantCount }}</div>
+        </div>
+        <div class="rounded-3xl bg-blue-50 border border-blue-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-blue-700">公開予約</div>
+            <div class="mt-2 text-3xl font-black text-blue-700">{{ $scheduledCount }}</div>
         </div>
     </div>
 

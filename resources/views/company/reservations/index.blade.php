@@ -125,6 +125,51 @@
         </a>
     </div>
 
+    <div class="sticky top-24 z-30 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-bold text-stone-900">よく使う絞り込み</div>
+                <div class="text-xs text-stone-500 mt-1">日常確認で使う条件をすぐ切り替えられます。</div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('company.reservations.index', ['date_from' => $today, 'date_to' => $today, 'status' => 'reserved']) }}"
+                   class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold {{ $dateFrom === $today && $dateTo === $today && $status === 'reserved' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}"
+                   style="{{ $dateFrom === $today && $dateTo === $today && $status === 'reserved' ? 'background: '.$theme : '' }}">
+                    <i data-lucide="calendar-days" class="w-4 h-4"></i>
+                    今日
+                </a>
+
+                <a href="{{ route('company.reservations.index', ['date_from' => $tomorrow, 'date_to' => $tomorrow, 'status' => 'reserved']) }}"
+                   class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold {{ $dateFrom === $tomorrow && $dateTo === $tomorrow && $status === 'reserved' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}"
+                   style="{{ $dateFrom === $tomorrow && $dateTo === $tomorrow && $status === 'reserved' ? 'background: '.$theme : '' }}">
+                    <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                    明日
+                </a>
+
+                <a href="{{ route('company.reservations.index', ['status' => 'reserved']) }}"
+                   class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold {{ empty($dateFrom) && empty($dateTo) && $status === 'reserved' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}"
+                   style="{{ empty($dateFrom) && empty($dateTo) && $status === 'reserved' ? 'background: '.$theme : '' }}">
+                    <i data-lucide="badge-check" class="w-4 h-4"></i>
+                    予約中
+                </a>
+
+                <a href="{{ route('company.reservations.index', ['status' => 'cancelled']) }}"
+                   class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold {{ $status === 'cancelled' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}"
+                   style="{{ $status === 'cancelled' ? 'background: '.$theme : '' }}">
+                    <i data-lucide="ban" class="w-4 h-4"></i>
+                    キャンセル
+                </a>
+
+                <a href="{{ route('company.reservations.index') }}"
+                   class="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold border border-stone-200 bg-white text-stone-700 hover:bg-stone-50">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    リセット
+                </a>
+            </div>
+        </div>
+    </div>
+
     @if (session('success'))
         <div class="rounded-2xl border px-4 py-3 text-sm shadow-sm"
              style="background-color: #ecfdf5; border-color: #a7f3d0; color: #047857;">

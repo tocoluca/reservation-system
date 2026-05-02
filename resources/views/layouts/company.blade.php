@@ -74,15 +74,86 @@
             box-shadow: 0 18px 36px rgba(15,23,42,.22);
             opacity: .96;
         }
+        .company-primary-nav {
+            display: none;
+            align-items: center;
+            gap: .5rem;
+            min-width: 0;
+            overflow-x: auto;
+            padding: .45rem;
+            border-radius: 18px;
+            border: 1px solid rgba(226,232,240,.8);
+            background: rgba(248,250,252,.78);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.88);
+        }
+        .company-primary-nav a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .45rem;
+            flex: none;
+            border-radius: 16px;
+            padding: .68rem 1rem;
+            color: #475569;
+            font-size: .84rem;
+            font-weight: 900;
+            white-space: nowrap;
+            transition: .18s;
+        }
+        .company-primary-nav a:hover {
+            color: #0f172a;
+            background: rgba(248,250,252,.96);
+        }
+        .company-primary-nav a.active {
+            color: #fff;
+            background: linear-gradient(135deg, var(--main-color), #111827);
+            box-shadow: 0 10px 22px rgba(15,23,42,.14);
+        }
+        @media (min-width: 1024px) {
+            .company-primary-nav {
+                display: flex;
+            }
+        }
+        .company-mobile-nav {
+            position: fixed;
+            left: .75rem;
+            right: .75rem;
+            bottom: .75rem;
+            z-index: 50;
+            border-radius: 22px;
+            border: 1px solid rgba(226,232,240,.92);
+            background: rgba(255,255,255,.9);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 18px 44px rgba(15,23,42,.14);
+        }
+        .company-mobile-nav a {
+            min-width: 0;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 800;
+        }
+        .company-mobile-nav a.active {
+            color: var(--main-color);
+        }
     </style>
 </head>
 
-<body class="min-h-screen text-slate-900">
+<body class="min-h-screen pb-24 lg:pb-0 text-slate-900">
+
+@php
+    $companyPrimaryNavItems = $company ? [
+        ['label' => 'ダッシュボード', 'icon' => 'layout-dashboard', 'route' => 'company.dashboard', 'url' => route('company.dashboard'), 'active' => request()->routeIs('company.dashboard')],
+        ['label' => '予約カレンダー', 'icon' => 'calendar-check', 'route' => 'company.reserve', 'url' => route('company.reserve'), 'active' => request()->routeIs('company.reserve')],
+        ['label' => '予約一覧', 'icon' => 'list-checks', 'route' => 'company.reservations.index', 'url' => route('company.reservations.index'), 'active' => request()->routeIs('company.reservations.*')],
+        ['label' => '顧客管理', 'icon' => 'users', 'route' => 'company.customers', 'url' => route('company.customers'), 'active' => request()->routeIs('company.customers*')],
+        ['label' => '勤務管理', 'icon' => 'clock', 'route' => 'company.staff-shifts', 'url' => route('company.staff-shifts'), 'active' => request()->routeIs('company.staff-shifts*') || request()->routeIs('company.shift-patterns*') || request()->routeIs('company.staff-default-shifts*')],
+    ] : [];
+@endphp
 
 @if($company)
 <header class="company-topbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div class="company-brand-shell px-3 sm:px-4 py-3">
+        <div class="company-brand-shell px-3 sm:px-4 py-3 space-y-3">
             <div class="flex items-center justify-between gap-4">
                 <a href="{{ route('company.dashboard') }}" class="flex items-center gap-3 min-w-0 group">
                     <div class="company-logo-frame">
@@ -134,9 +205,29 @@
                     </form>
                 </div>
             </div>
+
+            <nav class="company-primary-nav" aria-label="主要画面">
+                @foreach($companyPrimaryNavItems as $item)
+                    <a href="{{ $item['url'] }}" class="{{ $item['active'] ? 'active' : '' }}">
+                        <i data-lucide="{{ $item['icon'] }}" class="w-4 h-4 shrink-0"></i>
+                        <span>{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
+            </nav>
         </div>
     </div>
 </header>
+
+<nav class="company-mobile-nav lg:hidden">
+    <div class="grid grid-cols-5 gap-1 px-2 py-2">
+        @foreach($companyPrimaryNavItems as $item)
+            <a href="{{ $item['url'] }}" class="{{ $item['active'] ? 'active' : '' }} flex flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2">
+                <i data-lucide="{{ $item['icon'] }}" class="w-5 h-5"></i>
+                <span class="truncate max-w-full">{{ $item['label'] }}</span>
+            </a>
+        @endforeach
+    </div>
+</nav>
 @endif
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-4">
@@ -156,6 +247,48 @@
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     @yield('content')
 </main>
+
+@if($company)
+<script>
+(() => {
+    let isInternalNavigation = false;
+    const logoutUrl = @json(route('company.logout'));
+    const csrfToken = @json(csrf_token());
+
+    document.addEventListener('click', (event) => {
+        const link = event.target.closest('a[href]');
+        if (!link) return;
+
+        const href = link.getAttribute('href') || '';
+        const target = link.getAttribute('target') || '';
+
+        if (
+            target === '_blank' ||
+            href.startsWith('#') ||
+            href.startsWith('tel:') ||
+            href.startsWith('mailto:') ||
+            link.hasAttribute('download')
+        ) {
+            return;
+        }
+
+        isInternalNavigation = true;
+    }, true);
+
+    document.addEventListener('submit', () => {
+        isInternalNavigation = true;
+    }, true);
+
+    window.addEventListener('pagehide', () => {
+        if (isInternalNavigation) return;
+
+        const payload = new FormData();
+        payload.append('_token', csrfToken);
+        navigator.sendBeacon(logoutUrl, payload);
+    });
+})();
+</script>
+@endif
 
 </body>
 </html>

@@ -39,6 +39,15 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._shift_setup_nav', [
+            'currentStep' => 1,
+            'links' => [
+                ['label' => '基本シフトへ', 'route' => 'company.staff-default-shifts', 'icon' => 'arrow-right'],
+            ],
+        ])
+    </div>
+
     {{-- ガイド --}}
     <div class="mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -73,6 +82,21 @@
             {{ session('success') }}
         </div>
     @endif
+
+    <div class="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">登録済み</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">{{ number_format($patterns->count()) }}</div>
+        </div>
+        <div class="rounded-3xl bg-white border border-gray-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-gray-500">次の表示順</div>
+            <div class="mt-2 text-3xl font-black text-gray-900">{{ number_format($patterns->count() + 1) }}</div>
+        </div>
+        <div class="rounded-3xl bg-amber-50 border border-amber-100 p-5 shadow-sm">
+            <div class="text-xs font-bold text-amber-700">勤務管理への反映</div>
+            <div class="mt-2 text-sm font-bold text-amber-900">名前・色・順番がそのまま表示されます</div>
+        </div>
+    </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 

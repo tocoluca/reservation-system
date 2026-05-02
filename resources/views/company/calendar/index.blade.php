@@ -6,6 +6,28 @@
     $theme = $company->theme_color ?? '#3b82f6';
 
     $weekdayLabels = ['日','月','火','水','木','金','土'];
+
+    $monthOpenCount = 0;
+    $monthClosedCount = 0;
+    $monthTimeChangedCount = 0;
+
+    for ($summaryDay = 1; $summaryDay <= $daysInMonth; $summaryDay++) {
+        $summaryDateObj = \Carbon\Carbon::create($year, $month, $summaryDay);
+        $summaryDate = $summaryDateObj->format('Y-m-d');
+        $summaryCalendar = $calendars[$summaryDate] ?? null;
+        $summaryIsHoliday = $company->holiday_is_closed && in_array($summaryDate, $holidayDates ?? []);
+        $summaryIsOpen = $summaryCalendar ? (bool) $summaryCalendar->is_open : !$summaryIsHoliday;
+
+        if ($summaryIsOpen) {
+            $monthOpenCount++;
+        } else {
+            $monthClosedCount++;
+        }
+
+        if ($summaryCalendar && ($summaryCalendar->open_time || $summaryCalendar->close_time)) {
+            $monthTimeChangedCount++;
+        }
+    }
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -86,6 +108,23 @@
                        style="border-color: {{ $theme }}22; color: {{ $theme }};">
                         次月 ▶
                     </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5 sm:px-6 py-4 border-b border-gray-100 bg-white">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div class="rounded-2xl border border-green-100 bg-green-50 px-4 py-4">
+                    <div class="text-xs font-bold text-green-700">今月の営業日</div>
+                    <div class="mt-1 text-2xl font-black text-green-900">{{ number_format($monthOpenCount) }}日</div>
+                </div>
+                <div class="rounded-2xl border border-red-100 bg-red-50 px-4 py-4">
+                    <div class="text-xs font-bold text-red-700">今月の休業日</div>
+                    <div class="mt-1 text-2xl font-black text-red-900">{{ number_format($monthClosedCount) }}日</div>
+                </div>
+                <div class="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-4">
+                    <div class="text-xs font-bold text-amber-700">営業時間変更</div>
+                    <div class="mt-1 text-2xl font-black text-amber-900">{{ number_format($monthTimeChangedCount) }}日</div>
                 </div>
             </div>
         </div>
@@ -215,6 +254,20 @@
         </div>
      </div>
 
+    <div class="sticky top-24 z-30 mb-4 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-bold text-gray-900">カレンダー凡例</div>
+                <div class="text-xs text-gray-500 mt-1">日付クリックで営業/休業を切り替えます。変更前に確認メッセージが表示されます。</div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-sm">
+                <span class="inline-flex items-center gap-2 rounded-2xl bg-green-50 px-3 py-2 font-bold text-green-700"><span class="w-3 h-3 rounded bg-green-300"></span>営業日</span>
+                <span class="inline-flex items-center gap-2 rounded-2xl bg-red-50 px-3 py-2 font-bold text-red-700"><span class="w-3 h-3 rounded bg-red-300"></span>休業日</span>
+                <span class="inline-flex items-center gap-2 rounded-2xl bg-yellow-50 px-3 py-2 font-bold text-yellow-700"><span class="w-3 h-3 rounded bg-yellow-300"></span>時間変更</span>
+            </div>
+        </div>
+    </div>
+
     {{-- 曜日 --}}
     <div class="grid grid-cols-7 gap-2 mb-2">
         <div class="text-center text-sm font-bold text-red-500 py-2">日</div>
@@ -271,10 +324,15 @@
                     } elseif ($weekday == 6) {
                         $textClass = 'text-blue-600';
                     }
+
+                    $reservationCount = $reservationCounts[$date] ?? 0;
                 @endphp
 
                 <div onclick="toggleDay('{{ $date }}', this)"
                      data-date-cell="1"
+                     data-is-open="{{ $isOpen ? '1' : '0' }}"
+                     data-reservation-count="{{ $reservationCount }}"
+                     data-date-label="{{ $dateObj->format('Y年n月j日') }}"
                      class="aspect-square rounded-2xl p-2 sm:p-3 flex flex-col justify-between border border-white shadow-sm cursor-pointer transition hover:shadow-md active:scale-[0.98] {{ $bgClass }} {{ $textClass }} {{ $isToday ? 'ring-4' : '' }}"
                      style="{{ $isToday ? 'ring-color: '.$theme.';' : '' }}">
 
@@ -289,6 +347,10 @@
                     </div>
 
                     <div class="space-y-1.5 mt-2">
+                        <div data-status-label class="rounded-lg bg-white/70 px-2 py-1 text-[10px] sm:text-[11px] text-center font-black {{ $isOpen ? 'text-green-700' : 'text-red-700' }}">
+                            {{ $isOpen ? '営業日' : '休業日' }}
+                        </div>
+
                         @if(isset($reservationCounts[$date]))
                             <div class="rounded-lg bg-white/70 px-2 py-1 text-[10px] sm:text-[11px] text-center font-bold text-gray-700">
                                 予約 {{ $reservationCounts[$date] }}件
@@ -332,6 +394,24 @@ function toggleBulkPanel() {
 }
 
 function toggleDay(date, el) {
+    const isOpen = el.dataset.isOpen === '1';
+    const nextStatus = isOpen ? '休業日' : '営業日';
+    const currentStatus = isOpen ? '営業日' : '休業日';
+    const dateLabel = el.dataset.dateLabel || date;
+    const reservationCount = Number(el.dataset.reservationCount || 0);
+
+    let message = `${dateLabel}を「${currentStatus}」から「${nextStatus}」に変更しますか？`;
+    if (isOpen && reservationCount > 0) {
+        message += `\n\nこの日は予約が${reservationCount}件あります。休業日にすると予約変更連絡の対象になる場合があります。`;
+    }
+
+    if (!confirm(message)) {
+        return;
+    }
+
+    el.style.pointerEvents = 'none';
+    el.classList.add('opacity-70');
+
     fetch("{{ route('company.calendar.toggle') }}", {
         method: "POST",
         headers: {
@@ -343,12 +423,27 @@ function toggleDay(date, el) {
     .then(res => res.json())
     .then(data => {
         el.classList.remove('bg-green-100','bg-red-100','bg-red-300','bg-yellow-100');
+        el.dataset.isOpen = data.is_open ? '1' : '0';
 
         if (data.is_open) {
             el.classList.add('bg-green-100');
         } else {
             el.classList.add('bg-red-100');
         }
+        
+        const statusLabel = el.querySelector('[data-status-label]');
+        if (statusLabel) {
+            statusLabel.textContent = data.is_open ? '営業日' : '休業日';
+            statusLabel.classList.toggle('text-green-700', data.is_open);
+            statusLabel.classList.toggle('text-red-700', !data.is_open);
+        }
+    })
+    .catch(() => {
+        alert('営業日設定の変更に失敗しました。時間をおいて再度お試しください。');
+    })
+    .finally(() => {
+        el.style.pointerEvents = '';
+        el.classList.remove('opacity-70');
     });
 }
 

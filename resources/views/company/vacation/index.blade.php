@@ -75,6 +75,20 @@
         </div>
     </div>
 
+    @if($pendingCount > 0)
+        <div class="mb-6 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <div class="text-base font-bold text-amber-950">承認待ちの休暇申請があります</div>
+                    <div class="text-sm text-amber-800 mt-1">申請中のものを先に確認すると、シフト調整の漏れを防げます。</div>
+                </div>
+                <div class="rounded-2xl bg-white/85 border border-amber-100 px-5 py-3 text-2xl font-black text-amber-700">
+                    {{ number_format($pendingCount) }}件
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- PC表示 --}}
     <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">

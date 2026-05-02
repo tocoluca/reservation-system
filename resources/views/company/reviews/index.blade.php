@@ -7,9 +7,11 @@
     $theme = $company->theme_color ?? '#c08457';
     $themeSoft = $theme . '15';
 
-    $pendingCount = $reviews->where('status', 'pending')->count();
-    $approvedCount = $reviews->where('status', 'approved')->count();
-    $rejectedCount = $reviews->where('status', 'rejected')->count();
+    $reviewCollection = $reviews->getCollection();
+    $pendingCount = $reviewCollection->where('status', 'pending')->count();
+    $approvedCount = $reviewCollection->where('status', 'approved')->count();
+    $rejectedCount = $reviewCollection->where('status', 'rejected')->count();
+    $lowRatingCount = $reviewCollection->filter(fn ($review) => (int) $review->rating <= 2)->count();
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -51,7 +53,7 @@
     @endif
 
     {{-- サマリー --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
             <div class="text-sm text-stone-500">確認待ち</div>
             <div class="mt-2 flex items-end justify-between">
@@ -80,6 +82,25 @@
                     rejected
                 </span>
             </div>
+        </div>
+
+        <div class="bg-red-50 rounded-3xl shadow-sm border border-red-100 p-5">
+            <div class="text-sm text-red-700">低評価</div>
+            <div class="mt-2 flex items-end justify-between">
+                <div class="text-3xl font-bold text-red-600">{{ $lowRatingCount }}</div>
+                <span class="inline-flex rounded-full bg-white text-red-700 px-3 py-1 text-xs font-semibold">
+                    ★2以下
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-sm">
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('company.reviews.index') }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') ? 'bg-stone-100 text-stone-700' : 'text-white' }}" style="{{ request('status') ? '' : 'background: '.$theme }}">すべて</a>
+            <a href="{{ route('company.reviews.index', ['status' => 'pending']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'pending' ? 'text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100' }}" style="{{ request('status') === 'pending' ? 'background: '.$theme : '' }}">確認待ち</a>
+            <a href="{{ route('company.reviews.index', ['status' => 'approved']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'approved' ? 'text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' }}" style="{{ request('status') === 'approved' ? 'background: '.$theme : '' }}">公開中</a>
+            <a href="{{ route('company.reviews.index', ['status' => 'rejected']) }}" class="rounded-2xl px-4 py-2.5 text-sm font-bold {{ request('status') === 'rejected' ? 'text-white' : 'bg-stone-100 text-stone-700 hover:bg-stone-200' }}" style="{{ request('status') === 'rejected' ? 'background: '.$theme : '' }}">非公開</a>
         </div>
     </div>
 

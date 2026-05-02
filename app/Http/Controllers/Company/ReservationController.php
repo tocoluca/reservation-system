@@ -29,9 +29,19 @@ class ReservationController extends Controller
         $dateFrom = $request->get('date_from');
         $dateTo   = $request->get('date_to');
         $status   = $request->get('status');
+        $customerId = $request->get('customer_id');
+        $customerFilter = null;
 
         $query = Reservation::with(['staff', 'customer', 'menus', 'details.staff', 'details.menu'])
             ->where('company_id', $company->id);
+
+        if (!empty($customerId)) {
+            $customerFilter = Customer::where('company_id', $company->id)->find($customerId);
+
+            if ($customerFilter) {
+                $query->where('customer_id', $customerFilter->id);
+            }
+        }
 
         if ($keyword !== '') {
             $normalizedKeyword = str_replace(['-', 'ー', ' '], '', $keyword);
@@ -89,6 +99,8 @@ class ReservationController extends Controller
             'dateFrom' => $dateFrom,
             'dateTo' => $dateTo,
             'status' => $status,
+            'customerId' => $customerId,
+            'customerFilter' => $customerFilter,
             'todayReservedCount' => $todayReservedCount,
             'tomorrowReservedCount' => $tomorrowReservedCount,
             'dayAfterTomorrowReservedCount' => $dayAfterTomorrowReservedCount,
@@ -179,7 +191,7 @@ class ReservationController extends Controller
         }
 
         return collect($filters)
-            ->only(['keyword', 'date_from', 'date_to', 'status'])
+            ->only(['keyword', 'date_from', 'date_to', 'status', 'customer_id'])
             ->filter(fn ($value) => filled($value))
             ->all();
     }

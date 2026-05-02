@@ -17,12 +17,13 @@
         ->sortByDesc('start_at')
         ->first();
     $noShowCount = $customer->reservations->where('status', 'no_show')->count();
+    $customerReservationUrl = route('company.reservations.index', ['customer_id' => $customer->id]);
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     {{-- 戻る --}}
-    <div class="mb-5">
+    <div class="mb-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
         <a href="{{ route('company.customers') }}"
            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white border shadow-sm hover:bg-gray-50 transition text-sm font-semibold"
            style="color: {{ $theme }}; border-color: {{ $theme }}22;">
@@ -37,6 +38,13 @@
                       d="M15 19l-7-7 7-7" />
             </svg>
             顧客一覧に戻る
+        </a>
+
+        <a href="{{ $customerReservationUrl }}"
+           class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-white shadow-sm hover:opacity-90 transition text-sm font-bold"
+           style="background: {{ $theme }};">
+            <i data-lucide="list-checks" class="w-4 h-4"></i>
+            この顧客の予約一覧
         </a>
     </div>
 

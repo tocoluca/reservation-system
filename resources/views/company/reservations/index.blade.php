@@ -13,7 +13,7 @@
         };
     };
 
-    $currentReservationFilters = collect(request()->only(['keyword', 'date_from', 'date_to', 'status']))
+    $currentReservationFilters = collect(request()->only(['keyword', 'date_from', 'date_to', 'status', 'customer_id']))
         ->filter(fn ($value) => filled($value))
         ->all();
 @endphp
@@ -64,6 +64,29 @@
             </div>
         </div>
     </div>
+
+    {{-- 直近予約サマリー --}}
+    @if(!empty($customerFilter))
+        <div class="rounded-[1.75rem] border border-sky-100 bg-sky-50 p-5 shadow-sm">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <div class="text-sm font-bold text-sky-800">顧客で絞り込み中</div>
+                    <div class="mt-1 text-lg font-black text-gray-900">{{ $customerFilter->name }}</div>
+                    <div class="mt-1 text-sm text-gray-600">{{ $customerFilter->phone ?: '電話番号未登録' }}</div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <a href="{{ route('company.customers.show', $customerFilter->id) }}"
+                       class="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-bold text-sky-700 border border-sky-200 hover:bg-sky-50 transition">
+                        顧客詳細へ戻る
+                    </a>
+                    <a href="{{ route('company.reservations.index') }}"
+                       class="inline-flex items-center justify-center rounded-2xl bg-white px-4 py-3 text-sm font-bold text-gray-700 border border-gray-200 hover:bg-gray-50 transition">
+                        絞り込み解除
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- 直近予約サマリー --}}
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -344,7 +367,15 @@
                             </td>
 
                             <td class="px-3 py-4 text-stone-800 break-words">
-                                {{ $displayCustomerName }}
+                                @if($reservation->customer_id)
+                                    <a href="{{ route('company.customers.show', $reservation->customer_id) }}"
+                                       class="font-bold hover:underline"
+                                       style="color: {{ $theme }};">
+                                        {{ $displayCustomerName }}
+                                    </a>
+                                @else
+                                    {{ $displayCustomerName }}
+                                @endif
                             </td>
 
                             <td class="px-3 py-4 text-stone-700 break-all">
@@ -491,7 +522,17 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         <div class="rounded-xl bg-stone-50 px-3 py-3">
                             <div class="text-xs text-stone-500">顧客名</div>
-                            <div class="text-stone-800 mt-1 font-medium">{{ $displayCustomerName }}</div>
+                            <div class="text-stone-800 mt-1 font-medium">
+                                @if($reservation->customer_id)
+                                    <a href="{{ route('company.customers.show', $reservation->customer_id) }}"
+                                       class="font-bold hover:underline"
+                                       style="color: {{ $theme }};">
+                                        {{ $displayCustomerName }}
+                                    </a>
+                                @else
+                                    {{ $displayCustomerName }}
+                                @endif
+                            </div>
                         </div>
 
                         <div class="rounded-xl bg-stone-50 px-3 py-3">

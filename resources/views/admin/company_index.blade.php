@@ -254,7 +254,7 @@
 
                             <td class="border p-3 text-center">
                                 <div class="flex flex-col gap-2 min-w-[110px]">
-                                    <a href="{{ route('admin.company.edit', $company->id) }}"
+                                    <a href="{{ route('admin.company.edit', ['id' => $company->id, 'return_to' => request()->fullUrl()]) }}"
                                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition text-sm">
                                         個別編集
                                     </a>

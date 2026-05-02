@@ -13,6 +13,8 @@
     $days = [0 => '日', 1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土'];
     $patterns = old('open_patterns', $company->open_patterns ?? []);
     $regularHolidays = old('regular_holidays', $company->regular_holidays ?? []);
+    $returnTo = request('return_to');
+    $companyIndexUrl = $returnTo ?: route('admin.company.index');
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 py-6 md:py-10">
@@ -23,7 +25,7 @@
         </div>
 
         <div class="flex flex-wrap gap-3">
-            <a href="{{ route('admin.company.index') }}"
+            <a href="{{ $companyIndexUrl }}"
                class="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
                 企業一覧へ戻る
             </a>
@@ -44,7 +46,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.company.update', $company->id) }}">
+    <form method="POST" action="{{ route('admin.company.update', ['id' => $company->id, 'return_to' => $returnTo]) }}">
         @csrf
 
         <div class="bg-white shadow rounded-2xl p-6 md:p-8 space-y-12">

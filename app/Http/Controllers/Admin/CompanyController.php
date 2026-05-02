@@ -199,8 +199,13 @@ class CompanyController extends Controller
 
         $company->update($this->buildCompanyData($request, $validated, false));
 
+        $redirect = redirect()->route('admin.company.edit', [
+            'id' => $company->id,
+            'return_to' => $request->query('return_to'),
+        ]);
+
         return redirect()
-            ->route('admin.company.edit', $company->id)
+            ->to($redirect->getTargetUrl())
             ->with('success', '企業情報を更新しました。');
     }
 

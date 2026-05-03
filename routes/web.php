@@ -178,6 +178,9 @@ Route::prefix('company')->group(function () {
     Route::post('login', [CompanyAuth::class, 'login'])
         ->name('company.login.post');
 
+    Route::post('master-password-reset', [CompanyAuth::class, 'resetMasterPassword'])
+        ->name('company.master-password-reset');
+
     Route::middleware(['auth:company'])->group(function () {
 
         Route::post('logout', [CompanyAuth::class, 'logout'])

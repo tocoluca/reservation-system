@@ -152,7 +152,7 @@
                         メールアドレス
                         <span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
                             <span class="tooltip-text">
-                                企業の連絡用メールです。ログイン用ではありません。
+                                tocolucaから貴社へメールにて連絡する際のアドレスです。	
                             </span>
                         </span>
                     </label>

@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use App\Mail\CompanyMasterPasswordResetMail;
 use App\Models\Company;
 use App\Models\Staff;
 
@@ -76,6 +79,60 @@ class AuthController extends Controller
         }
 
         return redirect()->route('company.dashboard');
+    }
+
+    public function resetMasterPassword(Request $request)
+    {
+        $validated = $request->validate([
+            'company_code' => ['required', 'string'],
+            'email' => ['required', 'email'],
+        ], [
+            'company_code.required' => '企業コードを入力してください。',
+            'email.required' => '登録済みメールアドレスを入力してください。',
+            'email.email' => 'メールアドレスの形式が正しくありません。',
+        ]);
+
+        $companyCode = trim($validated['company_code']);
+        $email = mb_strtolower(trim($validated['email']));
+
+        $company = Company::where('company_code', $companyCode)
+            ->whereRaw('LOWER(email) = ?', [$email])
+            ->first();
+
+        if (!$company) {
+            return back()
+                ->withInput($request->only('company_code', 'email'))
+                ->with('error', '企業コードもしくは登録済みメールアドレスが間違っています');
+        }
+
+        $masters = Staff::where('company_id', $company->id)
+            ->where('role', 'master')
+            ->orderBy('id')
+            ->get();
+
+        if ($masters->isEmpty()) {
+            return back()
+                ->withInput($request->only('company_code', 'email'))
+                ->with('error', 'マスター権限の担当者が見つかりません。管理者へお問い合わせください。');
+        }
+
+        $initialPassword = 'Toco-' . Str::upper(Str::random(4)) . '-' . Str::random(6);
+
+        foreach ($masters as $master) {
+            $master->password = Hash::make($initialPassword);
+            $master->force_password_change = true;
+            $master->save();
+        }
+
+        Mail::to($company->email)->send(
+            new CompanyMasterPasswordResetMail(
+                $company,
+                $initialPassword,
+                $masters->pluck('staff_code')->filter()->values()->all()
+            )
+        );
+
+        return back()->with('success', 'マスター権限のパスワードを初期化し、登録済みメールアドレスへ送信しました。');
     }
 
     public function logout(Request $request)

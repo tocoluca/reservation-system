@@ -23,7 +23,7 @@ class StaffController extends Controller
         $current = $this->currentStaff();
 
         if (!$current->canDashboard('card.staff')) {
-            abort(403, '権限がありません');
+            abort(403, '讓ｩ髯舌′縺ゅｊ縺ｾ縺帙ｓ');
         }
     }
 
@@ -31,9 +31,9 @@ class StaffController extends Controller
     {
         $current = $this->currentStaff();
 
-        // まずは安全側で master のみ変更系を許可
+        // 縺ｾ縺壹・螳牙・蛛ｴ縺ｧ master 縺ｮ縺ｿ螟画峩邉ｻ繧定ｨｱ蜿ｯ
         if (!$current->isMaster()) {
-            abort(403, '担当者管理の権限がありません');
+            abort(403, '諡・ｽ楢・ｮ｡逅・・讓ｩ髯舌′縺ゅｊ縺ｾ縺帙ｓ');
         }
     }
 
@@ -55,6 +55,23 @@ class StaffController extends Controller
             'leader' => 2,
             default => 1,
         };
+    }
+
+    private function canResetStaffPassword(Staff $current, Staff $target): bool
+    {
+        if ((int) $current->id === (int) $target->id) {
+            return false;
+        }
+
+        if ($current->isMaster()) {
+            return true;
+        }
+
+        if (in_array($current->role, ['leader', 'area_leader'], true)) {
+            return $target->role !== 'master';
+        }
+
+        return false;
     }
 
     private function generateStaffCode(int $companyId, string $role): string
@@ -173,7 +190,7 @@ class StaffController extends Controller
         if ($this->roleLevel($request->role) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.create')
-                ->with('error', '上位権限は作成できません')
+                ->with('error', '荳贋ｽ肴ｨｩ髯舌・菴懈・縺ｧ縺阪∪縺帙ｓ')
                 ->withInput();
         }
 
@@ -229,7 +246,7 @@ class StaffController extends Controller
 
         return redirect()
             ->route('company.staff.index')
-            ->with('success', '担当者を登録しました');
+            ->with('success', '諡・ｽ楢・ｒ逋ｻ骭ｲ縺励∪縺励◆');
     }
 
     public function edit(Staff $staff)
@@ -242,7 +259,7 @@ class StaffController extends Controller
         if ($this->roleLevel($staff->role) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '上位権限は編集できません');
+                ->with('error', '荳贋ｽ肴ｨｩ髯舌・邱ｨ髮・〒縺阪∪縺帙ｓ');
         }
 
         return view('company.staff.edit', compact('staff'));
@@ -258,13 +275,13 @@ class StaffController extends Controller
         if ($this->roleLevel($staff->role) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '上位権限は編集できません');
+                ->with('error', '荳贋ｽ肴ｨｩ髯舌・邱ｨ髮・〒縺阪∪縺帙ｓ');
         }
 
         if ($this->roleLevel($request->input('role')) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.edit', $staff->id)
-                ->with('error', '上位権限には変更できません')
+                ->with('error', '荳贋ｽ肴ｨｩ髯舌↓縺ｯ螟画峩縺ｧ縺阪∪縺帙ｓ')
                 ->withInput();
         }
 
@@ -325,7 +342,7 @@ class StaffController extends Controller
             }
         });
 
-        return back()->with('success', '更新しました');
+        return back()->with('success', '譖ｴ譁ｰ縺励∪縺励◆');
     }
 
     public function destroy(Staff $staff)
@@ -338,13 +355,13 @@ class StaffController extends Controller
         if ($this->roleLevel($staff->role) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '上位権限は削除できません');
+                ->with('error', '荳贋ｽ肴ｨｩ髯舌・蜑企勁縺ｧ縺阪∪縺帙ｓ');
         }
 
         if ((int) $staff->id === (int) $current->id) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '自分自身は削除できません');
+                ->with('error', '閾ｪ蛻・・霄ｫ縺ｯ蜑企勁縺ｧ縺阪∪縺帙ｓ');
         }
 
         if ($staff->image_path && file_exists(public_path($staff->image_path))) {
@@ -353,12 +370,12 @@ class StaffController extends Controller
 
         $staff->delete();
 
-        return back()->with('success', '削除しました');
+        return back()->with('success', '蜑企勁縺励∪縺励◆');
     }
 
-    public function resetPassword($id)
+    public function resetPassword(Request $request, $id)
     {
-        $this->authorizeStaffManage();
+        $this->authorizeStaffIndex();
 
         $current = $this->currentStaff();
 
@@ -366,22 +383,32 @@ class StaffController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        if ($this->roleLevel($staff->role) > $this->roleLevel($current->role)) {
+        if (!$this->canResetStaffPassword($current, $staff)) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '上位権限は初期化できません');
+                ->with('error', 'この担当者のパスワードは初期化できません');
         }
 
-        if ((int) $staff->id === (int) $current->id) {
-            return redirect()
-                ->route('company.staff.index')
-                ->with('error', '自分自身のパスワード初期化はできません');
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'initial_password' => ['required', 'string', 'min:8'],
+        ], [
+            'initial_password.required' => '初期パスワードを入力してください。',
+            'initial_password.min' => '初期パスワードは8文字以上で入力してください。',
+        ]);
+
+        if ($validator->fails()) {
+            return back()
+                ->withInput()
+                ->with('error', $validator->errors()->first('initial_password'));
         }
 
-        $staff->password = Hash::make('123123123');
+        $validated = $validator->validated();
+
+        $staff->password = Hash::make($validated['initial_password']);
         $staff->force_password_change = true;
         $staff->save();
 
-        return back()->with('success', 'パスワードを初期化しました');
+        return back()->with('success', $staff->name . ' のパスワードを初期化しました');
     }
 }
+

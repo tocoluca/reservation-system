@@ -99,15 +99,11 @@
                 </div>
             </form>
 
-            <div class="mt-6 rounded-2xl border border-red-100 bg-red-50 px-4 py-4">
-                <div class="text-sm font-bold text-red-800">マスター権限の方がパスワードを忘れた場合</div>
-                <p class="mt-1 text-xs leading-6 text-red-700">
-                    マスター権限のみ、この画面から初期化できます。他の権限の担当者は、担当者管理画面からマスター、エリアリーダー、リーダーに初期化を依頼してください。
-                </p>
+            <div class="mt-5 text-center">
                 <button type="button"
                         onclick="openMasterResetModal()"
-                        class="mt-3 w-full rounded-xl bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-red-700 transition">
-                    マスターのパスワード初期化
+                        class="text-sm font-bold text-red-700 underline-offset-4 hover:underline">
+                    パスワードを忘れたマスターの方はこちら
                 </button>
             </div>
         </div>

@@ -423,6 +423,7 @@ class CalendarController extends Controller
             $baseStaff = Staff::query()
                 ->where('company_id', $company->id)
                 ->where('is_reservable', 1)
+                ->where('role', '!=', 'store_operator')
                 ->whereHas('menus', function ($q) use ($menuId) {
                     $q->where('menus.id', $menuId);
                 })

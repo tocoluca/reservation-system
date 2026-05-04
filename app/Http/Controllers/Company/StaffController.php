@@ -219,13 +219,15 @@ class StaffController extends Controller
                     file_put_contents(public_path($path), $encoded);
                 }
 
+                $isStoreOperator = $request->role === 'store_operator';
+
 				$staff = Staff::create([
 				    'company_id' => $company->id,
 				    'staff_code' => $newCode,
 				    'name' => $request->name,
 				    'password' => Hash::make($request->password),
 				    'role' => $request->role,
-				    'is_reservable' => $request->boolean('is_reservable'),
+				    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
 				    'priority_order' => $request->priority_order ?? 0,
 				    'nomination_fee' => $request->nomination_fee ?? 0,
 				    'image_path' => $path,
@@ -317,10 +319,12 @@ class StaffController extends Controller
                 file_put_contents(public_path($newImagePath), $encoded);
             }
 
+            $isStoreOperator = $request->role === 'store_operator';
+
 			$staff->update([
 			    'name' => $request->name,
 			    'role' => $request->role,
-			    'is_reservable' => $request->boolean('is_reservable'),
+			    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
 			    'priority_order' => $request->priority_order ?? 0,
 			    'nomination_fee' => $request->nomination_fee ?? 0,
 			    'image_path' => $newImagePath,

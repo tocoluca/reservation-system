@@ -15,12 +15,16 @@ class MyProfileController extends Controller
     public function edit()
     {
         $staff = Auth::guard('company')->user();
+        abort_if(!$staff || !$staff->canDashboard('card.my_profile'), 403);
+
         return view('company.my-profile', compact('staff'));
     }
 
     public function update(Request $request)
     {
         $staff = Auth::guard('company')->user();
+        abort_if(!$staff || !$staff->canDashboard('card.my_profile'), 403);
+
         $companyId = $staff->company_id;
 
         $request->validate([

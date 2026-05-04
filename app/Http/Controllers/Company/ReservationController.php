@@ -276,6 +276,7 @@ class ReservationController extends Controller
 
             $staffList = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
+                ->where('role', '!=', 'store_operator')
                 ->orderBy('priority_order')
                 ->get();
 
@@ -432,7 +433,8 @@ class ReservationController extends Controller
             $limits = $this->getReservationLimits($company);
 
             $staffQuery = Staff::where('company_id', $company->id)
-                ->where('is_reservable', true);
+                ->where('is_reservable', true)
+                ->where('role', '!=', 'store_operator');
 
             if (!empty($menuIds)) {
                 $staffQuery->whereHas('menus', function ($q) use ($menuIds) {
@@ -634,6 +636,7 @@ class ReservationController extends Controller
 
             $staffList = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
+                ->where('role', '!=', 'store_operator')
                 ->with('menus:id')
                 ->orderBy('priority_order')
                 ->get();
@@ -961,6 +964,7 @@ class ReservationController extends Controller
 
         $staffList = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
             ->with('menus:id')
             ->orderBy('priority_order')
             ->get();
@@ -1225,6 +1229,7 @@ class ReservationController extends Controller
 
         $staffList = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
             ->orderBy('priority_order')
             ->get();
 

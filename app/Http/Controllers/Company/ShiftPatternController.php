@@ -8,8 +8,16 @@ use App\Models\ShiftPattern;
 
 class ShiftPatternController extends Controller
 {
+    private function authorizeShiftPatterns(): void
+    {
+        $staff = auth()->guard('company')->user();
+        abort_if(!$staff || !$staff->canDashboard('card.shift_patterns'), 403);
+    }
+
     public function index()
     {
+        $this->authorizeShiftPatterns();
+
         $company = auth()->guard('company')->user()->company;
 
         $patterns = ShiftPattern::where('company_id', $company->id)
@@ -36,6 +44,8 @@ class ShiftPatternController extends Controller
 
     public function store(Request $request)
     {
+        $this->authorizeShiftPatterns();
+
         $company = auth()->guard('company')->user()->company;
 
         $request->validate(
@@ -83,6 +93,8 @@ class ShiftPatternController extends Controller
 
     public function updateOrder(Request $request)
     {
+        $this->authorizeShiftPatterns();
+
         $company = auth()->guard('company')->user()->company;
 
         $request->validate([
@@ -105,6 +117,8 @@ class ShiftPatternController extends Controller
 
     public function delete($id)
     {
+        $this->authorizeShiftPatterns();
+
         $company = auth()->guard('company')->user()->company;
 
         $pattern = ShiftPattern::where('id', $id)

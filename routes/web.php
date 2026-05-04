@@ -493,6 +493,7 @@ Route::get('/company/staff/list', function () {
 
     return $company->staff()
         ->where('is_reservable', true)
+        ->where('role', '!=', 'store_operator')
         ->orderBy('priority_order')
         ->get(['id', 'name']);
 })->middleware('auth:company');

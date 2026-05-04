@@ -161,7 +161,7 @@
                     style="--tw-ring-color: {{ $theme }};"
                     onchange="reloadByMode()">
                 <option value="">全担当者を表示</option>
-                @foreach($company->staff()->where('is_reservable', true)->orderBy('priority_order')->get() as $staff)
+                @foreach($company->staff()->where('is_reservable', true)->where('role', '!=', 'store_operator')->orderBy('priority_order')->get() as $staff)
                     <option value="{{ $staff->id }}">{{ $staff->name }}</option>
                 @endforeach
             </select>

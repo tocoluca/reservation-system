@@ -104,7 +104,9 @@ class Staff extends Authenticatable
 
     public function isActiveForReservation(?string $dateTime = null): bool
     {
-        return $this->is_reservable && !$this->isRetired($dateTime);
+        return $this->role !== 'store_operator'
+            && $this->is_reservable
+            && !$this->isRetired($dateTime);
     }
 
     public function roleLabel(): string

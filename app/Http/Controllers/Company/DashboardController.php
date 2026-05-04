@@ -120,6 +120,7 @@ class DashboardController extends Controller
 
         $staffCount = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
             ->count();
 
         $patterns = $company->open_patterns ?? [];
@@ -416,23 +417,23 @@ class DashboardController extends Controller
                 'card.reserve' => true,
                 'card.business_calendar' => true,
                 'card.customers' => true,
-                'card.month_shift' => true,
-				'card.month_shift_view' => true,
+                'card.month_shift' => false,
+				'card.month_shift_view' => false,
                 'card.reservation_change_notices' => true,
                 'card.support' => true,
                 'card.style' => true,
                 'card.reviews' => true,
-                'card.vacation' => true,
-                'card.my_profile' => true,
+                'card.vacation' => false,
+                'card.my_profile' => false,
                 'dashboard.sales' => true,
                 'card.company_info' => true,
                 'card.staff' => true,
                 'card.logo' => true,
                 'card.menu_category_tag' => true,
                 'card.menu' => true,
-                'card.menu_staff' => true,
-                'card.shift_patterns' => true,
-                'card.default_shift' => true,
+                'card.menu_staff' => false,
+                'card.shift_patterns' => false,
+                'card.default_shift' => false,
                 'card.notices' => true,
                 'card.billing' => false,
                 'card.theme' => true,
@@ -446,7 +447,7 @@ class DashboardController extends Controller
 
         $base = $defaultsByRole[$role] ?? array_fill_keys($canonicalKeys, false);
 
-        if (array_key_exists('card.my_profile', $base)) {
+        if ($role !== 'store_operator' && array_key_exists('card.my_profile', $base)) {
             $base['card.my_profile'] = true;
         }
 
@@ -458,6 +459,20 @@ class DashboardController extends Controller
 
         if ($role === 'master') {
             $base['dashboard.manage'] = true;
+        }
+
+        if ($role === 'store_operator') {
+            foreach ([
+                'card.menu_staff',
+                'card.shift_patterns',
+                'card.default_shift',
+                'card.month_shift',
+                'card.month_shift_view',
+                'card.vacation',
+                'card.my_profile',
+            ] as $permissionKey) {
+                $base[$permissionKey] = false;
+            }
         }
 
         return $base;
@@ -482,6 +497,7 @@ class DashboardController extends Controller
 
         $reservableStaffIds = Staff::where('company_id', $company->id)
             ->where('is_reservable', 1)
+            ->where('role', '!=', 'store_operator')
             ->pluck('id');
 
         $shiftLastDate = null;

@@ -183,6 +183,20 @@
             </p>
         </div>
 
+        <div class="px-6 py-4 border-b border-gray-100 bg-stone-50/70">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div class="text-sm font-semibold text-stone-700">
+                    メニューを追加する場合はこちらから登録できます。
+                </div>
+
+                <a href="{{ route('company.menu.create') }}"
+                   class="inline-flex w-full sm:w-auto items-center justify-center px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition"
+                   style="background: {{ $theme }};">
+                    新規メニュー
+                </a>
+            </div>
+        </div>
+
         <div class="max-h-[72vh] overflow-auto">
             <table class="w-full min-w-[900px] text-sm">
                 <thead class="bg-stone-50">

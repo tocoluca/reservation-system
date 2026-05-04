@@ -16,7 +16,7 @@
     })->count();
     $reservableCount = $staffs->filter(function ($staff) {
         $isRetired = !empty($staff->retired_at) && Carbon::parse($staff->retired_at)->startOfDay()->lte(now()->startOfDay());
-        return !$isRetired && (bool) $staff->is_reservable;
+        return !$isRetired && (bool) $staff->is_reservable && $staff->role !== 'store_operator';
     })->count();
 
     $canResetPassword = function ($target) use ($current) {
@@ -34,12 +34,13 @@
 
         return false;
     };
+
+    $canManageStaff = !$current->isStoreOperator();
 @endphp
 
 @section('content')
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
     <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="absolute inset-0 opacity-10"
              style="background:
@@ -202,7 +203,7 @@
                         </td>
 
                         <td class="px-4 py-5">
-                            @if($isRetired)
+                            @if($isRetired || $staff->role === 'store_operator')
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500">対象外</span>
                             @elseif($staff->is_reservable)
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-green-100 text-green-700">受付中</span>
@@ -219,11 +220,13 @@
 
                         <td class="px-6 py-5">
                             <div class="flex justify-end items-center gap-2 flex-wrap">
-                                <a href="{{ route('company.staff.edit', $staff->id) }}"
-                                   class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-white font-semibold shadow-sm hover:opacity-90 transition"
-                                   style="background: {{ $theme }}">
-                                    編集
-                                </a>
+                                @if($canManageStaff)
+                                    <a href="{{ route('company.staff.edit', $staff->id) }}"
+                                       class="inline-flex items-center justify-center px-4 py-2 rounded-xl text-white font-semibold shadow-sm hover:opacity-90 transition"
+                                       style="background: {{ $theme }}">
+                                        編集
+                                    </a>
+                                @endif
 
                                 @if($canResetPassword($staff))
                                     <button type="button"
@@ -305,7 +308,7 @@
                         <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
                             <div class="text-xs text-gray-500">予約受付</div>
                             <div class="mt-1 text-sm font-bold text-gray-900">
-                                @if($isRetired)
+                                @if($isRetired || $staff->role === 'store_operator')
                                     対象外
                                 @elseif($staff->is_reservable)
                                     受付中
@@ -330,11 +333,13 @@
 
                 <div class="px-5 pb-5">
                     <div class="grid grid-cols-1 gap-3">
-                        <a href="{{ route('company.staff.edit', $staff->id) }}"
-                           class="w-full text-center text-white py-3 rounded-2xl font-semibold shadow-sm"
-                           style="background: {{ $theme }}">
-                            編集する
-                        </a>
+                        @if($canManageStaff)
+                            <a href="{{ route('company.staff.edit', $staff->id) }}"
+                               class="w-full text-center text-white py-3 rounded-2xl font-semibold shadow-sm"
+                               style="background: {{ $theme }}">
+                                編集する
+                            </a>
+                        @endif
 
                         @if($canResetPassword($staff))
                             <button type="button"
@@ -385,7 +390,7 @@
                  style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
                 <div class="text-xs font-bold tracking-wide text-white/75">PASSWORD RESET</div>
                 <h2 class="mt-2 text-xl font-black">パスワード初期化</h2>
-                <p class="mt-2 text-sm text-white/85">対象者に渡す初期パスワードを入力してください。</p>
+                <p class="mt-2 text-sm text-white/85">対象者へ渡す初期パスワードを入力してください。</p>
             </div>
 
             <form id="passwordResetForm" method="POST" class="p-6 space-y-5">

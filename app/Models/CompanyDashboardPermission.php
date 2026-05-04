@@ -99,22 +99,22 @@ class CompanyDashboardPermission extends Model
                 'card.staff' => true,
                 'card.menu_category_tag' => true,
                 'card.menu' => true,
-                'card.menu_staff' => true,
-                'card.shift_patterns' => true,
-                'card.default_shift' => true,
-                'card.month_shift' => true,
-                'card.month_shift_view' => true,
+                'card.menu_staff' => false,
+                'card.shift_patterns' => false,
+                'card.default_shift' => false,
+                'card.month_shift' => false,
+                'card.month_shift_view' => false,
                 'card.customers' => true,
                 'card.style' => true,
                 'card.reviews' => true,
                 'card.notices' => true,
                 'card.support' => true,
-                'card.vacation' => true,
+                'card.vacation' => false,
                 'card.theme' => true,
                 'card.company_info' => true,
                 'card.logo' => true,
                 'card.billing' => false,
-                'card.my_profile' => true,
+                'card.my_profile' => false,
                 'card.reservation_change_notices' => true,
             ],
 
@@ -217,6 +217,20 @@ class CompanyDashboardPermission extends Model
 
         if ($role === 'master') {
             $defaults['dashboard.manage'] = true;
+        }
+
+        if ($role === 'store_operator') {
+            foreach ([
+                'card.menu_staff',
+                'card.shift_patterns',
+                'card.default_shift',
+                'card.month_shift',
+                'card.month_shift_view',
+                'card.vacation',
+                'card.my_profile',
+            ] as $permissionKey) {
+                $defaults[$permissionKey] = false;
+            }
         }
 
         return $defaults;

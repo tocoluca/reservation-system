@@ -27,7 +27,10 @@ class StaffShiftController extends Controller
     */
     public function index(Request $request)
     {
-        $company = auth()->guard('company')->user()->company;
+        $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift'), 403);
+
+        $company = $loginStaff->company;
 
         $month = $request->month ?? now()->format('Y-m');
 
@@ -35,6 +38,7 @@ class StaffShiftController extends Controller
         $end = $start->copy()->endOfMonth();
 
         $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
             ->orderBy('priority_order')
             ->orderBy('id')
             ->get();
@@ -91,6 +95,8 @@ class StaffShiftController extends Controller
     public function view(Request $request)
     {
         $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift_view'), 403);
+
         $company = $loginStaff->company;
 
         $month = $request->query('month', now()->format('Y-m'));
@@ -100,6 +106,7 @@ class StaffShiftController extends Controller
         $end = $start->copy()->endOfMonth();
 
         $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
             ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
             ->orderByRaw("
                 CASE role
@@ -178,6 +185,8 @@ class StaffShiftController extends Controller
     public function pdf(Request $request)
     {
         $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift_view'), 403);
+
         $company = $loginStaff->company;
 
         $month = $request->query('month', now()->format('Y-m'));
@@ -187,6 +196,7 @@ class StaffShiftController extends Controller
         $end = $start->copy()->endOfMonth();
 
         $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
             ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
             ->orderByRaw("
                 CASE role
@@ -266,7 +276,10 @@ class StaffShiftController extends Controller
     */
     public function generate(Request $request)
     {
-        $company = auth()->guard('company')->user()->company;
+        $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift'), 403);
+
+        $company = $loginStaff->company;
 
         $request->validate([
             'month' => ['required', 'date_format:Y-m'],
@@ -278,6 +291,7 @@ class StaffShiftController extends Controller
         $days = $start->daysInMonth;
 
         $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
             ->orderBy('priority_order')
             ->orderBy('id')
             ->get();
@@ -316,14 +330,20 @@ class StaffShiftController extends Controller
     */
     public function update(Request $request)
     {
-        $company = auth()->guard('company')->user()->company;
+        $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift'), 403);
+
+        $company = $loginStaff->company;
         $createdNoticeCount = 0;
 
         if (empty($request->shifts) || !is_array($request->shifts)) {
             return back()->with('success', 'シフトを保存しました');
         }
 
-        $validStaffIds = Staff::where('company_id', $company->id)->pluck('id')->map(fn ($id) => (string) $id);
+        $validStaffIds = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
+            ->pluck('id')
+            ->map(fn ($id) => (string) $id);
         $validPatterns = ShiftPattern::where('company_id', $company->id)->get()->keyBy('id');
         $validPatternIds = $validPatterns->keys()->map(fn ($id) => (string) $id);
 
@@ -332,7 +352,9 @@ class StaffShiftController extends Controller
                 continue;
             }
 
-            $staff = Staff::where('company_id', $company->id)->find($staffId);
+            $staff = Staff::where('company_id', $company->id)
+                ->where('role', '!=', 'store_operator')
+                ->find($staffId);
             if (!$staff) {
                 continue;
             }
@@ -426,7 +448,10 @@ class StaffShiftController extends Controller
     */
     public function copy(Request $request)
     {
-        $company = auth()->guard('company')->user()->company;
+        $loginStaff = auth()->guard('company')->user();
+        abort_if(!$loginStaff || !$loginStaff->canDashboard('card.month_shift'), 403);
+
+        $company = $loginStaff->company;
 
         $request->validate([
             'month' => ['required', 'date_format:Y-m'],
@@ -440,7 +465,9 @@ class StaffShiftController extends Controller
         $prevStart = $currentStart->copy()->subMonthNoOverflow()->startOfMonth();
         $prevEnd = $prevStart->copy()->endOfMonth();
 
-        $staffIds = Staff::where('company_id', $company->id)->pluck('id');
+        $staffIds = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
+            ->pluck('id');
 
         $prevShifts = StaffShift::whereIn('staff_id', $staffIds)
             ->whereBetween('date', [$prevStart, $prevEnd])

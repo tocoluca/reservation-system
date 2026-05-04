@@ -13,10 +13,15 @@ class MenuStaffController extends Controller
 
     public function index()
     {
-        $company = auth()->guard('company')->user()->company;
+        $current = auth()->guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.menu_staff'), 403);
+
+        $company = $current->company;
 
         $menus = Menu::where('company_id',$company->id)->get();
-        $staffs = Staff::where('company_id',$company->id)->get();
+        $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
+            ->get();
 
         $relations = DB::table('menu_staff')->get();
 
@@ -30,6 +35,8 @@ class MenuStaffController extends Controller
 
     public function update(Request $request)
     {
+        $current = auth()->guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.menu_staff'), 403);
 
         DB::table('menu_staff')->truncate();
 

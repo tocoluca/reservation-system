@@ -159,6 +159,12 @@
         ['label' => '顧客管理', 'icon' => 'users', 'route' => 'company.customers', 'url' => route('company.customers'), 'active' => request()->routeIs('company.customers*')],
         ['label' => '勤務管理', 'icon' => 'clock', 'route' => 'company.staff-shifts', 'url' => route('company.staff-shifts'), 'active' => request()->routeIs('company.staff-shifts*') || request()->routeIs('company.shift-patterns*') || request()->routeIs('company.staff-default-shifts*')],
     ] : [];
+
+    if ($staff && $staff->isStoreOperator()) {
+        $companyPrimaryNavItems = array_values(array_filter($companyPrimaryNavItems, function ($item) {
+            return $item['route'] !== 'company.staff-shifts';
+        }));
+    }
 @endphp
 
 @if($company)

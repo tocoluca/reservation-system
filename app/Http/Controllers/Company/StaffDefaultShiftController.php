@@ -12,9 +12,13 @@ class StaffDefaultShiftController extends Controller
 {
     public function index()
     {
-        $company = auth()->guard('company')->user()->company;
+        $current = auth()->guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.default_shift'), 403);
+
+        $company = $current->company;
 
         $staffs = Staff::where('company_id', $company->id)
+            ->where('role', '!=', 'store_operator')
             ->orderBy('priority_order')
             ->get();
 
@@ -31,6 +35,9 @@ class StaffDefaultShiftController extends Controller
 
     public function update(Request $request)
     {
+        $current = auth()->guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.default_shift'), 403);
+
         try {
             $request->validate([
                 'shifts' => ['required', 'array'],
@@ -38,7 +45,16 @@ class StaffDefaultShiftController extends Controller
                 'shifts.required' => 'シフト情報がありません。',
             ]);
 
+            $validStaffIds = Staff::where('company_id', $current->company_id)
+                ->where('role', '!=', 'store_operator')
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id);
+
             foreach ($request->shifts as $staffId => $days) {
+                if (!$validStaffIds->contains((string) $staffId)) {
+                    continue;
+                }
+
                 foreach ($days as $weekday => $pattern) {
                     StaffDefaultShift::updateOrCreate(
                         [

@@ -210,6 +210,7 @@ class ReserveController extends Controller
         return Staff::query()
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
+            ->where('role', '!=', 'store_operator')
             ->when(!empty($menuIds), function ($query) use ($menuIds) {
                 $query->whereHas('menus', function ($q) use ($menuIds) {
                     $q->whereIn('menus.id', $menuIds);
@@ -239,6 +240,7 @@ class ReserveController extends Controller
         return Staff::query()
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
+            ->where('role', '!=', 'store_operator')
             ->when(!empty($menuIds), function ($query) use ($menuIds) {
                 $query->whereHas('menus', function ($q) use ($menuIds) {
                     $q->whereIn('menus.id', $menuIds);
@@ -490,6 +492,7 @@ class ReserveController extends Controller
         if ($staff->isEmpty()) {
             $staff = Staff::where('company_id', $company->id)
                 ->where('is_reservable', 1)
+                ->where('role', '!=', 'store_operator')
                 ->orderBy('priority_order')
                 ->get()
                 ->map(function ($s) {
@@ -685,6 +688,7 @@ class ReserveController extends Controller
         if (!empty($staffId)) {
             $staff = Staff::where('company_id', $company->id)
                 ->where('id', $staffId)
+                ->where('role', '!=', 'store_operator')
                 ->first();
 
             if (!$staff) {
@@ -785,6 +789,7 @@ public function store(Request $request, $company_code)
     if ($request->filled('staff_id')) {
         $selectedStaff = Staff::where('company_id', $company->id)
             ->where('id', (int) $request->staff_id)
+            ->where('role', '!=', 'store_operator')
             ->first();
 
         if (!$selectedStaff) {
@@ -897,6 +902,7 @@ public function store(Request $request, $company_code)
 
         $representativeStaff = Staff::where('company_id', $company->id)
             ->where('id', $representativeStaffId)
+            ->where('role', '!=', 'store_operator')
             ->first();
 
         $reservation = Reservation::create([
@@ -1230,6 +1236,7 @@ public function store(Request $request, $company_code)
             ->where('menu_staff.menu_id', $menuId)
             ->where('staff.company_id', $companyId)
             ->where('staff.is_reservable', 1)
+            ->where('staff.role', '!=', 'store_operator')
             ->orderBy('staff.priority_order')
             ->orderBy('staff.id')
             ->pluck('staff.id')

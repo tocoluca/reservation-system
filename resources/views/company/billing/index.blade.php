@@ -6,6 +6,11 @@
     $isAvailable = $company->isSubscriptionAvailable();
     $isInGrace = method_exists($company, 'isInGracePeriod') ? $company->isInGracePeriod() : false;
     $hasCurrentStripePlan = filled($company->stripe_price_id);
+    $isInBillingStartCampaign = method_exists($company, 'isInBillingStartCampaign') ? $company->isInBillingStartCampaign() : false;
+    $billingCampaignEndsAt = $isInBillingStartCampaign ? $company->billing_starts_at : null;
+    $billingCampaignRemainingDays = $billingCampaignEndsAt
+        ? max(0, now()->startOfDay()->diffInDays($billingCampaignEndsAt->copy()->startOfDay(), false))
+        : null;
     $graceUntil = optional($company->grace_until)->format('Y/m/d');
     $currentPeriodEnd = optional($company->current_period_end)->format('Y/m/d');
     $subscribedAt = optional($company->subscribed_at)->format('Y/m/d');
@@ -130,6 +135,23 @@
                     </div>
                 </div>
             </div>
+
+            @if($billingCampaignEndsAt)
+                <div class="mt-5 rounded-[1.5rem] border border-sky-200 bg-sky-50 text-sky-900 px-5 py-4 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div class="text-sm font-bold">キャンペーン期間中です</div>
+                            <div class="mt-1 text-sm leading-6">
+                                {{ $billingCampaignEndsAt->format('Y/m/d') }} までサービスをご利用いただけます。
+                            </div>
+                        </div>
+                        <div class="shrink-0 rounded-2xl bg-white/80 border border-sky-100 px-4 py-3 text-center">
+                            <div class="text-xs font-semibold text-sky-700">残り</div>
+                            <div class="mt-1 text-2xl font-black text-sky-900">{{ $billingCampaignRemainingDays }}日</div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             @if($isInGrace)
                 <div class="mt-5 rounded-[1.5rem] border border-amber-200 bg-amber-50 text-amber-800 px-5 py-4 shadow-sm">

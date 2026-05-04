@@ -137,9 +137,17 @@ class ReservationController extends Controller
                 ->withErrors(['reservation' => '来店済みの予約はキャンセルできません。']);
         }
 
-        $reservation->status = Reservation::STATUS_CANCELLED;
+        $cancelKind = $request->input('cancel_kind', 'customer');
+
+        if (!in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
+            $cancelKind = 'customer';
+        }
+
+        $reservation->status = $cancelKind === 'no_show'
+            ? Reservation::STATUS_NO_SHOW
+            : Reservation::STATUS_CANCELLED;
         $reservation->cancelled_at = now();
-        $reservation->cancelled_type = 'shop';
+        $reservation->cancelled_type = $cancelKind;
         $reservation->save();
 
         return redirect()

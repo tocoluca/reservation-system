@@ -47,6 +47,8 @@ class CompanyController extends Controller
             'revisit_reminder_days' => 'nullable|integer|min:1|max:365',
             'web_cancel_deadline_type' => 'nullable|in:hours,business_open_minus_1_hour',
             'web_cancel_deadline_hours' => 'nullable|integer|min:0|max:168',
+            'reservation_auto_status_mode' => 'nullable|in:manual,completed,no_show',
+            'reservation_auto_status_hours' => 'nullable|integer|min:1|max:3',
             'review_enabled' => 'nullable|boolean',
             'prefer_less_capable_staff_for_menu_assignment' => 'nullable|boolean',
         ];
@@ -126,6 +128,8 @@ class CompanyController extends Controller
             'revisit_reminder_days' => $validated['revisit_reminder_days'] ?? 45,
             'web_cancel_deadline_type' => $validated['web_cancel_deadline_type'] ?? 'hours',
             'web_cancel_deadline_hours' => $validated['web_cancel_deadline_hours'] ?? 24,
+            'reservation_auto_status_mode' => $validated['reservation_auto_status_mode'] ?? 'no_show',
+            'reservation_auto_status_hours' => $validated['reservation_auto_status_hours'] ?? 1,
             'slot_minutes' => $validated['slot_minutes'],
             'max_simultaneous_reservations' => $validated['max_simultaneous_reservations'],
             'open_patterns' => $patterns,

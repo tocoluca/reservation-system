@@ -3,7 +3,18 @@
 @section('content')
 @php
     $theme = $company->theme_color ?? '#3b82f6';
-    $reservationStatusMeta = function ($status) {
+    $reservationStatusMeta = function ($reservation) {
+        $status = is_object($reservation) ? $reservation->status : $reservation;
+        $cancelledType = is_object($reservation) ? $reservation->cancelled_type : null;
+
+        if ($status === 'cancelled') {
+            return match ($cancelledType) {
+                'customer' => ['label' => 'キャンセル（連絡あり）', 'class' => 'bg-sky-100 text-sky-700'],
+                'shop' => ['label' => 'キャンセル（店舗都合）', 'class' => 'bg-stone-200 text-stone-700'],
+                default => ['label' => 'キャンセル', 'class' => 'bg-stone-200 text-stone-700'],
+            };
+        }
+
         return match ($status) {
             'completed' => ['label' => '来店済', 'class' => 'bg-blue-100 text-blue-700'],
             'cancelled' => ['label' => 'キャンセル', 'class' => 'bg-stone-200 text-stone-700'],
@@ -415,7 +426,7 @@
 
                             <td class="px-3 py-4">
                                 @php
-                                    $statusMeta = $reservationStatusMeta($reservation->status);
+                                    $statusMeta = $reservationStatusMeta($reservation);
                                 @endphp
                                 <span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold {{ $statusMeta['class'] }}">
                                     {{ $statusMeta['label'] }}
@@ -423,7 +434,7 @@
                             </td>
 
                             <td class="px-3 py-4">
-                                @if(in_array($reservation->status, ['reserved', 'no_show'], true))
+                                @if($reservation->status === 'reserved')
                                     <div class="flex flex-col gap-2">
                                         <form method="POST"
                                               action="{{ route('company.reservations.complete', $reservation->id) }}"
@@ -440,12 +451,17 @@
 
                                     <form method="POST"
                                           action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                          onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
+                                          class="js-cancel-form">
                                         @csrf
                                         @foreach($currentReservationFilters as $filterKey => $filterValue)
                                             <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
                                         @endforeach
-                                        <button type="submit"
+                                        <input type="hidden" name="cancel_kind" value="">
+                                        <button type="button"
+                                                data-cancel-open
+                                                data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
+                                                data-customer-name="{{ $displayCustomerName }}"
+                                                data-customer-phone="{{ $displayPhone }}"
                                                 class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap"
                                                 style="background: {{ $theme }};">
                                             キャンセル
@@ -514,7 +530,7 @@
 
                         <div>
                             @php
-                                $statusMeta = $reservationStatusMeta($reservation->status);
+                                $statusMeta = $reservationStatusMeta($reservation);
                             @endphp
                             <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $statusMeta['class'] }}">
                                 {{ $statusMeta['label'] }}
@@ -576,7 +592,7 @@
                     </div>
 
                     <div class="pt-1">
-                        @if(in_array($reservation->status, ['reserved', 'no_show'], true))
+                        @if($reservation->status === 'reserved')
                             <form method="POST"
                                   action="{{ route('company.reservations.complete', $reservation->id) }}"
                                   class="mb-2"
@@ -593,12 +609,17 @@
 
                             <form method="POST"
                                   action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                  onsubmit="return confirm('この予約をキャンセルしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}\n電話番号：{{ $displayPhone }}\n主担当：{{ optional($reservation->staff)->name ?: '未指定' }}\n施術内訳：{{ $confirmDetailText }}');">
+                                  class="js-cancel-form">
                                 @csrf
                                 @foreach($currentReservationFilters as $filterKey => $filterValue)
                                     <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
                                 @endforeach
-                                <button type="submit"
+                                <input type="hidden" name="cancel_kind" value="">
+                                <button type="button"
+                                        data-cancel-open
+                                        data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
+                                        data-customer-name="{{ $displayCustomerName }}"
+                                        data-customer-phone="{{ $displayPhone }}"
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl text-white text-sm font-semibold hover:opacity-90 transition shadow-sm"
                                         style="background: {{ $theme }};">
                                     この予約をキャンセル
@@ -621,4 +642,95 @@
         </div>
     </div>
 </div>
+
+<div id="cancelKindModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 px-4">
+    <div class="w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-bold text-stone-900">キャンセル種別を選択</h2>
+                <p class="mt-1 text-sm text-stone-500">この予約をどの扱いで記録するか選んでください。</p>
+            </div>
+            <button type="button"
+                    class="rounded-full bg-stone-100 px-3 py-1.5 text-sm font-bold text-stone-600 hover:bg-stone-200"
+                    data-cancel-close>
+                閉じる
+            </button>
+        </div>
+
+        <div class="mt-4 rounded-2xl bg-stone-50 px-4 py-3 text-sm text-stone-700">
+            <div class="font-semibold" id="cancelModalCustomer">-</div>
+            <div class="mt-1 text-xs text-stone-500" id="cancelModalDate">-</div>
+            <div class="mt-1 text-xs text-stone-500" id="cancelModalPhone">-</div>
+        </div>
+
+        <div class="mt-5 grid gap-3">
+            <button type="button"
+                    data-cancel-kind="customer"
+                    class="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90">
+                連絡あり
+            </button>
+            <button type="button"
+                    data-cancel-kind="no_show"
+                    class="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90">
+                無断キャンセル
+            </button>
+            <button type="button"
+                    data-cancel-kind="shop"
+                    class="w-full rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90"
+                    style="background: {{ $theme }};">
+                店舗都合
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('cancelKindModal');
+    const customerText = document.getElementById('cancelModalCustomer');
+    const dateText = document.getElementById('cancelModalDate');
+    const phoneText = document.getElementById('cancelModalPhone');
+    let activeForm = null;
+
+    const closeModal = () => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        activeForm = null;
+    };
+
+    document.querySelectorAll('[data-cancel-open]').forEach((button) => {
+        button.addEventListener('click', function () {
+            activeForm = this.closest('form');
+            customerText.textContent = this.dataset.customerName || '-';
+            dateText.textContent = this.dataset.reservationDate ? `予約日時：${this.dataset.reservationDate}` : '予約日時：-';
+            phoneText.textContent = this.dataset.customerPhone ? `電話番号：${this.dataset.customerPhone}` : '電話番号：-';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        });
+    });
+
+    document.querySelectorAll('[data-cancel-close]').forEach((button) => {
+        button.addEventListener('click', closeModal);
+    });
+
+    modal.addEventListener('click', function (event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+
+    document.querySelectorAll('[data-cancel-kind]').forEach((button) => {
+        button.addEventListener('click', function () {
+            if (!activeForm) return;
+
+            const input = activeForm.querySelector('input[name="cancel_kind"]');
+            if (input) {
+                input.value = this.dataset.cancelKind;
+            }
+
+            activeForm.requestSubmit();
+        });
+    });
+});
+</script>
 @endsection

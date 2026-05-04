@@ -555,6 +555,35 @@
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
                 </div>
+
+                <div>
+                    <label class="block font-semibold mb-2">予約後の自動ステータス処理</label>
+                    @php
+                        $autoStatusMode = old('reservation_auto_status_mode', $company->reservation_auto_status_mode ?? 'no_show');
+                        $autoStatusHours = old('reservation_auto_status_hours', $company->reservation_auto_status_hours ?? 1);
+                    @endphp
+                    <select name="reservation_auto_status_mode"
+                            class="w-full border rounded-2xl p-3 mb-3">
+                        <option value="manual" @selected($autoStatusMode === 'manual')>自分で操作する</option>
+                        <option value="completed" @selected($autoStatusMode === 'completed')>指定時間後に自動で来店済にする</option>
+                        <option value="no_show" @selected($autoStatusMode === 'no_show')>指定時間後に自動で無断キャンセルにする</option>
+                    </select>
+                    <select name="reservation_auto_status_hours"
+                            class="w-full border rounded-2xl p-3">
+                        @for($hour = 1; $hour <= 3; $hour++)
+                            <option value="{{ $hour }}" @selected((int) $autoStatusHours === $hour)>
+                                {{ $hour }}時間後
+                            </option>
+                        @endfor
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2">予約開始時刻から何時間後に自動処理するかを設定します。「自分で操作する」を選ぶと自動変更されません。</p>
+                    @error('reservation_auto_status_mode')
+                        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                    @enderror
+                    @error('reservation_auto_status_hours')
+                        <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
         </section>
 

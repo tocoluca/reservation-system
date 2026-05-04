@@ -38,6 +38,8 @@ class Company extends Authenticatable
         'reservation_close_hours',
         'web_cancel_deadline_hours',
         'web_cancel_deadline_type',
+        'reservation_auto_status_mode',
+        'reservation_auto_status_hours',
 
         // Stripe / Billing
         'stripe_id',

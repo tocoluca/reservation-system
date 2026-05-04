@@ -8,20 +8,37 @@ use Illuminate\Console\Command;
 class MarkReservationNoShows extends Command
 {
     protected $signature = 'reservations:mark-no-show';
-    protected $description = '予約時間から1時間過ぎた予約中データを無断キャンセルに変更する';
+    protected $description = '会社設定に従って予約中データを来店済みまたは無断キャンセルに変更する';
 
     public function handle(): int
     {
-        $count = Reservation::query()
-            ->where('status', Reservation::STATUS_RESERVED)
-            ->where('start_at', '<=', now()->subHour())
+        $baseQuery = Reservation::query()
+            ->join('companies', 'companies.id', '=', 'reservations.company_id')
+            ->where('reservations.status', Reservation::STATUS_RESERVED)
+            ->whereIn('companies.reservation_auto_status_mode', ['completed', 'no_show'])
+            ->whereRaw(
+                'reservations.start_at <= DATE_SUB(?, INTERVAL COALESCE(companies.reservation_auto_status_hours, 1) HOUR)',
+                [now()]
+            );
+
+        $completedCount = (clone $baseQuery)
+            ->where('companies.reservation_auto_status_mode', 'completed')
             ->update([
-                'status' => Reservation::STATUS_NO_SHOW,
-                'updated_at' => now(),
+                'reservations.status' => Reservation::STATUS_COMPLETED,
+                'reservations.updated_at' => now(),
             ]);
 
-        if ($count > 0) {
-            $this->info("Marked {$count} reservations as no_show.");
+        $noShowCount = (clone $baseQuery)
+            ->where('companies.reservation_auto_status_mode', 'no_show')
+            ->update([
+                'reservations.status' => Reservation::STATUS_NO_SHOW,
+                'reservations.cancelled_at' => now(),
+                'reservations.cancelled_type' => 'no_show',
+                'reservations.updated_at' => now(),
+            ]);
+
+        if ($completedCount > 0 || $noShowCount > 0) {
+            $this->info("Marked {$completedCount} reservations as completed, {$noShowCount} reservations as no_show.");
         }
 
         return self::SUCCESS;

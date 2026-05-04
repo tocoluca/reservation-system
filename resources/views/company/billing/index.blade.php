@@ -5,6 +5,7 @@
     $theme = $company->theme_color ?? '#3b82f6';
     $isAvailable = $company->isSubscriptionAvailable();
     $isInGrace = method_exists($company, 'isInGracePeriod') ? $company->isInGracePeriod() : false;
+    $hasCurrentStripePlan = filled($company->stripe_price_id);
     $graceUntil = optional($company->grace_until)->format('Y/m/d');
     $currentPeriodEnd = optional($company->current_period_end)->format('Y/m/d');
     $subscribedAt = optional($company->subscribed_at)->format('Y/m/d');
@@ -183,7 +184,10 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         @foreach($plans as $plan)
             @php
-                $isCurrentPlan = $company->stripe_price_id === $plan['price_id'] && $company->isSubscriptionAvailable();
+                $isCurrentPlan = $hasCurrentStripePlan
+                    && filled($plan['price_id'])
+                    && $company->stripe_price_id === $plan['price_id']
+                    && $company->isSubscriptionAvailable();
             @endphp
 
             <div class="bg-white rounded-[2rem] shadow-sm p-6 border {{ $isCurrentPlan ? 'border-amber-300 ring-2 ring-amber-100' : 'border-gray-100' }} hover:shadow-md transition">

@@ -110,6 +110,7 @@ class AdminApplicationController extends Controller
                 'name'          => $application->company_name,
                 'industry_type' => $application->industry_type,
                 'email'         => $application->email,
+                'billing_starts_at' => Carbon::now()->addDays(10)->startOfDay(),
             ]);
 
             // 新規企業作成時に、役職ごとの初期ダッシュボード権限を自動作成

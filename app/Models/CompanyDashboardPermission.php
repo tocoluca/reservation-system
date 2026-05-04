@@ -224,8 +224,6 @@ class CompanyDashboardPermission extends Model
                 'card.menu_staff',
                 'card.shift_patterns',
                 'card.default_shift',
-                'card.month_shift',
-                'card.month_shift_view',
                 'card.vacation',
                 'card.my_profile',
             ] as $permissionKey) {

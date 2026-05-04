@@ -160,7 +160,7 @@
         ['label' => '勤務管理', 'icon' => 'clock', 'route' => 'company.staff-shifts', 'url' => route('company.staff-shifts'), 'active' => request()->routeIs('company.staff-shifts*') || request()->routeIs('company.shift-patterns*') || request()->routeIs('company.staff-default-shifts*')],
     ] : [];
 
-    if ($staff && $staff->isStoreOperator()) {
+    if ($staff && $staff->isStoreOperator() && !$staff->canDashboard('card.month_shift')) {
         $companyPrimaryNavItems = array_values(array_filter($companyPrimaryNavItems, function ($item) {
             return $item['route'] !== 'company.staff-shifts';
         }));

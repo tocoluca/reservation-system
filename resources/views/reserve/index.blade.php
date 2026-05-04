@@ -230,23 +230,47 @@
                                 ];
 
                                 $menuImage = $categoryImageMap[$categoryName] ?? asset('images/menu-icons/other.jpg');
+                                $categoryPanelId = 'menuCategoryPanel' . $loop->iteration;
+                                $categoryHasChecked = collect($categoryMenus)->contains(fn ($menu) => in_array((string) $menu->id, $oldMenuIds, true));
+                                $categoryIsOpen = $loop->first || $categoryHasChecked;
                             @endphp
 
-                            <div class="{{ !$loop->first ? 'mt-8' : '' }}">
-                                <div class="flex items-center justify-between mb-4">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-1.5 h-6 rounded-full menu-accent"></div>
-                                        <div class="font-bold text-[#4b3f35] text-base sm:text-lg">
-                                            {{ $categoryName }}
+                            <div class="menu-category rounded-2xl border border-[#eadfd3] bg-[#fcf8f4] overflow-hidden {{ !$loop->first ? 'mt-4' : '' }}">
+                                <button
+                                    type="button"
+                                    class="menu-category-toggle w-full flex items-center justify-between gap-3 p-4 text-left hover:bg-white transition"
+                                    data-menu-category-toggle
+                                    data-target="#{{ $categoryPanelId }}"
+                                    aria-expanded="{{ $categoryIsOpen ? 'true' : 'false' }}"
+                                    aria-controls="{{ $categoryPanelId }}">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-14 h-14 rounded-2xl overflow-hidden shrink-0 shadow-sm border border-[#efe4d8] bg-white soft-shine">
+                                            <img
+                                                src="{{ $menuImage }}"
+                                                alt="{{ $categoryName }}"
+                                                class="w-full h-full object-cover"
+                                                onerror="this.onerror=null;this.src='{{ asset('images/menu-icons/other.jpg') }}';">
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="font-bold text-[#4b3f35] text-base sm:text-lg truncate">
+                                                {{ $categoryName }}
+                                            </div>
+                                            <div class="mt-1 text-xs text-[#9a7d63]">
+                                                {{ $categoryMenus->count() }}件
+                                                @if($categoryHasChecked)
+                                                    ・選択中あり
+                                                @endif
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="text-[11px] sm:text-xs text-[#9a7d63] tracking-wider">
-                                        CATEGORY
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="hidden sm:inline text-[11px] text-[#9a7d63] tracking-wider">CATEGORY</span>
+                                        <span class="menu-category-chevron {{ $categoryIsOpen ? 'is-open' : '' }}" aria-hidden="true"></span>
                                     </div>
-                                </div>
+                                </button>
 
-                                <div class="space-y-4">
+                                <div id="{{ $categoryPanelId }}" class="{{ $categoryIsOpen ? '' : 'hidden' }} space-y-4 border-t border-[#eadfd3] bg-white p-4">
                                     @foreach($categoryMenus as $menu)
                                         @php
                                             $isChecked = in_array((string) $menu->id, $oldMenuIds, true);
@@ -265,14 +289,6 @@
 
                                             <div class="menu-card relative z-10 rounded-[1.4rem] border border-[#eadfd3] bg-white p-4 sm:p-5 transition duration-200 hover:border-[#d6c5b5] hover:shadow-md">
                                                 <div class="flex gap-4">
-                                                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.2rem] overflow-hidden shrink-0 shadow-sm border border-[#efe4d8] bg-white soft-shine">
-                                                        <img
-                                                            src="{{ $menuImage }}"
-                                                            alt="{{ $categoryName }}"
-                                                            class="w-full h-full object-cover"
-                                                            onerror="this.onerror=null;this.src='{{ asset('images/menu-icons/other.jpg') }}';">
-                                                    </div>
-
                                                     <div class="flex-1 min-w-0">
                                                         <div class="flex flex-wrap items-start justify-between gap-3">
                                                             <div class="min-w-0">
@@ -287,6 +303,10 @@
                                                                             人気
                                                                         </span>
                                                                     @endif
+
+                                                                    <span class="menu-selected-badge text-[10px] sm:text-xs px-2.5 py-1 rounded-full text-white font-bold shadow-sm">
+                                                                        選択中
+                                                                    </span>
                                                                 </div>
 
                                                                 @if(!empty($menu->description))
@@ -478,7 +498,7 @@
                 <div class="space-y-6">
                     <div class="lg:sticky lg:top-32 space-y-6">
 
-                        <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
+                        <div class="reserve-summary-card relative z-10 rounded-2xl shadow-sm border p-4 sm:p-5">
                             <div class="flex items-center justify-between mb-4">
                                 <h2 class="text-lg font-bold text-[#4b3f35]">選択中の内容</h2>
                                 <span class="text-xs text-[#9a7d63]">SUMMARY</span>
@@ -524,6 +544,13 @@
                             </div>
                         </div>
 
+                        <button
+                            type="submit"
+                            id="submitButtonSummary"
+                            class="w-full text-white py-4 rounded-full text-base sm:text-lg font-bold shadow-lg hover:opacity-95 transition"
+                            style="background: {{ $theme }};">
+                            予約確認へ進む
+                        </button>
 
                         <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
                             <div class="flex items-center justify-between mb-4">
@@ -642,14 +669,6 @@
                                 </div>
                             @endif
                         </div>
-
-                        <button
-                            type="submit"
-                            id="submitButtonDesktop"
-                            class="hidden lg:block w-full text-white py-4 rounded-full text-base sm:text-lg font-bold shadow-lg hover:opacity-95 transition"
-                            style="background: {{ $theme }};">
-                            予約確認へ進む
-                        </button>
                     </div>
                 </div>
             </div>
@@ -746,13 +765,25 @@
         color: #5f4d3e;
     }
 
+    .reserve-summary-card {
+        border-color: color-mix(in srgb, {{ $theme }} 24%, #eadfd3 76%);
+        background:
+            linear-gradient(145deg, color-mix(in srgb, {{ $theme }} 8%, #fff 92%), #fff 62%),
+            #fff;
+        box-shadow:
+            0 0 0 3px color-mix(in srgb, {{ $theme }} 8%, transparent),
+            0 16px 34px rgba(75, 63, 53, 0.08);
+    }
+
     .menu-check:checked + .menu-card,
     .staff-radio:checked + .staff-card {
         border-color: {{ $theme }};
         box-shadow:
-            0 0 0 3px rgba(183, 135, 92, 0.12),
-            0 18px 40px rgba(75, 63, 53, 0.08);
-        background: linear-gradient(to bottom right, #ffffff, #fcf8f4);
+            0 0 0 3px color-mix(in srgb, {{ $theme }} 18%, transparent),
+            0 18px 40px rgba(75, 63, 53, 0.10);
+        background:
+            linear-gradient(to bottom right, color-mix(in srgb, {{ $theme }} 9%, white 91%), #fff 70%),
+            #fff;
     }
 
     .menu-card,
@@ -767,6 +798,35 @@
         inset: 0;
         background: linear-gradient(135deg, rgba(255,255,255,0.00), rgba(255,255,255,0.35));
         pointer-events: none;
+    }
+
+    .menu-card::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 0;
+        background: {{ $theme }};
+        opacity: 0;
+        transition: width 0.2s ease, opacity 0.2s ease;
+    }
+
+    .menu-check:checked + .menu-card::before {
+        width: 7px;
+        opacity: 1;
+    }
+
+    .menu-selected-badge {
+        display: none;
+        background: {{ $theme }};
+    }
+
+    .menu-check:checked + .menu-card .menu-selected-badge {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .menu-check:checked + .menu-card .text-\[\#4b3f35\] {
+        color: #342b24;
     }
 
     .menu-card:hover,
@@ -844,6 +904,19 @@
         box-shadow: 0 10px 24px rgba(75, 63, 53, 0.06);
     }
 
+    .menu-category-chevron {
+        width: 10px;
+        height: 10px;
+        border-right: 2px solid #9a7d63;
+        border-bottom: 2px solid #9a7d63;
+        transform: rotate(45deg);
+        transition: transform 0.2s ease;
+    }
+
+    .menu-category-chevron.is-open {
+        transform: rotate(225deg);
+    }
+
     @media (max-width: 640px) {
         .salon-info-row {
             grid-template-columns: 1fr;
@@ -862,6 +935,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const oldTime = @json($oldTime);
 
     bindMenuEvents();
+    bindMenuCategoryEvents();
     bindStaffEvents();
 
     flatpickr("#date", {
@@ -972,6 +1046,20 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+function bindMenuCategoryEvents() {
+    document.querySelectorAll('[data-menu-category-toggle]').forEach(button => {
+        button.addEventListener('click', function () {
+            const target = document.querySelector(this.dataset.target);
+            if (!target) return;
+
+            const isOpening = target.classList.contains('hidden');
+            target.classList.toggle('hidden', !isOpening);
+            this.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+            this.querySelector('.menu-category-chevron')?.classList.toggle('is-open', isOpening);
+        });
+    });
+}
 
 function bindMenuEvents() {
     document.querySelectorAll('.menu-check').forEach(el => {

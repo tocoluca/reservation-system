@@ -122,12 +122,17 @@
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-xl shadow">
-                    <div class="text-gray-500 text-sm">申請待ち</div>
-                    <div class="text-3xl font-bold mt-2">
+                <a href="{{ route('admin.applications', ['status' => 'pending']) }}"
+                   class="block p-6 rounded-xl shadow transition hover:-translate-y-0.5 hover:shadow-md {{ ($pendingCount ?? 0) > 0 ? 'border border-red-200' : 'bg-white' }}"
+                   style="{{ ($pendingCount ?? 0) > 0 ? 'background:#fef2f2; box-shadow:0 10px 26px rgba(220,38,38,0.12);' : '' }}">
+                    <div class="{{ ($pendingCount ?? 0) > 0 ? 'text-red-700' : 'text-gray-500' }} text-sm font-semibold">申請待ち</div>
+                    <div class="text-3xl font-bold mt-2 {{ ($pendingCount ?? 0) > 0 ? 'text-red-700' : 'text-gray-900' }}">
                         {{ $pendingCount ?? 0 }}
                     </div>
-                </div>
+                    <div class="text-xs font-semibold mt-3 {{ ($pendingCount ?? 0) > 0 ? 'text-red-600' : 'text-blue-600' }}">
+                        申請管理へ
+                    </div>
+                </a>
 
                 <div class="bg-white p-6 rounded-xl shadow">
                     <div class="text-gray-500 text-sm">利用停止中</div>

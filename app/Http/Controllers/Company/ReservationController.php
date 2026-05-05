@@ -556,35 +556,26 @@ class ReservationController extends Controller
                             $slotEnd
                         );
 
-                        if (
-                            (int) ($result['available'] ?? 0) > 0
-                            && (int) ($result['total'] ?? 0) > (int) ($result['available'] ?? 0)
-                        ) {
-                            foreach ($staffList as $staff) {
-                                if (!$this->isStaffSchedulable($staff, $slotStart, $slotEnd, $shifts, $shiftPatterns, $vacations)) {
-                                    continue;
-                                }
+                        if ((int) ($result['total'] ?? 0) > (int) ($result['available'] ?? 0)) {
+                            $reservationOptions = $this->overlappingReservationOptionsForSlot(
+                                $company,
+                                $staffList,
+                                $slotStart,
+                                $slotEnd,
+                                $shifts,
+                                $shiftPatterns,
+                                $vacations
+                            );
 
-                                $overlapDetail = $this->firstOverlappingReservationDetail(
-                                    $company,
-                                    (int) $staff->id,
-                                    $slotStart,
-                                    $slotEnd
-                                );
+                            if (!empty($reservationOptions)) {
+                                $firstReservation = $reservationOptions[0];
 
-                                if (!$overlapDetail?->reservation) {
-                                    continue;
-                                }
-
-                                $reservation = $overlapDetail->reservation;
-
-                                $result['reservation_id'] = $reservation->id;
-                                $result['customer_name'] = $reservation->customer_name;
-                                $result['customer_phone'] = $reservation->customer_phone;
-                                $result['staff_name'] = $staff->name;
-                                $result['reservation_start'] = optional($reservation->start_at)->format('Y-m-d H:i');
-
-                                break;
+                                $result['reservations'] = $reservationOptions;
+                                $result['reservation_id'] = $firstReservation['id'];
+                                $result['customer_name'] = $firstReservation['customer_name'];
+                                $result['customer_phone'] = $firstReservation['customer_phone'];
+                                $result['staff_name'] = $firstReservation['staff_name'];
+                                $result['reservation_start'] = $firstReservation['reservation_start'];
                             }
                         }
 
@@ -1427,6 +1418,65 @@ class ReservationController extends Controller
             ->with('reservation')
             ->orderBy('start_at')
             ->first();
+    }
+
+    private function overlappingReservationDetails($company, int $staffId, Carbon $start, Carbon $end)
+    {
+        return $this->reservationDetailOverlapQuery($company, $staffId, $start, $end)
+            ->with(['reservation', 'staff'])
+            ->orderBy('start_at')
+            ->get();
+    }
+
+    private function overlappingReservationOptionsForSlot(
+        $company,
+        $staffList,
+        Carbon $start,
+        Carbon $end,
+        $shifts,
+        $shiftPatterns,
+        $vacations
+    ): array {
+        $reservations = [];
+
+        foreach ($staffList as $staff) {
+            if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+                continue;
+            }
+
+            foreach ($this->overlappingReservationDetails($company, (int) $staff->id, $start, $end) as $detail) {
+                $reservation = $detail->reservation;
+
+                if (!$reservation) {
+                    continue;
+                }
+
+                $reservationId = (int) $reservation->id;
+
+                if (!isset($reservations[$reservationId])) {
+                    $reservations[$reservationId] = [
+                        'id' => $reservationId,
+                        'customer_name' => $reservation->customer_name,
+                        'customer_phone' => $reservation->customer_phone,
+                        'reservation_start' => optional($reservation->start_at)->format('Y-m-d H:i'),
+                        'staff_names' => [],
+                    ];
+                }
+
+                $staffName = $detail->staff?->name ?? $staff->name;
+
+                if ($staffName && !in_array($staffName, $reservations[$reservationId]['staff_names'], true)) {
+                    $reservations[$reservationId]['staff_names'][] = $staffName;
+                }
+            }
+        }
+
+        return array_values(array_map(function (array $reservation) {
+            $reservation['staff_name'] = implode(' / ', $reservation['staff_names']);
+            unset($reservation['staff_names']);
+
+            return $reservation;
+        }, $reservations));
     }
 
     private function checkAvailability(

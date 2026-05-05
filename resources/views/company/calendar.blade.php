@@ -215,6 +215,7 @@ const mode = "{{ $mode }}";
 let selectedDatetime = null;
 let selectedStaffId = null;
 let cancelReservationId = null;
+let slotActionData = null;
 let selectedMenuIds = [];
 let availableStaffCache = [];
 let selectedMenuDuration = 0;
@@ -358,6 +359,15 @@ function safeText(value, fallback = '') {
     if (value === null || value === undefined) return fallback;
     const text = String(value).trim();
     return text === '' ? fallback : text;
+}
+
+function escapeAttr(value) {
+    return safeText(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 function toList(value) {
@@ -555,12 +565,24 @@ function loadCalendar() {
 
                     let clickable = cell.status !== '×';
                     let wrapperClass = clickable ? 'cursor-pointer transition hover:scale-[1.02]' : 'cursor-not-allowed';
+                    const hasReservation = Boolean(cell.reservation_id);
+                    const available = parseInt(cell.available ?? 0);
+                    const opensChoice = clickable && hasReservation && available > 0;
+                    const clickAction = opensChoice
+                        ? `onclick="handleSlotActionClick(this)"
+                           data-datetime="${escapeAttr(`${d} ${time}`)}"
+                           data-id="${escapeAttr(cell.reservation_id)}"
+                           data-reservation-date="${escapeAttr(cell.reservation_start ?? `${d} ${time}`)}"
+                           data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
+                           data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                           data-staff-name="${escapeAttr(cell.staff_name ?? '')}"`
+                        : (clickable ? `onclick="startReservationFlow('${d} ${time}')"` : '');
 
                     html += `
                         <td class="border-b px-2 py-2 text-center ${clickable ? 'bg-white' : 'bg-stone-50'} align-middle"
                             style="width:${dayColWidth}px; min-width:${dayColWidth}px; max-width:${dayColWidth}px;">
                             <div class="${wrapperClass}"
-                                 ${clickable ? `onclick="startReservationFlow('${d} ${time}')"` : ''}>
+                                 ${clickAction}>
                                 ${getStatusBadge(cell, d, time)}                            </div>
                         </td>
                     `;
@@ -743,6 +765,60 @@ function startReservationFlow(datetime) {
     document.getElementById('menuStepDatetime').innerText = datetime;
     document.getElementById('menuStepModal').classList.remove('hidden');
     document.getElementById('menuStepModal').classList.add('flex');
+}
+
+function handleSlotActionClick(el) {
+    slotActionData = {
+        datetime: el.dataset.datetime || '',
+        id: el.dataset.id || '',
+        reservationDate: el.dataset.reservationDate || el.dataset.datetime || '',
+        customerName: el.dataset.customerName || '',
+        customerPhone: el.dataset.customerPhone || '',
+        staffName: el.dataset.staffName || ''
+    };
+
+    document.getElementById('slotActionDatetime').innerText = slotActionData.datetime || '-';
+    document.getElementById('slotActionCustomerName').innerText = slotActionData.customerName || '-';
+    document.getElementById('slotActionCustomerPhone').innerText = slotActionData.customerPhone || '-';
+    document.getElementById('slotActionStaffName').innerText = slotActionData.staffName || '-';
+
+    document.getElementById('slotActionModal').classList.remove('hidden');
+    document.getElementById('slotActionModal').classList.add('flex');
+}
+
+function closeSlotActionModal() {
+    document.getElementById('slotActionModal').classList.add('hidden');
+    document.getElementById('slotActionModal').classList.remove('flex');
+    slotActionData = null;
+}
+
+function chooseSlotReservation() {
+    const datetime = slotActionData?.datetime;
+    closeSlotActionModal();
+
+    if (datetime) {
+        startReservationFlow(datetime);
+    }
+}
+
+function chooseSlotCancel() {
+    const data = slotActionData;
+    closeSlotActionModal();
+
+    if (!data?.id) {
+        alert('予約IDが取得できません');
+        return;
+    }
+
+    handleCancelClick({
+        dataset: {
+            id: data.id,
+            datetime: data.reservationDate || data.datetime,
+            customerName: data.customerName,
+            customerPhone: data.customerPhone,
+            staffName: data.staffName
+        }
+    });
 }
 
 function closeMenuStepModal() {
@@ -1089,7 +1165,7 @@ function closeCancelConfirmModal() {
     cancelReservationId = null;
 }
 
-function executeCancelReservation() {
+function executeCancelReservation(cancelKind = 'shop') {
     if (!cancelReservationId) {
         alert('予約IDが取得できません');
         return;
@@ -1100,7 +1176,8 @@ function executeCancelReservation() {
         headers: {
             'X-CSRF-TOKEN': '{{ csrf_token() }}',
             'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ cancel_kind: cancelKind })
     })
     .then(res => res.json())
     .then(result => {
@@ -1225,6 +1302,59 @@ function formatTel(input) {
     </div>
 </div>
 
+{{-- 予約・キャンセル選択 --}}
+<div id="slotActionModal"
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
+        <h2 class="text-lg font-bold mb-4 text-stone-800">操作を選択</h2>
+
+        <p class="text-sm text-gray-500 mb-4">
+            この時間帯には空き枠と既存予約があります。予約登録または既存予約のキャンセルを選択してください。
+        </p>
+
+        <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-3 text-sm">
+            <div>
+                <div class="text-stone-500">日時</div>
+                <div id="slotActionDatetime" class="font-semibold text-stone-800">-</div>
+            </div>
+            <div>
+                <div class="text-stone-500">既存予約の顧客名</div>
+                <div id="slotActionCustomerName" class="font-semibold text-stone-800">-</div>
+            </div>
+            <div>
+                <div class="text-stone-500">電話番号</div>
+                <div id="slotActionCustomerPhone" class="font-semibold text-stone-800">-</div>
+            </div>
+            <div>
+                <div class="text-stone-500">担当者</div>
+                <div id="slotActionStaffName" class="font-semibold text-stone-800">-</div>
+            </div>
+        </div>
+
+        <div class="mt-5 grid gap-3">
+            <button type="button"
+                    onclick="chooseSlotReservation()"
+                    class="w-full rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
+                    style="background: {{ $theme }};">
+                予約
+            </button>
+            <button type="button"
+                    onclick="chooseSlotCancel()"
+                    class="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition">
+                キャンセル
+            </button>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button type="button"
+                    onclick="closeSlotActionModal()"
+                    class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
+                戻る
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- キャンセル確認 --}}
 <div id="cancelConfirmModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
@@ -1254,18 +1384,30 @@ function formatTel(input) {
             </div>
         </div>
 
-        <div class="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+        <div class="mt-5 grid gap-3">
+            <button type="button"
+                    onclick="executeCancelReservation('customer')"
+                    class="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition">
+                連絡あり
+            </button>
+            <button type="button"
+                    onclick="executeCancelReservation('no_show')"
+                    class="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition">
+                無断キャンセル
+            </button>
+            <button type="button"
+                    onclick="executeCancelReservation('shop')"
+                    class="w-full rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
+                    style="background: {{ $theme }};">
+                店舗都合
+            </button>
+        </div>
+
+        <div class="flex justify-end mt-4">
             <button type="button"
                     onclick="closeCancelConfirmModal()"
                     class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
                 戻る
-            </button>
-
-            <button type="button"
-                    onclick="executeCancelReservation()"
-                    class="px-4 py-3 text-sm text-white rounded-xl hover:opacity-90 transition"
-                    style="background: {{ $theme }};">
-                この予約をキャンセルする
             </button>
         </div>
     </div>

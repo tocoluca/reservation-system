@@ -69,7 +69,8 @@ class ReservationController extends Controller
         }
 
         $reservations = $query
-            ->orderBy('start_at', 'desc')
+            ->orderBy('start_at')
+            ->orderBy('id')
             ->paginate(20)
             ->withQueryString();
 
@@ -554,6 +555,38 @@ class ReservationController extends Controller
                             $slotStart,
                             $slotEnd
                         );
+
+                        if (
+                            (int) ($result['available'] ?? 0) > 0
+                            && (int) ($result['total'] ?? 0) > (int) ($result['available'] ?? 0)
+                        ) {
+                            foreach ($staffList as $staff) {
+                                if (!$this->isStaffSchedulable($staff, $slotStart, $slotEnd, $shifts, $shiftPatterns, $vacations)) {
+                                    continue;
+                                }
+
+                                $overlapDetail = $this->firstOverlappingReservationDetail(
+                                    $company,
+                                    (int) $staff->id,
+                                    $slotStart,
+                                    $slotEnd
+                                );
+
+                                if (!$overlapDetail?->reservation) {
+                                    continue;
+                                }
+
+                                $reservation = $overlapDetail->reservation;
+
+                                $result['reservation_id'] = $reservation->id;
+                                $result['customer_name'] = $reservation->customer_name;
+                                $result['customer_phone'] = $reservation->customer_phone;
+                                $result['staff_name'] = $staff->name;
+                                $result['reservation_start'] = optional($reservation->start_at)->format('Y-m-d H:i');
+
+                                break;
+                            }
+                        }
 
                         $data[$time->format('H:i')][$day->format('Y-m-d')] = $result;
 
@@ -1176,7 +1209,7 @@ class ReservationController extends Controller
         return $result;
     }
 
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
         $company = auth()->guard('company')->user()->company;
 
@@ -1191,9 +1224,17 @@ class ReservationController extends Controller
             ], 404);
         }
 
-        $reservation->status = Reservation::STATUS_CANCELLED;
+        $cancelKind = $request->input('cancel_kind', 'shop');
+
+        if (!in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
+            $cancelKind = 'shop';
+        }
+
+        $reservation->status = $cancelKind === 'no_show'
+            ? Reservation::STATUS_NO_SHOW
+            : Reservation::STATUS_CANCELLED;
         $reservation->cancelled_at = now();
-        $reservation->cancelled_type = 'shop';
+        $reservation->cancelled_type = $cancelKind;
         $reservation->save();
 
         return response()->json(['success' => true]);

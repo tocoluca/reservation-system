@@ -567,7 +567,10 @@ function loadCalendar() {
                     let wrapperClass = clickable ? 'cursor-pointer transition hover:scale-[1.02]' : 'cursor-not-allowed';
                     const hasReservation = Boolean(cell.reservation_id);
                     const available = parseInt(cell.available ?? 0);
-                    const opensChoice = clickable && hasReservation && available > 0;
+                    const canReserve = clickable;
+                    clickable = canReserve || hasReservation;
+                    wrapperClass = clickable ? 'cursor-pointer transition hover:scale-[1.02]' : 'cursor-not-allowed';
+                    const opensChoice = canReserve && hasReservation && available > 0;
                     const clickAction = opensChoice
                         ? `onclick="handleSlotActionClick(this)"
                            data-datetime="${escapeAttr(`${d} ${time}`)}"
@@ -575,8 +578,17 @@ function loadCalendar() {
                            data-reservation-date="${escapeAttr(cell.reservation_start ?? `${d} ${time}`)}"
                            data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
                            data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
-                           data-staff-name="${escapeAttr(cell.staff_name ?? '')}"`
-                        : (clickable ? `onclick="startReservationFlow('${d} ${time}')"` : '');
+                           data-staff-name="${escapeAttr(cell.staff_name ?? '')}"
+                           data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"`
+                        : (hasReservation
+                            ? `onclick="handleCancelClick(this)"
+                               data-datetime="${escapeAttr(cell.reservation_start ?? `${d} ${time}`)}"
+                               data-id="${escapeAttr(cell.reservation_id)}"
+                               data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
+                               data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                               data-staff-name="${escapeAttr(cell.staff_name ?? '')}"
+                               data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"`
+                            : (canReserve ? `onclick="startReservationFlow('${d} ${time}')"` : ''));
 
                     html += `
                         <td class="border-b px-2 py-2 text-center ${clickable ? 'bg-white' : 'bg-stone-50'} align-middle"
@@ -774,7 +786,8 @@ function handleSlotActionClick(el) {
         reservationDate: el.dataset.reservationDate || el.dataset.datetime || '',
         customerName: el.dataset.customerName || '',
         customerPhone: el.dataset.customerPhone || '',
-        staffName: el.dataset.staffName || ''
+        staffName: el.dataset.staffName || '',
+        reservations: parseReservationOptions(el.dataset.reservations)
     };
 
     document.getElementById('slotActionDatetime').innerText = slotActionData.datetime || '-';
@@ -805,6 +818,11 @@ function chooseSlotCancel() {
     const data = slotActionData;
     closeSlotActionModal();
 
+    if (data?.reservations?.length > 1) {
+        openReservationSelectModal(data.reservations);
+        return;
+    }
+
     if (!data?.id) {
         alert('予約IDが取得できません');
         return;
@@ -819,6 +837,60 @@ function chooseSlotCancel() {
             staffName: data.staffName
         }
     });
+}
+
+function parseReservationOptions(value) {
+    if (!value) return [];
+
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function openReservationSelectModal(reservations) {
+    const list = document.getElementById('reservationSelectList');
+
+    if (!list) return;
+
+    list.innerHTML = toList(reservations).map((reservation) => {
+        const id = escapeAttr(reservation.id);
+        const datetime = escapeAttr(reservation.reservation_start || '');
+        const customerName = escapeAttr(reservation.customer_name || '-');
+        const customerPhone = escapeAttr(reservation.customer_phone || '-');
+        const staffName = escapeAttr(reservation.staff_name || '-');
+
+        return `
+            <button type="button"
+                    class="w-full rounded-2xl border border-stone-200 bg-white p-4 text-left shadow-sm transition hover:border-red-300 hover:bg-red-50"
+                    onclick="selectReservationForCancel(this)"
+                    data-id="${id}"
+                    data-datetime="${datetime}"
+                    data-customer-name="${customerName}"
+                    data-customer-phone="${customerPhone}"
+                    data-staff-name="${staffName}">
+                <div class="text-sm font-bold text-stone-900">${customerName}</div>
+                <div class="mt-1 text-xs text-stone-500">${datetime}</div>
+                <div class="mt-1 text-xs text-stone-500">${staffName}</div>
+                <div class="mt-1 text-xs text-stone-500">${customerPhone}</div>
+            </button>
+        `;
+    }).join('');
+
+    document.getElementById('reservationSelectModal').classList.remove('hidden');
+    document.getElementById('reservationSelectModal').classList.add('flex');
+}
+
+function closeReservationSelectModal() {
+    document.getElementById('reservationSelectModal').classList.add('hidden');
+    document.getElementById('reservationSelectModal').classList.remove('flex');
+}
+
+function selectReservationForCancel(el) {
+    closeReservationSelectModal();
+    handleCancelClick(el);
 }
 
 function closeMenuStepModal() {
@@ -1141,6 +1213,13 @@ function submitReservation() {
 }
 
 function handleCancelClick(el) {
+    const reservationOptions = parseReservationOptions(el.dataset.reservations);
+
+    if (reservationOptions.length > 1) {
+        openReservationSelectModal(reservationOptions);
+        return;
+    }
+
     const reservationId = el.dataset.id;
 
     if (!reservationId) {
@@ -1356,6 +1435,27 @@ function formatTel(input) {
 </div>
 
 {{-- キャンセル確認 --}}
+{{-- キャンセル対象選択 --}}
+<div id="reservationSelectModal"
+     class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
+        <h2 class="text-lg font-bold mb-2 text-stone-800">キャンセルする予約を選択</h2>
+        <p class="text-sm text-gray-500 mb-4">
+            この時間帯には複数の予約があります。キャンセルする予約を選んでください。
+        </p>
+
+        <div id="reservationSelectList" class="space-y-3"></div>
+
+        <div class="flex justify-end mt-4">
+            <button type="button"
+                    onclick="closeReservationSelectModal()"
+                    class="px-4 py-3 text-sm bg-gray-200 rounded-xl hover:bg-gray-300 transition">
+                戻る
+            </button>
+        </div>
+    </div>
+</div>
+
 <div id="cancelConfirmModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">

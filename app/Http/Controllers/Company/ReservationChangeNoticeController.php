@@ -156,8 +156,8 @@ class ReservationChangeNoticeController extends Controller
 
             if ($canLine && $confirmUrl) {
                 $text = "【{$company->name}】\n"
-                    . "ご予約変更のお願いがあります。\n"
-                    . "恐れ入りますが、詳細をご確認ください。\n"
+                    . "ご予約内容の変更についてお願いがあります。\n"
+                    . "お手数ですが、詳細をご確認ください。\n"
                     . $confirmUrl;
 
                 $lineSent = app(LineMessagingService::class)->pushText(

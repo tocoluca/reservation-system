@@ -72,7 +72,7 @@ class SendReviewRequestMails extends Command
                     (bool) ($reservation->customer->line_review_opt_in ?? true)
                 ) {
                     $text = "【{$reservation->company->name}】ご来店ありがとうございました。\n"
-                        . "よろしければ口コミのご協力をお願いいたします。\n"
+                        . "よろしければ、口コミのご協力をお願いいたします。\n"
                         . $reviewUrl;
 
                     $lineSent = app(LineMessagingService::class)->pushText(

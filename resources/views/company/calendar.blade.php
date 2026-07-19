@@ -84,7 +84,7 @@
     </details>
 
     {{-- 操作エリア --}}
-    <div class="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6 rounded-[2rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur lg:sticky lg:top-24 lg:z-40">
+    <div class="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6 rounded-[2rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="xl:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
             <div class="text-xs font-semibold text-stone-500 mb-2">日付操作</div>
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Reservation extends Model
 {
@@ -49,7 +50,16 @@ class Reservation extends Model
         'reminder_sent_at'   => 'datetime',
 		'review_requested_at' => 'datetime',
 		'review_submitted_at' => 'datetime',
-    ];
+	];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $reservation): void {
+            if (blank($reservation->review_token)) {
+                $reservation->review_token = Str::random(40);
+            }
+        });
+    }
 
     public function customer()
     {

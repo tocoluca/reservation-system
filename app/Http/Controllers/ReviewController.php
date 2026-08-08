@@ -84,7 +84,7 @@ class ReviewController extends Controller
             return false;
         }
 
-        if ($reservation->status === 'cancelled') {
+        if ($reservation->status !== Reservation::STATUS_COMPLETED) {
             return false;
         }
 

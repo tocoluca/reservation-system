@@ -17,7 +17,7 @@ class SendReviewRequestMails extends Command
     public function handle(): int
     {
         $query = Reservation::with(['company', 'review', 'customer'])
-            ->where('status', 'reserved')
+            ->where('status', Reservation::STATUS_COMPLETED)
             ->whereNotNull('review_token')
             ->whereNull('review_requested_at')
             ->whereNull('review_submitted_at')

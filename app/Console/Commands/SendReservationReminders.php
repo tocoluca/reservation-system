@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Mail\ReservationReminderMail;
 use App\Models\Reservation;
 use App\Services\LineMessagingService;
+use App\Services\WebCancelDeadlineService;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -77,6 +78,24 @@ class SendReservationReminders extends Command
                         . "日時：{$dateText}\n"
                         . "担当：{$staffName}\n"
                         . "内容：{$menus}";
+
+                    $cancelUrl = !empty($reservation->cancel_token)
+                        ? url('/cancel/' . $reservation->cancel_token)
+                        : null;
+
+                    $text .= "\n\nキャンセルについて\n";
+
+                    if ($cancelUrl) {
+                        $cancelDeadlineAt = app(WebCancelDeadlineService::class)->deadlineFor($reservation);
+                        $cancelDeadlineText = $cancelDeadlineAt->format('Y年n月j日 G時')
+                            . ($cancelDeadlineAt->minute > 0 ? $cancelDeadlineAt->format('i分') : '');
+
+                        $text .= "{$cancelDeadlineText}までに、下記URLからキャンセル手続きを行ってください。\n"
+                            . "{$cancelUrl}\n"
+                            . "※ {$cancelDeadlineText}以降のキャンセルは、店舗へご連絡ください。";
+                    } else {
+                        $text .= 'ご予約内容の変更・キャンセルをご希望の場合は、店舗までご連絡ください。';
+                    }
 
                     $lineSent = app(LineMessagingService::class)->pushText(
                         $company,

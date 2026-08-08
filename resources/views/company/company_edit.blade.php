@@ -6,6 +6,7 @@
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
     $themeSoft = $theme . '15';
+    $isPlatinumPlan = ($company->plan_code ?? null) === 'platinum';
 
     $days = [0=>'日',1=>'月',2=>'火',3=>'水',4=>'木',5=>'金',6=>'土'];
     $patterns = old('open_patterns', $company->open_patterns ?? []);
@@ -346,63 +347,44 @@
                     @enderror
                 </div>
 
-                @if((int) $company->line_login_enabled === 1)
-                    <div class="md:col-span-2">
-                        <div class="rounded-2xl border border-green-200 bg-green-50 p-4">
-                            <h3 class="font-bold text-green-800 mb-2">LINEログイン設定</h3>
-                            <p class="text-sm text-green-700 leading-6">
-                                LINEログインが有効になっているため、Channel ID、Channel Secret、LINE Channel Access Token、LINE Official Account ID を設定できます。
-                            </p>
+                <div class="md:col-span-2">
+                    <label class="block font-semibold mb-2 flex items-center gap-2">
+                        LINE機能の利用状況
+                        <span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
+                            <span class="tooltip-text">
+                                LINEログイン・LINE通知の設定は管理者が行います。この画面では現在の利用状況のみ確認できます。
+                            </span>
+                        </span>
+                    </label>
+
+                    <div class="rounded-2xl border border-violet-200 bg-violet-50 p-4 space-y-3">
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="font-semibold text-violet-950">LINEログイン</span>
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold {{ $isPlatinumPlan ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600' }}">
+                                {{ $isPlatinumPlan ? '利用中' : '利用していません' }}
+                            </span>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="block font-semibold mb-2">LINE Channel ID</label>
-                        <input type="text"
-                               name="line_channel_id"
-                               value="{{ old('line_channel_id', $company->line_channel_id) }}"
-                               class="w-full border rounded-2xl p-3 focus:ring-2"
-                               style="--tw-ring-color: {{ $theme }};">
-                        @error('line_channel_id')
-                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <span class="font-semibold text-violet-950">LINE通知機能</span>
+                            <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-bold {{ $isPlatinumPlan ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-600' }}">
+                                {{ $isPlatinumPlan ? '利用中' : '利用していません' }}
+                            </span>
+                        </div>
 
-                    <div>
-                        <label class="block font-semibold mb-2">LINE Channel Secret</label>
-                        <input type="text"
-                               name="line_channel_secret"
-                               value="{{ old('line_channel_secret', $company->line_channel_secret) }}"
-                               class="w-full border rounded-2xl p-3 focus:ring-2"
-                               style="--tw-ring-color: {{ $theme }};">
-                        @error('line_channel_secret')
-                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
-                        @enderror
+                        @unless($isPlatinumPlan)
+                            <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                                LINEログイン・LINE通知機能を利用するには、プラチナプランへの変更が必要です。
+                                <a href="{{ route('company.billing.index') }}" class="ml-1 font-bold underline hover:no-underline">プランを確認する</a>
+                            </div>
+                        @else
+                            <p class="text-sm leading-6 text-violet-700">
+                                LINE関連の設定変更が必要な場合は、管理者へお問い合わせください。
+                            </p>
+                        @endunless
                     </div>
+                </div>
 
-                    <div class="md:col-span-2">
-                        <label class="block font-semibold mb-2">LINE Channel Access Token</label>
-                        <textarea name="line_channel_access_token"
-                                  rows="4"
-                                  class="w-full border rounded-2xl p-3 focus:ring-2"
-                                  style="--tw-ring-color: {{ $theme }};">{{ old('line_channel_access_token', $company->line_channel_access_token) }}</textarea>
-                        @error('line_channel_access_token')
-                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label class="block font-semibold mb-2">LINE Official Account ID</label>
-                        <input type="text"
-                               name="line_official_account_id"
-                               value="{{ old('line_official_account_id', $company->line_official_account_id) }}"
-                               class="w-full border rounded-2xl p-3 focus:ring-2"
-                               style="--tw-ring-color: {{ $theme }};">
-                        @error('line_official_account_id')
-                            <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
-                        @enderror
-                    </div>
-                @endif
             </div>
         </section>
 

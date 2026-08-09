@@ -69,8 +69,8 @@ class ReservationController extends Controller
         }
 
         $reservations = $query
-            ->orderBy('start_at')
-            ->orderBy('id')
+            ->orderByDesc('start_at')
+            ->orderByDesc('id')
             ->paginate(20)
             ->withQueryString();
 

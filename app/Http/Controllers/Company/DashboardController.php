@@ -209,20 +209,22 @@ class DashboardController extends Controller
 		    ->where('is_read_by_company', false)
 		    ->count();
 
-        $todaySales = Reservation::where('company_id', $company->id)
+		$salesStatuses = [Reservation::STATUS_RESERVED, Reservation::STATUS_COMPLETED];
+
+		$todaySales = Reservation::where('company_id', $company->id)
             ->whereDate('start_at', $today->toDateString())
-            ->where('status', 'reserved')
+            ->whereIn('status', $salesStatuses)
             ->sum('total_price');
 
         $monthlySales = Reservation::where('company_id', $company->id)
             ->whereYear('start_at', $now->year)
             ->whereMonth('start_at', $now->month)
-            ->where('status', 'reserved')
+            ->whereIn('status', $salesStatuses)
             ->sum('total_price');
 
         $yearlySales = Reservation::where('company_id', $company->id)
             ->whereYear('start_at', $now->year)
-            ->where('status', 'reserved')
+            ->whereIn('status', $salesStatuses)
             ->sum('total_price');
 
         $period = request('period', 'month');
@@ -230,7 +232,7 @@ class DashboardController extends Controller
         $month = (int) request('month', now()->month);
 
         $query = Reservation::where('company_id', $company->id)
-            ->where('status', 'reserved');
+            ->whereIn('status', $salesStatuses);
 
         if ($period === 'month') {
             $query->whereYear('start_at', $year)
@@ -239,12 +241,12 @@ class DashboardController extends Controller
             $query->whereYear('start_at', $year);
         }
 
-		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year) {
+		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year, $salesStatuses) {
 
 		    $query = Reservation::where('company_id', $company->id)
 		        ->whereYear('start_at', $year)
 		        ->whereMonth('start_at', $chartMonth)
-		        ->where('status', 'reserved');
+		        ->whereIn('status', $salesStatuses);
 
 		    return (object) [
 		        'month' => $chartMonth,
@@ -274,11 +276,21 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $menuRanking = DB::table('reservation_menus')
+        $menuRankingQuery = DB::table('reservation_menus')
             ->join('reservations', 'reservations.id', '=', 'reservation_menus.reservation_id')
             ->join('menus', 'menus.id', '=', 'reservation_menus.menu_id')
             ->where('reservations.company_id', $company->id)
-            ->where('reservations.status', 'reserved')
+            ->whereIn('reservations.status', $salesStatuses);
+
+        if ($period === 'month') {
+            $menuRankingQuery
+                ->whereYear('reservations.start_at', $year)
+                ->whereMonth('reservations.start_at', $month);
+        } else {
+            $menuRankingQuery->whereYear('reservations.start_at', $year);
+        }
+
+        $menuRanking = $menuRankingQuery
             ->select('menus.name', DB::raw('COUNT(*) as total'))
             ->groupBy('menus.name')
             ->orderByDesc('total')
@@ -287,6 +299,9 @@ class DashboardController extends Controller
 
         $totalSales = (clone $query)->sum('total_price');
         $totalReservations = (clone $query)->count();
+        $salesPeriodLabel = $period === 'month'
+            ? "{$year}年{$month}月"
+            : "{$year}年";
 
         $averagePrice = $totalReservations
             ? round($totalSales / $totalReservations)
@@ -328,6 +343,8 @@ class DashboardController extends Controller
             'staffRanking',
             'menuRanking',
             'nominationRanking',
+            'totalSales',
+            'salesPeriodLabel',
             'averagePrice',
             'year',
             'month',

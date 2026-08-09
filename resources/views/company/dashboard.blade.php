@@ -275,7 +275,7 @@ body {
 .metric-label { font-size: .78rem; font-weight: 700; color: #64748b; }
 </style>
 
-<div x-data="{ tab: 'dashboard', showTomorrow: false }" class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div x-data="{ tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'), showTomorrow: false }" class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <section class="lux-hero rounded-[2rem] overflow-hidden mb-6">
         <div class="p-5 sm:p-7 lg:p-8">
             <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-7">
@@ -618,14 +618,14 @@ body {
         <div x-show="tab==='analytics'" class="space-y-5">
             <div class="card">
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5"><div><h2 class="text-2xl font-black">売上ダッシュボード</h2><p class="text-sm text-gray-500 mt-1">必要な数字だけ見やすく確認できます。</p></div></div>
-                <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <form method="GET" action="{{ route('company.dashboard') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <select name="period" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full"><option value="month" {{ $period=='month' ? 'selected':'' }}>月別</option><option value="year" {{ $period=='year' ? 'selected':'' }}>年別</option></select>
                     <select name="year" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full">@for($y = now()->year; $y >= now()->year - 5; $y--)<option value="{{ $y }}" {{ $year==$y ? 'selected':'' }}>{{ $y }}年</option>@endfor</select>
                     <select name="month" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full">@for($m = 1; $m <= 12; $m++)<option value="{{ $m }}" {{ $month==$m ? 'selected':'' }}>{{ $m }}月</option>@endfor</select>
                     <button class="rounded-2xl text-white font-bold px-4 py-2.5" style="background: {{ $theme }}">表示</button>
                 </form>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"><div class="kpi"><div class="metric-label">今日売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($todaySales) }}</div></div><div class="kpi"><div class="metric-label">今月売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($monthlySales) }}</div></div><div class="kpi"><div class="metric-label">今年売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($yearlySales) }}</div></div><div class="kpi"><div class="metric-label">客単価</div><div class="text-3xl font-black mt-2">¥{{ number_format($averagePrice) }}</div></div></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"><div class="kpi"><div class="metric-label">今日売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($todaySales) }}</div></div><div class="kpi"><div class="metric-label">{{ $salesPeriodLabel }}売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($totalSales) }}</div></div><div class="kpi"><div class="metric-label">客単価</div><div class="text-3xl font-black mt-2">¥{{ number_format($averagePrice) }}</div></div><div class="kpi"><div class="metric-label">今年売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($yearlySales) }}</div></div></div>
             <div class="card"><h3 class="section-title mb-4">売上推移（{{ $year }}年）</h3><div class="w-full overflow-x-auto"><div class="min-w-[560px]"><canvas id="salesChart"></canvas></div></div></div>
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div class="card"><h3 class="section-title mb-4">従業員売上ランキング</h3><div class="space-y-2">@forelse($staffRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->staff->name ?? '未設定' }}</span><span class="text-sm font-bold whitespace-nowrap">¥{{ number_format($row->total) }}</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>

@@ -72,6 +72,7 @@ class Company extends Authenticatable
         'line_channel_secret',
         'line_channel_access_token',
         'line_official_account_id',
+        'customer_notification_channel',
         'review_enabled',
         'menu_time_priority_flag',
         'prefer_less_capable_staff_for_menu_assignment',
@@ -183,6 +184,28 @@ class Company extends Authenticatable
     public function isCanceled(): bool
     {
         return in_array($this->subscription_status, ['canceled', 'incomplete_expired', 'unpaid'], true);
+    }
+
+    public function customerNotificationChannel(): string
+    {
+        if ($this->plan_code !== 'platinum') {
+            return 'email';
+        }
+
+        return in_array($this->customer_notification_channel, ['both', 'email', 'line'], true)
+            ? $this->customer_notification_channel
+            : 'both';
+    }
+
+    public function sendsCustomerEmail(): bool
+    {
+        return in_array($this->customerNotificationChannel(), ['both', 'email'], true);
+    }
+
+    public function sendsCustomerLine(): bool
+    {
+        return $this->plan_code === 'platinum'
+            && in_array($this->customerNotificationChannel(), ['both', 'line'], true);
     }
 
     public function planLabel(): string

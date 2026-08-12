@@ -86,10 +86,13 @@ class ReservationChangeNoticeController extends Controller
                 $customer = $reservation->customer;
 
                 $canLine = $customer
+                    && $company->sendsCustomerLine()
                     && !empty($customer->line_user_id)
-                    && (bool) ($customer->line_notifications_enabled ?? true);
+                    && (bool) ($customer->line_notifications_enabled ?? true)
+                    && (bool) ($customer->line_friend_flag ?? false);
 
-                $canMail = !empty($reservation->customer_email);
+                $canMail = $company->sendsCustomerEmail()
+                    && !empty($reservation->customer_email);
 
                 $contactType = $canLine ? 'line' : ($canMail ? 'mail' : 'phone');
                 $contactStatus = ($canLine || $canMail) ? 'pending' : 'phone_pending';
@@ -131,10 +134,13 @@ class ReservationChangeNoticeController extends Controller
             $customer = $reservation?->customer;
 
             $canLine = $customer
+                && $company->sendsCustomerLine()
                 && !empty($customer->line_user_id)
-                && (bool) ($customer->line_notifications_enabled ?? true);
+                && (bool) ($customer->line_notifications_enabled ?? true)
+                && (bool) ($customer->line_friend_flag ?? false);
 
-            $canMail = !empty($item->customer_email);
+            $canMail = $company->sendsCustomerEmail()
+                && !empty($item->customer_email);
 
             if (!$canLine && !$canMail) {
                 continue;

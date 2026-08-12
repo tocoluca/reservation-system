@@ -23,6 +23,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Carbon\Carbon;
@@ -109,6 +110,34 @@ class ReserveController extends Controller
             'services.line.client_secret' => $company->line_channel_secret,
             'services.line.redirect' => url('/line/callback'),
         ]);
+    }
+
+    private function getLineFriendFlag($lineUser): ?bool
+    {
+        if (blank($lineUser->token ?? null)) {
+            return null;
+        }
+
+        try {
+            $response = Http::withToken($lineUser->token)
+                ->acceptJson()
+                ->get('https://api.line.me/friendship/v1/status');
+
+            if ($response->successful() && $response->json('friendFlag') !== null) {
+                return (bool) $response->json('friendFlag');
+            }
+
+            Log::warning('LINE friendship status check failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LINE friendship status check threw an exception', [
+                'message' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 
     private function getLineProfileFromSession($company): ?array
@@ -316,7 +345,9 @@ class ReserveController extends Controller
             'reserve_line_company_code' => $company_code,
         ]);
 
-        return Socialite::driver('line')->redirect();
+        return Socialite::driver('line')
+            ->with(['bot_prompt' => 'normal'])
+            ->redirect();
     }
 
     public function lineCallback(Request $request)
@@ -340,6 +371,8 @@ class ReserveController extends Controller
                 ->with('error', 'LINEログインに失敗しました。時間をおいてもう一度お試しください。');
         }
 
+        $lineFriendFlag = $this->getLineFriendFlag($lineUser);
+
         $linkedCustomer = Customer::where('company_id', $company->id)
             ->where('line_user_id', $lineUser->getId())
             ->first();
@@ -349,6 +382,9 @@ class ReserveController extends Controller
 		    $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
 		    $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
 		    $linkedCustomer->line_notifications_enabled = true;
+		    if ($lineFriendFlag !== null) {
+		        $linkedCustomer->line_friend_flag = $lineFriendFlag;
+		    }
 		    $linkedCustomer->save();
 		}
 
@@ -361,6 +397,7 @@ class ReserveController extends Controller
                 'name'         => $lineUser->getName(),
                 'email'        => $lineUser->getEmail(),
                 'avatar'       => $lineUser->getAvatar(),
+                'friend_flag'  => $lineFriendFlag,
             ],
         ]);
 
@@ -397,8 +434,10 @@ class ReserveController extends Controller
 
 	    if (
 	        !$customer ||
+	        !$company->sendsCustomerLine() ||
 	        empty($customer->line_user_id) ||
-	        !(bool) ($customer->line_notifications_enabled ?? true)
+	        !(bool) ($customer->line_notifications_enabled ?? true) ||
+	        !(bool) ($customer->line_friend_flag ?? false)
 	    ) {
 	        return;
 	    }
@@ -890,6 +929,9 @@ public function store(Request $request, $company_code)
             $customer->line_picture_url = $lineProfile['avatar'] ?? ($customer->line_picture_url ?? null);
             $customer->line_linked_at = $customer->line_linked_at ?? now();
             $customer->line_notifications_enabled = true;
+		    if (array_key_exists('friend_flag', $lineProfile) && $lineProfile['friend_flag'] !== null) {
+		        $customer->line_friend_flag = (bool) $lineProfile['friend_flag'];
+		    }
         }
 
         $customer->save();
@@ -957,7 +999,10 @@ public function store(Request $request, $company_code)
 
     try {
         $reservation->load(['customer', 'staff', 'menus']);
-        if (!empty($reservation->customer_email)) {
+        if (
+            $company->sendsCustomerEmail() &&
+            !empty($reservation->customer_email)
+        ) {
             Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($company, $reservation));
         }
     } catch (\Throwable $e) {

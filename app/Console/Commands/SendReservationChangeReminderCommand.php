@@ -19,7 +19,7 @@ class SendReservationChangeReminderCommand extends Command
         $today = Carbon::today();
 
         $items = ReservationChangeNoticeItem::query()
-            ->with(['reservation', 'notice'])
+            ->with(['reservation.company', 'notice'])
             ->whereNotNull('customer_email')
             ->whereNotNull('response_token')
             ->whereIn('response_status', ['waiting', 'mail_sent', 'no_response'])
@@ -33,6 +33,11 @@ class SendReservationChangeReminderCommand extends Command
             $reservation = $item->reservation;
 
             if (!$reservation || empty($reservation->start_at)) {
+                $skipCount++;
+                continue;
+            }
+
+            if (!$reservation->company || !$reservation->company->sendsCustomerEmail()) {
                 $skipCount++;
                 continue;
             }

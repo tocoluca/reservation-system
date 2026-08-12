@@ -58,7 +58,10 @@ class SendReviewRequestMails extends Command
 
                 $sentAny = false;
 
-                if (!empty($reservation->customer_email)) {
+                if (
+                    $reservation->company->sendsCustomerEmail() &&
+                    !empty($reservation->customer_email)
+                ) {
                     Mail::to($reservation->customer_email)->send(
                         new ReviewRequestMail($reservation->company, $reservation, $reviewUrl)
                     );
@@ -67,8 +70,10 @@ class SendReviewRequestMails extends Command
 
                 if (
                     $reservation->customer &&
+                    $reservation->company->sendsCustomerLine() &&
                     !empty($reservation->customer->line_user_id) &&
                     (bool) ($reservation->customer->line_notifications_enabled ?? true) &&
+                    (bool) ($reservation->customer->line_friend_flag ?? false) &&
                     (bool) ($reservation->customer->line_review_opt_in ?? true)
                 ) {
                     $text = "【{$reservation->company->name}】ご来店ありがとうございました。\n"

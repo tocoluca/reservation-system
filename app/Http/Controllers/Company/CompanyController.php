@@ -51,6 +51,7 @@ class CompanyController extends Controller
             'reservation_auto_status_hours' => 'nullable|integer|min:1|max:3',
             'review_enabled' => 'nullable|boolean',
             'prefer_less_capable_staff_for_menu_assignment' => 'nullable|boolean',
+            'customer_notification_channel' => 'nullable|in:both,email,line',
         ];
 
         $validated = $request->validate($rules, [
@@ -127,6 +128,9 @@ class CompanyController extends Controller
             'menu_time_priority_flag' => $request->boolean('menu_time_priority_flag'),
             'review_enabled' => (bool) $request->input('review_enabled', 0),
             'prefer_less_capable_staff_for_menu_assignment' => $request->boolean('prefer_less_capable_staff_for_menu_assignment'),
+            'customer_notification_channel' => $company->plan_code === 'platinum'
+                ? ($validated['customer_notification_channel'] ?? 'both')
+                : 'both',
         ];
 
         $company->update($updateData);

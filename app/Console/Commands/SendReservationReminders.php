@@ -57,7 +57,10 @@ class SendReservationReminders extends Command
 
                 $sentAny = false;
 
-                if (!empty($reservation->customer->email)) {
+                if (
+                    $reservation->company->sendsCustomerEmail() &&
+                    !empty($reservation->customer->email)
+                ) {
                     Mail::to($reservation->customer->email)
                         ->send(new ReservationReminderMail($reservation));
 
@@ -65,8 +68,10 @@ class SendReservationReminders extends Command
                 }
 
                 if (
+                    $reservation->company->sendsCustomerLine() &&
                     !empty($reservation->customer->line_user_id) &&
-                    (bool) ($reservation->customer->line_notifications_enabled ?? true)
+                    (bool) ($reservation->customer->line_notifications_enabled ?? true) &&
+                    (bool) ($reservation->customer->line_friend_flag ?? false)
                 ) {
                     $company = $reservation->company;
                     $staffName = $reservation->staff->name ?? '担当未定';

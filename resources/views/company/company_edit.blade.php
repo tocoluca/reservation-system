@@ -7,6 +7,7 @@
     $theme = $company->theme_color ?? '#3b82f6';
     $themeSoft = $theme . '15';
     $isPlatinumPlan = ($company->plan_code ?? null) === 'platinum';
+    $notificationChannel = old('customer_notification_channel', $company->customerNotificationChannel());
 
     $days = [0=>'日',1=>'月',2=>'火',3=>'水',4=>'木',5=>'金',6=>'土'];
     $patterns = old('open_patterns', $company->open_patterns ?? []);
@@ -371,6 +372,31 @@
                                 {{ $isPlatinumPlan ? '利用中' : '利用していません' }}
                             </span>
                         </div>
+
+                        @if($isPlatinumPlan)
+                            <div class="border-t border-violet-200 pt-3">
+                                <label for="customer_notification_channel" class="block font-semibold text-violet-950">
+                                    顧客宛て通知方法
+                                </label>
+                                <select id="customer_notification_channel"
+                                        name="customer_notification_channel"
+                                        class="mt-2 w-full rounded-xl border border-violet-200 bg-white px-3 py-2 text-sm text-violet-950 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-200">
+                                    <option value="both" {{ $notificationChannel === 'both' ? 'selected' : '' }}>
+                                        EメールとLINE
+                                    </option>
+                                    <option value="email" {{ $notificationChannel === 'email' ? 'selected' : '' }}>
+                                        Eメールのみ
+                                    </option>
+                                    <option value="line" {{ $notificationChannel === 'line' ? 'selected' : '' }}>
+                                        LINEのみ
+                                    </option>
+                                </select>
+                                <p class="mt-2 text-xs leading-5 text-violet-700">
+                                    EメールとLINEの両方で通知可能な顧客に対する設定です。初期設定はEメールとLINEです。
+                                    Eメールのみ登録済みの顧客にはEメールのみ、Eメール未登録でLINEのみ通知可能な顧客にはLINEのみ送信されます。
+                                </p>
+                            </div>
+                        @endif
 
                         @unless($isPlatinumPlan)
                             <div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">

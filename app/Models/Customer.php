@@ -64,8 +64,13 @@ class Customer extends Model
 
     public function canReceiveMailOrLine(): bool
     {
-        $hasEmail = !empty($this->email);
-        $hasLine = !empty($this->line_user_id) && (bool) ($this->line_notifications_enabled ?? true);
+        $company = $this->company ?? Company::find($this->company_id);
+        $hasEmail = !empty($this->email)
+            && ($company?->sendsCustomerEmail() ?? true);
+        $hasLine = !empty($this->line_user_id)
+            && ($company?->sendsCustomerLine() ?? false)
+            && (bool) ($this->line_notifications_enabled ?? true)
+            && (bool) ($this->line_friend_flag ?? false);
 
         return $hasEmail || $hasLine;
     }

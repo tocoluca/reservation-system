@@ -10,6 +10,16 @@ class LineMessagingService
 {
     public function pushText(Company $company, string $lineUserId, string $text): bool
     {
+        if (!$company->sendsCustomerLine()) {
+            Log::info('LINE push skipped: customer notification channel excludes LINE', [
+                'company_id' => $company->id ?? null,
+                'plan_code' => $company->plan_code,
+                'customer_notification_channel' => $company->customerNotificationChannel(),
+                'line_user_id' => $lineUserId,
+            ]);
+            return false;
+        }
+
         $channelAccessToken = $company->line_channel_access_token ?? null;
 
         if (blank($channelAccessToken) || blank($lineUserId) || blank($text)) {

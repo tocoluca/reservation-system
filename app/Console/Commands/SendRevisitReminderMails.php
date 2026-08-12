@@ -44,7 +44,8 @@ class SendRevisitReminderMails extends Command
                                ->where('email', '!=', '');
                         })->orWhere(function ($q2) {
                             $q2->whereNotNull('line_user_id')
-                               ->where('line_user_id', '!=', '');
+                               ->where('line_user_id', '!=', '')
+                               ->where('line_friend_flag', true);
                         });
                     })
                     ->whereDoesntHave('reservations', function ($q) {
@@ -62,7 +63,10 @@ class SendRevisitReminderMails extends Command
                     try {
                         $sentAny = false;
 
-                        if (!empty($customer->email)) {
+                        if (
+                            $company->sendsCustomerEmail() &&
+                            !empty($customer->email)
+                        ) {
                             Mail::to($customer->email)->send(
                                 new RevisitReminderMail($company, $customer)
                             );
@@ -70,8 +74,10 @@ class SendRevisitReminderMails extends Command
                         }
 
                         if (
+                            $company->sendsCustomerLine() &&
                             !empty($customer->line_user_id) &&
-                            (bool) ($customer->line_notifications_enabled ?? true)
+                            (bool) ($customer->line_notifications_enabled ?? true) &&
+                            (bool) ($customer->line_friend_flag ?? false)
                         ) {
                             $reserveUrl = url('/r/' . $company->company_code);
 

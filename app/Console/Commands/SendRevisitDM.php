@@ -28,7 +28,7 @@ $targetDate
 
 foreach($customers as $customer){
 
-if(!$customer->email){
+ if(!$customer->email || !$customer->company || !$customer->company->sendsCustomerEmail()){
 continue;
 }
 

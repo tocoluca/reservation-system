@@ -17,6 +17,8 @@
         ->sortByDesc('start_at')
         ->first();
     $noShowCount = $customer->reservations->where('status', 'no_show')->count();
+    $lastRevisitReminderAt = optional($customer->latestRevisitReminderLog)->sent_at;
+    $canSendRevisitReminder = $customer->canReceiveMailOrLine();
     $customerReservationUrl = route('company.reservations.index', ['customer_id' => $customer->id]);
 @endphp
 
@@ -40,16 +42,34 @@
             顧客一覧に戻る
         </a>
 
-        <a href="{{ $customerReservationUrl }}"
-           class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-white shadow-sm hover:opacity-90 transition text-sm font-bold"
-           style="background: {{ $theme }};">
-            <i data-lucide="list-checks" class="w-4 h-4"></i>
-            この顧客の予約一覧
-        </a>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <form method="POST"
+                  action="{{ route('company.customers.revisit-reminder', $customer->id) }}"
+                  data-busy-form="true"
+                  data-busy-label="送信中..."
+                  onsubmit="return confirm('再来店連絡を送信しますか？');">
+                @csrf
+                <button type="submit"
+                        data-busy-button
+                        @disabled(!$canSendRevisitReminder)
+                        class="inline-flex w-full items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-white shadow-sm transition text-sm font-bold {{ $canSendRevisitReminder ? 'hover:opacity-90' : 'opacity-50 cursor-not-allowed' }}"
+                        style="background: {{ $theme }};">
+                    <i data-lucide="send" class="w-4 h-4"></i>
+                    <span data-busy-text>再来店連絡を送信</span>
+                </button>
+            </form>
+
+            <a href="{{ $customerReservationUrl }}"
+               class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-white border shadow-sm hover:bg-gray-50 transition text-sm font-bold"
+               style="color: {{ $theme }}; border-color: {{ $theme }}33;">
+                <i data-lucide="list-checks" class="w-4 h-4"></i>
+                この顧客の予約一覧
+            </a>
+        </div>
     </div>
 
     <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
                 <div class="text-xs font-bold text-emerald-700">次回予約</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900">
@@ -72,8 +92,20 @@
                     {{ $latestNote ? \Illuminate\Support\Str::limit($latestNote->note, 42) : '未登録' }}
                 </div>
             </div>
+            <div class="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3">
+                <div class="text-xs font-bold text-blue-700">再来店連絡</div>
+                <div class="mt-1 text-sm font-semibold text-gray-900">
+                    {{ $lastRevisitReminderAt ? $lastRevisitReminderAt->format('Y-m-d') : '未送信' }}
+                </div>
+            </div>
         </div>
     </div>
+
+    @unless($canSendRevisitReminder)
+        <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            再来店連絡を送信するには、送信可能なメールアドレスまたはLINE連携が必要です。
+        </div>
+    @endunless
 
     {{-- プロフィール --}}
     <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">

@@ -57,6 +57,13 @@ class Customer extends Model
         return $this->hasMany(CustomerFollowupMailLog::class);
     }
 
+    public function latestRevisitReminderLog()
+    {
+        return $this->hasOne(CustomerFollowupMailLog::class)
+            ->where('mail_type', 'revisit_reminder')
+            ->latestOfMany('sent_at');
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);

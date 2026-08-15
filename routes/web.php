@@ -403,6 +403,9 @@ Route::prefix('company')->group(function () {
             Route::get('customers/{id}', [CustomerController::class, 'show'])
                 ->name('company.customers.show');
 
+            Route::post('customers/{id}/revisit-reminder', [CustomerController::class, 'sendRevisitReminder'])
+                ->name('company.customers.revisit-reminder');
+
             Route::post('customers/{id}/profile', [CustomerController::class, 'updateProfile'])
                 ->name('company.customers.profile');
 

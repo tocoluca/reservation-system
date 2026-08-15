@@ -7,18 +7,15 @@
     $theme = $company->theme_color ?? '#3b82f6';
 
     $customerCount = $customers->total();
+    $revisitStatusCounts = $revisitStatusCounts ?? [];
 
-    $targetCount = $customers->getCollection()->filter(function ($customer) {
-        return $customer->revisit_reminder_status === '対象';
-    })->count();
-
-    $reservedCount = $customers->getCollection()->filter(function ($customer) {
-        return $customer->revisit_reminder_status === '予約済み';
-    })->count();
-
-    $sentCount = $customers->getCollection()->filter(function ($customer) {
-        return $customer->revisit_reminder_status === '送信済み';
-    })->count();
+    $targetCount = (int) ($revisitStatusCounts['対象'] ?? $customers->getCollection()->filter(fn ($customer) => $customer->revisit_reminder_status === '対象')->count());
+    $reservedCount = (int) ($revisitStatusCounts['予約済み'] ?? $customers->getCollection()->filter(fn ($customer) => $customer->revisit_reminder_status === '予約済み')->count());
+    $sentCount = (int) ($revisitStatusCounts['送信済み'] ?? $customers->getCollection()->filter(fn ($customer) => $customer->revisit_reminder_status === '送信済み')->count());
+    $revisitStatusUrl = fn (string $status) => route('company.customers', array_filter([
+        'revisit_status' => $status,
+        'keyword' => request('keyword'),
+    ], fn ($value) => filled($value)));
 
     function revisitBadge($status) {
         return match ($status) {
@@ -83,38 +80,50 @@
             </div>
         </div>
 
-        <div class="bg-white rounded-[1.75rem] shadow-sm border border-red-100 p-5">
+        @if($targetCount > 0)
+            <a href="{{ $revisitStatusUrl('対象') }}" class="block bg-white rounded-[1.75rem] shadow-sm border border-red-100 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        @else
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-red-100 p-5">
+        @endif
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-xs font-semibold tracking-wide text-gray-500">再来店促進 対象</div>
                     <div class="mt-2 text-3xl font-bold text-red-600">{{ number_format($targetCount) }}</div>
-                    <div class="mt-2 text-sm text-gray-500">フォローが必要な顧客</div>
+                    <div class="mt-2 text-sm text-gray-500">{{ $targetCount > 0 ? 'クリックで対象顧客を表示' : '該当顧客なし' }}</div>
                 </div>
                 <div class="w-11 h-11 rounded-2xl bg-red-50 flex items-center justify-center text-lg">📣</div>
             </div>
-        </div>
+        @if($targetCount > 0)</a>@else</div>@endif
 
-        <div class="bg-white rounded-[1.75rem] shadow-sm border border-blue-100 p-5">
+        @if($sentCount > 0)
+            <a href="{{ $revisitStatusUrl('送信済み') }}" class="block bg-white rounded-[1.75rem] shadow-sm border border-blue-100 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        @else
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-blue-100 p-5">
+        @endif
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-xs font-semibold tracking-wide text-gray-500">送信済み</div>
                     <div class="mt-2 text-3xl font-bold text-blue-600">{{ number_format($sentCount) }}</div>
-                    <div class="mt-2 text-sm text-gray-500">メール送信済みの顧客</div>
+                    <div class="mt-2 text-sm text-gray-500">{{ $sentCount > 0 ? 'クリックで送信済み顧客を表示' : '該当顧客なし' }}</div>
                 </div>
                 <div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-lg">✉️</div>
             </div>
-        </div>
+        @if($sentCount > 0)</a>@else</div>@endif
 
-        <div class="bg-white rounded-[1.75rem] shadow-sm border border-emerald-100 p-5">
+        @if($reservedCount > 0)
+            <a href="{{ $revisitStatusUrl('予約済み') }}" class="block bg-white rounded-[1.75rem] shadow-sm border border-emerald-100 p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+        @else
+            <div class="bg-white rounded-[1.75rem] shadow-sm border border-emerald-100 p-5">
+        @endif
             <div class="flex items-start justify-between gap-3">
                 <div>
                     <div class="text-xs font-semibold tracking-wide text-gray-500">予約済み</div>
                     <div class="mt-2 text-3xl font-bold text-emerald-600">{{ number_format($reservedCount) }}</div>
-                    <div class="mt-2 text-sm text-gray-500">次回来店が決まっている顧客</div>
+                    <div class="mt-2 text-sm text-gray-500">{{ $reservedCount > 0 ? 'クリックで予約済み顧客を表示' : '該当顧客なし' }}</div>
                 </div>
                 <div class="w-11 h-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-lg">📅</div>
             </div>
-        </div>
+        @if($reservedCount > 0)</a>@else</div>@endif
     </div>
 
     <div class="sticky top-24 z-30 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur mb-6">
@@ -124,17 +133,28 @@
                 <div class="text-xs text-gray-500 mt-1">表示中の顧客から、フォロー対象や注意が必要な顧客を見つけやすくします。</div>
             </div>
             <div class="flex flex-wrap gap-2">
-                <span class="inline-flex items-center rounded-2xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-bold text-red-700">
+                @if($targetCount > 0)
+                    <a href="{{ $revisitStatusUrl('対象') }}" class="inline-flex items-center rounded-2xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-bold text-red-700 transition hover:bg-red-100">
+                @else
+                    <span class="inline-flex items-center rounded-2xl bg-red-50 border border-red-100 px-4 py-2.5 text-sm font-bold text-red-700">
+                @endif
                     再来店フォロー {{ number_format($targetCount) }}件
-                </span>
-                <span class="inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700">
+                @if($targetCount > 0)</a>@else</span>@endif
+                @if($reservedCount > 0)
+                    <a href="{{ $revisitStatusUrl('予約済み') }}" class="inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700 transition hover:bg-emerald-100">
+                @else
+                    <span class="inline-flex items-center rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700">
+                @endif
                     次回来店あり {{ number_format($reservedCount) }}件
-                </span>
-                <span class="inline-flex items-center rounded-2xl bg-blue-50 border border-blue-100 px-4 py-2.5 text-sm font-bold text-blue-700">
+                @if($reservedCount > 0)</a>@else</span>@endif
+                @if($sentCount > 0)
+                    <a href="{{ $revisitStatusUrl('送信済み') }}" class="inline-flex items-center rounded-2xl bg-blue-50 border border-blue-100 px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-100">
+                @else
+                    <span class="inline-flex items-center rounded-2xl bg-blue-50 border border-blue-100 px-4 py-2.5 text-sm font-bold text-blue-700">
+                @endif
                     送信済み {{ number_format($sentCount) }}件
-                </span>
+                @if($sentCount > 0)</a>@else</span>@endif
             </div>
-        </div>
     </div>
 
     {{-- 検索 --}}
@@ -277,9 +297,9 @@
                         </div>
 
                         <div class="rounded-2xl bg-amber-50/70 px-4 py-3 border border-amber-100">
-                            <div class="text-[11px] font-semibold text-gray-500">フォロー状態</div>
+                            <div class="text-[11px] font-semibold text-gray-500">再来店連絡</div>
                             <div class="mt-1 text-sm font-semibold text-gray-900">
-                                {{ $status ?: '対象外' }}
+                                {{ optional($customer->latestRevisitReminderLog)->sent_at?->format('Y-m-d') ?? '未送信' }}
                             </div>
                         </div>
 

@@ -90,7 +90,8 @@ class ReserveController extends Controller
 
     private function isLineLoginEnabled($company)
     {
-        return (bool) $company->line_login_enabled
+        return $company->plan_code === 'platinum'
+            && (bool) $company->line_login_enabled
             && !empty($company->line_channel_id)
             && !empty($company->line_channel_secret);
     }
@@ -324,6 +325,74 @@ class ReserveController extends Controller
         } catch (\Throwable $e) {
             return false;
         }
+    }
+
+    private function getPublicSlotsForDate($company, Collection $menus, Carbon $date, ?int $selectedStaffId = null): array
+    {
+        $date = $date->copy()->startOfDay();
+        $limits = $this->getReservationLimits($company);
+
+        if ($date->copy()->endOfDay()->lt($limits['start']) || $date->copy()->startOfDay()->gt($limits['end'])) {
+            return [];
+        }
+
+        $openPatterns = $company->open_patterns ?? [];
+        $patterns = $openPatterns[$date->dayOfWeek] ?? [];
+
+        if (empty($patterns)) {
+            return [];
+        }
+
+        $slots = [];
+        $slotStep = (int) ($company->slot_minutes ?: 30);
+
+        foreach ($patterns as $pattern) {
+            if (empty($pattern['open']) || empty($pattern['close'])) {
+                continue;
+            }
+
+            $open = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['open']);
+            $close = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['close']);
+            $time = $open->copy();
+
+            while ($time < $close) {
+                $start = $time->copy();
+
+                $isReservable = $this->canBuildReservationAt(
+                    $company,
+                    $menus,
+                    $start,
+                    $selectedStaffId
+                );
+
+                if (!$isReservable) {
+                    $time->addMinutes($slotStep);
+                    continue;
+                }
+
+                $end = $this->calculateRequestedEndAt($company, $menus, $start);
+
+                if ($end->gt($close)) {
+                    $time->addMinutes($slotStep);
+                    continue;
+                }
+
+                if ($start->lt($limits['close']) || $start->lt($limits['start']) || $start->gt($limits['end'])) {
+                    $time->addMinutes($slotStep);
+                    continue;
+                }
+
+                $slots[] = [
+                    'time' => $start->format('H:i'),
+                    'remaining' => 1,
+                    'total' => 1,
+                ];
+
+                $time->addMinutes($slotStep);
+            }
+        }
+
+        return $slots;
     }
 
     /*
@@ -657,6 +726,62 @@ class ReserveController extends Controller
         return response()->json([
             'ok' => true,
             'staff' => $staff,
+        ]);
+    }
+
+    public function nextAvailableDate(Request $request, $company_code)
+    {
+        $company = Company::where('company_code', $company_code)->firstOrFail();
+
+        $menuIds = collect($request->query('menu_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->values();
+
+        if ($menuIds->isEmpty()) {
+            return response()->json([
+                'ok' => true,
+                'date' => null,
+            ]);
+        }
+
+        $menus = Menu::where('company_id', $company->id)
+            ->whereIn('id', $menuIds->all())
+            ->orderBy('sort_order')
+            ->get()
+            ->sortBy(fn ($menu) => array_search($menu->id, $menuIds->all()))
+            ->values();
+
+        if ($menus->isEmpty()) {
+            return response()->json([
+                'ok' => true,
+                'date' => null,
+            ]);
+        }
+
+        $limits = $this->getReservationLimits($company);
+        $from = $request->filled('from')
+            ? Carbon::parse($request->query('from'))->startOfDay()
+            : $limits['start']->copy();
+        $candidate = $from->lt($limits['start']) ? $limits['start']->copy() : $from;
+        $selectedStaffId = $request->filled('staff_id') && $request->query('staff_id') !== ''
+            ? (int) $request->query('staff_id')
+            : null;
+
+        while ($candidate->lte($limits['end'])) {
+            if (!empty($this->getPublicSlotsForDate($company, $menus, $candidate, $selectedStaffId))) {
+                return response()->json([
+                    'ok' => true,
+                    'date' => $candidate->format('Y-m-d'),
+                ]);
+            }
+
+            $candidate->addDay();
+        }
+
+        return response()->json([
+            'ok' => true,
+            'date' => null,
         ]);
     }
 
@@ -1411,78 +1536,16 @@ public function store(Request $request, $company_code)
             return response()->json([]);
         }
 
-        $date = Carbon::parse($request->date)->startOfDay();
-        $limits = $this->getReservationLimits($company);
-
-        if ($date->copy()->endOfDay()->lt($limits['start'])) {
-            return response()->json([]);
-        }
-
-        if ($date->copy()->startOfDay()->gt($limits['end'])) {
-            return response()->json([]);
-        }
-
-        $openPatterns = $company->open_patterns ?? [];
-        $patterns = $openPatterns[$date->dayOfWeek] ?? [];
-
-        if (empty($patterns)) {
-            return response()->json([]);
-        }
-
         $selectedStaffId = $request->filled('staff_id') && $request->staff_id !== ''
             ? (int) $request->staff_id
             : null;
 
-        $slots = [];
-        $slotStep = (int) ($company->slot_minutes ?: 30);
-
-        foreach ($patterns as $p) {
-            if (empty($p['open']) || empty($p['close'])) {
-                continue;
-            }
-
-            $open = Carbon::parse($date->format('Y-m-d') . ' ' . $p['open']);
-            $close = Carbon::parse($date->format('Y-m-d') . ' ' . $p['close']);
-            $time = $open->copy();
-
-            while ($time < $close) {
-                $start = $time->copy();
-
-                $isReservable = $this->canBuildReservationAt(
-                    $company,
-                    $menus,
-                    $start,
-                    $selectedStaffId
-                );
-
-                if (!$isReservable) {
-                    $time->addMinutes($slotStep);
-                    continue;
-                }
-
-                $end = $this->calculateRequestedEndAt($company, $menus, $start);
-
-                if ($end->gt($close)) {
-                    $time->addMinutes($slotStep);
-                    continue;
-                }
-
-                if ($start->lt($limits['close']) || $start->lt($limits['start']) || $start->gt($limits['end'])) {
-                    $time->addMinutes($slotStep);
-                    continue;
-                }
-
-                $slots[] = [
-                    'time'      => $start->format('H:i'),
-                    'remaining' => 1,
-                    'total'     => 1,
-                ];
-
-                $time->addMinutes($slotStep);
-            }
-        }
-
-        return response()->json($slots);
+        return response()->json($this->getPublicSlotsForDate(
+            $company,
+            $menus,
+            Carbon::parse($request->date),
+            $selectedStaffId
+        ));
     }
 
     public function staffMenus(Request $request)

@@ -33,7 +33,13 @@ class ReservationChangeNoticeController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('company.reservation_change_notices.index', compact('notices'));
+        $targetReservationCount = ReservationChangeNoticeItem::query()
+            ->where('company_id', $company->id)
+            ->whereNotNull('reservation_id')
+            ->distinct()
+            ->count('reservation_id');
+
+        return view('company.reservation_change_notices.index', compact('notices', 'targetReservationCount'));
     }
 
     public function show(ReservationChangeNotice $notice)

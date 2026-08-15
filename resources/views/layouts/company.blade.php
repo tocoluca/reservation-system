@@ -173,6 +173,10 @@
         管理者代理ログイン中です。終了する場合はログアウトしてください。
     </div>
 @endif
+@php
+    $companyChangeNoticeCount = (int) ($companyChangeNoticeCount ?? 0);
+    $companySupportUnreadCount = (int) ($companySupportUnreadCount ?? 0);
+@endphp
 <header class="company-topbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <div class="company-brand-shell px-3 sm:px-4 py-3 space-y-3">
@@ -218,13 +222,31 @@
                        class="hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition"
                        style="background: linear-gradient(135deg, {{ $theme }}, #111827);">
                         <i data-lucide="calendar-check" class="w-4 h-4"></i>
-                        予約画面
+                         予約画面
+                    </a>
+
+                    <a href="{{ route('company.reservation_change_notices.index') }}"
+                       aria-label="予約変更連絡{{ $companyChangeNoticeCount > 0 ? ' '.$companyChangeNoticeCount.'件未対応' : '' }}"
+                       class="relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
+                        <i data-lucide="bell-ring" class="w-4 h-4"></i>
+                        <span class="hidden xl:inline">予約変更</span>
+                        @if($companyChangeNoticeCount > 0)
+                            <span class="absolute -right-1 -top-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white">
+                                {{ $companyChangeNoticeCount > 99 ? '99+' : $companyChangeNoticeCount }}
+                            </span>
+                        @endif
                     </a>
 
                     <a href="{{ route('company.support.index') }}"
-                       class="hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
-                        <i data-lucide="circle-help" class="w-4 h-4"></i>
-                        ヘルプ
+                       aria-label="サポート{{ $companySupportUnreadCount > 0 ? ' 未読'.$companySupportUnreadCount.'件' : '' }}"
+                       class="relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
+                        <i data-lucide="message-circle" class="w-4 h-4"></i>
+                        <span class="hidden xl:inline">サポート</span>
+                        @if($companySupportUnreadCount > 0)
+                            <span class="absolute -right-1 -top-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white">
+                                {{ $companySupportUnreadCount > 99 ? '99+' : $companySupportUnreadCount }}
+                            </span>
+                        @endif
                     </a>
 
                     <form method="POST" action="{{ route('company.logout') }}">
@@ -280,11 +302,65 @@
 </main>
 
 @if($company)
+<div id="companyToast"
+     class="pointer-events-none fixed bottom-24 left-1/2 z-[80] hidden -translate-x-1/2 rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-700 shadow-xl lg:bottom-6"
+     role="status"
+     aria-live="polite">
+    <span id="companyToastMessage"></span>
+</div>
 <script>
 (() => {
     let isInternalNavigation = false;
     const logoutUrl = @json(route('company.logout'));
     const csrfToken = @json(csrf_token());
+
+    let toastTimer = null;
+    window.showCompanyToast = (message, type = 'success') => {
+        const toast = document.getElementById('companyToast');
+        const messageNode = document.getElementById('companyToastMessage');
+        if (!toast || !messageNode) return;
+
+        window.clearTimeout(toastTimer);
+        messageNode.textContent = message;
+        toast.classList.remove('hidden', 'border-emerald-200', 'text-emerald-700', 'border-red-200', 'text-red-700');
+        toast.classList.add(type === 'error' ? 'border-red-200' : 'border-emerald-200');
+        toast.classList.add(type === 'error' ? 'text-red-700' : 'text-emerald-700');
+        toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 3200);
+    };
+
+    window.setCompanyButtonBusy = (button, busy, label = '処理中…') => {
+        if (!button) return;
+
+        const labelNode = button.querySelector('[data-busy-text]') || button;
+        if (busy) {
+            if (!button.dataset.originalBusyText) {
+                button.dataset.originalBusyText = labelNode.textContent.trim();
+            }
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            button.classList.add('opacity-70', 'cursor-wait');
+            labelNode.textContent = label;
+            return;
+        }
+
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.classList.remove('opacity-70', 'cursor-wait');
+        if (button.dataset.originalBusyText) {
+            labelNode.textContent = button.dataset.originalBusyText;
+            delete button.dataset.originalBusyText;
+        }
+    };
+
+    document.addEventListener('submit', (event) => {
+        const form = event.target;
+        if (!form || form.dataset.busyForm !== 'true') return;
+
+        const button = event.submitter || form.querySelector('[data-busy-button]');
+        if (button && window.setCompanyButtonBusy) {
+            window.setCompanyButtonBusy(button, true, form.dataset.busyLabel || '処理中…');
+        }
+    }, true);
 
     document.addEventListener('click', (event) => {
         const link = event.target.closest('a[href]');

@@ -37,12 +37,21 @@
         </div>
 
         <div class="px-6 py-5 md:px-8 bg-amber-50 border-t border-amber-100">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                 <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
-                    <div class="text-xs text-gray-500">案件数</div>
+                    <div class="text-xs text-gray-500">変更案件数</div>
                     <div class="text-2xl font-bold text-gray-800 mt-1">
                         {{ $notices->total() }}
                     </div>
+                    <div class="mt-1 text-xs text-gray-400">変更連絡のまとまり</div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
+                    <div class="text-xs text-gray-500">対象予約数</div>
+                    <div class="text-2xl font-bold text-gray-800 mt-1">
+                        {{ number_format($targetReservationCount ?? 0) }}
+                    </div>
+                    <div class="mt-1 text-xs text-gray-400">重複を除いた予約数</div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">

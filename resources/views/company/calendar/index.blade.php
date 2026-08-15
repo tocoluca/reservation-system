@@ -30,6 +30,30 @@
     }
 @endphp
 
+<style>
+    .calendar-day-cell {
+        min-width: 0;
+    }
+
+    @media (max-width: 639px) {
+        .calendar-day-cell {
+            padding: .25rem !important;
+            border-radius: .85rem;
+        }
+
+        .calendar-day-cell [data-status-label] {
+            padding: .25rem .1rem;
+            font-size: 8px;
+            line-height: 1.15;
+        }
+
+        .calendar-cell-secondary,
+        .calendar-cell-action {
+            display: none !important;
+        }
+    }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     {{-- ヘッダー --}}
@@ -83,7 +107,7 @@
                         {{ $year }}年 {{ $month }}月
                     </h2>
                     <p class="mt-2 text-sm text-gray-500">
-                        日付を押すと営業日 / 休業日を切り替えできます。時間変更は各日付の「時間変更」から設定します。
+                        日付を押すと営業日 / 休業日を切り替えできます。選択した日の詳細から営業時間を変更できます。
                     </p>
                 </div>
 
@@ -222,10 +246,10 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
                                     @foreach($weekdayLabels as $i => $w)
                                         <button type="button"
-                                                onclick="bulkYearHoliday({{ $i }})"
+                                                onclick="bulkYearHoliday({{ $i }}, this)"
                                                 class="py-2 px-2 rounded-xl border text-sm font-semibold transition hover:bg-red-50 active:scale-95"
                                                 style="border-color:#fca5a5; color:#dc2626;">
-                                            {{ $w }}曜を休業
+                                            <span data-busy-text>{{ $w }}曜を休業</span>
                                         </button>
                                     @endforeach
                                 </div>
@@ -242,10 +266,10 @@
                                 <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
                                     @foreach($weekdayLabels as $i => $w)
                                         <button type="button"
-                                                onclick="bulkYearOpen({{ $i }})"
+                                                onclick="bulkYearOpen({{ $i }}, this)"
                                                 class="py-2 px-2 rounded-xl border text-sm font-semibold transition hover:bg-green-50 active:scale-95"
                                                 style="border-color:#86efac; color:#15803d;">
-                                            {{ $w }}曜を営業
+                                            <span data-busy-text>{{ $w }}曜を営業</span>
                                         </button>
                                     @endforeach
                                 </div>
@@ -360,17 +384,20 @@
 
                 <div onclick="toggleDay('{{ $date }}', this)"
                      data-date-cell="1"
+                     data-date="{{ $date }}"
                      data-is-open="{{ $isOpen ? '1' : '0' }}"
                      data-reservation-count="{{ $reservationCount }}"
                      data-date-label="{{ $dateObj->format('Y年n月j日') }}"
-                     class="aspect-square rounded-2xl p-2 sm:p-3 flex flex-col justify-between border border-white shadow-sm cursor-pointer transition hover:shadow-md active:scale-[0.98] {{ $bgClass }} {{ $textClass }} {{ $isToday ? 'ring-4' : '' }}"
+                     data-holiday-name="{{ e($holidayNames[$date] ?? '') }}"
+                     data-time-range="{{ e($calendar && $calendar->open_time ? substr($calendar->open_time, 0, 5).' - '.substr($calendar->close_time, 0, 5) : '') }}"
+                     class="calendar-day-cell aspect-square rounded-2xl p-2 sm:p-3 flex flex-col justify-between border border-white shadow-sm cursor-pointer transition hover:shadow-md active:scale-[0.98] {{ $bgClass }} {{ $textClass }} {{ $isToday ? 'ring-4' : '' }}"
                      style="{{ $isToday ? 'ring-color: '.$theme.';' : '' }}">
 
                     <div class="flex items-start justify-between gap-2">
                         <div class="text-sm sm:text-base font-bold">{{ $day }}</div>
 
                         @if($isToday)
-                            <span class="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/80 text-gray-700">
+                            <span class="calendar-cell-secondary hidden sm:inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/80 text-gray-700">
                                 今日
                             </span>
                         @endif
@@ -388,20 +415,20 @@
                         @endif
 
                         @if(isset($holidayNames[$date]))
-                            <div class="text-[9px] sm:text-[10px] leading-tight text-center text-red-600 font-semibold">
+                            <div class="calendar-cell-secondary text-[9px] sm:text-[10px] leading-tight text-center text-red-600 font-semibold">
                                 {{ $holidayNames[$date] }}
                             </div>
                         @endif
 
                         @if($calendar && $calendar->open_time)
-                            <div class="text-[9px] sm:text-[10px] text-center leading-tight font-semibold text-gray-700">
+                            <div class="calendar-cell-secondary text-[9px] sm:text-[10px] text-center leading-tight font-semibold text-gray-700">
                                 {{ substr($calendar->open_time,0,5) }} - {{ substr($calendar->close_time,0,5) }}
                             </div>
                         @endif
                     </div>
 
                     <button type="button"
-                            class="mt-2 text-[10px] sm:text-[11px] underline text-center font-semibold"
+                            class="calendar-cell-action mt-2 text-[10px] sm:text-[11px] underline text-center font-semibold"
                             onclick="event.stopPropagation(); openModal('{{ $date }}')"
                             style="color: {{ $theme }};">
                         時間変更
@@ -410,9 +437,65 @@
             @endfor
         </div>
     </div>
+
+    <div id="selectedDayPanel" class="hidden mt-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm" aria-live="polite">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+                <div class="text-xs font-bold tracking-wide text-slate-400">選択中の日付</div>
+                <div id="selectedDayLabel" class="mt-1 text-lg font-black text-slate-900">-</div>
+                <div class="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                    <span id="selectedDayStatus" class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">-</span>
+                    <span id="selectedDayReservations" class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">予約 -件</span>
+                    <span id="selectedDayHoliday" class="hidden rounded-full bg-red-50 px-3 py-1 text-red-700"></span>
+                </div>
+                <div id="selectedDayTime" class="mt-2 text-sm text-slate-500">個別の営業時間変更なし</div>
+            </div>
+            <button type="button"
+                    onclick="openSelectedDayModal()"
+                    class="inline-flex shrink-0 items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90"
+                    style="background: {{ $theme }};">
+                選択日の営業時間を変更
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
+let selectedCalendarDate = null;
+
+function selectCalendarDay(date, el) {
+    const dayCell = el || document.querySelector(`[data-date-cell="1"][data-date="${date}"]`);
+    const panel = document.getElementById('selectedDayPanel');
+    if (!dayCell || !panel) return;
+
+    selectedCalendarDate = date;
+    panel.classList.remove('hidden');
+
+    const isOpen = dayCell.dataset.isOpen === '1';
+    const reservationCount = Number(dayCell.dataset.reservationCount || 0);
+    const holidayName = dayCell.dataset.holidayName || '';
+    const timeRange = dayCell.dataset.timeRange || '';
+
+    document.getElementById('selectedDayLabel').textContent = dayCell.dataset.dateLabel || date;
+    const status = document.getElementById('selectedDayStatus');
+    status.textContent = isOpen ? '営業日' : '休業日';
+    status.className = `rounded-full px-3 py-1 ${isOpen ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`;
+    document.getElementById('selectedDayReservations').textContent = `予約 ${reservationCount}件`;
+
+    const holiday = document.getElementById('selectedDayHoliday');
+    holiday.textContent = holidayName;
+    holiday.classList.toggle('hidden', !holidayName);
+    document.getElementById('selectedDayTime').textContent = timeRange
+        ? `個別営業時間：${timeRange}`
+        : '個別の営業時間変更なし';
+}
+
+function openSelectedDayModal() {
+    if (selectedCalendarDate) {
+        openModal(selectedCalendarDate);
+    }
+}
+
 function toggleBulkPanel() {
     const panel = document.getElementById('bulkSettingPanel');
     const btn = document.getElementById('bulkToggleBtn');
@@ -424,6 +507,7 @@ function toggleBulkPanel() {
 }
 
 function toggleDay(date, el) {
+    selectCalendarDay(date, el);
     const isOpen = el.dataset.isOpen === '1';
     const nextStatus = isOpen ? '休業日' : '営業日';
     const currentStatus = isOpen ? '営業日' : '休業日';
@@ -452,6 +536,9 @@ function toggleDay(date, el) {
     })
     .then(res => res.json())
     .then(data => {
+        if (!data || typeof data.is_open === 'undefined') {
+            throw new Error('営業日設定の変更に失敗しました');
+        }
         el.classList.remove('bg-green-100','bg-red-100','bg-red-300','bg-yellow-100');
         el.dataset.isOpen = data.is_open ? '1' : '0';
 
@@ -467,9 +554,17 @@ function toggleDay(date, el) {
             statusLabel.classList.toggle('text-green-700', data.is_open);
             statusLabel.classList.toggle('text-red-700', !data.is_open);
         }
+        selectCalendarDay(date, el);
+        if (window.showCompanyToast) {
+            showCompanyToast(data.is_open ? '営業日に変更しました' : '休業日に変更しました');
+        }
     })
     .catch(() => {
-        alert('営業日設定の変更に失敗しました。時間をおいて再度お試しください。');
+        if (window.showCompanyToast) {
+            showCompanyToast('営業日設定の変更に失敗しました。', 'error');
+        } else {
+            alert('営業日設定の変更に失敗しました。時間をおいて再度お試しください。');
+        }
     })
     .finally(() => {
         el.style.pointerEvents = '';
@@ -478,6 +573,7 @@ function toggleDay(date, el) {
 }
 
 function openModal(date) {
+    selectCalendarDay(date);
     document.getElementById('modalDate').value = date;
     document.getElementById('openTime').value = '';
     document.getElementById('closeTime').value = '';
@@ -497,6 +593,8 @@ function saveTime() {
     const date = document.getElementById('modalDate').value;
     const open_time = document.getElementById('openTime').value;
     const close_time = document.getElementById('closeTime').value;
+    const button = document.getElementById('saveTimeButton');
+    if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, true, '保存中…');
 
     fetch("{{ route('company.calendar.updateTime') }}", {
         method: "POST",
@@ -509,9 +607,14 @@ function saveTime() {
             open_time: open_time,
             close_time: close_time
         })
-    }).then(() => {
+    }).then(res => {
+        if (!res.ok) throw new Error('営業時間の保存に失敗しました');
+        if (window.showCompanyToast) showCompanyToast('営業時間を保存しました');
         closeModal();
-        location.reload();
+        setTimeout(() => location.reload(), 650);
+    }).catch(() => {
+        if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, false);
+        if (window.showCompanyToast) showCompanyToast('営業時間の保存に失敗しました。', 'error');
     });
 }
 
@@ -522,6 +625,9 @@ function deleteTime() {
         return;
     }
 
+    const button = document.getElementById('deleteTimeButton');
+    if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, true, '削除中…');
+
     fetch("{{ route('company.calendar.deleteTime') }}", {
         method: "POST",
         headers: {
@@ -529,13 +635,18 @@ function deleteTime() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({ date: date })
-    }).then(() => {
+    }).then(res => {
+        if (!res.ok) throw new Error('営業時間変更の削除に失敗しました');
+        if (window.showCompanyToast) showCompanyToast('営業時間の変更を削除しました');
         closeModal();
-        location.reload();
+        setTimeout(() => location.reload(), 650);
+    }).catch(() => {
+        if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, false);
+        if (window.showCompanyToast) showCompanyToast('営業時間変更の削除に失敗しました。', 'error');
     });
 }
 
-function bulkYearHoliday(weekday) {
+function bulkYearHoliday(weekday, button) {
     const year = document.getElementById('bulkYearInput').value;
 
     if (!year) {
@@ -546,6 +657,8 @@ function bulkYearHoliday(weekday) {
     if (!confirm(year + "年の選択曜日をすべて休業日にしますか？")) {
         return;
     }
+
+    if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, true, '処理中…');
 
     fetch("{{ route('company.calendar.bulkYearWeekday') }}", {
         method: "POST",
@@ -558,14 +671,20 @@ function bulkYearHoliday(weekday) {
             weekday: weekday
         })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error('年間休業日設定に失敗しました');
+        return res.json();
+    })
     .then(() => {
-        alert("年間休業日設定が完了しました");
-        location.reload();
+        if (window.showCompanyToast) showCompanyToast('年間休業日設定が完了しました');
+        setTimeout(() => location.reload(), 650);
+    }).catch(() => {
+        if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, false);
+        if (window.showCompanyToast) showCompanyToast('年間休業日設定に失敗しました。', 'error');
     });
 }
 
-function bulkYearOpen(weekday) {
+function bulkYearOpen(weekday, button) {
     const year = document.getElementById('bulkYearInput').value;
 
     if (!year) {
@@ -576,6 +695,8 @@ function bulkYearOpen(weekday) {
     if (!confirm(year + "年の選択曜日をすべて営業日に戻しますか？")) {
         return;
     }
+
+    if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, true, '処理中…');
 
     fetch("{{ route('company.calendar.bulkYearOpenWeekday') }}", {
         method: "POST",
@@ -588,10 +709,16 @@ function bulkYearOpen(weekday) {
             weekday: weekday
         })
     })
-    .then(res => res.json())
+    .then(res => {
+        if (!res.ok) throw new Error('年間営業日設定に失敗しました');
+        return res.json();
+    })
     .then(() => {
-        alert("年間営業日設定が完了しました");
-        location.reload();
+        if (window.showCompanyToast) showCompanyToast('年間営業日設定が完了しました');
+        setTimeout(() => location.reload(), 650);
+    }).catch(() => {
+        if (window.setCompanyButtonBusy) setCompanyButtonBusy(button, false);
+        if (window.showCompanyToast) showCompanyToast('年間営業日設定に失敗しました。', 'error');
     });
 }
 </script>
@@ -624,10 +751,11 @@ function bulkYearOpen(weekday) {
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button type="button"
+                        id="deleteTimeButton"
                         onclick="deleteTime()"
                         class="px-4 py-3 text-sm rounded-xl font-semibold text-white shadow-sm"
                         style="background:#ef4444">
-                    時間変更削除
+                    <span data-busy-text>時間変更削除</span>
                 </button>
 
                 <button type="button"
@@ -638,10 +766,11 @@ function bulkYearOpen(weekday) {
                 </button>
 
                 <button type="button"
+                        id="saveTimeButton"
                         onclick="saveTime()"
                         class="px-4 py-3 text-sm rounded-xl font-semibold text-white shadow-sm"
                         style="background: {{ $theme }}">
-                    保存
+                    <span data-busy-text>保存</span>
                 </button>
             </div>
         </div>

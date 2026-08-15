@@ -43,8 +43,9 @@
                     </a>
 
                     <button form="shiftForm"
+                            data-busy-button
                             class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-sm font-bold text-white bg-white/15 hover:bg-white/20 backdrop-blur-sm transition">
-                        保存する
+                        <span data-busy-text>保存する</span>
                     </button>
                 </div>
             </div>
@@ -58,10 +59,6 @@
                 ['label' => '基本シフトへ', 'route' => 'company.staff-default-shifts', 'icon' => 'arrow-left'],
             ],
         ])
-    </div>
-
-    <div class="mb-6">
-        @include('company._vacation_shift_nav', ['current' => 'shift'])
     </div>
 
     {{-- ガイド --}}
@@ -127,41 +124,6 @@
         </div>
     </div>
 
-    <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
-        <div class="flex flex-col lg:flex-row lg:items-end gap-3">
-            <div>
-                <div class="text-sm font-bold text-gray-900">曜日ごとの一括設定</div>
-                <p class="text-xs text-gray-500 mt-1">曜日とシフトパターンを選んでまとめて反映できます。</p>
-            </div>
-
-            <div class="flex flex-col sm:flex-row gap-3 lg:ml-auto">
-                <select id="weekdaySelect" class="border border-gray-300 p-3 rounded-2xl min-w-[140px]">
-                    <option value="">曜日を選択</option>
-                    <option value="0">日曜</option>
-                    <option value="1">月曜</option>
-                    <option value="2">火曜</option>
-                    <option value="3">水曜</option>
-                    <option value="4">木曜</option>
-                    <option value="5">金曜</option>
-                    <option value="6">土曜</option>
-                </select>
-
-                <select id="weekdayShift" class="border border-gray-300 p-3 rounded-2xl min-w-[180px]">
-                    <option value="">休み</option>
-                    @foreach($patterns as $p)
-                        <option value="{{ $p->id }}">{{ $p->name }}</option>
-                    @endforeach
-                </select>
-
-                <button type="button"
-                        onclick="applyWeekdayShift()"
-                        class="px-5 py-3 bg-green-600 text-white rounded-2xl font-semibold hover:bg-green-500 transition">
-                    適用
-                </button>
-            </div>
-        </div>
-    </div>
-
     <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
@@ -181,15 +143,16 @@
             </div>
 
             <button form="shiftForm"
+                    data-busy-button
                     class="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
                     style="background: {{ $theme }}">
                 <i data-lucide="save" class="w-4 h-4"></i>
-                保存する
+                <span data-busy-text>保存する</span>
             </button>
         </div>
     </div>
 
-    <form id="shiftForm" method="POST" action="{{ route('company.staff-shifts.update') }}">
+    <form id="shiftForm" method="POST" action="{{ route('company.staff-shifts.update') }}" data-busy-form="true" data-busy-label="保存中…">
         @csrf
 
         <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
@@ -478,30 +441,6 @@ function setDayShift(day, value) {
         }
         input.value = value;
         updateCellUI(input);
-    });
-}
-
-function applyWeekdayShift() {
-    const weekday = document.getElementById('weekdaySelect').value;
-    const shift = document.getElementById('weekdayShift').value;
-
-    if (weekday === '') return;
-
-    const headers = document.querySelectorAll('th[data-weekday]');
-
-    headers.forEach((th, index) => {
-        if (th.dataset.weekday == weekday) {
-            document.querySelectorAll('tbody tr').forEach(row => {
-                const input = row.children[index + 1]?.querySelector('.shift-input');
-                if (input) {
-                    if (input.value !== shift) {
-                        markShiftDirty();
-                    }
-                    input.value = shift;
-                    updateCellUI(input);
-                }
-            });
-        }
     });
 }
 

@@ -48,7 +48,7 @@ class DashboardController extends Controller
         $changeNoticeConfirmedCount = (int) ($changeNoticeSummary->confirmed_count ?? 0);
         $changeNoticeTotalCount = (int) ($changeNoticeSummary->total_count ?? 0);
 
-        $hasChangeNoticeAlert = $changeNoticePendingCount > 0 || $changeNoticePhonePendingCount > 0;
+        $hasChangeNoticeAlert = $changeNoticePendingCount > 0;
 
         $openPatterns = $company->open_patterns ?? [];
         $hasOpenPattern = false;

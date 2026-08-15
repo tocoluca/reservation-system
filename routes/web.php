@@ -528,6 +528,9 @@ Route::prefix('r/{company_code}')
         Route::get('/available-staff', [ReserveController::class, 'availableStaff'])
             ->name('reserve.available_staff');
 
+        Route::get('/next-available-date', [ReserveController::class, 'nextAvailableDate'])
+            ->name('reserve.next_available_date');
+
         Route::get('/slots', [ReserveController::class, 'slots'])
             ->name('reserve.slots');
 

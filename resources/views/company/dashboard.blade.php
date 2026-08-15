@@ -13,7 +13,8 @@
     $changePending = (int) ($changeNoticePendingCount ?? 0);
     $changePhonePending = (int) ($changeNoticePhonePendingCount ?? 0);
     $changeConfirmed = (int) ($changeNoticeConfirmedCount ?? 0);
-    $changeTotalActive = $changePending + $changePhonePending;
+    // 予約変更連絡の代表件数は、重複し得る電話対応待ちを足さず確認待ちで集計する。
+    $changeTotalActive = $changePending;
     $setupDoneCount = (int) ($setupDoneCount ?? 0);
     $setupTotalCount = (int) ($setupTotalCount ?? 0);
     $setupPercent = $setupTotalCount > 0 ? (int) floor(($setupDoneCount / $setupTotalCount) * 100) : 0;
@@ -21,6 +22,11 @@
     $supportReplyInquiries = $supportReplyInquiries ?? collect();
     $supportUnreadCount = (int) ($supportUnreadCount ?? 0);
     $notices = $notices ?? collect();
+    $attentionTaskCount = (int) (($showSetupGuide ?? false) && $setupTotalCount > 0)
+        + (int) ($changeTotalActive > 0)
+        + (int) ($supportUnreadCount > 0)
+        + (int) $hasBusinessAlert
+        + (int) $hasShiftAlert;
     $todayReservationCount = $todayReservations->count();
     $tomorrowReservationCount = $tomorrowReservations->count();
     $todayReservationListUrl = route('company.reservations.index', [
@@ -275,7 +281,7 @@ body {
 .metric-label { font-size: .78rem; font-weight: 700; color: #64748b; }
 </style>
 
-<div x-data="{ tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'), showTomorrow: false }" class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div x-data="{ tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'), showTomorrow: false, showFeatureCards: @js(request()->hasAny(['period', 'year', 'month'])) }" class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <section class="lux-hero rounded-[2rem] overflow-hidden mb-6">
         <div class="p-5 sm:p-7 lg:p-8">
             <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-7">
@@ -306,8 +312,16 @@ body {
                     </div>
                 </div>
                 <div class="xl:w-[430px]">
-                    <div class="mb-3 text-xs font-bold tracking-[0.18em] text-white/55">NEEDS ATTENTION</div>
-                    <div class="action-panel space-y-3">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                            <div class="text-xs font-bold tracking-[0.18em] text-white/55">TODAY'S TASKS</div>
+                            <div class="mt-1 text-sm font-black text-white">今日やること</div>
+                        </div>
+                        <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-bold text-white/80">
+                            {{ $attentionTaskCount > 0 ? $attentionTaskCount.'件' : '対応済み' }}
+                        </span>
+                    </div>
+                    <div class="action-panel space-y-3" aria-label="今日やること">
                         @if(($showSetupGuide ?? false) && $setupTotalCount > 0)
                             <a href="{{ url('/company/setup') }}" class="action-item">
                                 <span class="flex items-center gap-3 min-w-0">
@@ -431,10 +445,15 @@ body {
             <h2>カードカテゴリ</h2>
             <p>クイックランチは主要操作、こちらは各機能カードのまとまりです。</p>
         </div>
-        <div class="hint hidden sm:block">タブを選ぶと下のカードが切り替わります</div>
+        <button type="button"
+                @click="showFeatureCards = !showFeatureCards; if (!showFeatureCards) tab = 'dashboard'"
+                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
+            <span x-text="showFeatureCards ? '機能一覧を閉じる' : '機能一覧を開く'"></span>
+            <span class="text-base" x-text="showFeatureCards ? '▲' : '▼'"></span>
+        </button>
     </div>
 
-    <nav class="tab-nav mb-6" aria-label="カードカテゴリ">
+    <nav x-show="showFeatureCards" class="tab-nav mb-6" aria-label="カードカテゴリ">
         <div class="tab-nav-grid">
             <button type="button" @click="tab='dashboard'" :class="tab==='dashboard' ? 'tab-btn active' : 'tab-btn'">
                 <i data-lucide="layout-dashboard"></i><span>概要</span><span class="tab-sub">状況確認</span>
@@ -540,13 +559,13 @@ body {
         </div>
     </div>
 
-    <div x-show="tab==='reserve'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='reserve'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-check"></i></div><div><div class="font-bold">予約カレンダー</div><div class="text-sm text-gray-500">空き状況の確認と予約登録</div></div></a>@endif
         @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list-checks"></i></div><div><div class="font-bold">予約一覧</div><div class="text-sm text-gray-500">予約状況、来店済、キャンセル、無断キャンセルの管理</div></div></a>@endif
         @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">顧客管理</div><div class="text-sm text-gray-500">来店履歴・顧客情報の管理</div></div></a>@endif
     </div>
 
-    <div x-show="tab==='notice'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='notice'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.reviews') && ($company->review_enabled ?? false))<a href="{{ route('company.reviews.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="star"></i></div><div><div class="font-bold">口コミ管理</div><div class="text-sm text-gray-500">評価確認・返信対応</div></div></a>@endif
         @if($can('card.style'))<a href="{{ route('company.style-posts.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">最新スタイル投稿</div><div class="text-sm text-gray-500">ヘアスタイルの発信</div></div></a>@endif
         @if($can('card.notices'))<a href="{{ route('company.notices.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="megaphone"></i></div><div><div class="font-bold">お知らせ情報管理</div><div class="text-sm text-gray-500">キャンペーン・重要告知</div></div></a>@endif
@@ -582,13 +601,13 @@ body {
         @endif
     </div>
 
-    <div x-show="tab==='staff'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='staff'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.staff'))<a href="{{ route('company.staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="user"></i></div><div><div class="font-bold">担当者管理</div><div class="text-sm text-gray-500">スタッフ登録・権限管理</div></div></a>@endif
         @if($can('card.vacation'))<a href="{{ route('company.vacation.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-x"></i></div><div><div class="font-bold">休暇管理</div><div class="text-sm text-gray-500">休み・有給の設定</div></div></a>@endif
         @if($can('card.my_profile'))<a href="{{ route('company.my-profile') }}" class="card card-link"><div class="card-icon"><i data-lucide="settings"></i></div><div><div class="font-bold">マイプロフィール</div><div class="text-sm text-gray-500">個人設定・アカウント管理</div></div></a>@endif
     </div>
 
-    <div x-show="tab==='shift'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='shift'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif
         @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
         @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
@@ -596,18 +615,18 @@ body {
         @if($can('card.shift_patterns'))<a href="{{ route('company.shift-patterns') }}" class="card card-link"><div class="card-icon"><i data-lucide="layers"></i></div><div><div class="font-bold">シフトパターン</div><div class="text-sm text-gray-500">勤務時間テンプレート</div></div></a>@endif
     </div>
 
-    <div x-show="tab==='menu'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='menu'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.menu_category_tag'))<a href="{{ route('company.menu.settings') }}" class="card card-link"><div class="card-icon"><i data-lucide="tag"></i></div><div><div class="font-bold">カテゴリー・タグ管理</div><div class="text-sm text-gray-500">分類・検索用タグ設定</div></div></a>@endif
         @if($can('card.menu'))<a href="{{ route('company.menu.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list"></i></div><div><div class="font-bold">メニュー管理</div><div class="text-sm text-gray-500">料金・施術時間の設定</div></div></a>@endif
         @if($can('card.menu_staff'))<a href="{{ route('company.menu-staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">メニュー対応スタッフ設定</div><div class="text-sm text-gray-500">担当可能スタッフ設定</div></div></a>@endif
     </div>
 
-    <div x-show="tab==='contract'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='contract'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.billing'))<a href="{{ route('company.billing.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="credit-card"></i></div><div><div class="font-bold">契約管理</div><div class="text-sm text-gray-500">プラン・支払い情報</div>@if($billingWarning)<div class="mt-2 text-xs text-amber-700">{{ $billingWarning }}</div>@endif</div></a>@endif
         @if($can('card.support'))<a href="{{ route('company.support.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="help-circle"></i></div><div><div class="font-bold">よくあるご質問・お問い合わせ</div><div class="text-sm text-gray-500">サポート・FAQ</div>@if($supportUnreadCount > 0)<span class="inline-flex mt-2 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">{{ $supportUnreadCount }}件</span>@endif</div></a>@endif
     </div>
 
-    <div x-show="tab==='settings'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='settings'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.company_info'))<a href="{{ route('company.info.edit') }}" class="card card-link"><div class="card-icon"><i data-lucide="building"></i></div><div><div class="font-bold">企業情報編集</div><div class="text-sm text-gray-500">店舗情報・基本設定</div></div></a>@endif
         @if($can('card.theme'))<a href="{{ route('company.theme') }}" class="card card-link"><div class="card-icon"><i data-lucide="palette"></i></div><div><div class="font-bold">テーマ設定</div><div class="text-sm text-gray-500">カラー・UI調整</div></div></a>@endif
         @if($can('card.logo'))<a href="{{ route('company.logo') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">ロゴ設定</div><div class="text-sm text-gray-500">ブランド設定</div></div></a>@endif
@@ -615,7 +634,7 @@ body {
     </div>
 
     @if($can('dashboard.sales'))
-        <div x-show="tab==='analytics'" class="space-y-5">
+        <div x-show="showFeatureCards && tab==='analytics'" class="space-y-5">
             <div class="card">
                 <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5"><div><h2 class="text-2xl font-black">売上ダッシュボード</h2><p class="text-sm text-gray-500 mt-1">必要な数字だけ見やすく確認できます。</p></div></div>
                 <form method="GET" action="{{ route('company.dashboard') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

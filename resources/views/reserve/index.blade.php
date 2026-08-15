@@ -47,19 +47,23 @@
             </div>
         @endif
 
-        <div class="{{ ($lineLoginEnabled ?? false) ? 'grid md:grid-cols-[0.95fr_1.05fr] gap-4 sm:gap-5 mb-6' : 'mb-6' }}">
+        @php
+            $hasNotices = collect($notices ?? [])->isNotEmpty();
+        @endphp
+
+        <div class="{{ ($lineLoginEnabled ?? false) && $hasNotices ? 'grid md:grid-cols-[0.95fr_1.05fr] gap-4 sm:gap-5 mb-6' : 'mb-6' }}">
         @if($lineLoginEnabled ?? false)
-            <div class="relative z-10 h-full bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
+            <div class="line-login-banner relative z-10 h-full rounded-2xl border border-dashed border-[#d8c7b7] bg-[#fcf8f4] p-3 sm:p-4">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                        <h2 class="text-base sm:text-lg font-bold text-[#4b3f35] mb-1">
-                            LINEでかんたん予約
+                        <h2 class="text-sm sm:text-base font-bold text-[#4b3f35] mb-1">
+                            LINEで入力を省略（任意）
                         </h2>
-                        <p class="text-sm text-[#7b6654] leading-6">
+                        <p class="text-xs sm:text-sm text-[#7b6654] leading-6">
                             @if(!empty($lineProfile))
-                                LINEログイン中です。お名前やメールアドレスの入力がかんたんになります。
+                                LINE情報でお名前・メールアドレスを入力済みです。電話番号は初回のみご入力ください。
                             @else
-                                LINEでログインすると、次回以降の入力がかんたんになります。
+                                お名前・メールアドレスを自動入力できます。電話番号は初回のみご入力ください。
                             @endif
                         </p>
 
@@ -75,7 +79,7 @@
 
                     <div class="flex flex-col sm:flex-row gap-2">
                         <a href="{{ route('reserve.line.redirect', ['company_code' => $company->company_code]) }}"
-                           class="inline-flex items-center justify-center px-5 py-3 rounded-full text-white font-semibold shadow-sm"
+                           class="inline-flex items-center justify-center px-4 py-2.5 rounded-full text-sm text-white font-semibold shadow-sm"
                            style="background:#06C755;">
                             @if(!empty($lineProfile))
                                 別のLINEでログイン
@@ -86,7 +90,7 @@
 
                         @if(!empty($lineProfile))
                             <a href="{{ route('reserve.line.logout', ['company_code' => $company->company_code]) }}"
-                               class="inline-flex items-center justify-center px-5 py-3 rounded-full border border-[#d6c5b5] bg-white text-[#6b533f] font-semibold">
+                               class="inline-flex items-center justify-center px-4 py-2.5 rounded-full border border-[#d6c5b5] bg-white text-sm text-[#6b533f] font-semibold">
                                 解除
                             </a>
                         @endif
@@ -95,50 +99,48 @@
             </div>
         @endif
 
-        {{-- お知らせ --}}
-        <div class="relative z-10 h-full bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
-            <div class="flex items-center justify-between mb-3">
-                <h2 class="text-base sm:text-lg font-bold text-[#4b3f35]">お知らせ</h2>
-                <span class="text-xs text-[#9a7d63]">INFORMATION</span>
-            </div>
+        @if($hasNotices)
+            {{-- お知らせ --}}
+            <div class="relative z-10 h-full bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-base sm:text-lg font-bold text-[#4b3f35]">お知らせ</h2>
+                    <span class="text-xs text-[#9a7d63]">INFORMATION</span>
+                </div>
 
-            @forelse($notices as $notice)
-                <a href="{{ route('reserve.notice.show', [$company->company_code, $notice->id]) }}"
-                   class="flex items-start justify-between gap-3 py-3 border-t border-[#efe4d8] first:border-t-0 hover:bg-[#fcf8f4] rounded-xl transition px-1">
-                    <div class="flex items-start gap-2 min-w-0">
-                        <div class="pt-0.5">
-                            @if($notice->is_important)
-                                <span class="inline-flex px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
-                                    重要
-                                </span>
-                            @endif
-                        </div>
-
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2 mb-1">
-                                @if(method_exists($notice, 'isNew') && $notice->isNew())
-                                    <span class="inline-flex px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600">
-                                        NEW
+                @foreach($notices as $notice)
+                    <a href="{{ route('reserve.notice.show', [$company->company_code, $notice->id]) }}"
+                       class="flex items-start justify-between gap-3 py-3 border-t border-[#efe4d8] first:border-t-0 hover:bg-[#fcf8f4] rounded-xl transition px-1">
+                        <div class="flex items-start gap-2 min-w-0">
+                            <div class="pt-0.5">
+                                @if($notice->is_important)
+                                    <span class="inline-flex px-2 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-600">
+                                        重要
                                     </span>
                                 @endif
                             </div>
 
-                            <div class="text-sm sm:text-base font-medium text-[#4b3f35] truncate">
-                                {{ $notice->title }}
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                    @if(method_exists($notice, 'isNew') && $notice->isNew())
+                                        <span class="inline-flex px-2 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-600">
+                                            NEW
+                                        </span>
+                                    @endif
+                                </div>
+
+                                <div class="text-sm sm:text-base font-medium text-[#4b3f35] truncate">
+                                    {{ $notice->title }}
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <span class="text-xs text-[#9a7d63] shrink-0">
-                        {{ $notice->created_at->format('m/d') }}
-                    </span>
-                </a>
-            @empty
-                <p class="text-sm text-[#9a7d63]">
-                    現在お知らせはありません
-                </p>
-            @endforelse
-        </div>
+                        <span class="text-xs text-[#9a7d63] shrink-0">
+                            {{ $notice->created_at->format('m/d') }}
+                        </span>
+                    </a>
+                @endforeach
+            </div>
+        @endif
         </div>
 
         <form method="POST" action="/r/{{ $company->company_code }}/confirm" id="reserveForm">
@@ -179,18 +181,18 @@
 
                     <div class="relative z-10 bg-[#fcf8f4] rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
                         <div class="grid grid-cols-4 gap-2 text-center text-xs sm:text-sm">
-                            <div id="stepBox1" class="step-box rounded-2xl py-3 font-semibold">
+                            <button type="button" id="stepBox1" class="step-box rounded-2xl py-3 font-semibold" data-step-target="stepMenuTitle" aria-controls="stepMenuTitle">
                                 1 メニュー
-                            </div>
-                            <div id="stepBox2" class="step-box rounded-2xl py-3 font-semibold">
+                            </button>
+                            <button type="button" id="stepBox2" class="step-box rounded-2xl py-3 font-semibold" data-step-target="stepDateTitle" aria-controls="stepDateTitle">
                                 2 日付
-                            </div>
-                            <div id="stepBox3" class="step-box rounded-2xl py-3 font-semibold">
+                            </button>
+                            <button type="button" id="stepBox3" class="step-box rounded-2xl py-3 font-semibold" data-step-target="stepTimeTitle" aria-controls="stepTimeTitle">
                                 3 時間
-                            </div>
-                            <div id="stepBox4" class="step-box rounded-2xl py-3 font-semibold">
+                            </button>
+                            <button type="button" id="stepBox4" class="step-box rounded-2xl py-3 font-semibold" data-step-target="stepStaffTitle" aria-controls="stepStaffTitle">
                                 4 担当者
-                            </div>
+                            </button>
                         </div>
                     </div>
 
@@ -231,7 +233,8 @@
 
                                 $menuImage = $categoryImageMap[$categoryName] ?? asset('images/menu-icons/other.jpg');
                                 $categoryPanelId = 'menuCategoryPanel' . $loop->iteration;
-                                $categoryHasChecked = collect($categoryMenus)->contains(fn ($menu) => in_array((string) $menu->id, $oldMenuIds, true));
+                                $categorySelectedCount = collect($categoryMenus)->filter(fn ($menu) => in_array((string) $menu->id, $oldMenuIds, true))->count();
+                                $categoryHasChecked = $categorySelectedCount > 0;
                                 $categoryIsOpen = $loop->first || $categoryHasChecked;
                             @endphp
 
@@ -257,9 +260,9 @@
                                             </div>
                                             <div class="mt-1 text-xs text-[#9a7d63]">
                                                 {{ $categoryMenus->count() }}件
-                                                @if($categoryHasChecked)
-                                                    ・選択中あり
-                                                @endif
+                                                <span data-menu-category-selected class="{{ $categoryHasChecked ? '' : 'hidden' }}">
+                                                    ・選択中 {{ $categorySelectedCount }}件
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -304,6 +307,7 @@
                                                                         </span>
                                                                     @endif
 
+                                                                    <span class="menu-selection-indicator" aria-hidden="true">✓</span>
                                                                     <span class="menu-selected-badge text-[10px] sm:text-xs px-2.5 py-1 rounded-full text-white font-bold shadow-sm">
                                                                         選択中
                                                                     </span>
@@ -545,11 +549,12 @@
                         </div>
 
                         <button
-                            type="submit"
+                            type="button"
                             id="submitButtonSummary"
+                            onclick="submitReserveForm()"
                             class="w-full text-white py-4 rounded-full text-base sm:text-lg font-bold shadow-lg hover:opacity-95 transition"
                             style="background: {{ $theme }};">
-                            予約確認へ進む
+                            メニューを選ぶ
                         </button>
 
                         <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
@@ -621,6 +626,7 @@
                             </div>
                         </div>
 
+                        @if($stylePosts->count() > 0)
                         <div class="relative z-10 bg-white rounded-2xl shadow-sm border border-[#eadfd3] p-4 sm:p-5">
                             <div class="flex items-center justify-between mb-4 gap-3">
                                 <h2 class="text-lg font-bold text-[#4b3f35]">最新スタイル</h2>
@@ -632,43 +638,38 @@
                                 @endif
                             </div>
 
-                            @if($stylePosts->count() > 0)
-                                <div class="space-y-3">
-                                    @foreach($stylePosts->take(3) as $style)
-                                        @php
-                                            $styleImage = $style->image_url ?? (!empty($style->image_path) ? asset('storage/' . $style->image_path) : asset('images/noimage.png'));
-                                        @endphp
+                            <div class="space-y-3">
+                                @foreach($stylePosts->take(3) as $style)
+                                    @php
+                                        $styleImage = $style->image_url ?? (!empty($style->image_path) ? asset('storage/' . $style->image_path) : asset('images/noimage.png'));
+                                    @endphp
 
 
-                                        <a href="{{ route('reserve.styles.index', $company->company_code) }}" class="style-preview-card block rounded-2xl border border-[#eadfd3] p-3 hover:bg-[#fcf8f4] transition group">
-                                            <div class="flex gap-3">
-                                                <img src="{{ $styleImage }}" alt="{{ $style->title ?? 'スタイル画像' }}" class="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#efe4d8] bg-white group-hover:scale-[1.02] transition">
+                                    <a href="{{ route('reserve.styles.index', $company->company_code) }}" class="style-preview-card block rounded-2xl border border-[#eadfd3] p-3 hover:bg-[#fcf8f4] transition group">
+                                        <div class="flex gap-3">
+                                            <img src="{{ $styleImage }}" alt="{{ $style->title ?? 'スタイル画像' }}" class="w-20 h-20 rounded-2xl object-cover shrink-0 border border-[#efe4d8] bg-white group-hover:scale-[1.02] transition">
 
-                                                <div class="min-w-0 flex-1">
-                                                    <div class="text-sm font-bold text-[#4b3f35] leading-6">
-                                                        {{ $style->title ?? 'スタイル画像' }}
+                                            <div class="min-w-0 flex-1">
+                                                <div class="text-sm font-bold text-[#4b3f35] leading-6">
+                                                    {{ $style->title ?? 'スタイル画像' }}
+                                                </div>
+
+                                                @if(!empty($style->comment))
+                                                    <div class="mt-1 text-sm text-[#7b6654] leading-6 line-clamp-3">
+                                                        {{ $style->comment }}
                                                     </div>
+                                                @endif
 
-                                                    @if(!empty($style->comment))
-                                                        <div class="mt-1 text-sm text-[#7b6654] leading-6 line-clamp-3">
-                                                            {{ $style->comment }}
-                                                        </div>
-                                                    @endif
-
-                                                    <div class="mt-2 text-[11px] font-bold text-[#9a7d63]">
-                                                        画像一覧でコメントを見る
-                                                    </div>
+                                                <div class="mt-2 text-[11px] font-bold text-[#9a7d63]">
+                                                    画像一覧でコメントを見る
                                                 </div>
                                             </div>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            @else
-                                <div class="rounded-2xl bg-[#fcf8f4] border border-[#eadfd3] px-4 py-3 text-sm text-[#9a7d63]">
-                                    まだスタイル投稿はありません。
-                                </div>
-                            @endif
+                                        </div>
+                                    </a>
+                                @endforeach
+                            </div>
                         </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -744,7 +745,7 @@
                 onclick="submitReserveForm()"
                 class="shrink-0 text-white px-5 sm:px-7 py-3.5 rounded-full text-sm sm:text-base font-bold shadow-lg hover:opacity-95 transition"
                 style="background: {{ $theme }};">
-                確認へ進む
+                メニューを選ぶ
             </button>
         </div>
     </div>
@@ -820,9 +821,30 @@
         background: {{ $theme }};
     }
 
+    .menu-selection-indicator {
+        display: inline-flex;
+        width: 22px;
+        height: 22px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #d8c7b7;
+        border-radius: 999px;
+        color: transparent;
+        background: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        transition: all 0.2s ease;
+    }
+
     .menu-check:checked + .menu-card .menu-selected-badge {
         display: inline-flex;
         align-items: center;
+    }
+
+    .menu-check:checked + .menu-card .menu-selection-indicator {
+        border-color: {{ $theme }};
+        background: {{ $theme }};
+        color: #fff;
     }
 
     .menu-check:checked + .menu-card .text-\[\#4b3f35\] {
@@ -870,10 +892,26 @@
     }
 
     .step-box {
+        appearance: none;
+        cursor: pointer;
         background: #fff;
         color: #7b6654;
         border: 1px solid #eadfd3;
         transition: all 0.2s ease;
+    }
+
+    .step-box:hover {
+        border-color: {{ $theme }};
+        background: #fcf8f4;
+    }
+
+    .step-box:focus-visible {
+        outline: 3px solid color-mix(in srgb, {{ $theme }} 28%, transparent);
+        outline-offset: 2px;
+    }
+
+    .step-box-done::before {
+        content: '✓ ';
     }
 
     .step-box-active {
@@ -937,6 +975,8 @@ document.addEventListener("DOMContentLoaded", function () {
     bindMenuEvents();
     bindMenuCategoryEvents();
     bindStaffEvents();
+    bindStepNavigation();
+    updateMenuSelectionUI();
 
     flatpickr("#date", {
         locale: "ja",
@@ -1061,12 +1101,35 @@ function bindMenuCategoryEvents() {
     });
 }
 
+function bindStepNavigation() {
+    document.querySelectorAll('[data-step-target]').forEach(button => {
+        button.addEventListener('click', function () {
+            clearErrors();
+            scrollToStep(this.dataset.stepTarget);
+        });
+    });
+}
+
+function updateMenuSelectionUI() {
+    document.querySelectorAll('[data-menu-category-toggle]').forEach(button => {
+        const target = document.querySelector(button.dataset.target);
+        const selectedCount = target ? target.querySelectorAll('.menu-check:checked').length : 0;
+        const selectedLabel = button.querySelector('[data-menu-category-selected]');
+
+        if (!selectedLabel) return;
+
+        selectedLabel.textContent = selectedCount > 0 ? `・選択中 ${selectedCount}件` : '';
+        selectedLabel.classList.toggle('hidden', selectedCount === 0);
+    });
+}
+
 function bindMenuEvents() {
     document.querySelectorAll('.menu-check').forEach(el => {
         el.addEventListener('change', async function () {
             document.getElementById('start_at').value = '';
             updatePrice();
             updateSummary();
+            updateMenuSelectionUI();
             updateStepStates();
             clearErrors();
             await reloadAvailableStaff();
@@ -1125,9 +1188,10 @@ async function reloadAvailableStaff() {
     const menuEls = Array.from(document.querySelectorAll('.menu-check:checked'));
     const selectedTime = document.getElementById('start_at').value;
     const previouslySelected = document.querySelector('[name=staff_id]:checked')?.value ?? '';
+    const previouslySelectedName = document.querySelector('[name=staff_id]:checked')?.dataset.name ?? '';
 
     if (!date || menuEls.length === 0) {
-        renderStaffList([], previouslySelected, false);
+        renderStaffList([], previouslySelected, false, previouslySelectedName, false);
         return;
     }
 
@@ -1151,16 +1215,19 @@ async function reloadAvailableStaff() {
 
         const data = await response.json();
         const staff = Array.isArray(data.staff) ? data.staff : [];
-        renderStaffList(staff, previouslySelected, true);
+        renderStaffList(staff, previouslySelected, true, previouslySelectedName, true);
     } catch (e) {
-        renderStaffList([], previouslySelected, true);
+        renderStaffList([], previouslySelected, false, previouslySelectedName, false);
     }
 }
 
-function renderStaffList(staffItems, selectedValue = '', hasContext = false) {
+function renderStaffList(staffItems, selectedValue = '', hasContext = false, previousSelectedName = '', notifySelectionReset = true) {
     const staffList = document.getElementById('staffList');
     if (!staffList) return;
 
+    const selectionDropped = notifySelectionReset
+        && selectedValue !== ''
+        && !staffItems.some(staff => String(staff.id) === String(selectedValue));
     const selectedTime = document.getElementById('start_at').value;
     const availabilityBadge = selectedTime
         ? '<span class="text-[10px] sm:text-xs px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold border border-emerald-100">この時間で予約可能</span>'
@@ -1191,6 +1258,14 @@ function renderStaffList(staffItems, selectedValue = '', hasContext = false) {
             </div>
         </label>
     `;
+
+    if (selectionDropped) {
+        html += `
+            <div class="rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm leading-6 text-orange-900">
+                「${escapeHtml(previousSelectedName || '選択した担当者')}」は、日付・時間・メニューの変更後は指定できないため、指名なしに戻しました。別の担当者を選ぶか、時間を変更してください。
+            </div>
+        `;
+    }
 
     if (hasContext && staffItems.length === 0) {
         html += `
@@ -1308,7 +1383,41 @@ function updateSummary() {
     }
 }
 
+function getNextActionState() {
+    const menus = document.querySelectorAll('.menu-check:checked');
+    const date = document.getElementById('date').value;
+    const start = document.getElementById('start_at').value;
+
+    if (menus.length === 0) {
+        return { label: 'メニューを選ぶ', target: 'stepMenuTitle' };
+    }
+
+    if (!date) {
+        return { label: '日付を選ぶ', target: 'stepDateTitle' };
+    }
+
+    if (!start) {
+        return { label: '空き時間を選ぶ', target: 'stepTimeTitle' };
+    }
+
+    return { label: '予約確認へ進む', target: null };
+}
+
+function updateActionButtons() {
+    const state = getNextActionState();
+
+    ['submitButtonSummary', 'bottomSubmitButton'].forEach(id => {
+        const button = document.getElementById(id);
+        if (!button) return;
+
+        button.innerText = state.label;
+        button.setAttribute('aria-label', state.label);
+    });
+}
+
 function updateStepStates(forceHighlight = false) {
+    updateActionButtons();
+
     const menus = document.querySelectorAll('.menu-check:checked');
     const date = document.getElementById('date').value;
     const start = document.getElementById('start_at').value;
@@ -1438,11 +1547,18 @@ function loadSlots(preselectTime = '') {
         .then(r => r.json())
         .then(data => {
             const wantedTime = preselectTime || currentSelectedTime;
+            const availableSlots = data.filter(slot => Number(slot.remaining || 0) > 0);
+            const fullSlots = data.filter(slot => Number(slot.remaining || 0) <= 0);
 
-            if (!data.length) {
+            if (!availableSlots.length) {
                 document.getElementById('start_at').value = '';
-                guide.innerText = '選択条件に合う空き時間がありません';
-                slotsBox.innerHTML = '';
+                guide.innerText = fullSlots.length ? 'この日付は満席です' : '選択条件に合う空き時間がありません';
+                renderSlotEmptyState(
+                    fullSlots.length ? 'この日付は満席です。' : 'この条件で予約できる時間がありません。',
+                    '最短の空き日を検索するか、カレンダーから別の日付を選べます。',
+                    '日付を選び直す',
+                    true
+                );
                 updateSummary();
                 updateStepStates();
                 return;
@@ -1456,7 +1572,7 @@ function loadSlots(preselectTime = '') {
                 evening: [],
             };
 
-            data.forEach(slot => {
+            availableSlots.forEach(slot => {
                 const hour = Number(String(slot.time).split(':')[0]);
 
                 if (hour < 12) {
@@ -1471,8 +1587,12 @@ function loadSlots(preselectTime = '') {
             let selectedStillExists = false;
             let html = '';
 
-            const renderSection = (title, slots) => {
-                if (!slots.length) return '';
+            const renderSection = (title, slots, includeUnavailable = false) => {
+                const visibleSlots = includeUnavailable
+                    ? slots
+                    : slots.filter(slot => Number(slot.remaining || 0) > 0);
+
+                if (!visibleSlots.length) return '';
 
                 let sectionHtml = `
                     <div class="col-span-full mt-2 first:mt-0">
@@ -1484,7 +1604,7 @@ function loadSlots(preselectTime = '') {
                         <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                 `;
 
-                slots.forEach(slot => {
+                visibleSlots.forEach(slot => {
                     const remaining = Number(slot.remaining || 0);
                     const disabled = remaining <= 0;
                     const isSelected = wantedTime && slot.time === wantedTime;
@@ -1526,7 +1646,42 @@ function loadSlots(preselectTime = '') {
             html += renderSection('午後', groups.afternoon);
             html += renderSection('夕方', groups.evening);
 
+            if (fullSlots.length) {
+                const fullGroups = { morning: [], afternoon: [], evening: [] };
+
+                fullSlots.forEach(slot => {
+                    const hour = Number(String(slot.time).split(':')[0]);
+
+                    if (hour < 12) {
+                        fullGroups.morning.push(slot);
+                    } else if (hour < 17) {
+                        fullGroups.afternoon.push(slot);
+                    } else {
+                        fullGroups.evening.push(slot);
+                    }
+                });
+
+                html += `
+                    <button type="button" id="toggleFullSlots" class="w-full rounded-2xl border border-[#d9cabb] bg-[#fcf8f4] px-4 py-3 text-sm font-bold text-[#6b533f] hover:bg-white transition">
+                        満席の時間も表示
+                    </button>
+                    <div id="fullSlotsPanel" class="hidden space-y-5">
+                        ${renderSection('午前（満席）', fullGroups.morning, true)}
+                        ${renderSection('午後（満席）', fullGroups.afternoon, true)}
+                        ${renderSection('夕方（満席）', fullGroups.evening, true)}
+                    </div>
+                `;
+            }
+
             slotsBox.innerHTML = html;
+
+            document.getElementById('toggleFullSlots')?.addEventListener('click', function () {
+                const panel = document.getElementById('fullSlotsPanel');
+                if (!panel) return;
+
+                const isHidden = panel.classList.toggle('hidden');
+                this.innerText = isHidden ? '満席の時間も表示' : '満席の時間を閉じる';
+            });
 
             if (selectedStillExists && wantedTime) {
                 document.getElementById('start_at').value = date + ' ' + wantedTime;
@@ -1564,9 +1719,130 @@ function loadSlots(preselectTime = '') {
         .catch(() => {
             document.getElementById('start_at').value = '';
             guide.innerText = '空き時間の取得に失敗しました';
+            renderSlotEmptyState('空き時間を取得できませんでした。', '日付を選び直すか、しばらくしてから再度お試しください。', '日付を選び直す');
             updateSummary();
             updateStepStates();
         });
+}
+
+function renderSlotEmptyState(message, detail, buttonLabel = '別の日付を選ぶ', includeNextSearch = false) {
+    const slotsBox = document.getElementById('slots');
+    if (!slotsBox) return;
+
+    const actionMarkup = includeNextSearch
+        ? `
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+                <button type="button" data-slot-action="find-next-date" class="inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-bold text-white shadow-sm hover:opacity-95 transition" style="background: {{ $theme }};">
+                    最短の空き日を探す
+                </button>
+                <button type="button" data-slot-action="change-date" class="inline-flex items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100 transition">
+                    ${buttonLabel}
+                </button>
+            </div>
+        `
+        : `
+            <button type="button" data-slot-action="change-date" class="mt-3 inline-flex items-center justify-center rounded-full border border-amber-300 bg-white px-4 py-2 text-sm font-bold text-amber-900 hover:bg-amber-100 transition">
+                ${buttonLabel}
+            </button>
+        `;
+
+    slotsBox.innerHTML = `
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-center">
+            <div class="font-bold text-amber-900">${message}</div>
+            <div class="mt-1 text-sm leading-6 text-amber-800">${detail}</div>
+            ${actionMarkup}
+        </div>
+    `;
+
+    slotsBox.querySelector('[data-slot-action="change-date"]')?.addEventListener('click', function () {
+        scrollToStep('stepDateTitle');
+
+        const dateInput = document.getElementById('date');
+        const picker = dateInput?._flatpickr;
+
+        if (picker) {
+            picker.clear();
+            picker.open();
+        } else if (dateInput) {
+            dateInput.focus();
+        }
+    });
+
+    slotsBox.querySelector('[data-slot-action="find-next-date"]')?.addEventListener('click', function () {
+        findNextAvailableDate(this);
+    });
+}
+
+async function findNextAvailableDate(button) {
+    const dateInput = document.getElementById('date');
+    const currentDate = dateInput?.value;
+    const menuEls = Array.from(document.querySelectorAll('.menu-check:checked'));
+    const guide = document.getElementById('slotGuide');
+
+    if (!currentDate || menuEls.length === 0) return;
+
+    const params = new URLSearchParams();
+    params.append('from', addDaysToIso(currentDate, 1));
+    menuEls.forEach(menu => params.append('menu_ids[]', menu.value));
+
+    const selectedStaff = document.querySelector('[name=staff_id]:checked')?.value ?? '';
+    if (selectedStaff !== '') {
+        params.append('staff_id', selectedStaff);
+    }
+
+    if (button) {
+        button.disabled = true;
+        button.innerText = '空き日を検索中...';
+    }
+    if (guide) {
+        guide.innerText = '最短の空き日を検索しています...';
+    }
+
+    try {
+        const response = await fetch(`/r/{{ $company->company_code }}/next-available-date?${params.toString()}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await response.json();
+
+        if (data.date) {
+            const picker = dateInput?._flatpickr;
+            if (picker) {
+                picker.setDate(data.date, true);
+            } else {
+                dateInput.value = data.date;
+                dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            scrollToStep('stepDateTitle');
+            return;
+        }
+
+        if (guide) {
+            guide.innerText = '予約可能期間内に空き日がありません';
+        }
+        renderSlotEmptyState(
+            '予約可能期間内に空き日がありません。',
+            'メニューを変更するか、店舗へお問い合わせください。'
+        );
+    } catch (error) {
+        if (guide) {
+            guide.innerText = '空き日の検索に失敗しました';
+        }
+        renderSlotEmptyState(
+            '空き日を検索できませんでした。',
+            'カレンダーから別の日付を選んでお試しください。'
+        );
+    }
+}
+
+function addDaysToIso(isoDate, days) {
+    const [year, month, day] = isoDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day + days, 12, 0, 0);
+
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+    ].join('-');
 }
 
 function showFieldError(id, message) {
@@ -1588,6 +1864,25 @@ function clearErrors() {
 }
 
 function submitReserveForm() {
+    const nextAction = getNextActionState();
+
+    if (nextAction.target) {
+        const errorByTarget = {
+            stepMenuTitle: ['menuErrorBox', 'メニューを選択してください。'],
+            stepDateTitle: ['dateErrorBox', '日付を選択してください。'],
+            stepTimeTitle: ['datetimeErrorBox', '時間を選択してください。'],
+        };
+        const error = errorByTarget[nextAction.target];
+
+        if (error) {
+            showFieldError(error[0], error[1]);
+        }
+
+        scrollToStep(nextAction.target);
+        updateStepStates(true);
+        return;
+    }
+
     const form = document.getElementById('reserveForm');
     if (form) {
         form.requestSubmit();

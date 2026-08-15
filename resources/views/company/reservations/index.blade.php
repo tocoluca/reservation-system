@@ -27,6 +27,7 @@
     $currentReservationFilters = collect(request()->only(['keyword', 'date_from', 'date_to', 'status', 'customer_id']))
         ->filter(fn ($value) => filled($value))
         ->all();
+    $hasActiveReservationFilters = count($currentReservationFilters) > 0;
 @endphp
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -230,16 +231,27 @@
 
     {{-- 検索 --}}
     <div class="bg-white shadow-sm rounded-[2rem] border border-stone-200 overflow-hidden">
-        <div class="px-6 py-5 border-b border-stone-200 bg-gradient-to-r from-stone-50 to-white">
-            <div class="mb-4">
-                <h2 class="text-lg font-bold text-stone-800">予約を絞り込む</h2>
-                <p class="text-sm text-stone-500 mt-1">
-                    顧客名・電話番号・日付・状態から条件を指定できます。
-                </p>
-            </div>
+        <details class="group" {{ $hasActiveReservationFilters ? 'open' : '' }}>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-6 py-5 bg-gradient-to-r from-stone-50 to-white">
+                <span class="min-w-0">
+                    <span class="block text-lg font-bold text-stone-800">予約を絞り込む</span>
+                    <span class="mt-1 block text-sm text-stone-500">
+                        顧客名・電話番号・日付・状態から条件を指定できます。
+                    </span>
+                </span>
+                <span class="inline-flex shrink-0 items-center gap-2 rounded-full border border-stone-200 bg-white px-3 py-2 text-xs font-bold text-stone-600">
+                    @if($hasActiveReservationFilters)
+                        条件あり
+                    @else
+                        詳細条件
+                    @endif
+                    <span class="text-base leading-none transition group-open:rotate-180">⌄</span>
+                </span>
+            </summary>
 
-            <form method="GET" action="{{ route('company.reservations.index') }}"
-                  class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+            <div class="border-t border-stone-200 px-6 py-5">
+                <form method="GET" action="{{ route('company.reservations.index') }}"
+                      class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
 
                 <div class="xl:col-span-2">
                     <label class="block text-xs text-stone-500 mb-1">顧客名または電話番号(数字のみ)</label>
@@ -308,8 +320,35 @@
                         明後日({{ \Carbon\Carbon::parse($dayAfterTomorrow)->format('m/d') }})の予約
                     </a>
                 </div>
-            </form>
-        </div>
+                </form>
+            </div>
+        </details>
+
+        @if($hasActiveReservationFilters)
+            <div class="flex flex-wrap items-center gap-2 border-t border-stone-200 bg-stone-50/80 px-6 py-3">
+                <span class="mr-1 text-xs font-bold text-stone-500">適用中の条件</span>
+                @if(filled(request('keyword')))
+                    <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-700 shadow-sm">キーワード：{{ request('keyword') }}</span>
+                @endif
+                @if(filled(request('date_from')))
+                    <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-700 shadow-sm">開始日：{{ request('date_from') }}</span>
+                @endif
+                @if(filled(request('date_to')))
+                    <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-700 shadow-sm">終了日：{{ request('date_to') }}</span>
+                @endif
+                @if(filled(request('status')))
+                    <span class="rounded-full bg-white px-3 py-1 text-xs font-bold text-stone-700 shadow-sm">状態：{{ $reservationStatusMeta(request('status'))['label'] }}</span>
+                @endif
+                @if(!empty($customerFilter))
+                    <span class="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700 shadow-sm">顧客：{{ $customerFilter->name }}</span>
+                @endif
+                <a href="{{ route('company.reservations.index') }}"
+                   class="ml-auto text-xs font-bold underline"
+                   style="color: {{ $theme }};">
+                    条件をクリア
+                </a>
+            </div>
+        @endif
 
         {{-- PC表示 --}}
         <div class="hidden lg:block max-h-[72vh] overflow-y-auto overflow-x-hidden">
@@ -438,35 +477,45 @@
                                     <div class="flex flex-col gap-2">
                                         <form method="POST"
                                               action="{{ route('company.reservations.complete', $reservation->id) }}"
+                                              data-busy-form="true"
                                               onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
                                             @csrf
                                             @foreach($currentReservationFilters as $filterKey => $filterValue)
                                                 <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
                                             @endforeach
                                             <button type="submit"
+                                                    data-busy-button
                                                     class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl bg-blue-600 text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap">
                                                 来店済
                                             </button>
                                         </form>
 
-                                    <form method="POST"
-                                          action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                          class="js-cancel-form">
-                                        @csrf
-                                        @foreach($currentReservationFilters as $filterKey => $filterValue)
-                                            <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
-                                        @endforeach
-                                        <input type="hidden" name="cancel_kind" value="">
-                                        <button type="button"
-                                                data-cancel-open
-                                                data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
-                                                data-customer-name="{{ $displayCustomerName }}"
-                                                data-customer-phone="{{ $displayPhone }}"
-                                                class="w-full inline-flex items-center justify-center px-2 py-2 rounded-xl text-white text-[11px] font-semibold hover:opacity-90 transition shadow-sm whitespace-nowrap"
-                                                style="background: {{ $theme }};">
-                                            キャンセル
-                                        </button>
-                                    </form>
+                                        <form method="POST"
+                                              action="{{ route('company.reservations.cancel', $reservation->id) }}"
+                                              class="js-cancel-form"
+                                              data-busy-form="true">
+                                            @csrf
+                                            @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                                <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                            @endforeach
+                                            <input type="hidden" name="cancel_kind" value="">
+                                            <details class="relative">
+                                                <summary class="flex cursor-pointer list-none items-center justify-center rounded-xl border border-stone-200 bg-white px-2 py-2 text-[11px] font-semibold text-stone-600 hover:bg-stone-50">
+                                                    その他の操作
+                                                </summary>
+                                                <div class="absolute right-0 top-full z-20 mt-2 w-36 rounded-xl border border-stone-200 bg-white p-1 shadow-lg">
+                                                    <button type="button"
+                                                            data-cancel-open
+                                                            data-busy-button
+                                                            data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
+                                                            data-customer-name="{{ $displayCustomerName }}"
+                                                            data-customer-phone="{{ $displayPhone }}"
+                                                            class="w-full rounded-lg px-3 py-2 text-left text-[11px] font-semibold text-rose-700 hover:bg-rose-50">
+                                                        キャンセル
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </form>
                                     </div>
                                 @else
                                     <span class="text-stone-400 text-xs">操作不可</span>
@@ -595,6 +644,7 @@
                         @if($reservation->status === 'reserved')
                             <form method="POST"
                                   action="{{ route('company.reservations.complete', $reservation->id) }}"
+                                  data-busy-form="true"
                                   class="mb-2"
                                   onsubmit="return confirm('この予約を来店済みにしますか？\n\n予約日時：{{ optional($reservation->start_at)->format('Y/m/d H:i') }}\n顧客名：{{ $displayCustomerName }}');">
                                 @csrf
@@ -602,6 +652,7 @@
                                     <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
                                 @endforeach
                                 <button type="submit"
+                                        data-busy-button
                                         class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-blue-600 text-white text-sm font-semibold hover:opacity-90 transition shadow-sm">
                                     来店済みにする
                                 </button>
@@ -609,21 +660,29 @@
 
                             <form method="POST"
                                   action="{{ route('company.reservations.cancel', $reservation->id) }}"
-                                  class="js-cancel-form">
+                                  class="js-cancel-form"
+                                  data-busy-form="true">
                                 @csrf
                                 @foreach($currentReservationFilters as $filterKey => $filterValue)
                                     <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
                                 @endforeach
                                 <input type="hidden" name="cancel_kind" value="">
-                                <button type="button"
-                                        data-cancel-open
-                                        data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
-                                        data-customer-name="{{ $displayCustomerName }}"
-                                        data-customer-phone="{{ $displayPhone }}"
-                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl text-white text-sm font-semibold hover:opacity-90 transition shadow-sm"
-                                        style="background: {{ $theme }};">
-                                    この予約をキャンセル
-                                </button>
+                                <details class="relative">
+                                    <summary class="flex cursor-pointer list-none items-center justify-center rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-600 hover:bg-stone-50">
+                                        その他の操作
+                                    </summary>
+                                    <div class="absolute inset-x-0 top-full z-20 mt-2 rounded-2xl border border-stone-200 bg-white p-2 shadow-lg">
+                                        <button type="button"
+                                                data-cancel-open
+                                                data-busy-button
+                                                data-reservation-date="{{ optional($reservation->start_at)->format('Y/m/d H:i') }}"
+                                                data-customer-name="{{ $displayCustomerName }}"
+                                                data-customer-phone="{{ $displayPhone }}"
+                                                class="w-full rounded-xl px-4 py-3 text-left text-sm font-semibold text-rose-700 hover:bg-rose-50">
+                                            この予約をキャンセル
+                                        </button>
+                                    </div>
+                                </details>
                             </form>
                         @else
                             <div class="text-stone-400 text-xs">操作不可</div>

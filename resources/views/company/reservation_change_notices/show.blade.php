@@ -21,9 +21,20 @@
 
     <div class="mb-6">
         <a href="{{ route('company.reservation_change_notices.index') }}"
-           class="inline-flex items-center text-sm font-semibold mb-4 hover:opacity-80 transition"
+           class="group flex items-center justify-between gap-4 rounded-[1.5rem] border border-rose-100 bg-gradient-to-r from-white via-rose-50/60 to-amber-50/60 px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:px-5"
            style="color: {{ $theme }};">
-            ← 予約変更連絡管理へ戻る
+            <span class="flex min-w-0 items-center gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm"
+                      style="background: linear-gradient(135deg, {{ $theme }}, #be123c);">
+                    <i data-lucide="arrow-left" class="h-5 w-5"></i>
+                </span>
+                <span class="min-w-0 text-left">
+                    <span class="block text-[11px] font-bold tracking-[0.16em] text-rose-500">RESERVATION NOTICE</span>
+                    <span class="mt-1 block truncate text-sm font-black text-slate-900">予約変更連絡管理へ戻る</span>
+                    <span class="mt-0.5 block text-xs text-slate-500">未対応案件の一覧を確認できます</span>
+                </span>
+            </span>
+            <i data-lucide="arrow-up-right" class="h-5 w-5 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"></i>
         </a>
 
         <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">

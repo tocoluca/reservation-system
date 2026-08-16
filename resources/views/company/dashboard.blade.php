@@ -215,23 +215,6 @@ body {
     color: #fff;
 }
 .tab-btn.active .tab-sub { color: rgba(255,255,255,.68); }
-.tab-badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    min-width: 1.6rem;
-    height: 1.6rem;
-    padding: 0 .4rem;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: #e11d48;
-    color: #fff;
-    font-size: 10px;
-    font-weight: 900;
-    box-shadow: 0 8px 18px rgba(225,29,72,.28);
-}
 .tab-btn.active::after {
     content: "";
     position: absolute;
@@ -245,20 +228,29 @@ body {
 }
 .tab-category-heading {
     display: flex;
-    align-items: end;
+    align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: .9rem;
+    margin-bottom: 1rem;
     border-radius: 24px;
-    border: 1px solid rgba(148,163,184,.18);
+    border: 1px solid {{ $theme }}38;
     background:
-        linear-gradient(135deg, rgba(255,255,255,.82), rgba(248,250,252,.62)),
-        radial-gradient(circle at left, {{ $theme }}1f, transparent 18rem);
-    padding: 16px 18px;
-    box-shadow: 0 12px 30px rgba(15,23,42,.06), inset 0 1px 0 rgba(255,255,255,.8);
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(248,250,252,.88)),
+        radial-gradient(circle at 8% 20%, {{ $theme }}30, transparent 18rem);
+    padding: 18px 20px;
+    box-shadow: 0 16px 36px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
+    position: relative;
+    overflow: hidden;
+}
+.tab-category-heading::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 5px;
+    background: linear-gradient(180deg, {{ $theme }}, #111827);
 }
 .tab-category-heading h2 {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 900;
     color: #0f172a;
     display: inline-flex;
@@ -266,28 +258,30 @@ body {
     gap: .55rem;
 }
 .tab-category-heading h2::before {
-    content: "";
-    width: .7rem;
-    height: 1.8rem;
-    border-radius: 999px;
-    background: linear-gradient(180deg, {{ $theme }}, #111827);
-    box-shadow: 0 8px 16px {{ $theme }}44;
+    content: "◆";
+    font-size: .72rem;
+    color: {{ $theme }};
+    filter: drop-shadow(0 5px 8px {{ $theme }}55);
 }
 .tab-category-heading p {
     margin-top: .25rem;
     font-size: .8rem;
     color: #64748b;
 }
-.tab-category-heading .hint {
-    border-radius: 999px;
-    background: #111827;
-    border: 1px solid rgba(255,255,255,.18);
-    padding: .55rem .8rem;
-    font-size: .75rem;
-    font-weight: 800;
+.feature-menu-toggle {
+    min-height: 46px;
+    border: 1px solid rgba(255,255,255,.22);
+    background: linear-gradient(135deg, {{ $theme }}, #111827);
     color: #fff;
-    white-space: nowrap;
-    box-shadow: 0 10px 20px rgba(15,23,42,.16);
+    box-shadow: 0 12px 26px {{ $theme }}35, 0 8px 18px rgba(15,23,42,.12);
+}
+.feature-menu-toggle:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 15px 30px {{ $theme }}42, 0 10px 22px rgba(15,23,42,.15);
+}
+.feature-menu-toggle:focus-visible {
+    outline: 3px solid {{ $theme }}42;
+    outline-offset: 3px;
 }
 @media (max-width: 640px) {
     .tab-category-heading {
@@ -295,8 +289,8 @@ body {
         flex-direction: column;
         padding: 14px;
     }
-    .tab-category-heading .hint {
-        width: fit-content;
+    .feature-menu-toggle {
+        width: 100%;
     }
 }
 .table-apple { width: 100%; border-spacing: 0 8px; border-collapse: separate; }
@@ -512,9 +506,11 @@ body {
         </div>
         <button type="button"
                 @click="toggleFeatureCards()"
-                class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                :aria-expanded="showFeatureCards.toString()"
+                class="feature-menu-toggle inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-black transition">
+            <i data-lucide="layout-grid" class="h-4 w-4"></i>
             <span x-text="showFeatureCards ? '機能メニューを閉じる' : '機能メニューを開く'"></span>
-            <span class="text-base" x-text="showFeatureCards ? '▲' : '▼'"></span>
+            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="showFeatureCards ? 'rotate-180' : ''"></i>
         </button>
     </div>
 
@@ -523,25 +519,21 @@ body {
             @if($canAny(['card.reserve', 'card.customers']))
                 <button type="button" data-dashboard-tab="daily" @click="tab='daily'" :class="tab==='daily' ? 'tab-btn active' : 'tab-btn'">
                     <i data-lucide="calendar-check"></i><span>日常業務</span><span class="tab-sub">予約・顧客</span>
-                    @if($todayReservationCount > 0)<span class="tab-badge">{{ $todayReservationCount }}</span>@endif
                 </button>
             @endif
             @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices', 'card.menu_category_tag', 'card.menu', 'card.menu_staff']))
                 <button type="button" data-dashboard-tab="outreach" @click="tab='outreach'" :class="tab==='outreach' ? 'tab-btn active' : 'tab-btn'">
                     <i data-lucide="megaphone"></i><span>メニュー・発信</span><span class="tab-sub">商品・連絡</span>
-                    @if($changeTotalActive > 0)<span class="tab-badge">{{ $changeTotalActive }}</span>@endif
                 </button>
             @endif
             @if($canAny(['card.staff', 'card.vacation', 'card.my_profile', 'card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
                 <button type="button" data-dashboard-tab="staffwork" @click="tab='staffwork'" :class="tab==='staffwork' ? 'tab-btn active' : 'tab-btn'">
                     <i data-lucide="users"></i><span>スタッフ・勤務</span><span class="tab-sub">人員・シフト</span>
-                    @if($hasBusinessAlert || $hasShiftAlert)<span class="tab-badge">!</span>@endif
                 </button>
             @endif
             @if($canAny(['card.billing', 'card.support']))
                 <button type="button" data-dashboard-tab="support" @click="tab='support'" :class="tab==='support' ? 'tab-btn active' : 'tab-btn'">
                     <i data-lucide="badge-help"></i><span>契約・サポート</span><span class="tab-sub">プラン・QA</span>
-                    @if($supportUnreadCount > 0)<span class="tab-badge">{{ $supportUnreadCount }}</span>@endif
                 </button>
             @endif
             @if($canAny(['card.company_info', 'card.theme', 'card.logo', 'dashboard.manage']))

@@ -206,17 +206,17 @@
             <div class="text-xs font-semibold text-stone-500 mb-2">表示方法</div>
 
             <div class="grid grid-cols-2 gap-2">
-                <a href="{{ route('company.reserve',['mode'=>'day']) }}"
+                <a href="{{ route('company.reserve', ['mode' => 'day'], false) }}"
                    class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
-                   style="background: {{ request('mode') === 'day' ? $theme : '#f5f5f4' }};
-                          color: {{ request('mode') === 'day' ? 'white' : '#44403c' }};">
+                   style="background: {{ $mode === 'day' ? $theme : '#f5f5f4' }};
+                          color: {{ $mode === 'day' ? 'white' : '#44403c' }};">
                     日表示
                 </a>
 
-                <a href="{{ route('company.reserve',['mode'=>'week']) }}"
+                <a href="{{ route('company.reserve', ['mode' => 'week'], false) }}"
                    class="text-center px-4 py-3 rounded-2xl shadow-sm text-sm font-semibold transition"
-                   style="background: {{ request('mode','week') === 'week' ? $theme : '#f5f5f4' }};
-                          color: {{ request('mode','week') === 'week' ? 'white' : '#44403c' }};">
+                   style="background: {{ $mode === 'week' ? $theme : '#f5f5f4' }};
+                          color: {{ $mode === 'week' ? 'white' : '#44403c' }};">
                     週表示
                 </a>
             </div>
@@ -285,7 +285,7 @@
 <script>
 let currentDate = new Date(getLocalDateStr());
 const mode = "{{ $mode }}";
-const modeWasExplicit = @json(request()->has('mode'));
+const calendarDataUrl = @json(route('company.reserve.data', [], false));
 let selectedDatetime = null;
 let selectedStaffId = null;
 let cancelReservationId = null;
@@ -469,13 +469,6 @@ function updateTopDateLabel() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-    if (!modeWasExplicit && mode === 'week' && window.matchMedia('(max-width: 639px)').matches) {
-        const mobileUrl = new URL(window.location.href);
-        mobileUrl.searchParams.set('mode', 'day');
-        window.location.replace(mobileUrl.toString());
-        return;
-    }
-
     updateTopDateLabel();
 
     if (mode === 'week') loadCalendar();
@@ -572,8 +565,19 @@ function loadCalendar() {
     let dateStr = getLocalDateStr(currentDate);
     let staffId = document.getElementById('staffSelect').value;
 
-    fetch(`/company/reserve/data?mode=week&date=${dateStr}&staff_id=${staffId}`)
-        .then(res => res.json())
+    const url = new URL(calendarDataUrl, window.location.origin);
+    url.searchParams.set('mode', 'week');
+    url.searchParams.set('date', dateStr);
+    url.searchParams.set('staff_id', staffId);
+
+    fetch(url.toString(), {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+    })
+        .then(res => {
+            if (!res.ok || res.redirected) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
         .then(data => {
             if (!data || !data.slots) {
                 console.error('APIエラー', data);
@@ -801,14 +805,45 @@ function loadDayCalendar() {
     let staffId = document.getElementById('staffSelect').value;
     updateTopDateLabel();
 
-    fetch(`/company/reserve/data?mode=day&date=${dateStr}&staff_id=${staffId}`)
-        .then(res => res.json())
-        .then(data => {
-            const head = document.getElementById("day-head");
-            const body = document.getElementById("day-body");
+    const head = document.getElementById("day-head");
+    const body = document.getElementById("day-body");
+    head.innerHTML = "";
+    body.innerHTML = `
+        <tr>
+            <td class="p-6 text-center text-sm text-stone-500">空き状況を読み込んでいます...</td>
+        </tr>
+    `;
 
+    const url = new URL(calendarDataUrl, window.location.origin);
+    url.searchParams.set('mode', 'day');
+    url.searchParams.set('date', dateStr);
+    url.searchParams.set('staff_id', staffId);
+
+    fetch(url.toString(), {
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' },
+    })
+        .then(res => {
+            if (!res.ok || res.redirected) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        })
+        .then(data => {
             head.innerHTML = "";
             body.innerHTML = "";
+
+            const staffs = Array.isArray(data.staffs) ? data.staffs : [];
+            const slots = data.slots && typeof data.slots === 'object' ? data.slots : {};
+
+            if (staffs.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td class="p-6 text-center text-sm text-stone-500">
+                            予約対応可能な担当者が登録されていません。
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
 
             let headerRow = `
                 <tr class="bg-stone-50">
@@ -816,7 +851,7 @@ function loadDayCalendar() {
                         時間
                     </th>`;
 
-            data.staffs.forEach(staff => {
+            staffs.forEach(staff => {
                 headerRow += `
                     <th class="p-4 border-b text-center sticky top-0 bg-white z-10 min-w-[120px]">
                         <div class="font-semibold text-stone-800 whitespace-nowrap">${staff.name}</div>
@@ -826,21 +861,49 @@ function loadDayCalendar() {
             headerRow += "</tr>";
             head.innerHTML = headerRow;
 
-            Object.keys(data.slots).forEach(time => {
+            const times = Object.keys(slots);
+
+            if (times.length === 0) {
+                body.innerHTML = `
+                    <tr>
+                        <td colspan="${staffs.length + 1}" class="p-8 text-center">
+                            <div class="font-semibold text-stone-700">この日は空き枠がありません</div>
+                            <div class="mt-1 text-xs text-stone-500">休業日または営業時間が設定されていない可能性があります。</div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            times.forEach(time => {
                 let row = `
                     <tr class="hover:bg-stone-50 transition">
                         <td class="p-4 font-bold bg-white sticky left-0 z-10 text-center align-middle border-b border-r text-stone-700 whitespace-nowrap">
                             ${time}
                         </td>`;
 
-                data.staffs.forEach(staff => {
-                    let cell = data.slots[time][staff.id];
+                staffs.forEach(staff => {
+                    let cell = slots[time][staff.id];
                     row += getDayCellContent(cell, dateStr, time, staff);
                 });
 
                 row += "</tr>";
                 body.innerHTML += row;
             });
+        })
+        .catch(err => {
+            console.error('日別空き状況の取得エラー', err);
+            head.innerHTML = "";
+            body.innerHTML = `
+                <tr>
+                    <td class="p-8 text-center">
+                        <div class="font-semibold text-rose-700">空き状況を読み込めませんでした</div>
+                        <button type="button" onclick="loadDayCalendar()" class="mt-3 rounded-xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700">
+                            再読み込み
+                        </button>
+                    </td>
+                </tr>
+            `;
         });
 }
 

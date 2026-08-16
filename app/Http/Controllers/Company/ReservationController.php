@@ -234,7 +234,17 @@ class ReservationController extends Controller
     public function calendar(Request $request)
     {
         try {
-            $mode = $request->get('mode', 'week');
+            $isMobile = (bool) preg_match(
+                '/Android|iPhone|iPod|Mobile/i',
+                (string) $request->userAgent()
+            );
+            $mode = $request->has('mode')
+                ? $request->get('mode')
+                : ($isMobile ? 'day' : 'week');
+
+            if (!in_array($mode, ['day', 'week'], true)) {
+                $mode = 'week';
+            }
 
             $company = auth()->guard('company')->user()->company;
 
@@ -269,7 +279,10 @@ class ReservationController extends Controller
 
             $limits = $this->getReservationLimits($company);
 
-            if ($date->copy()->startOfDay() < $limits['start'] || $date->copy()->startOfDay() > $limits['end']) {
+            if (
+                ($date->copy()->startOfDay() < $limits['start'] && !$date->isToday())
+                || $date->copy()->startOfDay() > $limits['end']
+            ) {
                 return response()->json([
                     'staffs' => [],
                     'slots' => [],

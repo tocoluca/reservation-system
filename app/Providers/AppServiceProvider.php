@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
                 ->count();
             $companySupportUnreadCount = Inquiry::query()
                 ->where('company_id', $companyId)
-                ->where('status', 'answered')
+                ->whereIn('status', ['answered', 'closed'])
                 ->whereNotNull('admin_reply')
                 ->where('is_read_by_company', false)
                 ->count();

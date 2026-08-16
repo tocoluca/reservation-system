@@ -68,6 +68,10 @@
         box-shadow: 0 16px 30px {{ $theme }}4d, 0 8px 18px rgba(15,23,42,.16);
     }
 
+    .shift-save-button-label-mobile {
+        display: none;
+    }
+
     #shiftDirtyBadge {
         border: 1px solid rgba(245,158,11,.35);
         box-shadow: 0 6px 14px rgba(245,158,11,.14);
@@ -100,7 +104,41 @@
             top: auto !important;
             z-index: 60;
             margin: 0 !important;
+            padding: .5rem !important;
+            border-radius: 1rem !important;
             border-color: rgba(148, 163, 184, .35);
+        }
+
+        .shift-save-toolbar > div {
+            flex-direction: row !important;
+            align-items: center;
+            gap: .5rem !important;
+        }
+
+        .shift-save-toolbar > div > div:first-child {
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .shift-save-toolbar .shift-save-help {
+            display: none;
+        }
+
+        .shift-save-toolbar .shift-save-button {
+            width: auto;
+            min-height: 40px;
+            flex: 0 0 auto;
+            padding: .6rem .8rem;
+            border-radius: .8rem;
+            font-size: .75rem;
+        }
+
+        .shift-save-button-label-desktop {
+            display: none;
+        }
+
+        .shift-save-button-label-mobile {
+            display: inline;
         }
 
         .shift-save-toolbar .shift-legend {
@@ -247,7 +285,8 @@
                     class="shift-save-button inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
                     style="background: {{ $theme }}">
                 <i data-lucide="save" class="w-4 h-4"></i>
-                <span data-busy-text>変更内容を保存</span>
+                <span class="shift-save-button-label-desktop" data-busy-text>変更内容を保存</span>
+                <span class="shift-save-button-label-mobile" data-busy-text-mobile>保存</span>
             </button>
         </div>
     </div>

@@ -48,7 +48,7 @@ class InquiryController extends Controller
 
         abort_unless($inquiry->company_id === $company->id, 403);
 
-        if ($inquiry->status === 'answered' && ! $inquiry->is_read_by_company) {
+        if (in_array($inquiry->status, ['answered', 'closed'], true) && ! $inquiry->is_read_by_company) {
             $inquiry->update([
                 'is_read_by_company' => true,
                 'company_read_at' => now(),

@@ -350,15 +350,20 @@
     window.setCompanyButtonBusy = (button, busy, label = '処理中…') => {
         if (!button) return;
 
-        const labelNode = button.querySelector('[data-busy-text]') || button;
+        const labelNodes = Array.from(button.querySelectorAll('[data-busy-text], [data-busy-text-mobile]'));
+        const labelNode = labelNodes[0] || button;
         if (busy) {
             if (!button.dataset.originalBusyText) {
-                button.dataset.originalBusyText = labelNode.textContent.trim();
+                button.dataset.originalBusyText = JSON.stringify(
+                    labelNodes.length ? labelNodes.map((node) => node.textContent.trim()) : [labelNode.textContent.trim()]
+                );
             }
             button.disabled = true;
             button.setAttribute('aria-busy', 'true');
             button.classList.add('opacity-70', 'cursor-wait');
-            labelNode.textContent = label;
+            labelNodes.forEach((node) => {
+                node.textContent = label;
+            });
             return;
         }
 
@@ -366,7 +371,18 @@
         button.removeAttribute('aria-busy');
         button.classList.remove('opacity-70', 'cursor-wait');
         if (button.dataset.originalBusyText) {
-            labelNode.textContent = button.dataset.originalBusyText;
+            let originalTexts = [];
+            try {
+                originalTexts = JSON.parse(button.dataset.originalBusyText);
+            } catch (error) {
+                originalTexts = [button.dataset.originalBusyText];
+            }
+            labelNodes.forEach((node, index) => {
+                node.textContent = originalTexts[index] ?? originalTexts[0] ?? '';
+            });
+            if (!labelNodes.length) {
+                labelNode.textContent = originalTexts[0] ?? '';
+            }
             delete button.dataset.originalBusyText;
         }
     };

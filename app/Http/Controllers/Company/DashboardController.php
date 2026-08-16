@@ -204,7 +204,7 @@ class DashboardController extends Controller
 		    ->get();
 
 		$supportUnreadCount = Inquiry::where('company_id', $company->id)
-		    ->where('status', 'answered')
+		    ->whereIn('status', ['answered', 'closed'])
 		    ->whereNotNull('admin_reply')
 		    ->where('is_read_by_company', false)
 		    ->count();

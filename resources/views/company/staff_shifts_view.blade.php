@@ -29,9 +29,17 @@
         color: rgba(255, 255, 255, .8);
     }
 
-    @media (max-width: 1023px) {
+    @media (max-width: 1023px), (hover: none) and (pointer: coarse) {
         .staff-shift-view-page {
             padding: .75rem .25rem 1.5rem !important;
+        }
+
+        .shift-desktop-layout {
+            display: none !important;
+        }
+
+        .shift-mobile-layout {
+            display: block !important;
         }
 
         .mobile-shift-toolbar {
@@ -43,7 +51,7 @@
 </style>
 
 <div class="staff-shift-view-page max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-    <div class="hidden lg:block relative overflow-hidden rounded-3xl shadow-lg mb-6">
+    <div class="shift-desktop-layout hidden lg:block relative overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
              style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
@@ -70,7 +78,7 @@
         </div>
     </div>
 
-    <div class="hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
+    <div class="shift-desktop-layout hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
         <form method="GET" action="{{ route('company.staff-shifts.view') }}"
               class="grid grid-cols-1 lg:grid-cols-4 gap-3 items-end">
             <div>
@@ -110,7 +118,7 @@
         </form>
     </div>
 
-    <div class="hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
+    <div class="shift-desktop-layout hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm p-5 mb-6">
         <div class="flex flex-col gap-3">
             <div class="text-sm font-bold text-gray-900">シフトカテゴリ</div>
 
@@ -138,7 +146,7 @@
         </div>
     </div>
 
-    <div class="lg:hidden space-y-3">
+    <div class="shift-mobile-layout lg:hidden space-y-3">
         <div class="mobile-shift-toolbar rounded-[1.5rem] border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
             <div class="flex items-center justify-between gap-2">
                 <a href="{{ route('company.staff-shifts.view', ['month' => $prevMonth, 'top_staff_id' => $topStaffId]) }}"
@@ -299,7 +307,7 @@
         </div>
     </div>
 
-    <div class="hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
+    <div class="shift-desktop-layout hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
         <div class="px-5 py-4 border-b bg-amber-50">
             <h2 class="text-lg font-bold text-gray-900">月別 シフト一覧</h2>
             <p class="text-sm text-gray-600 mt-1">

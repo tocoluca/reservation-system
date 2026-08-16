@@ -13,12 +13,110 @@
     $holidays = Yasumi::create('Japan', \Carbon\Carbon::parse($month)->year);
 
     $patternMap = collect($patterns)->keyBy('id');
+    $initialMobileDate = $month . '-' . str_pad(
+        $month === now()->format('Y-m') ? now()->day : 1,
+        2,
+        '0',
+        STR_PAD_LEFT
+    );
 @endphp
 
-<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+<style>
+    .mobile-shift-date-button[aria-selected="true"] {
+        color: #fff;
+        background: {{ $theme }};
+        border-color: {{ $theme }};
+        box-shadow: 0 10px 24px {{ $theme }}38;
+    }
+
+    .mobile-shift-date-button[aria-selected="true"] .mobile-shift-date-weekday {
+        color: rgba(255, 255, 255, .8);
+    }
+
+    .shift-save-toolbar {
+        border-color: {{ $theme }}45 !important;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,250,252,.94)),
+            radial-gradient(circle at left, {{ $theme }}28, transparent 22rem) !important;
+        box-shadow: 0 18px 42px rgba(15,23,42,.12), 0 8px 20px {{ $theme }}1f, inset 0 1px 0 rgba(255,255,255,.95) !important;
+        position: sticky;
+        top: 6rem;
+        overflow: hidden;
+    }
+
+    .shift-save-toolbar::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 5px;
+        background: linear-gradient(180deg, {{ $theme }}, #111827);
+    }
+
+    .shift-save-toolbar > div {
+        position: relative;
+        z-index: 1;
+    }
+
+    .shift-save-button {
+        min-height: 48px;
+        background: linear-gradient(135deg, {{ $theme }}, #111827) !important;
+        box-shadow: 0 12px 24px {{ $theme }}38, 0 6px 14px rgba(15,23,42,.12);
+    }
+
+    .shift-save-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 16px 30px {{ $theme }}4d, 0 8px 18px rgba(15,23,42,.16);
+    }
+
+    #shiftDirtyBadge {
+        border: 1px solid rgba(245,158,11,.35);
+        box-shadow: 0 6px 14px rgba(245,158,11,.14);
+    }
+
+    @media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+        .shift-management-page {
+            padding-bottom: 7rem !important;
+        }
+
+        .shift-desktop-layout {
+            display: none !important;
+        }
+
+        .shift-mobile-layout {
+            display: block !important;
+        }
+
+        .shift-mobile-toolbar {
+            position: sticky;
+            top: calc(var(--company-topbar-height, 6rem) + .5rem);
+            z-index: 35;
+        }
+
+        .shift-save-toolbar {
+            position: fixed !important;
+            left: .75rem;
+            right: .75rem;
+            bottom: 5.5rem;
+            top: auto !important;
+            z-index: 60;
+            margin: 0 !important;
+            border-color: rgba(148, 163, 184, .35);
+        }
+
+        .shift-save-toolbar .shift-legend {
+            display: none;
+        }
+
+        .shift-save-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="shift-management-page max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
 
     {{-- ヘッダー --}}
-    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+    <div class="shift-desktop-layout relative overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="absolute inset-0 opacity-10"
              style="background:
                 radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
@@ -52,7 +150,7 @@
         </div>
     </div>
 
-    <div class="mb-6">
+    <div class="shift-desktop-layout mb-6">
         @include('company._shift_setup_nav', [
             'currentStep' => 3,
             'links' => [
@@ -62,7 +160,7 @@
     </div>
 
     {{-- ガイド --}}
-    <div class="mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
+    <div class="shift-desktop-layout mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
                 <h2 class="text-lg font-bold text-gray-900">操作の流れ</h2>
@@ -124,14 +222,16 @@
         </div>
     </div>
 
-    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+    <div class="shift-save-toolbar sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
                 <div class="flex items-center gap-2">
                     <span id="shiftDirtyBadge" class="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">未保存の変更あり</span>
-                    <span class="text-sm font-bold text-gray-900">シフト編集</span>
+                    <i data-lucide="pencil-line" class="h-4 w-4" style="color: {{ $theme }};"></i>
+                    <span class="text-base font-black text-gray-950">シフト編集</span>
                 </div>
-                <div class="mt-2 flex flex-wrap gap-2">
+                <p class="shift-save-help mt-1 text-xs text-gray-500">シフトを変更したら、最後にこのボタンで保存してください。</p>
+                <div class="shift-legend mt-2 flex flex-wrap gap-2">
                     <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">休み</span>
                     @foreach($patterns as $p)
                         <span class="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
@@ -144,10 +244,10 @@
 
             <button form="shiftForm"
                     data-busy-button
-                    class="inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
+                    class="shift-save-button inline-flex items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition"
                     style="background: {{ $theme }}">
                 <i data-lucide="save" class="w-4 h-4"></i>
-                <span data-busy-text>保存する</span>
+                <span data-busy-text>変更内容を保存</span>
             </button>
         </div>
     </div>
@@ -155,7 +255,126 @@
     <form id="shiftForm" method="POST" action="{{ route('company.staff-shifts.update') }}" data-busy-form="true" data-busy-label="保存中…">
         @csrf
 
-        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
+        <div class="shift-mobile-layout lg:hidden mb-4">
+            <div class="shift-mobile-toolbar rounded-[1.5rem] border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
+                <div class="flex items-center justify-between gap-2">
+                    <button type="button" id="mobileShiftPrevDay"
+                            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-xl font-black text-gray-600 disabled:opacity-30"
+                            aria-label="前日">‹</button>
+                    <div class="min-w-0 text-center">
+                        <div class="text-[11px] font-bold text-gray-400">勤務管理</div>
+                        <div id="mobileShiftSelectedLabel" class="truncate text-lg font-black" style="color: {{ $theme }};"></div>
+                    </div>
+                    <button type="button" id="mobileShiftNextDay"
+                            class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-200 text-xl font-black text-gray-600 disabled:opacity-30"
+                            aria-label="翌日">›</button>
+                </div>
+
+                <div id="mobileShiftDateStrip" class="mt-3 flex gap-1.5 overflow-x-auto pb-1 snap-x">
+                    @for($d = 1; $d <= $days; $d++)
+                        @php
+                            $mobileDateObj = \Carbon\Carbon::parse($month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT));
+                            $mobileDate = $mobileDateObj->format('Y-m-d');
+                            $mobileDayOfWeek = $mobileDateObj->dayOfWeek;
+                            $mobileDateColor = $mobileDayOfWeek === 0 ? 'text-red-600' : ($mobileDayOfWeek === 6 ? 'text-blue-600' : 'text-gray-700');
+                        @endphp
+                        <button type="button"
+                                data-mobile-shift-date-button="{{ $mobileDate }}"
+                                data-date-label="{{ $mobileDateObj->format('n月j日') }}（{{ ['日','月','火','水','木','金','土'][$mobileDayOfWeek] }}）"
+                                class="mobile-shift-date-button snap-center shrink-0 rounded-xl border border-gray-200 bg-white px-1 py-2 text-center {{ $mobileDateColor }}"
+                                style="min-width: min(3.5rem, calc((100vw - 3rem) / 7));"
+                                aria-selected="false">
+                            <span class="block text-sm font-black">{{ $d }}</span>
+                            <span class="mobile-shift-date-weekday block text-[10px] text-gray-400">{{ ['日','月','火','水','木','金','土'][$mobileDayOfWeek] }}</span>
+                        </button>
+                    @endfor
+                </div>
+            </div>
+
+            <div id="mobileShiftDayPanels" class="mt-3 space-y-2">
+                @for($d = 1; $d <= $days; $d++)
+                    @php
+                        $mobileDate = $month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT);
+                        $mobileDateObj = \Carbon\Carbon::parse($mobileDate);
+                        $mobileBusiness = $businessDays[$mobileDateObj->format('Y-m-d H:i:s')] ?? null;
+                        $mobileIsClosed = $mobileBusiness
+                            && $mobileBusiness->is_open === false
+                            && is_null($mobileBusiness->open_time)
+                            && is_null($mobileBusiness->close_time);
+                    @endphp
+
+                    <section data-mobile-shift-day="{{ $mobileDate }}" class="hidden space-y-2">
+                        @forelse($staffs as $staff)
+                            @php
+                                $mobileShift = $shifts[$staff->id][$mobileDate][0] ?? null;
+                                $mobileShiftId = $mobileShift->shift_pattern_id ?? '';
+                                $mobileStaffVacations = $vacations[$staff->id] ?? collect();
+                                $mobileIsVacation = $mobileStaffVacations->first(function ($v) use ($mobileDate) {
+                                    return $mobileDate >= \Carbon\Carbon::parse($v->start_at)->toDateString()
+                                        && $mobileDate <= \Carbon\Carbon::parse($v->end_at)->toDateString();
+                                });
+                                $mobileShiftName = $mobileShift?->shiftPattern->name ?? ($mobileShiftId ? ($patternMap[$mobileShiftId]->name ?? '') : '');
+                                $mobileShiftColor = $mobileShift?->shiftPattern->color ?? ($mobileShiftId ? ($patternMap[$mobileShiftId]->color ?? '#64748b') : '');
+                            @endphp
+
+                            <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm"
+                                 data-shift-cell
+                                 data-staff="{{ $staff->id }}"
+                                 data-day="{{ $d }}">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="truncate font-black text-gray-900">{{ $staff->name }}</div>
+                                        <div class="mt-1 text-xs text-gray-500">この日のシフト</div>
+                                    </div>
+                                    @if($mobileIsClosed)
+                                        <span class="shrink-0 rounded-full bg-gray-100 px-3 py-2 text-xs font-black text-gray-500">休業</span>
+                                    @elseif($mobileIsVacation)
+                                        <span class="shrink-0 rounded-full bg-red-100 px-3 py-2 text-xs font-black text-red-600">休暇</span>
+                                    @else
+                                        <span class="mobile-shift-state shift-state shrink-0 rounded-full px-3 py-2 text-xs font-black {{ $mobileShiftId ? 'text-white' : 'bg-gray-100 text-gray-700' }}"
+                                              data-state-staff="{{ $staff->id }}"
+                                              data-state-day="{{ $d }}"
+                                              style="{{ $mobileShiftId ? 'background:' . ($mobileShiftColor ?: '#64748b') : '' }}">
+                                            {{ $mobileShiftName ?: '休み' }}
+                                        </span>
+                                    @endif
+                                </div>
+
+                                @if(!$mobileIsClosed && !$mobileIsVacation)
+                                    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                        <button type="button"
+                                                class="shift-btn rounded-xl bg-gray-100 px-2 py-2.5 text-xs font-bold text-gray-700"
+                                                data-target-staff="{{ $staff->id }}"
+                                                data-target-day="{{ $d }}"
+                                                data-value=""
+                                                data-label="休"
+                                                data-color="">
+                                            休み
+                                        </button>
+                                        @foreach($patterns as $p)
+                                            <button type="button"
+                                                    class="shift-btn rounded-xl px-2 py-2.5 text-xs font-bold text-white"
+                                                    data-target-staff="{{ $staff->id }}"
+                                                    data-target-day="{{ $d }}"
+                                                    data-value="{{ $p->id }}"
+                                                    data-label="{{ $p->name }}"
+                                                    data-color="{{ $p->color ?: '#64748b' }}"
+                                                    style="background: {{ $p->color ?: '#64748b' }}">
+                                                {{ $p->name }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                        @empty
+                            <div class="rounded-2xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-400">スタッフが登録されていません</div>
+                        @endforelse
+                    </section>
+                @endfor
+            </div>
+        </div>
+
+        <div class="shift-desktop-layout hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
             <div class="px-5 py-4 border-b bg-gray-50">
                 <h2 class="text-lg font-bold text-gray-900">スタッフ別 シフト表</h2>
                 <p class="text-sm text-gray-500 mt-1">
@@ -271,7 +490,10 @@
                                         }
                                     @endphp
 
-                                    <td class="p-1 min-w-[156px] align-middle">
+                                    <td class="p-1 min-w-[156px] align-middle"
+                                        data-shift-cell
+                                        data-staff="{{ $staff->id }}"
+                                        data-day="{{ $d }}">
                                         @if($isClosed)
                                             <div class="text-gray-400 text-center font-semibold text-xs py-3">休業</div>
                                         @elseif($isVacation)
@@ -334,6 +556,50 @@
 <script>
 let shiftHasUnsavedChanges = false;
 
+document.addEventListener('DOMContentLoaded', function () {
+    const dateButtons = Array.from(document.querySelectorAll('[data-mobile-shift-date-button]'));
+    const dayPanels = Array.from(document.querySelectorAll('[data-mobile-shift-day]'));
+    const selectedLabel = document.getElementById('mobileShiftSelectedLabel');
+    const previousButton = document.getElementById('mobileShiftPrevDay');
+    const nextButton = document.getElementById('mobileShiftNextDay');
+    let selectedIndex = 0;
+
+    const showMobileShiftDate = (date, centerButton = true) => {
+        const targetIndex = dateButtons.findIndex(button => button.dataset.mobileShiftDateButton === date);
+        if (targetIndex < 0) return;
+
+        selectedIndex = targetIndex;
+        dateButtons.forEach((button, index) => {
+            button.setAttribute('aria-selected', index === selectedIndex ? 'true' : 'false');
+        });
+        dayPanels.forEach(panel => {
+            panel.classList.toggle('hidden', panel.dataset.mobileShiftDay !== date);
+        });
+
+        const selectedButton = dateButtons[selectedIndex];
+        if (selectedLabel) selectedLabel.textContent = selectedButton.dataset.dateLabel || '';
+        if (previousButton) previousButton.disabled = selectedIndex === 0;
+        if (nextButton) nextButton.disabled = selectedIndex === dateButtons.length - 1;
+
+        if (centerButton) {
+            selectedButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    };
+
+    dateButtons.forEach(button => {
+        button.addEventListener('click', () => showMobileShiftDate(button.dataset.mobileShiftDateButton));
+    });
+    previousButton?.addEventListener('click', () => {
+        if (selectedIndex > 0) showMobileShiftDate(dateButtons[selectedIndex - 1].dataset.mobileShiftDateButton);
+    });
+    nextButton?.addEventListener('click', () => {
+        if (selectedIndex < dateButtons.length - 1) showMobileShiftDate(dateButtons[selectedIndex + 1].dataset.mobileShiftDateButton);
+    });
+
+    showMobileShiftDate(@json($initialMobileDate), false);
+    requestAnimationFrame(() => dateButtons[selectedIndex]?.scrollIntoView({ block: 'nearest', inline: 'center' }));
+});
+
 function markShiftDirty() {
     shiftHasUnsavedChanges = true;
     const badge = document.getElementById('shiftDirtyBadge');
@@ -381,37 +647,52 @@ function setButtonActiveStyle(btn) {
 }
 
 function updateCellUI(input) {
-    const wrapper = input.closest('td');
-    if (!wrapper) return;
+    const staffId = input.dataset.staff;
+    const day = input.dataset.day;
+    const wrappers = Array.from(document.querySelectorAll(
+        `[data-shift-cell][data-staff="${staffId}"][data-day="${day}"]`
+    ));
 
-    const buttons = wrapper.querySelectorAll('.shift-btn');
-    const state = wrapper.querySelector('.shift-state');
+    if (wrappers.length === 0) {
+        const wrapper = input.closest('td');
+        if (wrapper) wrappers.push(wrapper);
+    }
+
     const value = input.value ?? '';
 
-    buttons.forEach(btn => {
-        btn.style.opacity = '';
-        setButtonInactiveStyle(btn);
+    wrappers.forEach(wrapper => {
+        const buttons = wrapper.querySelectorAll('.shift-btn');
+        const state = wrapper.querySelector('.shift-state');
 
-        const btnValue = btn.dataset.value ?? '';
-        if (btnValue === value) {
-            setButtonActiveStyle(btn);
+        buttons.forEach(btn => {
+            btn.style.opacity = '';
+            setButtonInactiveStyle(btn);
+
+            const btnValue = btn.dataset.value ?? '';
+            if (btnValue === value) {
+                setButtonActiveStyle(btn);
+            }
+        });
+
+        if (state) {
+            const selectedBtn = Array.from(buttons).find(btn => (btn.dataset.value ?? '') === value);
+
+            state.className = state.classList.contains('mobile-shift-state')
+                ? 'mobile-shift-state shift-state shrink-0 rounded-full px-3 py-2 text-xs font-black'
+                : 'shift-state text-[10px] font-bold rounded-full px-2 py-1 inline-block';
+            state.style.background = '';
+            state.style.color = '';
+
+            if (!selectedBtn || value === '') {
+                state.textContent = '休み';
+                state.classList.add('bg-gray-100', 'text-gray-700');
+            } else {
+                state.textContent = selectedBtn.dataset.label || '設定済み';
+                state.style.background = selectedBtn.dataset.color || '#64748b';
+                state.style.color = '#fff';
+            }
         }
     });
-
-    if (state) {
-        const selectedBtn = Array.from(buttons).find(btn => (btn.dataset.value ?? '') === value);
-
-        state.className = 'shift-state text-[10px] font-bold rounded-full px-2 py-1 inline-block';
-
-        if (!selectedBtn || value === '') {
-            state.textContent = '休み';
-            state.classList.add('bg-gray-100', 'text-gray-700');
-        } else {
-            state.textContent = selectedBtn.dataset.label || '設定済み';
-            state.style.background = selectedBtn.dataset.color || '#64748b';
-            state.style.color = '#fff';
-        }
-    }
 }
 
 function setCellValue(staffId, day, value) {

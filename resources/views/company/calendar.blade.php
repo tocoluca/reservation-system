@@ -7,10 +7,83 @@
 @endphp
 
 @section('content')
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+<style>
+    @media (max-width: 639px) {
+        .reserve-calendar-page {
+            padding-left: .25rem !important;
+            padding-right: .25rem !important;
+            padding-top: .75rem !important;
+        }
+
+        .reserve-calendar-hero {
+            border-radius: 1.25rem !important;
+            margin-bottom: .75rem !important;
+        }
+
+        .reserve-calendar-hero > div:last-child {
+            padding: 1rem !important;
+        }
+
+        .reserve-calendar-hero-description,
+        .reserve-calendar-guide,
+        .reserve-control-help {
+            display: none !important;
+        }
+
+        .reserve-calendar-controls {
+            gap: .5rem !important;
+            padding: .5rem !important;
+            margin-bottom: .75rem !important;
+            border-radius: 1.25rem !important;
+        }
+
+        .reserve-control-card {
+            padding: .75rem !important;
+            border-radius: 1rem !important;
+        }
+
+        .reserve-date-nav {
+            display: grid !important;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            width: 100%;
+        }
+
+        .reserve-date-nav button {
+            justify-content: center;
+            min-height: 44px;
+            padding-left: .5rem !important;
+            padding-right: .5rem !important;
+        }
+
+        .reserve-date-picker {
+            margin-top: .25rem;
+        }
+
+        .reserve-selected-date {
+            padding: .65rem .75rem !important;
+        }
+
+        .reserve-calendar-body {
+            padding: .75rem !important;
+            border-radius: 1.25rem !important;
+        }
+
+        .reserve-calendar-scroll {
+            max-height: 62vh !important;
+            border-radius: 1rem !important;
+        }
+
+        .reserve-calendar-scroll th,
+        .reserve-calendar-scroll td {
+            padding: .65rem .45rem !important;
+        }
+    }
+</style>
+
+<div class="reserve-calendar-page max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
 
     {{-- ヘッダー --}}
-    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+    <div class="reserve-calendar-hero relative overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="absolute inset-0 opacity-10"
              style="background:
                 radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
@@ -23,7 +96,7 @@
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Reservation Calendar</p>
                     <h1 class="text-2xl sm:text-3xl font-bold mt-1">予約カレンダー</h1>
-                    <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
+                    <p class="reserve-calendar-hero-description text-sm sm:text-base opacity-90 mt-2 leading-6">
                         空き状況の確認、予約登録、キャンセル確認までこの画面で行えます。
                     </p>
                 </div>
@@ -51,7 +124,7 @@
     </div>
 
     {{-- 操作の流れ --}}
-    <details class="bg-white rounded-3xl shadow-sm border border-stone-200 p-5 sm:p-6 mb-6">
+    <details class="reserve-calendar-guide bg-white rounded-3xl shadow-sm border border-stone-200 p-5 sm:p-6 mb-6">
         <summary class="flex cursor-pointer list-none flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <span>
                 <span class="block text-base font-bold text-stone-800">操作の流れ</span>
@@ -84,12 +157,12 @@
     </details>
 
     {{-- 操作エリア --}}
-    <div class="relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6 rounded-[2rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
-        <div class="xl:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+    <div class="reserve-calendar-controls relative z-10 grid grid-cols-1 xl:grid-cols-12 gap-4 mb-6 rounded-[2rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="reserve-control-card xl:col-span-5 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
             <div class="text-xs font-semibold text-stone-500 mb-2">日付操作</div>
 
             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                <div class="flex items-center gap-2">
+                <div class="reserve-date-nav flex items-center gap-2">
                     <button type="button"
                             onclick="navigateCurrent(-1)"
                             class="inline-flex items-center gap-1 px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
@@ -114,7 +187,7 @@
                     </button>
                 </div>
 
-                <div class="flex-1">
+                <div class="reserve-date-picker flex-1">
                     <input type="date"
                            id="globalDatePicker"
                            class="w-full border rounded-2xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2"
@@ -123,13 +196,13 @@
                 </div>
             </div>
 
-            <div class="mt-3 rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3">
+            <div class="reserve-selected-date mt-3 rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3">
                 <div class="text-xs text-stone-500 mb-1">選択中の日付</div>
                 <div id="currentDateHero" class="text-lg sm:text-xl font-bold text-stone-800">-</div>
             </div>
         </div>
 
-        <div class="xl:col-span-3 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+        <div class="reserve-control-card xl:col-span-3 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
             <div class="text-xs font-semibold text-stone-500 mb-2">表示方法</div>
 
             <div class="grid grid-cols-2 gap-2">
@@ -148,12 +221,12 @@
                 </a>
             </div>
 
-            <p class="text-xs text-gray-500 mt-3">
+            <p class="reserve-control-help text-xs text-gray-500 mt-3">
                 日表示は詳細確認向け、週表示は全体把握向けです。
             </p>
         </div>
 
-        <div class="xl:col-span-4 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
+        <div class="reserve-control-card xl:col-span-4 bg-white rounded-3xl shadow-sm border border-stone-200 p-5">
             <div class="text-xs font-semibold text-stone-500 mb-2">担当者で絞り込み</div>
 
             <select id="staffSelect"
@@ -166,7 +239,7 @@
                 @endforeach
             </select>
 
-            <p class="text-xs text-gray-500 mt-3">
+            <p class="reserve-control-help text-xs text-gray-500 mt-3">
                 全体の空き確認なら「全担当者を表示」のままで使えます。
             </p>
         </div>
@@ -175,7 +248,7 @@
     <div id="messageArea" class="mb-6"></div>
 
     {{-- カレンダー本体 --}}
-    <div class="bg-white rounded-3xl shadow-lg border border-stone-200 p-4 sm:p-6">
+    <div class="reserve-calendar-body bg-white rounded-3xl shadow-lg border border-stone-200 p-4 sm:p-6">
         @if($mode === 'day')
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
@@ -187,8 +260,8 @@
                 </div>
             </div>
 
-			<div class="overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
-			    <table class="min-w-[720px] w-full text-sm text-center border-collapse">
+			<div class="reserve-calendar-scroll overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
+			    <table class="min-w-full w-full text-sm text-center border-collapse">
 			        <thead id="day-head"></thead>
 			        <tbody id="day-body"></tbody>
 			    </table>
@@ -212,6 +285,7 @@
 <script>
 let currentDate = new Date(getLocalDateStr());
 const mode = "{{ $mode }}";
+const modeWasExplicit = @json(request()->has('mode'));
 let selectedDatetime = null;
 let selectedStaffId = null;
 let cancelReservationId = null;
@@ -395,6 +469,13 @@ function updateTopDateLabel() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+    if (!modeWasExplicit && mode === 'week' && window.matchMedia('(max-width: 639px)').matches) {
+        const mobileUrl = new URL(window.location.href);
+        mobileUrl.searchParams.set('mode', 'day');
+        window.location.replace(mobileUrl.toString());
+        return;
+    }
+
     updateTopDateLabel();
 
     if (mode === 'week') loadCalendar();
@@ -508,7 +589,7 @@ function loadCalendar() {
             const dayColWidth = 132;
 
             let html = `
-                <div class="overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
+                <div class="reserve-calendar-scroll overflow-auto max-h-[70vh] rounded-2xl border border-stone-200 bg-white">
                     <table class="border-collapse text-sm table-fixed"
                            style="width: max-content; min-width: ${timeColWidth + (dates.length * dayColWidth)}px;">
                         <colgroup>
@@ -717,9 +798,10 @@ function loadDayCalendar() {
     if (mode !== 'day') return;
 
     let dateStr = getLocalDateStr(currentDate);
+    let staffId = document.getElementById('staffSelect').value;
     updateTopDateLabel();
 
-    fetch(`/company/reserve/data?mode=day&date=${dateStr}`)
+    fetch(`/company/reserve/data?mode=day&date=${dateStr}&staff_id=${staffId}`)
         .then(res => res.json())
         .then(data => {
             const head = document.getElementById("day-head");

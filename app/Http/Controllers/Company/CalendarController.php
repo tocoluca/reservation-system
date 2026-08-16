@@ -198,6 +198,8 @@ class CalendarController extends Controller
         return response()->json([
             'success' => true,
             'is_open' => $calendar->is_open,
+            'open_time' => $calendar->open_time,
+            'close_time' => $calendar->close_time,
             'change_notice_created' => !is_null($createdNotice),
         ]);
     }
@@ -377,7 +379,12 @@ class CalendarController extends Controller
             $calendar->save();
         }
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'is_open' => $calendar ? (bool) $calendar->is_open : true,
+            'open_time' => null,
+            'close_time' => null,
+        ]);
     }
 
     public function assignmentCandidates(Request $request)

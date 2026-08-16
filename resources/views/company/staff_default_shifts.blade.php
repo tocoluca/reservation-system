@@ -78,7 +78,8 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('company.staff-default-shifts') }}">
+    <form id="defaultShiftForm" method="POST" action="{{ route('company.staff-default-shifts') }}"
+          data-busy-form="true" data-busy-label="保存中…">
         @csrf
 
         <div class="bg-white shadow-sm rounded-3xl border border-gray-100 overflow-hidden">
@@ -124,7 +125,7 @@
                                     <td class="p-3 border-b border-stone-200 min-w-[120px]">
                                         <select
                                             name="shifts[{{ $staff->id }}][{{ $w % 7 }}]"
-                                            class="border border-stone-300 rounded-xl p-3 w-full bg-white focus:outline-none focus:ring-2"
+                                            class="default-shift-input border border-stone-300 rounded-xl p-3 w-full bg-white focus:outline-none focus:ring-2"
                                             style="--tw-ring-color: {{ $theme }}"
                                         >
                                             <option value="">休</option>
@@ -158,6 +159,30 @@
         </div>
     </form>
 
+    <div id="defaultShiftSaveBar"
+         class="fixed bottom-24 left-1/2 z-[70] hidden w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-[1.5rem] border border-amber-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:bottom-6">
+        <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+                <div class="font-black text-gray-900">未保存の変更があります</div>
+                <div class="truncate text-xs text-gray-500">画面を移動する前に保存してください</div>
+            </div>
+            <button type="submit" form="defaultShiftForm" data-busy-button
+                    class="shrink-0 rounded-2xl px-5 py-3 text-sm font-black text-white shadow"
+                    style="background: {{ $theme }};">
+                <span data-busy-text>保存する</span>
+            </button>
+        </div>
+    </div>
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const saveBar = document.getElementById('defaultShiftSaveBar');
+    document.querySelectorAll('.default-shift-input').forEach(input => {
+        input.addEventListener('change', () => saveBar?.classList.remove('hidden'));
+    });
+});
+</script>
 
 @endsection

@@ -94,9 +94,11 @@ body {
     padding: 14px 16px;
 }
 .faq-item summary::-webkit-details-marker { display: none; }
+[x-cloak] { display: none !important; }
 </style>
 
-<div x-data="{ section: 'first' }" class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+<div x-data="{ section: 'first', supportView: @js($errors->any() ? 'contact' : ((session('success') || request('view') === 'history') ? 'history' : 'manual')) }"
+     class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
     <section class="support-hero rounded-[2rem] overflow-hidden text-white">
         <div class="p-6 sm:p-8">
             <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
@@ -129,13 +131,34 @@ body {
         </div>
     @endif
 
+    <div class="sticky z-30 rounded-[1.5rem] border border-white/80 bg-white/95 p-2 shadow-lg backdrop-blur"
+         style="top: calc(var(--company-topbar-height, 6rem) + .75rem);">
+        <div class="grid grid-cols-3 gap-2">
+            <button type="button" @click="supportView='manual'"
+                    :class="supportView === 'manual' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
+                    class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
+                使い方
+            </button>
+            <button type="button" @click="supportView='contact'"
+                    :class="supportView === 'contact' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
+                    class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
+                問い合わせ
+            </button>
+            <button type="button" @click="supportView='history'"
+                    :class="supportView === 'history' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
+                    class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
+                履歴 {{ $inquiries->total() }}件
+            </button>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="panel-card p-5"><div class="text-sm text-gray-500">受付中</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-amber-600">{{ $openCount }}</div><span class="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-bold">open</span></div></div>
         <div class="panel-card p-5"><div class="text-sm text-gray-500">回答済み</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-emerald-600">{{ $answeredCount }}</div><span class="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-bold">answered</span></div></div>
         <div class="panel-card p-5"><div class="text-sm text-gray-500">完了</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-gray-600">{{ $closedCount }}</div><span class="rounded-full bg-gray-200 text-gray-700 px-3 py-1 text-xs font-bold">closed</span></div></div>
     </div>
 
-    <section class="manual-card p-5 sm:p-6">
+    <section x-show="supportView === 'manual'" x-cloak class="manual-card p-5 sm:p-6">
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
             <div>
                 <h2 class="text-xl sm:text-2xl font-black text-gray-900">操作マニュアル</h2>
@@ -263,7 +286,7 @@ body {
         </div>
     </section>
 
-    <section class="panel-card overflow-hidden">
+    <section x-show="supportView === 'contact'" x-cloak class="panel-card overflow-hidden">
         <div class="px-6 sm:px-7 py-5 border-b border-gray-100" style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
             <h2 class="text-lg sm:text-xl font-black text-gray-900">解決しない場合はお問い合わせください</h2>
             <p class="text-sm text-gray-500 mt-1">いつ、どの画面で、何をした時に起きたかを書いていただくと確認が早くなります。</p>
@@ -304,7 +327,7 @@ body {
         </div>
     </section>
 
-    <section class="panel-card overflow-hidden">
+    <section x-show="supportView === 'history'" x-cloak class="panel-card overflow-hidden">
         <div class="px-6 sm:px-7 py-5 border-b border-gray-100" style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
             <h2 class="text-lg sm:text-xl font-black text-gray-900">過去のお問い合わせ</h2>
             <p class="text-sm text-gray-500 mt-1">送信したお問い合わせと回答を確認できます。</p>
@@ -340,7 +363,7 @@ body {
             @endforelse
         </div>
         <div class="px-5 py-4 border-t border-gray-100 bg-white">
-            {{ $inquiries->links() }}
+            {{ $inquiries->appends(['view' => 'history'])->links() }}
         </div>
     </section>
 </div>

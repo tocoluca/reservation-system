@@ -20,7 +20,10 @@
     </script>
 
     <style>
-        :root { --main-color: {{ $theme }}; }
+        :root {
+            --main-color: {{ $theme }};
+            --company-topbar-height: 6rem;
+        }
         body {
             background:
                 radial-gradient(circle at top left, {{ $theme }}1f, transparent 34rem),
@@ -313,6 +316,22 @@
     let isInternalNavigation = false;
     const logoutUrl = @json(route('company.logout'));
     const csrfToken = @json(csrf_token());
+
+    const companyTopbar = document.querySelector('.company-topbar');
+    if (companyTopbar) {
+        const updateCompanyTopbarHeight = () => {
+            document.documentElement.style.setProperty(
+                '--company-topbar-height',
+                `${Math.ceil(companyTopbar.getBoundingClientRect().height)}px`
+            );
+        };
+
+        updateCompanyTopbarHeight();
+        window.addEventListener('resize', updateCompanyTopbarHeight, { passive: true });
+        if (window.ResizeObserver) {
+            new ResizeObserver(updateCompanyTopbarHeight).observe(companyTopbar);
+        }
+    }
 
     let toastTimer = null;
     window.showCompanyToast = (message, type = 'success') => {

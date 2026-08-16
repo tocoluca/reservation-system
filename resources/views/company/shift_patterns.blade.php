@@ -218,7 +218,7 @@
 
         {{-- 右：一覧 --}}
         <div class="xl:col-span-2">
-            <form method="POST" action="{{ route('company.shift-patterns.order') }}">
+            <form id="shiftOrderForm" method="POST" action="{{ route('company.shift-patterns.order') }}">
                 @csrf
 
                 <div class="bg-white shadow-sm rounded-3xl overflow-hidden border border-gray-100">
@@ -263,7 +263,7 @@
                                                        name="orders[{{ $p->id }}]"
                                                        min="1"
                                                        value="{{ $p->sort_order }}"
-                                                       class="w-20 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                                       class="shift-order-input w-20 border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                                        style="--tw-ring-color: {{ $theme }};">
                                             </td>
                                             <td class="p-4">
@@ -321,7 +321,7 @@
                                                    name="orders[{{ $p->id }}]"
                                                    min="1"
                                                    value="{{ $p->sort_order }}"
-                                                   class="mt-2 w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                                                   class="shift-order-input mt-2 w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2"
                                                    style="--tw-ring-color: {{ $theme }};">
                                         </div>
                                     </div>
@@ -352,6 +352,23 @@
             </form>
         </div>
     </div>
+
+    @if($patterns->count())
+        <div id="shiftOrderSaveBar"
+             class="fixed bottom-24 left-1/2 z-[70] hidden w-[calc(100%-2rem)] max-w-xl -translate-x-1/2 rounded-[1.5rem] border border-amber-200 bg-white/95 p-3 shadow-2xl backdrop-blur lg:bottom-6">
+            <div class="flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <div class="font-black text-gray-900">表示順を変更しました</div>
+                    <div class="truncate text-xs text-gray-500">保存すると勤務管理にも反映されます</div>
+                </div>
+                <button type="submit" form="shiftOrderForm"
+                        class="shrink-0 rounded-2xl px-5 py-3 text-sm font-black text-white shadow"
+                        style="background: {{ $theme }};">
+                    表示順を保存
+                </button>
+            </div>
+        </div>
+    @endif
 </div>
 
 <script>
@@ -377,6 +394,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const color = this.dataset.color;
             updatePreview(color);
         });
+    });
+
+    const orderSaveBar = document.getElementById('shiftOrderSaveBar');
+    document.querySelectorAll('.shift-order-input').forEach(input => {
+        const markOrderChanged = () => {
+            document.querySelectorAll('.shift-order-input').forEach(otherInput => {
+                if (otherInput !== input && otherInput.name === input.name) otherInput.value = input.value;
+            });
+            orderSaveBar?.classList.remove('hidden');
+        };
+        input.addEventListener('input', markOrderChanged);
+        input.addEventListener('change', markOrderChanged);
     });
 });
 </script>

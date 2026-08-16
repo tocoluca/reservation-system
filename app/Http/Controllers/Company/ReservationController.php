@@ -265,6 +265,7 @@ class ReservationController extends Controller
             $date = $request->date
                 ? Carbon::parse($request->date)
                 : now();
+            $staffId = $request->staff_id;
 
             $limits = $this->getReservationLimits($company);
 
@@ -275,9 +276,15 @@ class ReservationController extends Controller
                 ]);
             }
 
-            $staffList = Staff::where('company_id', $company->id)
+            $staffQuery = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
-                ->where('role', '!=', 'store_operator')
+                ->where('role', '!=', 'store_operator');
+
+            if (!empty($staffId)) {
+                $staffQuery->where('id', $staffId);
+            }
+
+            $staffList = $staffQuery
                 ->orderBy('priority_order')
                 ->get();
 

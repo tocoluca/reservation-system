@@ -76,8 +76,22 @@
         </div>
     @endif
 
+    <div class="sticky z-30 rounded-[1.5rem] border border-white/80 bg-white/95 p-2 shadow-lg backdrop-blur"
+         style="top: calc(var(--company-topbar-height, 6rem) + .75rem);">
+        <div class="grid grid-cols-2 gap-2">
+            <button type="button" data-menu-settings-tab="category"
+                    class="menu-settings-tab rounded-2xl px-4 py-3 text-sm font-black transition">
+                カテゴリー {{ $categories->count() }}件
+            </button>
+            <button type="button" data-menu-settings-tab="tag"
+                    class="menu-settings-tab rounded-2xl px-4 py-3 text-sm font-black transition">
+                タグ {{ $tags->count() }}件
+            </button>
+        </div>
+    </div>
+
     {{-- カテゴリー管理 --}}
-    <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <section data-menu-settings-panel="category" class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100"
              style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
             <h2 class="font-bold text-lg text-gray-900">カテゴリー</h2>
@@ -189,7 +203,7 @@
     </section>
 
     {{-- タグ管理 --}}
-    <section class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <section data-menu-settings-panel="tag" class="hidden bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100"
              style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
             <h2 class="font-bold text-lg text-gray-900">タグ</h2>
@@ -270,5 +284,36 @@
     </section>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const tabs = Array.from(document.querySelectorAll('[data-menu-settings-tab]'));
+    const panels = Array.from(document.querySelectorAll('[data-menu-settings-panel]'));
+    const storageKey = 'company-menu-settings-tab';
+
+    const activate = (name, updateHash = false) => {
+        const selected = name === 'tag' ? 'tag' : 'category';
+        panels.forEach(panel => panel.classList.toggle('hidden', panel.dataset.menuSettingsPanel !== selected));
+        tabs.forEach(tab => {
+            const active = tab.dataset.menuSettingsTab === selected;
+            tab.classList.toggle('bg-slate-900', active);
+            tab.classList.toggle('text-white', active);
+            tab.classList.toggle('bg-slate-100', !active);
+            tab.classList.toggle('text-slate-600', !active);
+        });
+        sessionStorage.setItem(storageKey, selected);
+        if (updateHash) history.replaceState(null, '', `#${selected}`);
+    };
+
+    tabs.forEach(tab => tab.addEventListener('click', () => activate(tab.dataset.menuSettingsTab, true)));
+    panels.forEach(panel => {
+        panel.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', () => sessionStorage.setItem(storageKey, panel.dataset.menuSettingsPanel));
+        });
+    });
+
+    activate(location.hash.slice(1) || sessionStorage.getItem(storageKey) || 'category');
+});
+</script>
 
 @endsection

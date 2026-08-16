@@ -44,6 +44,14 @@
         }
         return false;
     };
+    $availableFeatureTabs = [];
+    if ($canAny(['card.reserve', 'card.customers'])) $availableFeatureTabs[] = 'daily';
+    if ($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices', 'card.menu_category_tag', 'card.menu', 'card.menu_staff'])) $availableFeatureTabs[] = 'outreach';
+    if ($canAny(['card.staff', 'card.vacation', 'card.my_profile', 'card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns'])) $availableFeatureTabs[] = 'staffwork';
+    if ($canAny(['card.billing', 'card.support'])) $availableFeatureTabs[] = 'support';
+    if ($canAny(['card.company_info', 'card.theme', 'card.logo', 'dashboard.manage'])) $availableFeatureTabs[] = 'settings';
+    if ($can('dashboard.sales')) $availableFeatureTabs[] = 'analytics';
+    $defaultFeatureTab = $availableFeatureTabs[0] ?? 'dashboard';
 @endphp
 
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -129,7 +137,7 @@ body {
     border: 1px solid rgba(148,163,184,.24);
     box-shadow: 0 20px 50px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.82);
     backdrop-filter: blur(16px);
-    overflow-x: auto;
+    overflow: hidden;
     position: relative;
 }
 .tab-nav::before {
@@ -145,16 +153,16 @@ body {
 }
 .tab-nav-grid {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(128px, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    min-width: max-content;
+    min-width: 0;
+}
+@media (min-width: 640px) {
+    .tab-nav-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (min-width: 1024px) {
     .tab-nav-grid {
-        grid-auto-flow: initial;
-        grid-auto-columns: initial;
-        grid-template-columns: repeat(9, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         min-width: 0;
     }
 }
@@ -207,6 +215,23 @@ body {
     color: #fff;
 }
 .tab-btn.active .tab-sub { color: rgba(255,255,255,.68); }
+.tab-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    padding: 0 .4rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #e11d48;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 900;
+    box-shadow: 0 8px 18px rgba(225,29,72,.28);
+}
 .tab-btn.active::after {
     content: "";
     position: absolute;
@@ -281,7 +306,47 @@ body {
 .metric-label { font-size: .78rem; font-weight: 700; color: #64748b; }
 </style>
 
-<div x-data="{ tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'), showTomorrow: false, showFeatureCards: @js(request()->hasAny(['period', 'year', 'month'])) }" class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<div x-data="{
+        tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'),
+        showTomorrow: false,
+        showFeatureCards: @js(request()->hasAny(['period', 'year', 'month'])),
+        allowedTabs: @js($availableFeatureTabs),
+        defaultTab: @js($defaultFeatureTab),
+        toggleFeatureCards() {
+            if (this.showFeatureCards) {
+                this.showFeatureCards = false;
+                this.tab = 'dashboard';
+                return;
+            }
+            this.showFeatureCards = true;
+            let nextTab = this.defaultTab;
+            try {
+                const storedTab = localStorage.getItem('company-dashboard-feature-tab');
+                if (storedTab && this.allowedTabs.includes(storedTab)) nextTab = storedTab;
+            } catch (error) {}
+            this.tab = nextTab;
+        },
+        init() {
+            const analyticsRequested = @js(request()->hasAny(['period', 'year', 'month']));
+            try {
+                const storedTab = localStorage.getItem('company-dashboard-feature-tab');
+                const storedOpen = localStorage.getItem('company-dashboard-feature-open');
+                if (!analyticsRequested && storedTab && this.allowedTabs.includes(storedTab)) this.tab = storedTab;
+                if (!analyticsRequested && storedOpen !== null) this.showFeatureCards = storedOpen === 'true';
+            } catch (error) {}
+            if (this.showFeatureCards && this.tab === 'dashboard') this.tab = this.defaultTab;
+            if (!this.showFeatureCards) this.tab = 'dashboard';
+            this.$watch('tab', value => {
+                if (this.allowedTabs.includes(value)) {
+                    try { localStorage.setItem('company-dashboard-feature-tab', value); } catch (error) {}
+                }
+            });
+            this.$watch('showFeatureCards', value => {
+                try { localStorage.setItem('company-dashboard-feature-open', value ? 'true' : 'false'); } catch (error) {}
+            });
+        }
+     }"
+     class="dashboard-shell max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <section class="lux-hero rounded-[2rem] overflow-hidden mb-6">
         <div class="p-5 sm:p-7 lg:p-8">
             <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-7">
@@ -442,60 +507,51 @@ body {
 
     <div class="tab-category-heading">
         <div>
-            <h2>カードカテゴリ</h2>
-            <p>クイックランチは主要操作、こちらは各機能カードのまとまりです。</p>
+            <h2>すべての機能</h2>
+            <p>目的に合ったカテゴリを選ぶと、利用できる機能が表示されます。</p>
         </div>
         <button type="button"
-                @click="showFeatureCards = !showFeatureCards; if (!showFeatureCards) tab = 'dashboard'"
+                @click="toggleFeatureCards()"
                 class="inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">
-            <span x-text="showFeatureCards ? '機能一覧を閉じる' : '機能一覧を開く'"></span>
+            <span x-text="showFeatureCards ? '機能メニューを閉じる' : '機能メニューを開く'"></span>
             <span class="text-base" x-text="showFeatureCards ? '▲' : '▼'"></span>
         </button>
     </div>
 
-    <nav x-show="showFeatureCards" class="tab-nav mb-6" aria-label="カードカテゴリ">
+    <nav x-show="showFeatureCards" class="tab-nav mb-6" aria-label="機能メニュー">
         <div class="tab-nav-grid">
-            <button type="button" @click="tab='dashboard'" :class="tab==='dashboard' ? 'tab-btn active' : 'tab-btn'">
-                <i data-lucide="layout-dashboard"></i><span>概要</span><span class="tab-sub">状況確認</span>
-            </button>
             @if($canAny(['card.reserve', 'card.customers']))
-                <button type="button" @click="tab='reserve'" :class="tab==='reserve' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="calendar-check"></i><span>予約・顧客</span><span class="tab-sub">日常運用</span>
+                <button type="button" data-dashboard-tab="daily" @click="tab='daily'" :class="tab==='daily' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="calendar-check"></i><span>日常業務</span><span class="tab-sub">予約・顧客</span>
+                    @if($todayReservationCount > 0)<span class="tab-badge">{{ $todayReservationCount }}</span>@endif
                 </button>
             @endif
-            @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices']))
-                <button type="button" @click="tab='notice'" :class="tab==='notice' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="bell"></i><span>通知</span><span class="tab-sub">発信・連絡</span>
+            @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices', 'card.menu_category_tag', 'card.menu', 'card.menu_staff']))
+                <button type="button" data-dashboard-tab="outreach" @click="tab='outreach'" :class="tab==='outreach' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="megaphone"></i><span>メニュー・発信</span><span class="tab-sub">商品・連絡</span>
+                    @if($changeTotalActive > 0)<span class="tab-badge">{{ $changeTotalActive }}</span>@endif
                 </button>
             @endif
-            @if($canAny(['card.staff', 'card.vacation', 'card.my_profile']))
-                <button type="button" @click="tab='staff'" :class="tab==='staff' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="users"></i><span>スタッフ</span><span class="tab-sub">人員管理</span>
-                </button>
-            @endif
-            @if($canAny(['card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
-                <button type="button" @click="tab='shift'" :class="tab==='shift' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="calendar-days"></i><span>営業日・シフト</span><span class="tab-sub">受付準備</span>
-                </button>
-            @endif
-            @if($canAny(['card.menu_category_tag', 'card.menu', 'card.menu_staff']))
-                <button type="button" @click="tab='menu'" :class="tab==='menu' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="list-tree"></i><span>メニュー</span><span class="tab-sub">商品設定</span>
+            @if($canAny(['card.staff', 'card.vacation', 'card.my_profile', 'card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
+                <button type="button" data-dashboard-tab="staffwork" @click="tab='staffwork'" :class="tab==='staffwork' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="users"></i><span>スタッフ・勤務</span><span class="tab-sub">人員・シフト</span>
+                    @if($hasBusinessAlert || $hasShiftAlert)<span class="tab-badge">!</span>@endif
                 </button>
             @endif
             @if($canAny(['card.billing', 'card.support']))
-                <button type="button" @click="tab='contract'" :class="tab==='contract' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="badge-help"></i><span>契約・QA</span><span class="tab-sub">サポート</span>
+                <button type="button" data-dashboard-tab="support" @click="tab='support'" :class="tab==='support' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="badge-help"></i><span>契約・サポート</span><span class="tab-sub">プラン・QA</span>
+                    @if($supportUnreadCount > 0)<span class="tab-badge">{{ $supportUnreadCount }}</span>@endif
                 </button>
             @endif
             @if($canAny(['card.company_info', 'card.theme', 'card.logo', 'dashboard.manage']))
-                <button type="button" @click="tab='settings'" :class="tab==='settings' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="settings"></i><span>設定</span><span class="tab-sub">店舗情報</span>
+                <button type="button" data-dashboard-tab="settings" @click="tab='settings'" :class="tab==='settings' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="settings"></i><span>店舗設定</span><span class="tab-sub">情報・デザイン</span>
                 </button>
             @endif
             @if($can('dashboard.sales'))
-                <button type="button" @click="tab='analytics'" :class="tab==='analytics' ? 'tab-btn active' : 'tab-btn'">
-                    <i data-lucide="bar-chart-3"></i><span>分析</span><span class="tab-sub">売上確認</span>
+                <button type="button" data-dashboard-tab="analytics" @click="tab='analytics'" :class="tab==='analytics' ? 'tab-btn active' : 'tab-btn'">
+                    <i data-lucide="bar-chart-3"></i><span>売上分析</span><span class="tab-sub">実績確認</span>
                 </button>
             @endif
         </div>
@@ -559,13 +615,15 @@ body {
         </div>
     </div>
 
-    <div x-show="showFeatureCards && tab==='reserve'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='daily'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-check"></i></div><div><div class="font-bold">予約カレンダー</div><div class="text-sm text-gray-500">空き状況の確認と予約登録</div></div></a>@endif
         @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list-checks"></i></div><div><div class="font-bold">予約一覧</div><div class="text-sm text-gray-500">予約状況、来店済、キャンセル、無断キャンセルの管理</div></div></a>@endif
         @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">顧客管理</div><div class="text-sm text-gray-500">来店履歴・顧客情報の管理</div></div></a>@endif
     </div>
 
-    <div x-show="showFeatureCards && tab==='notice'" class="grid md:grid-cols-2 gap-4">
+    @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices']))
+    <div x-show="showFeatureCards && tab==='outreach'" class="grid md:grid-cols-2 gap-4 mb-6">
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">発信・連絡</h3><p class="mt-1 text-xs text-slate-500">お客様へのお知らせや対応状況を管理します。</p></div>
         @if($can('card.reviews') && ($company->review_enabled ?? false))<a href="{{ route('company.reviews.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="star"></i></div><div><div class="font-bold">口コミ管理</div><div class="text-sm text-gray-500">評価確認・返信対応</div></div></a>@endif
         @if($can('card.style'))<a href="{{ route('company.style-posts.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">最新スタイル投稿</div><div class="text-sm text-gray-500">ヘアスタイルの発信</div></div></a>@endif
         @if($can('card.notices'))<a href="{{ route('company.notices.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="megaphone"></i></div><div><div class="font-bold">お知らせ情報管理</div><div class="text-sm text-gray-500">キャンペーン・重要告知</div></div></a>@endif
@@ -600,28 +658,39 @@ body {
             </a>
         @endif
     </div>
+    @endif
 
-    <div x-show="showFeatureCards && tab==='staff'" class="grid md:grid-cols-2 gap-4">
+    @if($canAny(['card.staff', 'card.vacation', 'card.my_profile']))
+    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4 mb-6">
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">スタッフ管理</h3><p class="mt-1 text-xs text-slate-500">スタッフ情報と個人設定を管理します。</p></div>
         @if($can('card.staff'))<a href="{{ route('company.staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="user"></i></div><div><div class="font-bold">担当者管理</div><div class="text-sm text-gray-500">スタッフ登録・権限管理</div></div></a>@endif
         @if($can('card.vacation'))<a href="{{ route('company.vacation.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-x"></i></div><div><div class="font-bold">休暇管理</div><div class="text-sm text-gray-500">休み・有給の設定</div></div></a>@endif
         @if($can('card.my_profile'))<a href="{{ route('company.my-profile') }}" class="card card-link"><div class="card-icon"><i data-lucide="settings"></i></div><div><div class="font-bold">マイプロフィール</div><div class="text-sm text-gray-500">個人設定・アカウント管理</div></div></a>@endif
     </div>
+    @endif
 
-    <div x-show="showFeatureCards && tab==='shift'" class="grid md:grid-cols-2 gap-4">
-        @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif
+    @if($canAny(['card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
+    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">日常操作</h3><p class="mt-1 text-xs text-slate-500">毎月のシフト登録と勤務状況の確認に使います。</p></div>
         @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
         @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
-        @if($can('card.default_shift'))<a href="{{ route('company.staff-default-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="repeat"></i></div><div><div class="font-bold">基本シフト</div><div class="text-sm text-gray-500">定期シフト設定</div></div></a>@endif
+        <div class="md:col-span-2 mt-2"><h3 class="text-base font-black text-slate-900">事前設定</h3><p class="mt-1 text-xs text-slate-500">営業日と繰り返し利用する勤務ルールを設定します。</p></div>
         @if($can('card.shift_patterns'))<a href="{{ route('company.shift-patterns') }}" class="card card-link"><div class="card-icon"><i data-lucide="layers"></i></div><div><div class="font-bold">シフトパターン</div><div class="text-sm text-gray-500">勤務時間テンプレート</div></div></a>@endif
+        @if($can('card.default_shift'))<a href="{{ route('company.staff-default-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="repeat"></i></div><div><div class="font-bold">基本シフト</div><div class="text-sm text-gray-500">定期シフト設定</div></div></a>@endif
+        @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif
     </div>
+    @endif
 
-    <div x-show="showFeatureCards && tab==='menu'" class="grid md:grid-cols-2 gap-4">
+    @if($canAny(['card.menu_category_tag', 'card.menu', 'card.menu_staff']))
+    <div x-show="showFeatureCards && tab==='outreach'" class="grid md:grid-cols-2 gap-4">
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">メニュー設定</h3><p class="mt-1 text-xs text-slate-500">予約で選択するメニューと担当スタッフを設定します。</p></div>
         @if($can('card.menu_category_tag'))<a href="{{ route('company.menu.settings') }}" class="card card-link"><div class="card-icon"><i data-lucide="tag"></i></div><div><div class="font-bold">カテゴリー・タグ管理</div><div class="text-sm text-gray-500">分類・検索用タグ設定</div></div></a>@endif
         @if($can('card.menu'))<a href="{{ route('company.menu.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list"></i></div><div><div class="font-bold">メニュー管理</div><div class="text-sm text-gray-500">料金・施術時間の設定</div></div></a>@endif
         @if($can('card.menu_staff'))<a href="{{ route('company.menu-staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">メニュー対応スタッフ設定</div><div class="text-sm text-gray-500">担当可能スタッフ設定</div></div></a>@endif
     </div>
+    @endif
 
-    <div x-show="showFeatureCards && tab==='contract'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='support'" class="grid md:grid-cols-2 gap-4">
         @if($can('card.billing'))<a href="{{ route('company.billing.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="credit-card"></i></div><div><div class="font-bold">契約管理</div><div class="text-sm text-gray-500">プラン・支払い情報</div>@if($billingWarning)<div class="mt-2 text-xs text-amber-700">{{ $billingWarning }}</div>@endif</div></a>@endif
         @if($can('card.support'))<a href="{{ route('company.support.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="help-circle"></i></div><div><div class="font-bold">よくあるご質問・お問い合わせ</div><div class="text-sm text-gray-500">サポート・FAQ</div>@if($supportUnreadCount > 0)<span class="inline-flex mt-2 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">{{ $supportUnreadCount }}件</span>@endif</div></a>@endif
     </div>

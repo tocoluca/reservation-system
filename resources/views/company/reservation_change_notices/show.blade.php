@@ -136,7 +136,31 @@
         </div>
     </div>
 
-    <div class="space-y-5">
+    <div class="sticky z-30 mb-5 rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-lg backdrop-blur"
+         style="top: calc(var(--company-topbar-height, 6rem) + .75rem);">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="text-sm font-black text-gray-900">連絡対象を絞り込む</div>
+                <div id="noticeFilterResult" class="mt-1 text-xs text-gray-500"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button type="button" data-notice-filter="pending"
+                        class="notice-filter-button rounded-2xl px-3 py-2.5 text-xs font-bold transition">
+                    確認待ち {{ $pendingCount }}件
+                </button>
+                <button type="button" data-notice-filter="done"
+                        class="notice-filter-button rounded-2xl px-3 py-2.5 text-xs font-bold transition">
+                    確認済み {{ $confirmedCount }}件
+                </button>
+                <button type="button" data-notice-filter="all"
+                        class="notice-filter-button rounded-2xl px-3 py-2.5 text-xs font-bold transition">
+                    すべて {{ $totalCount }}件
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="noticeItemList" class="space-y-5">
         @forelse($notice->items as $item)
             @php
                 $status = $item->response_status ?? 'waiting';
@@ -191,8 +215,18 @@
                 $hasLine = !empty($lineUserId);
             @endphp
 
-            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                <div class="p-5 md:p-6">
+            <div class="notice-item-card bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden"
+                 data-notice-group="{{ $isDone ? 'done' : 'pending' }}">
+                <button type="button"
+                        class="notice-item-toggle flex w-full items-center justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 text-left hover:bg-gray-50 md:px-6"
+                        aria-expanded="true">
+                    <span class="min-w-0">
+                        <span class="block truncate font-black text-gray-900">{{ $item->customer_name }}</span>
+                        <span class="mt-1 block text-xs text-gray-500">{{ $reservationAt ?: '予約日時未登録' }}・{{ $statusLabel }}</span>
+                    </span>
+                    <span class="notice-item-toggle-label shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600">閉じる</span>
+                </button>
+                <div class="notice-item-body p-5 md:p-6">
                     <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
 
                         <div class="min-w-0 flex-1">
@@ -329,4 +363,56 @@
         @endforelse
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = Array.from(document.querySelectorAll('.notice-item-card'));
+    const filterButtons = Array.from(document.querySelectorAll('[data-notice-filter]'));
+    const result = document.getElementById('noticeFilterResult');
+    const defaultFilter = @json($pendingCount > 0 ? 'pending' : 'all');
+
+    const updateToggle = (card, collapsed) => {
+        card.classList.toggle('is-collapsed', collapsed);
+        card.querySelector('.notice-item-body')?.classList.toggle('hidden', collapsed);
+        const button = card.querySelector('.notice-item-toggle');
+        const label = card.querySelector('.notice-item-toggle-label');
+        button?.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        if (label) label.textContent = collapsed ? '詳細を見る' : '閉じる';
+    };
+
+    const applyFilter = (filter) => {
+        let visibleCount = 0;
+        cards.forEach(card => {
+            const visible = filter === 'all' || card.dataset.noticeGroup === filter;
+            card.classList.toggle('hidden', !visible);
+            if (visible) visibleCount++;
+        });
+
+        filterButtons.forEach(button => {
+            const active = button.dataset.noticeFilter === filter;
+            button.classList.toggle('text-white', active);
+            button.classList.toggle('bg-slate-900', active);
+            button.classList.toggle('bg-gray-100', !active);
+            button.classList.toggle('text-gray-600', !active);
+        });
+
+        if (result) result.textContent = `${visibleCount}件を表示中`;
+    };
+
+    cards.forEach(card => {
+        updateToggle(card, true);
+        card.querySelector('.notice-item-toggle')?.addEventListener('click', () => {
+            updateToggle(card, !card.classList.contains('is-collapsed'));
+        });
+    });
+
+    filterButtons.forEach(button => {
+        button.addEventListener('click', () => applyFilter(button.dataset.noticeFilter));
+    });
+
+    applyFilter(defaultFilter);
+    const firstVisibleCard = cards.find(card => !card.classList.contains('hidden'));
+    if (firstVisibleCard) updateToggle(firstVisibleCard, false);
+});
+</script>
 @endsection

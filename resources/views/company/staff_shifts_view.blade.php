@@ -25,10 +25,6 @@
         box-shadow: 0 10px 24px {{ $theme }}38;
     }
 
-    .mobile-shift-date-button[aria-selected="true"] .mobile-shift-date-weekday {
-        color: rgba(255, 255, 255, .8);
-    }
-
     @media (max-width: 1023px) {
         .staff-shift-view-page {
             padding: .75rem .25rem 1.5rem !important;
@@ -186,11 +182,10 @@
                     <button type="button"
                             data-mobile-shift-date-button="{{ $mobileDate }}"
                             data-date-label="{{ $mobileDateObj->format('n月j日') }}（{{ $weekdayLabels[$mobileDayOfWeek] }}）"
-                            class="mobile-shift-date-button snap-center shrink-0 rounded-xl border border-gray-200 bg-white px-1 py-2 text-center {{ $mobileDateColor }}"
-                            style="min-width: min(3.5rem, calc((100vw - 3rem) / 7));"
+                            class="mobile-shift-date-button snap-center shrink-0 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-1.5 py-1.5 text-center text-xs font-black {{ $mobileDateColor }}"
+                            style="min-width: min(4.25rem, calc((100vw - 3rem) / 7));"
                             aria-selected="false">
-                        <span class="block text-sm font-black">{{ $d }}</span>
-                        <span class="mobile-shift-date-weekday block text-[10px] text-gray-400">{{ $weekdayLabels[$mobileDayOfWeek] }}</span>
+                        {{ $d }}（{{ $weekdayLabels[$mobileDayOfWeek] }}）
                     </button>
                 @endfor
             </div>
@@ -315,11 +310,11 @@
             </p>
         </div>
 
-        <div class="overflow-x-auto max-h-[72vh]">
+        <div class="overflow-auto max-h-[72vh]">
             <table class="min-w-max text-sm w-full border-collapse">
-                <thead class="sticky top-0 z-10">
+                <thead>
                     <tr style="background: {{ $theme }}; color: white;">
-                        <th class="p-3 sticky left-0 bg-white text-black z-20 min-w-[240px] border-r">スタッフ</th>
+                        <th class="sticky top-0 left-0 z-40 min-w-[240px] border-r border-b bg-white px-3 py-1.5 text-xs leading-tight text-black">スタッフ</th>
 
                         @for($d = 1; $d <= $days; $d++)
                             @php
@@ -327,18 +322,17 @@
                                 $isHoliday = $holidays->isHoliday($dateObj);
                                 $dayOfWeek = $dateObj->dayOfWeek;
 
-                                $color = '';
+                                $color = 'bg-white text-gray-900';
                                 if ($isHoliday) {
-                                    $color = 'bg-red-200 text-red-900';
+                                    $color = 'bg-red-50 text-red-700';
                                 } elseif ($dayOfWeek == 0) {
-                                    $color = 'text-red-600';
+                                    $color = 'bg-rose-50 text-red-700';
                                 } elseif ($dayOfWeek == 6) {
-                                    $color = 'text-blue-600';
+                                    $color = 'bg-blue-50 text-blue-700';
                                 }
                             @endphp
-                            <th class="p-2 text-center min-w-[110px] {{ $color }}">
-                                <div class="font-bold">{{ $d }}</div>
-                                <div class="text-xs">{{ ['日','月','火','水','木','金','土'][$dayOfWeek] }}</div>
+                            <th class="sticky top-0 z-30 min-w-[110px] whitespace-nowrap border-b border-r border-gray-200 px-2 py-1.5 text-center text-xs font-bold leading-none {{ $color }}">
+                                {{ $d }}（{{ ['日','月','火','水','木','金','土'][$dayOfWeek] }}）
                             </th>
                         @endfor
                     </tr>
@@ -352,7 +346,7 @@
                         @endphp
 
                         <tr class="border-b {{ $isTop ? 'bg-amber-50' : 'hover:bg-gray-50' }}">
-                            <td class="p-3 sticky left-0 z-10 min-w-[240px] border-r align-top {{ $isTop ? 'bg-amber-100' : 'bg-white' }}">
+                            <td class="p-3 sticky left-0 z-20 min-w-[240px] border-r align-top {{ $isTop ? 'bg-amber-100' : 'bg-white' }}">
                                 <div class="space-y-2">
                                     <div class="font-semibold text-gray-900">
                                         {{ $staff->name }}

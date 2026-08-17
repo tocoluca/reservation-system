@@ -74,6 +74,61 @@
         box-shadow: 0 6px 14px rgba(245,158,11,.14);
     }
 
+    @media (min-width: 1024px) {
+        .shift-save-toolbar {
+            padding: .5rem .65rem !important;
+            border-radius: 1rem !important;
+        }
+
+        .shift-save-toolbar > div {
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: .75rem !important;
+        }
+
+        .shift-save-toolbar > div > div:first-child {
+            display: flex;
+            min-width: 0;
+            flex: 1 1 auto;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .shift-save-heading {
+            flex: 0 0 auto;
+        }
+
+        .shift-save-title {
+            font-size: .875rem !important;
+        }
+
+        .shift-save-toolbar .shift-save-help {
+            display: none;
+        }
+
+        .shift-save-toolbar .shift-legend {
+            min-width: 0;
+            margin-top: 0 !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto;
+            scrollbar-width: thin;
+        }
+
+        .shift-save-toolbar .shift-legend > span {
+            flex: 0 0 auto;
+            padding: .25rem .5rem;
+            font-size: .6875rem;
+        }
+
+        .shift-save-toolbar .shift-save-button {
+            min-height: 36px;
+            flex: 0 0 auto;
+            border-radius: .75rem;
+            padding: .5rem .8rem;
+            font-size: .75rem;
+        }
+    }
+
     @media (max-width: 1023px) {
         .shift-management-page {
             padding-bottom: 7rem !important;
@@ -260,10 +315,10 @@
     <div class="shift-save-toolbar sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div>
-                <div class="flex items-center gap-2">
+                <div class="shift-save-heading flex items-center gap-2">
                     <span id="shiftDirtyBadge" class="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800">未保存の変更あり</span>
                     <i data-lucide="pencil-line" class="h-4 w-4" style="color: {{ $theme }};"></i>
-                    <span class="text-base font-black text-gray-950">シフト編集</span>
+                    <span class="shift-save-title text-base font-black text-gray-950">シフト編集</span>
                 </div>
                 <p class="shift-save-help mt-1 text-xs text-gray-500">シフトを変更したら、最後にこのボタンで保存してください。</p>
                 <div class="shift-legend mt-2 flex flex-wrap gap-2">

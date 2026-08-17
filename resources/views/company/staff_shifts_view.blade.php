@@ -29,7 +29,7 @@
         color: rgba(255, 255, 255, .8);
     }
 
-    @media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+    @media (max-width: 1023px) {
         .staff-shift-view-page {
             padding: .75rem .25rem 1.5rem !important;
         }

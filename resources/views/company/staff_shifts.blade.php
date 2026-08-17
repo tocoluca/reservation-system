@@ -77,7 +77,7 @@
         box-shadow: 0 6px 14px rgba(245,158,11,.14);
     }
 
-    @media (max-width: 1023px), (hover: none) and (pointer: coarse) {
+    @media (max-width: 1023px) {
         .shift-management-page {
             padding-bottom: 7rem !important;
         }

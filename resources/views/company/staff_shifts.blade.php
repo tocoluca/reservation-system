@@ -37,6 +37,7 @@
         box-shadow: 0 18px 42px rgba(15,23,42,.12), 0 8px 20px {{ $theme }}1f, inset 0 1px 0 rgba(255,255,255,.95) !important;
         position: sticky;
         top: 6rem;
+        z-index: 50;
         overflow: hidden;
     }
 

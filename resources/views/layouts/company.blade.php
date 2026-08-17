@@ -124,8 +124,77 @@
             border-color: rgba(255,255,255,.26);
         }
         @media (min-width: 1024px) {
+            .company-topbar {
+                box-shadow: 0 8px 24px rgba(15,23,42,.09);
+            }
+            .company-topbar-inner {
+                padding-top: .25rem !important;
+                padding-bottom: .25rem !important;
+            }
+            .company-header-shell {
+                padding: .3rem .65rem !important;
+                border-radius: 16px;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 6px 18px rgba(15,23,42,.06);
+            }
+            .company-header-shell > :not([hidden]) ~ :not([hidden]) {
+                margin-top: .3rem !important;
+            }
+            .company-header-main-row {
+                min-height: 2.25rem;
+                gap: .75rem !important;
+            }
+            .company-header-brand {
+                gap: .55rem !important;
+            }
+            .company-logo-frame {
+                width: 36px;
+                height: 36px;
+                border-radius: 12px;
+                box-shadow: 0 5px 14px rgba(15,23,42,.08);
+            }
+            .company-logo-frame img {
+                max-width: 32px;
+                max-height: 32px;
+            }
+            .company-header-actions {
+                gap: .4rem !important;
+            }
+            .company-user-chip {
+                gap: .5rem !important;
+                padding: .25rem .55rem !important;
+                border-radius: 12px;
+            }
+            .company-user-avatar {
+                width: 28px !important;
+                height: 28px !important;
+                border-radius: 9px !important;
+                font-size: .75rem;
+            }
+            .company-header-action,
+            .company-logout-btn {
+                min-height: 36px;
+                border-radius: 11px !important;
+                padding: .45rem .7rem !important;
+                font-size: .75rem !important;
+            }
+            .company-main-content {
+                padding-top: 0 !important;
+            }
             .company-primary-nav {
                 display: flex;
+                gap: .25rem;
+                padding: .2rem;
+                border-radius: 12px;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 4px 12px rgba(15,23,42,.04);
+            }
+            .company-primary-nav a {
+                gap: .35rem;
+                border-radius: 9px;
+                padding: .42rem .75rem;
+                font-size: .75rem;
+            }
+            .company-primary-nav a.active {
+                box-shadow: 0 5px 14px rgba(15,23,42,.16), 0 3px 10px {{ $theme }}2b;
             }
         }
         .company-mobile-nav {
@@ -181,10 +250,10 @@
     $companySupportUnreadCount = (int) ($companySupportUnreadCount ?? 0);
 @endphp
 <header class="company-topbar">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div class="company-brand-shell px-3 sm:px-4 py-3 space-y-3">
-            <div class="flex items-center justify-between gap-4">
-                <a href="{{ route('company.dashboard') }}" class="flex items-center gap-3 min-w-0 group">
+    <div class="company-topbar-inner max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div class="company-brand-shell company-header-shell px-3 sm:px-4 py-3 space-y-3">
+            <div class="company-header-main-row flex items-center justify-between gap-4">
+                <a href="{{ route('company.dashboard') }}" class="company-header-brand flex items-center gap-3 min-w-0 group">
                     <div class="company-logo-frame">
                         @if($company->logo_path)
                             <img src="{{ asset($company->logo_path) }}" class="max-h-10 max-w-10 object-contain" alt="{{ $company->name }}">
@@ -208,9 +277,9 @@
                     </div>
                 </a>
 
-                <div class="flex items-center gap-2 sm:gap-3">
+                <div class="company-header-actions flex items-center gap-2 sm:gap-3">
                     <div class="company-user-chip hidden sm:flex items-center gap-3 px-4 py-2.5">
-                        <div class="w-9 h-9 rounded-2xl flex items-center justify-center text-white font-bold" style="background: linear-gradient(135deg, {{ $theme }}, #111827);">
+                        <div class="company-user-avatar w-9 h-9 rounded-2xl flex items-center justify-center text-white font-bold" style="background: linear-gradient(135deg, {{ $theme }}, #111827);">
                             {{ mb_strtoupper(mb_substr($staff->name, 0, 1)) }}
                         </div>
                         <div class="leading-tight text-right">
@@ -222,7 +291,7 @@
                     <a href="{{ url('/r/'.$company->company_code) }}"
                        target="_blank"
                        rel="noopener"
-                       class="hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition"
+                       class="company-header-action hidden md:inline-flex items-center gap-2 px-4 py-3 rounded-2xl text-white text-sm font-bold shadow-sm hover:opacity-90 transition"
                        style="background: linear-gradient(135deg, {{ $theme }}, #111827);">
                         <i data-lucide="calendar-check" class="w-4 h-4"></i>
                          予約画面
@@ -230,7 +299,7 @@
 
                     <a href="{{ route('company.reservation_change_notices.index') }}"
                        aria-label="予約変更連絡{{ $companyChangeNoticeCount > 0 ? ' '.$companyChangeNoticeCount.'件未対応' : '' }}"
-                       class="relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
+                       class="company-header-action relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
                         <i data-lucide="bell-ring" class="w-4 h-4"></i>
                         <span class="hidden xl:inline">予約変更</span>
                         @if($companyChangeNoticeCount > 0)
@@ -242,7 +311,7 @@
 
                     <a href="{{ route('company.support.index') }}"
                        aria-label="サポート{{ $companySupportUnreadCount > 0 ? ' 未読'.$companySupportUnreadCount.'件' : '' }}"
-                       class="relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
+                       class="company-header-action relative inline-flex items-center gap-2 px-3 py-3 rounded-2xl bg-white/70 border border-slate-200 text-sm font-bold text-slate-600 hover:text-slate-950 hover:bg-white transition">
                         <i data-lucide="message-circle" class="w-4 h-4"></i>
                         <span class="hidden xl:inline">サポート</span>
                         @if($companySupportUnreadCount > 0)
@@ -286,6 +355,7 @@
 </nav>
 @endif
 
+@if(session()->has('success') || session()->has('error'))
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 space-y-4">
     @if(session('success'))
         <div class="bg-green-100 border border-green-300 text-green-800 px-4 py-3 rounded-2xl shadow-sm">
@@ -299,8 +369,9 @@
         </div>
     @endif
 </div>
+@endif
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<main class="company-main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     @yield('content')
 </main>
 

@@ -18,6 +18,16 @@ class Notice extends Model
         'is_important',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'is_active' => 'boolean',
+            'is_important' => 'boolean',
+        ];
+    }
+
     public function company()
     {
         return $this->belongsTo(Company::class);

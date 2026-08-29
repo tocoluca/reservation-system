@@ -55,7 +55,7 @@
                         <img
                             src="{{ asset($notice->image) }}"
                             alt="{{ $notice->title }}"
-                            class="w-full rounded-3xl border border-gray-100 object-cover max-h-[420px] bg-gray-50">
+                            class="w-full rounded-3xl border border-gray-100 object-contain max-h-[640px] bg-gray-50">
                     </div>
                 @endif
 
@@ -65,17 +65,12 @@
                     </div>
                 </div>
 
-                <div class="grid sm:grid-cols-2 gap-3 mt-6">
+                <div class="mt-6">
                     <a href="{{ url('/r/'.$company->company_code) }}"
-                       class="block text-white py-4 rounded-2xl text-center font-semibold"
+                       class="block w-full text-white py-4 rounded-2xl text-center font-semibold"
                        style="background: {{ $theme }}">
                         予約トップへ戻る
                     </a>
-
-                    <button onclick="history.back()"
-                            class="block border border-gray-200 py-4 rounded-2xl text-center font-semibold bg-white text-gray-700">
-                        前の画面へ戻る
-                    </button>
                 </div>
 
             </div>

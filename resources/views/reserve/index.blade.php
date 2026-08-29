@@ -210,28 +210,9 @@
 
                         @foreach($menus as $categoryName => $categoryMenus)
                             @php
-                                $categoryImageMap = [
-                                    'カット' => asset('images/menu-icons/cut.jpg'),
-                                    'カラー' => asset('images/menu-icons/color.jpg'),
-                                    '白髪染め' => asset('images/menu-icons/graycolor.jpg'),
-                                    'リタッチ' => asset('images/menu-icons/retouch.jpg'),
-                                    'パーマ' => asset('images/menu-icons/perm.jpg'),
-                                    '縮毛矯正' => asset('images/menu-icons/straight.jpg'),
-                                    'コンディショナー' => asset('images/menu-icons/conditioner.jpg'),
-                                    'トリートメント' => asset('images/menu-icons/treatment.jpg'),
-                                    'ヘッドスパ' => asset('images/menu-icons/headspa.jpg'),
-                                    'セット・ヘアアレンジ' => asset('images/menu-icons/hairset.jpg'),
-                                    'メンズ' => asset('images/menu-icons/mens.jpg'),
-                                    '前髪カット' => asset('images/menu-icons/bangcut.jpg'),
-                                    '着付け' => asset('images/menu-icons/kitsuke.jpg'),
-                                    'まつげ' => asset('images/menu-icons/eyelash_brow.jpg'),
-                                    '眉' => asset('images/menu-icons/eyelash_brow.jpg'),
-                                    'フェイシャル' => asset('images/menu-icons/facial.jpg'),
-                                    'キッズ' => asset('images/menu-icons/kids.jpg'),
-                                    'その他' => asset('images/menu-icons/other.jpg'),
-                                ];
-
-                                $menuImage = $categoryImageMap[$categoryName] ?? asset('images/menu-icons/other.jpg');
+                                $menuCategory = $categoryMenus->first()?->category;
+                                $menuImage = $menuCategory?->display_image_url
+                                    ?? \App\Models\MenuCategory::fallbackImageUrl($categoryName);
                                 $categoryPanelId = 'menuCategoryPanel' . $loop->iteration;
                                 $categorySelectedCount = collect($categoryMenus)->filter(fn ($menu) => in_array((string) $menu->id, $oldMenuIds, true))->count();
                                 $categoryHasChecked = $categorySelectedCount > 0;

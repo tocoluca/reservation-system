@@ -8,14 +8,12 @@ use App\Models\CustomerFollowupMailLog;
 use App\Models\CustomerNote;
 use App\Models\CustomerPhoto;
 use App\Http\Controllers\Controller;
+use App\Services\CustomerPhotoProcessor;
 use App\Services\LineMessagingService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-//画像圧縮
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 
 
 class CustomerController extends Controller
@@ -92,7 +90,7 @@ $customer = Customer::where('company_id',$company->id)
 'reservations.staff',
 'reservations.menus',
 'notes',
-'photos',
+'photos' => fn ($query) => $query->latest('id'),
 'company',
 'latestRevisitReminderLog'
 ])
@@ -215,11 +213,16 @@ return back()->with('success','メモを保存しました');
 }
 
 
-public function photo(Request $request,$id)
+public function photo(Request $request,$id, CustomerPhotoProcessor $photoProcessor)
 {
 
 $request->validate([
-'photo'=>'required|image|max:5000'
+'photo'=>['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240']
+],[
+'photo.required'=>'写真を選択してください。',
+'photo.image'=>'画像ファイルを選択してください。',
+'photo.mimes'=>'写真は JPG・PNG・WebP 形式に対応しています。',
+'photo.max'=>'写真は10MB以内でアップロードしてください。',
 ]);
 
 $company = auth()->guard('company')->user()->company;
@@ -227,41 +230,7 @@ $company = auth()->guard('company')->user()->company;
 $customer = Customer::where('company_id',$company->id)
 ->findOrFail($id);
 
-//$path = $request->file('photo')->store('customers','public');
-
-$path = null;
-// 画像保存
-
-	if ($request->hasFile('photo')) {
-
-	    $file = $request->file('photo');
-
-		$manager = new ImageManager(new Driver());
-		$image = $manager->read($file);
-
-		// 最大800pxに縮小
-		$image->scaleDown(width: 800);
-
-		// WebP変換
-		$encoded = $image->toWebp(quality: 85);
-
-
-	    $dir = public_path('companies/'.$company->id.'/customer');
-
-	    if (!file_exists($dir)) {
-	        mkdir($dir, 0755, true);
-	    }
-
-	    $filename = uniqid().'.webp';
-
-	    $file->move($dir, $filename);
-
-	    $path = 'companies/'.$company->id.'/customer/'.$filename;
-
-	    //画像の保存
-	    file_put_contents($path, $encoded);
-
-	}
+$path = $photoProcessor->store($request->file('photo'), $company->id);
 
 CustomerPhoto::create([
 

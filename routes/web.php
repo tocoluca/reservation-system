@@ -283,6 +283,12 @@ Route::prefix('company')->group(function () {
             Route::post('my-profile', [MyProfileController::class, 'update'])
                 ->name('company.my-profile.update');
 
+            Route::put('my-profile/image', [MyProfileController::class, 'updateImage'])
+                ->name('company.my-profile.image.update');
+
+            Route::delete('my-profile/image', [MyProfileController::class, 'deleteImage'])
+                ->name('company.my-profile.image.delete');
+
             Route::post('reservation', [ReservationController::class, 'store'])
                 ->name('company.reservation.store');
 
@@ -336,6 +342,12 @@ Route::prefix('company')->group(function () {
 
             Route::post('menu/category', [MenuSettingController::class, 'storeCategory'])
                 ->name('company.menu.category.store');
+
+            Route::put('menu/category/{id}/image', [MenuSettingController::class, 'updateCategoryImage'])
+                ->name('company.menu.category.image.update');
+
+            Route::delete('menu/category/{id}/image', [MenuSettingController::class, 'deleteCategoryImage'])
+                ->name('company.menu.category.image.delete');
 
             Route::post('menu/tag', [MenuSettingController::class, 'storeTag'])
                 ->name('company.menu.tag.store');
@@ -422,6 +434,7 @@ Route::prefix('company')->group(function () {
                 ->name('company.customers.photo.delete');
 
             Route::resource('notices', NoticeController::class)
+                ->except('show')
                 ->names('company.notices');
 
             Route::get('/dashboard-settings', [DashboardSettingController::class, 'index'])

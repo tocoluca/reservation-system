@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Notice;
+use App\Services\NoticeImageProcessor;
 use Illuminate\Http\Request;
-//画像圧縮
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
 
 class NoticeController extends Controller
 {
+    public function __construct(private readonly NoticeImageProcessor $imageProcessor) {}
+
     public function index()
     {
         $company = auth()->guard('company')->user()->company;
@@ -32,53 +32,25 @@ class NoticeController extends Controller
         $company = auth()->guard('company')->user()->company;
 
         $data = $request->validate([
-            'title' => 'required|max:255',
-            'content' => 'nullable',
-            'image' => 'nullable|image|max:5000',
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string|max:10000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+        ], [], [
+            'title' => 'タイトル',
+            'content' => '本文',
+            'image' => '画像',
+            'start_date' => '掲載開始日',
+            'end_date' => '掲載終了日',
         ]);
-
-
-	$path = null;
-    // 画像保存
-
-	if ($request->hasFile('image')) {
-
-	    $file = $request->file('image');
-
-		$manager = new ImageManager(new Driver());
-		$image = $manager->read($file);
-
-		// 最大800pxに縮小
-		$image->scaleDown(width: 800);
-
-		// WebP変換
-		$encoded = $image->toWebp(quality: 85);
-
-
-	    $dir = public_path('companies/'.$company->id.'/notices');
-
-	    if (!file_exists($dir)) {
-	        mkdir($dir, 0755, true);
-	    }
-
-	    $filename = uniqid().'.webp';
-
-	    $file->move($dir, $filename);
-
-	    $path = 'companies/'.$company->id.'/notices/'.$filename;
-
-	    //画像の保存
-	    file_put_contents($path, $encoded);
-
-	}
-
 
         $data['company_id'] = $company->id;
         $data['is_important'] = $request->boolean('is_important');
-	    //画像パスの保存
-        $data['image'] = $path;
+        $data['is_active'] = $request->boolean('is_active');
+        $data['image'] = $request->hasFile('image')
+            ? $this->imageProcessor->store($request->file('image'), $company->id)
+            : null;
 
         Notice::create($data);
 
@@ -88,68 +60,49 @@ class NoticeController extends Controller
 
     public function edit(Notice $notice)
     {
+        $this->ensureCompanyNotice($notice);
+
         return view('company.notices.edit', compact('notice'));
     }
 
     public function update(Request $request, Notice $notice)
     {
 
-	    //画像のフォルダに必要
         $company = auth()->guard('company')->user()->company;
+        $this->ensureCompanyNotice($notice);
 
         $data = $request->validate([
-            'title' => 'required|max:255',
-            'content' => 'nullable',
-            'image' => 'nullable|image|max:5000',
+            'title' => 'required|string|max:255',
+            'content' => 'nullable|string|max:10000',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
+            'remove_image' => 'nullable|boolean',
+        ], [], [
+            'title' => 'タイトル',
+            'content' => '本文',
+            'image' => '画像',
+            'start_date' => '掲載開始日',
+            'end_date' => '掲載終了日',
         ]);
 
-		$oldImagePath = $notice->image;
+        $oldImagePath = $notice->image;
 
         if ($request->hasFile('image')) {
-
-		    $file = $request->file('image');
-
-			$manager = new ImageManager(new Driver());
-			$image = $manager->read($file);
-
-			// 最大800pxに縮小
-			$image->scaleDown(width: 800);
-
-			// WebP変換
-			$encoded = $image->toWebp(quality: 85);
-
-
-		    $dir = public_path('companies/'.$company->id.'/notices');
-
-		    if (!file_exists($dir)) {
-		        mkdir($dir, 0755, true);
-		    }
-
-		    $filename = uniqid().'.webp';
-
-		    $file->move($dir, $filename);
-
-		    $path = 'companies/'.$company->id.'/notices/'.$filename;
-
-		    file_put_contents($path, $encoded);
-
-			$data['image'] = $path;
-
-			// 削除
-			if ($request->hasFile('image') && $oldImagePath) {
-				if ($oldImagePath && file_exists(public_path($oldImagePath))) {
-				    unlink(public_path($oldImagePath));
-				}
-			}
-
-             //$request->file('image')->store('notices', 'public');
+            $data['image'] = $this->imageProcessor->store($request->file('image'), $company->id);
+        } elseif ($request->boolean('remove_image')) {
+            $data['image'] = null;
         }
 
         $data['is_important'] = $request->boolean('is_important');
+        $data['is_active'] = $request->boolean('is_active');
+        unset($data['remove_image']);
 
         $notice->update($data);
+
+        if (($request->hasFile('image') || $request->boolean('remove_image')) && $oldImagePath) {
+            $this->imageProcessor->delete($oldImagePath, $company->id);
+        }
 
         return redirect()->route('company.notices.index')
             ->with('success', '更新しました');
@@ -157,16 +110,20 @@ class NoticeController extends Controller
 
     public function destroy(Notice $notice)
     {
-
-		//画像削除
-		$oldImagePath = $notice->image;
-
-		if ($oldImagePath && file_exists(public_path($oldImagePath))) {
-		    unlink(public_path($oldImagePath));
-		}
+        $company = auth()->guard('company')->user()->company;
+        $this->ensureCompanyNotice($notice);
+        $oldImagePath = $notice->image;
 
         $notice->delete();
+        $this->imageProcessor->delete($oldImagePath, $company->id);
 
         return redirect()->back()->with('success', '削除しました');
+    }
+
+    private function ensureCompanyNotice(Notice $notice): void
+    {
+        $companyId = auth()->guard('company')->user()->company_id;
+
+        abort_unless((int) $notice->company_id === (int) $companyId, 404);
     }
 }

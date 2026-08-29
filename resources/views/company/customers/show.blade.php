@@ -68,31 +68,31 @@
         </div>
     </div>
 
-    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
-        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
+    <div class="mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
+        <div class="flex gap-3 overflow-x-auto pb-1 md:grid md:grid-cols-5 md:overflow-visible md:pb-0">
+            <div class="min-w-[12rem] rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3 md:min-w-0">
                 <div class="text-xs font-bold text-emerald-700">次回予約</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900">
                     {{ $nextReservation ? \Carbon\Carbon::parse($nextReservation->start_at)->format('Y/m/d H:i') : '未定' }}
                 </div>
             </div>
-            <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+            <div class="min-w-[12rem] rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3 md:min-w-0">
                 <div class="text-xs font-bold text-gray-500">最終予約</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900">
                     {{ $lastReservation ? \Carbon\Carbon::parse($lastReservation->start_at)->format('Y/m/d H:i') : '-' }}
                 </div>
             </div>
-            <div class="rounded-2xl {{ $noShowCount > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100' }} border px-4 py-3">
+            <div class="min-w-[12rem] rounded-2xl {{ $noShowCount > 0 ? 'bg-red-50 border-red-100' : 'bg-gray-50 border-gray-100' }} border px-4 py-3 md:min-w-0">
                 <div class="text-xs font-bold {{ $noShowCount > 0 ? 'text-red-700' : 'text-gray-500' }}">注意</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900">無断キャンセル {{ number_format($noShowCount) }}回</div>
             </div>
-            <div class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3">
+            <div class="min-w-[12rem] rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 md:min-w-0">
                 <div class="text-xs font-bold text-amber-700">最新メモ</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900 truncate">
                     {{ $latestNote ? \Illuminate\Support\Str::limit($latestNote->note, 42) : '未登録' }}
                 </div>
             </div>
-            <div class="rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3">
+            <div class="min-w-[12rem] rounded-2xl bg-blue-50 border border-blue-100 px-4 py-3 md:min-w-0">
                 <div class="text-xs font-bold text-blue-700">再来店連絡</div>
                 <div class="mt-1 text-sm font-semibold text-gray-900">
                     {{ $lastRevisitReminderAt ? $lastRevisitReminderAt->format('Y-m-d') : '未送信' }}
@@ -107,8 +107,31 @@
         </div>
     @endunless
 
+    <nav class="sticky z-30 mb-6 rounded-[1.5rem] border border-white/80 bg-white/95 p-2 shadow-lg backdrop-blur"
+         style="top: calc(var(--company-topbar-height, 6rem) + .75rem);"
+         aria-label="顧客カルテ内メニュー">
+        <div class="grid grid-cols-3 gap-2">
+            <a href="#profile"
+               class="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-slate-100 px-3 py-3 text-xs font-black text-slate-700 transition hover:bg-slate-200 sm:text-sm">
+                <i data-lucide="user-round" class="h-4 w-4 shrink-0"></i>
+                <span class="truncate">基本情報</span>
+            </a>
+            <a href="#notes"
+               class="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-amber-50 px-3 py-3 text-xs font-black text-amber-800 transition hover:bg-amber-100 sm:text-sm">
+                <i data-lucide="notebook-pen" class="h-4 w-4 shrink-0"></i>
+                <span class="truncate">メモ {{ $customer->notes->count() }}</span>
+            </a>
+            <a href="#photos"
+               class="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-xs font-black text-white shadow-sm transition hover:opacity-90 sm:text-sm"
+               style="background: {{ $theme }};">
+                <i data-lucide="images" class="h-4 w-4 shrink-0"></i>
+                <span class="truncate">写真 {{ $customer->photos->count() }}</span>
+            </a>
+        </div>
+    </nav>
+
     {{-- プロフィール --}}
-    <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
+    <div id="overview" class="relative scroll-mt-44 overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="absolute inset-0 opacity-10"
              style="background:
                 radial-gradient(circle at top right, #ffffff 0%, transparent 35%),
@@ -117,7 +140,7 @@
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
              style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
-            <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_320px] gap-6 items-center">
+            <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_240px] gap-6 items-center">
                 <div class="min-w-0">
                     <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90">
                         <span class="inline-block w-2.5 h-2.5 rounded-full" style="background: {{ $theme }}"></span>
@@ -168,22 +191,18 @@
                 </div>
 
                 <div class="flex justify-center lg:justify-end">
-                    <div class="w-full max-w-[320px]">
+                    <div class="w-full max-w-[240px]">
                         <div class="rounded-[1.75rem] bg-white p-4 shadow-sm border border-amber-100">
-                            <div class="aspect-[4/5] overflow-hidden rounded-[1.5rem] bg-gray-100">
+                            <div class="aspect-square overflow-hidden rounded-[1.5rem] bg-gray-100">
                                 <img
                                     src="{{ $mainPhoto && $mainPhoto->path ? asset($mainPhoto->path) : asset('images/noimage.png') }}"
                                     alt="{{ $customer->name }}"
-                                    class="w-full h-full object-cover">
+                                    class="w-full h-full object-contain">
                             </div>
-                            <div class="mt-3 text-sm text-gray-500 text-center">
-                                登録写真
-                                @if($customer->photos->count())
-                                    {{ $customer->photos->count() }}件
-                                @else
-                                    0件
-                                @endif
-                            </div>
+                            <a href="#photos" class="mt-3 flex items-center justify-center gap-2 text-sm font-bold hover:opacity-75" style="color: {{ $theme }};">
+                                <i data-lucide="images" class="h-4 w-4"></i>
+                                写真 {{ $customer->photos->count() }}件を確認
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -195,7 +214,7 @@
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
         {{-- 基本情報編集 --}}
-        <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden xl:col-span-2">
+        <div id="profile" class="order-2 scroll-mt-44 bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden">
             <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
                 <h2 class="text-lg font-bold text-gray-900">顧客基本情報</h2>
                 <p class="text-sm text-gray-500 mt-1">
@@ -204,10 +223,10 @@
             </div>
 
             <div class="p-5 sm:p-6">
-                <form method="POST" action="{{ route('company.customers.profile',$customer->id) }}">
+                <form method="POST" action="{{ route('company.customers.profile',$customer->id) }}" data-customer-section="profile">
                     @csrf
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">顧客名</label>
                             <input type="text"
@@ -257,7 +276,7 @@
         </div>
 
         {{-- メモ --}}
-        <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden">
+        <div id="notes" class="order-3 scroll-mt-44 bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden">
             <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
                 <h2 class="text-lg font-bold text-gray-900">顧客メモ</h2>
                 <p class="text-sm text-gray-500 mt-1">
@@ -266,7 +285,7 @@
             </div>
 
             <div class="p-5 sm:p-6">
-                <form method="POST" action="{{ route('company.customers.note',$customer->id) }}">
+                <form method="POST" action="{{ route('company.customers.note',$customer->id) }}" data-customer-section="notes">
                     @csrf
 
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
@@ -279,6 +298,10 @@
                         class="w-full border border-gray-300 rounded-2xl p-4 text-sm focus:outline-none focus:ring-4 focus:border-transparent"
                         style="--tw-ring-color: {{ $theme }}22;"
                         placeholder="メモを入力してください"></textarea>
+
+                    @error('note')
+                        <p class="mt-2 text-sm font-semibold text-red-600">{{ $message }}</p>
+                    @enderror
 
                     <div class="mt-4">
                         <button
@@ -305,7 +328,8 @@
                             <form method="POST"
                                   action="{{ route('company.customers.note.delete', $note->id) }}"
                                   onsubmit="return confirm('削除しますか？')"
-                                  class="shrink-0">
+                                  class="shrink-0"
+                                  data-customer-section="notes">
                                 @csrf
                                 @method('DELETE')
 
@@ -325,7 +349,7 @@
         </div>
 
         {{-- 写真 --}}
-        <div class="bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden">
+        <div id="photos" class="order-1 scroll-mt-44 bg-white shadow-sm rounded-[1.75rem] border border-gray-100 overflow-hidden xl:col-span-2">
             <div class="px-5 sm:px-6 py-5 border-b bg-gradient-to-r from-gray-50 to-white">
                 <h2 class="text-lg font-bold text-gray-900">顧客写真</h2>
                 <p class="text-sm text-gray-500 mt-1">
@@ -334,51 +358,144 @@
             </div>
 
             <div class="p-5 sm:p-6">
+                @error('photo')
+                    <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700" role="alert">
+                        {{ $message }}
+                    </div>
+                @enderror
+
                 <form
                     method="POST"
                     action="{{ route('company.customers.photo',$customer->id) }}"
                     enctype="multipart/form-data"
-                    class="flex flex-col sm:flex-row gap-3 sm:items-center">
+                    class="grid gap-5 rounded-3xl border border-stone-200 bg-stone-50/70 p-4 sm:p-5 lg:grid-cols-[280px_1fr]"
+                    data-photo-upload-form
+                    data-customer-section="photos">
                     @csrf
 
-                    <input
-                        type="file"
-                        name="photo"
-                        class="flex-1 border border-gray-300 bg-white rounded-2xl px-4 py-3 text-sm">
+                    <div class="mx-auto w-full max-w-[280px]">
+                        <div class="relative aspect-square overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+                            <div class="absolute inset-0 flex flex-col items-center justify-center px-5 text-center text-stone-400"
+                                 data-photo-placeholder>
+                                <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-stone-100">
+                                    <i data-lucide="image" class="h-7 w-7"></i>
+                                </span>
+                                <span class="mt-3 text-sm font-bold text-stone-600">選択した写真を確認</span>
+                                <span class="mt-1 text-xs leading-5">ここにプレビューされます</span>
+                            </div>
+                            <img src=""
+                                 alt="アップロードする写真のプレビュー"
+                                 class="hidden h-full w-full object-contain"
+                                 data-photo-preview>
+                        </div>
+                    </div>
 
-                    <button
-                        type="submit"
-                        style="background: {{ $theme }}"
-                        class="text-white px-6 py-3 rounded-2xl font-semibold shadow-sm hover:opacity-90 transition">
-                        アップロード
-                    </button>
+                    <div class="flex min-w-0 flex-col justify-center">
+                        <input id="customer-photo-input"
+                               type="file"
+                               name="photo"
+                               accept="image/jpeg,image/png,image/webp"
+                               class="sr-only"
+                               data-photo-input>
+
+                        <label for="customer-photo-input"
+                               class="flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-stone-300 bg-white px-5 py-6 text-center transition hover:border-stone-400 hover:bg-stone-50"
+                               data-photo-drop-zone>
+                            <span class="flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm"
+                                  style="background: {{ $theme }};">
+                                <i data-lucide="image-plus" class="h-6 w-6"></i>
+                            </span>
+                            <span class="mt-3 text-sm font-black text-stone-800">写真を選ぶ</span>
+                            <span class="mt-1 text-xs leading-5 text-stone-500">クリックして選択、またはここに写真をドロップ</span>
+                        </label>
+
+                        <div class="mt-3 hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+                             role="alert"
+                             data-photo-client-error></div>
+
+                        <div class="mt-3 hidden rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3" data-photo-file-info>
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0 text-emerald-600"></i>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-bold text-emerald-900" data-photo-file-name></p>
+                                    <p class="mt-0.5 text-xs text-emerald-700" data-photo-file-meta></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p class="mt-3 text-xs leading-5 text-stone-500">
+                            JPG・PNG・WebP／10MBまで。写真の向きを自動補正し、縦横比を保ったまま軽量化します。
+                        </p>
+
+                        <div class="mt-4 flex flex-col gap-2 sm:flex-row">
+                            <button type="button"
+                                    class="hidden min-h-11 items-center justify-center gap-2 rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-100"
+                                    data-photo-clear>
+                                <i data-lucide="x" class="h-4 w-4"></i>
+                                選び直す
+                            </button>
+                            <button type="submit"
+                                    disabled
+                                    style="background: {{ $theme }}"
+                                    class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-2xl px-6 py-2.5 text-sm font-black text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                    data-photo-submit>
+                                <i data-lucide="upload" class="h-4 w-4"></i>
+                                この写真を登録
+                            </button>
+                        </div>
+                    </div>
                 </form>
 
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+                <div class="mt-8 flex items-end justify-between gap-4">
+                    <div>
+                        <h3 class="font-black text-gray-900">登録済み写真</h3>
+                        <p class="mt-1 text-xs text-gray-500">新しい写真から順に表示しています。</p>
+                    </div>
+                    <span class="shrink-0 rounded-full bg-stone-100 px-3 py-1.5 text-xs font-bold text-stone-600">
+                        {{ $customer->photos->count() }}件
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mt-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     @forelse($customer->photos as $photo)
-                        <div class="group relative rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 shadow-sm">
-                            <div class="aspect-[4/5] overflow-hidden">
+                        <article class="group overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                            <button type="button"
+                                    class="block aspect-square w-full overflow-hidden bg-stone-100 focus:outline-none focus:ring-4"
+                                    style="--tw-ring-color: {{ $theme }}33;"
+                                    data-photo-lightbox
+                                    data-photo-src="{{ asset($photo->path) }}"
+                                    data-photo-label="{{ $photo->created_at->format('Y/m/d H:i') }}に登録した写真">
                                 <img
                                     src="{{ asset($photo->path) }}"
-                                    class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-300">
+                                    alt="{{ $photo->created_at->format('Y/m/d') }}に登録した顧客写真"
+                                    class="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]">
+                            </button>
+
+                            <div class="flex items-center justify-between gap-2 px-3 py-2.5">
+                                <time datetime="{{ $photo->created_at->toIso8601String() }}" class="truncate text-[11px] font-semibold text-stone-500">
+                                    {{ $photo->created_at->format('Y/m/d H:i') }}
+                                </time>
+                                <form method="POST"
+                                      action="{{ route('company.customers.photo.delete', $photo->id) }}"
+                                      onsubmit="return confirm('この写真を削除しますか？')"
+                                      data-customer-section="photos">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-red-50 text-red-500 transition hover:bg-red-100"
+                                            aria-label="{{ $photo->created_at->format('Y/m/d H:i') }}の写真を削除">
+                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                    </button>
+                                </form>
                             </div>
-
-                            <form method="POST"
-                                  action="{{ route('company.customers.photo.delete', $photo->id) }}"
-                                  onsubmit="return confirm('削除しますか？')"
-                                  class="absolute top-2 right-2">
-                                @csrf
-                                @method('DELETE')
-
-                                <button class="bg-black/55 hover:bg-black/70 text-white px-2.5 py-1.5 text-xs rounded-xl transition">
-                                    削除
-                                </button>
-                            </form>
-                        </div>
+                        </article>
                     @empty
                         <div class="col-span-full rounded-2xl bg-gray-50 border border-dashed border-gray-200 p-8 text-center">
-                            <div class="text-sm font-semibold text-gray-600">写真はまだありません</div>
-                            <div class="text-xs text-gray-400 mt-1">アップロードするとここに表示されます。</div>
+                            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-stone-400 shadow-sm">
+                                <i data-lucide="images" class="h-6 w-6"></i>
+                            </span>
+                            <div class="mt-3 text-sm font-semibold text-gray-600">写真はまだありません</div>
+                            <div class="text-xs text-gray-400 mt-1">上の「写真を選ぶ」から最初の写真を登録できます。</div>
                         </div>
                     @endforelse
                 </div>
@@ -388,5 +505,181 @@
     </div>
 
 </div>
+
+<div class="fixed inset-0 z-[90] hidden items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm"
+     role="dialog"
+     aria-modal="true"
+     aria-label="顧客写真の拡大表示"
+     data-photo-modal>
+    <button type="button"
+            class="absolute right-4 top-4 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white/15 text-white transition hover:bg-white/25"
+            aria-label="拡大表示を閉じる"
+            data-photo-modal-close>
+        <i data-lucide="x" class="h-6 w-6"></i>
+    </button>
+    <div class="flex max-h-full max-w-5xl flex-col items-center gap-3">
+        <img src="" alt="" class="max-h-[80vh] max-w-full rounded-2xl object-contain shadow-2xl" data-photo-modal-image>
+        <p class="text-sm font-semibold text-white/85" data-photo-modal-caption></p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const errorSection = @js(
+        $errors->has('photo') ? 'photos' :
+        ($errors->has('note') ? 'notes' :
+        (($errors->has('name') || $errors->has('phone') || $errors->has('email')) ? 'profile' : null))
+    );
+
+    if (errorSection) {
+        window.requestAnimationFrame(() => {
+            document.getElementById(errorSection)?.scrollIntoView({ block: 'start' });
+        });
+    }
+
+    const uploadForm = document.querySelector('[data-photo-upload-form]');
+    const photoInput = uploadForm?.querySelector('[data-photo-input]');
+    const preview = uploadForm?.querySelector('[data-photo-preview]');
+    const placeholder = uploadForm?.querySelector('[data-photo-placeholder]');
+    const fileInfo = uploadForm?.querySelector('[data-photo-file-info]');
+    const fileName = uploadForm?.querySelector('[data-photo-file-name]');
+    const fileMeta = uploadForm?.querySelector('[data-photo-file-meta]');
+    const clientError = uploadForm?.querySelector('[data-photo-client-error]');
+    const submitButton = uploadForm?.querySelector('[data-photo-submit]');
+    const clearButton = uploadForm?.querySelector('[data-photo-clear]');
+    const dropZone = uploadForm?.querySelector('[data-photo-drop-zone]');
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const maxFileSize = 10 * 1024 * 1024;
+    let previewUrl = null;
+
+    const showPhotoError = message => {
+        if (!clientError) return;
+        clientError.textContent = message;
+        clientError.classList.remove('hidden');
+    };
+
+    const clearPhotoError = () => {
+        if (!clientError) return;
+        clientError.textContent = '';
+        clientError.classList.add('hidden');
+    };
+
+    const resetPhoto = () => {
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = null;
+        if (photoInput) photoInput.value = '';
+        if (preview) {
+            preview.src = '';
+            preview.classList.add('hidden');
+        }
+        placeholder?.classList.remove('hidden');
+        fileInfo?.classList.add('hidden');
+        clearButton?.classList.add('hidden');
+        clearButton?.classList.remove('inline-flex');
+        if (submitButton) submitButton.disabled = true;
+        clearPhotoError();
+    };
+
+    const selectPhoto = file => {
+        clearPhotoError();
+
+        if (!file) {
+            resetPhoto();
+            return;
+        }
+
+        if (!allowedTypes.includes(file.type)) {
+            resetPhoto();
+            showPhotoError('JPG・PNG・WebP形式の写真を選択してください。');
+            return;
+        }
+
+        if (file.size > maxFileSize) {
+            resetPhoto();
+            showPhotoError('写真は10MB以内で選択してください。');
+            return;
+        }
+
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        previewUrl = URL.createObjectURL(file);
+        if (preview) {
+            preview.src = previewUrl;
+            preview.classList.remove('hidden');
+        }
+        placeholder?.classList.add('hidden');
+        if (fileName) fileName.textContent = file.name;
+        if (fileMeta) fileMeta.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
+        fileInfo?.classList.remove('hidden');
+        clearButton?.classList.remove('hidden');
+        clearButton?.classList.add('inline-flex');
+        if (submitButton) submitButton.disabled = false;
+    };
+
+    photoInput?.addEventListener('change', () => selectPhoto(photoInput.files?.[0]));
+    clearButton?.addEventListener('click', resetPhoto);
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone?.addEventListener(eventName, event => {
+            event.preventDefault();
+            dropZone.classList.add('border-slate-500', 'bg-slate-50');
+        });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone?.addEventListener(eventName, event => {
+            event.preventDefault();
+            dropZone.classList.remove('border-slate-500', 'bg-slate-50');
+        });
+    });
+
+    dropZone?.addEventListener('drop', event => {
+        const file = event.dataTransfer?.files?.[0];
+        if (!file || !photoInput) return;
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        photoInput.files = transfer.files;
+        selectPhoto(file);
+    });
+
+    uploadForm?.addEventListener('submit', () => {
+        if (!submitButton) return;
+        submitButton.disabled = true;
+        submitButton.textContent = '登録中…';
+    });
+
+    const modal = document.querySelector('[data-photo-modal]');
+    const modalImage = modal?.querySelector('[data-photo-modal-image]');
+    const modalCaption = modal?.querySelector('[data-photo-modal-caption]');
+    const modalClose = modal?.querySelector('[data-photo-modal-close]');
+
+    const closeModal = () => {
+        modal?.classList.add('hidden');
+        modal?.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+        if (modalImage) modalImage.src = '';
+    };
+
+    document.querySelectorAll('[data-photo-lightbox]').forEach(button => {
+        button.addEventListener('click', () => {
+            if (!modal || !modalImage) return;
+            modalImage.src = button.dataset.photoSrc;
+            modalImage.alt = button.dataset.photoLabel || '顧客写真';
+            if (modalCaption) modalCaption.textContent = button.dataset.photoLabel || '';
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.classList.add('overflow-hidden');
+            modalClose?.focus();
+        });
+    });
+
+    modalClose?.addEventListener('click', closeModal);
+    modal?.addEventListener('click', event => {
+        if (event.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && !modal?.classList.contains('hidden')) closeModal();
+    });
+});
+</script>
 
 @endsection

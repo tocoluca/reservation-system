@@ -64,15 +64,14 @@
         ],
     ])
 
-    @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl">
-            {{ session('error') }}
-        </div>
-    @endif
-
-    @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl">
-            {{ session('success') }}
+    @if($errors->any())
+        <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <p class="font-bold">入力内容を確認してください</p>
+            <ul class="mt-1 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
@@ -119,9 +118,9 @@
                         </p>
 
                         <p class="text-sm text-gray-600 leading-7 mt-3">
-                            下記のカテゴリーを設定したメニューは、
-                            <span class="font-semibold text-gray-800">予約画面でカテゴリーごとの固定イメージ画像</span>
-                            を表示できます。
+                            カテゴリーごとにお店独自の画像を設定できます。画像を設定しない場合は、
+                            <span class="font-semibold text-gray-800">下記のカテゴリー名に合った標準画像</span>
+                            が予約画面に表示されます。
                         </p>
 
                         <div class="flex flex-wrap gap-2 mt-4">
@@ -134,7 +133,7 @@
                         </div>
 
                         <p class="text-xs text-gray-500 mt-4 leading-6">
-                            例：カットメニューは「カット」、白髪染めメニューは「白髪染め」、ヘッドスパメニューは「ヘッドスパ」のように設定しておくと分かりやすくなります。
+                            アップロードした画像は自動で中央を基準に切り抜かれ、640×640pxの正方形になります。
                         </p>
                     </div>
                 </div>
@@ -148,6 +147,7 @@
                 <input
                     type="text"
                     name="name"
+                    value="{{ old('name') }}"
                     placeholder="カテゴリー名を入力"
                     class="border border-stone-300 rounded-2xl px-4 py-3 flex-1">
 
@@ -158,45 +158,102 @@
                 </button>
             </form>
 
-            <div class="overflow-x-auto rounded-2xl border border-stone-200">
-                <table class="w-full text-sm">
-                    <thead class="bg-stone-50">
-                        <tr>
-                            <th class="border-b border-stone-200 px-4 py-3 text-left">カテゴリー名</th>
-                            <th class="border-b border-stone-200 px-4 py-3 w-28 text-center">操作</th>
-                        </tr>
-                    </thead>
+            <div class="space-y-4">
+                @forelse($categories as $category)
+                    <article class="rounded-3xl border border-stone-200 bg-stone-50/60 p-4 sm:p-5">
+                        <div class="flex flex-col gap-5 lg:flex-row lg:items-center">
+                            <div class="flex min-w-0 items-center gap-4 lg:w-72">
+                                <div class="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+                                    <img src="{{ $category->display_image_url }}"
+                                         alt="{{ $category->name }}のカテゴリー画像"
+                                         class="h-full w-full object-cover"
+                                         data-category-image-preview="{{ $category->id }}"
+                                         onerror="this.onerror=null;this.src='{{ asset('images/menu-icons/other.jpg') }}';">
+                                </div>
+                                <div class="min-w-0">
+                                    <h3 class="truncate text-base font-black text-stone-900">{{ $category->name }}</h3>
+                                    @if($category->image_path)
+                                        <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                                            <i data-lucide="image" class="h-3.5 w-3.5"></i>
+                                            お店の画像
+                                        </span>
+                                    @else
+                                        <span class="mt-2 inline-flex items-center gap-1 rounded-full bg-stone-200 px-2.5 py-1 text-xs font-bold text-stone-600">
+                                            <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
+                                            標準画像
+                                        </span>
+                                    @endif
+                                    <p class="mt-2 text-xs leading-5 text-stone-500">予約画面で表示される画像です</p>
+                                </div>
+                            </div>
 
-                    <tbody>
-                        @forelse($categories as $category)
-                            <tr class="hover:bg-stone-50 transition">
-                                <td class="border-b border-stone-100 px-4 py-3 font-medium text-stone-800">
-                                    {{ $category->name }}
-                                </td>
+                            <div class="min-w-0 flex-1">
+                                <form method="POST"
+                                      action="{{ route('company.menu.category.image.update', $category->id) }}"
+                                      enctype="multipart/form-data"
+                                      class="flex flex-col gap-3 sm:flex-row sm:items-center"
+                                      data-category-image-form>
+                                    @csrf
+                                    @method('PUT')
 
-                                <td class="border-b border-stone-100 px-4 py-3 text-center">
+                                    <input id="category-image-{{ $category->id }}"
+                                           type="file"
+                                           name="image"
+                                           accept="image/jpeg,image/png,image/webp"
+                                           class="sr-only"
+                                           data-category-image-input="{{ $category->id }}">
+
+                                    <label for="category-image-{{ $category->id }}"
+                                           class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-2xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-stone-50 focus-within:ring-2"
+                                           style="--tw-ring-color: {{ $theme }}55;">
+                                        <i data-lucide="image-plus" class="h-4 w-4"></i>
+                                        <span data-category-file-label>画像を選ぶ</span>
+                                    </label>
+
+                                    <button type="submit"
+                                            disabled
+                                            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                                            style="background: {{ $theme }}"
+                                            data-category-image-submit>
+                                        <i data-lucide="upload" class="h-4 w-4"></i>
+                                        この画像を設定
+                                    </button>
+                                </form>
+                                <p class="mt-2 text-xs text-stone-500">JPG・PNG・WebP／10MBまで。640×640pxに自動調整します。</p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2 lg:w-44 lg:flex-col">
+                                @if($category->image_path)
                                     <form method="POST"
-                                          action="{{ route('company.menu.category.delete',$category->id) }}"
-                                          onsubmit="return confirm('削除しますか？')">
+                                          action="{{ route('company.menu.category.image.delete', $category->id) }}"
+                                          onsubmit="return confirm('お店の画像を削除して標準画像に戻しますか？')">
                                         @csrf
                                         @method('DELETE')
-
-                                        <button class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition">
-                                            削除
+                                        <button class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-bold text-stone-600 ring-1 ring-stone-200 transition hover:bg-stone-100">
+                                            <i data-lucide="rotate-ccw" class="h-4 w-4"></i>
+                                            標準画像に戻す
                                         </button>
                                     </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="2"
-                                    class="px-4 py-8 text-center text-gray-400">
-                                    カテゴリーはまだ登録されていません
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                                @endif
+
+                                <form method="POST"
+                                      action="{{ route('company.menu.category.delete', $category->id) }}"
+                                      onsubmit="return confirm('カテゴリー「{{ addslashes($category->name) }}」を削除しますか？')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100">
+                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                        カテゴリーを削除
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="rounded-2xl border border-dashed border-stone-300 px-4 py-10 text-center text-sm text-gray-400">
+                        カテゴリーはまだ登録されていません
+                    </div>
+                @endforelse
             </div>
 
         </div>
@@ -290,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = Array.from(document.querySelectorAll('[data-menu-settings-tab]'));
     const panels = Array.from(document.querySelectorAll('[data-menu-settings-panel]'));
     const storageKey = 'company-menu-settings-tab';
+    const previewUrls = new Map();
 
     const activate = (name, updateHash = false) => {
         const selected = name === 'tag' ? 'tag' : 'category';
@@ -309,6 +367,36 @@ document.addEventListener('DOMContentLoaded', () => {
     panels.forEach(panel => {
         panel.querySelectorAll('form').forEach(form => {
             form.addEventListener('submit', () => sessionStorage.setItem(storageKey, panel.dataset.menuSettingsPanel));
+        });
+    });
+
+    document.querySelectorAll('[data-category-image-input]').forEach(input => {
+        input.addEventListener('change', () => {
+            const form = input.closest('[data-category-image-form]');
+            const submit = form?.querySelector('[data-category-image-submit]');
+            const label = form?.querySelector('[data-category-file-label]');
+            const preview = document.querySelector(`[data-category-image-preview="${input.dataset.categoryImageInput}"]`);
+            const file = input.files?.[0];
+
+            if (previewUrls.has(input)) {
+                URL.revokeObjectURL(previewUrls.get(input));
+                previewUrls.delete(input);
+            }
+
+            if (!file) {
+                if (submit) submit.disabled = true;
+                if (label) label.textContent = '画像を選ぶ';
+                return;
+            }
+
+            if (label) label.textContent = file.name;
+            if (submit) submit.disabled = false;
+
+            if (preview) {
+                const previewUrl = URL.createObjectURL(file);
+                previewUrls.set(input, previewUrl);
+                preview.src = previewUrl;
+            }
         });
     });
 

@@ -13,6 +13,7 @@ class MenuCategoryImageTest extends TestCase
     {
         $this->assertSame('images/menu-icons/cut.jpg', MenuCategory::fallbackImagePath('カット'));
         $this->assertSame('images/menu-icons/hairset.jpg', MenuCategory::fallbackImagePath('ヘアアレンジ'));
+        $this->assertSame('images/menu-icons/seitai.jpg', MenuCategory::fallbackImagePath('整体'));
     }
 
     public function test_unknown_category_uses_other_fallback_image(): void

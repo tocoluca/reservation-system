@@ -7,6 +7,7 @@ use App\Models\MenuCategory;
 use App\Models\MenuTag;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
 
@@ -17,9 +18,15 @@ class MenuSettingController extends Controller
 
         $company = auth()->guard('company')->user()->company;
 
-        $categories = MenuCategory::where('company_id', $company->id)->get();
+        $categories = MenuCategory::where('company_id', $company->id)
+            ->withCount('menus')
+            ->orderBy('id')
+            ->get();
 
-        $tags = MenuTag::where('company_id', $company->id)->get();
+        $tags = MenuTag::where('company_id', $company->id)
+            ->withCount('menus')
+            ->orderBy('name')
+            ->get();
 
         return view('company.menu.settings', compact(
             'categories',
@@ -33,16 +40,27 @@ class MenuSettingController extends Controller
 
         $company = auth()->guard('company')->user()->company;
 
-        $request->validate([
-            'name' => 'required|max:50',
+        $request->merge(['category_name' => trim((string) $request->input('category_name'))]);
+
+        $validated = $request->validate([
+            'category_name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('menu_categories', 'name')->where('company_id', $company->id),
+            ],
+        ], [
+            'category_name.required' => 'カテゴリー名を入力してください。',
+            'category_name.max' => 'カテゴリー名は50文字以内で入力してください。',
+            'category_name.unique' => '同じ名前のカテゴリーがすでに登録されています。',
         ]);
 
         MenuCategory::create([
             'company_id' => $company->id,
-            'name' => $request->name,
+            'name' => $validated['category_name'],
         ]);
 
-        return back();
+        return back()->with('success', 'カテゴリーを追加しました。');
 
     }
 
@@ -51,16 +69,27 @@ class MenuSettingController extends Controller
 
         $company = auth()->guard('company')->user()->company;
 
-        $request->validate([
-            'name' => 'required|max:50',
+        $request->merge(['tag_name' => trim((string) $request->input('tag_name'))]);
+
+        $validated = $request->validate([
+            'tag_name' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('menu_tags', 'name')->where('company_id', $company->id),
+            ],
+        ], [
+            'tag_name.required' => 'タグ名を入力してください。',
+            'tag_name.max' => 'タグ名は50文字以内で入力してください。',
+            'tag_name.unique' => '同じ名前のタグがすでに登録されています。',
         ]);
 
         MenuTag::create([
             'company_id' => $company->id,
-            'name' => $request->name,
+            'name' => $validated['tag_name'],
         ]);
 
-        return back();
+        return back()->with('success', 'タグを追加しました。');
 
     }
 
@@ -174,7 +203,7 @@ class MenuSettingController extends Controller
 
         $tag->delete();
 
-        return back();
+        return back()->with('success', 'タグを削除しました。');
 
     }
 }

@@ -25,6 +25,7 @@
         'まつげ',
         '眉',
         'フェイシャル',
+        '整体',
     ];
 @endphp
 
@@ -101,18 +102,28 @@
 
         <div class="p-6 space-y-6">
 
-            <div class="rounded-2xl border px-4 py-4"
-                 style="border-color: {{ $theme }}22; background-color: #fffdf8;">
-                <div class="flex items-start gap-3">
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg shrink-0"
-                         style="background: {{ $theme }}15; color: {{ $theme }};">
-                        📁
-                    </div>
+            <details class="group rounded-2xl border bg-stone-50/70"
+                     style="border-color: {{ $theme }}22;">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 sm:px-5">
+                    <span class="flex min-w-0 items-center gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg"
+                              style="background: {{ $theme }}15; color: {{ $theme }};">
+                            📁
+                        </span>
+                        <span>
+                            <span class="block font-bold text-gray-800">カテゴリーとは</span>
+                            <span class="mt-0.5 block text-xs text-gray-500">使い方や標準画像について確認できます</span>
+                        </span>
+                    </span>
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm ring-1 ring-stone-200">
+                        <span class="group-open:hidden">説明を開く</span>
+                        <span class="hidden group-open:inline">閉じる</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    </span>
+                </summary>
 
-                    <div class="flex-1">
-                        <h3 class="font-bold text-gray-800">カテゴリーとは</h3>
-
-                        <p class="text-sm text-gray-600 leading-7 mt-1">
+                <div class="border-t border-stone-200 px-5 py-5 sm:pl-[4.5rem]">
+                        <p class="text-sm text-gray-600 leading-7">
                             カテゴリーは、メニューを大きな種類ごとに整理するためのグループです。<br>
                             「カット」「カラー」「パーマ」などに分けることで、管理画面でも予約画面でも見やすくなります。
                         </p>
@@ -135,30 +146,51 @@
                         <p class="text-xs text-gray-500 mt-4 leading-6">
                             アップロードした画像は自動で中央を基準に切り抜かれ、640×640pxの正方形になります。
                         </p>
-                    </div>
                 </div>
+            </details>
+
+            <div class="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div class="mb-3">
+                    <h3 class="font-black text-stone-900">新しいカテゴリーを追加</h3>
+                    <p class="mt-1 text-xs text-stone-500">お客様が内容を想像しやすい短い名前がおすすめです。</p>
+                </div>
+                <form method="POST"
+                      action="{{ route('company.menu.category.store') }}"
+                      class="flex flex-col sm:flex-row sm:items-end gap-3">
+                    @csrf
+
+                    <div class="min-w-0 flex-1">
+                        <label for="category-name" class="mb-1.5 block text-sm font-bold text-stone-700">カテゴリー名</label>
+                        <input id="category-name"
+                               type="text"
+                               name="category_name"
+                               value="{{ old('category_name') }}"
+                               maxlength="50"
+                               required
+                               autocomplete="off"
+                               placeholder="例：カット、カラー、ヘッドスパ"
+                               class="w-full rounded-2xl border border-stone-300 px-4 py-3 focus:outline-none focus:ring-2"
+                               style="--tw-ring-color: {{ $theme }}55;">
+                    </div>
+
+                    <button type="submit"
+                            class="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold text-white shadow hover:opacity-90 transition"
+                            style="background: {{ $theme }}">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        カテゴリーを追加
+                    </button>
+                </form>
             </div>
 
-            <form method="POST"
-                  action="{{ route('company.menu.category.store') }}"
-                  class="flex flex-col sm:flex-row gap-3">
-                @csrf
-
-                <input
-                    type="text"
-                    name="name"
-                    value="{{ old('name') }}"
-                    placeholder="カテゴリー名を入力"
-                    class="border border-stone-300 rounded-2xl px-4 py-3 flex-1">
-
-                <button
-                    class="text-white px-5 py-3 rounded-2xl shadow hover:opacity-90 transition"
-                    style="background: {{ $theme }}">
-                    追加
-                </button>
-            </form>
-
-            <div class="space-y-4">
+            <div>
+                <div class="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h3 class="font-black text-stone-900">登録済みカテゴリー</h3>
+                        <p class="mt-1 text-xs text-stone-500">画像の変更や、未使用カテゴリーの削除ができます。</p>
+                    </div>
+                    <span class="text-xs font-bold text-stone-500">{{ $categories->count() }}件</span>
+                </div>
+                <div class="space-y-4">
                 @forelse($categories as $category)
                     <article class="rounded-3xl border border-stone-200 bg-stone-50/60 p-4 sm:p-5">
                         <div class="flex flex-col gap-5 lg:flex-row lg:items-center">
@@ -184,6 +216,9 @@
                                         </span>
                                     @endif
                                     <p class="mt-2 text-xs leading-5 text-stone-500">予約画面で表示される画像です</p>
+                                    <span class="mt-2 inline-flex rounded-full bg-white px-2.5 py-1 text-xs font-bold text-stone-600 ring-1 ring-stone-200">
+                                        使用中 {{ $category->menus_count }}メニュー
+                                    </span>
                                 </div>
                             </div>
 
@@ -236,16 +271,23 @@
                                     </form>
                                 @endif
 
-                                <form method="POST"
-                                      action="{{ route('company.menu.category.delete', $category->id) }}"
-                                      onsubmit="return confirm('カテゴリー「{{ addslashes($category->name) }}」を削除しますか？')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100">
-                                        <i data-lucide="trash-2" class="h-4 w-4"></i>
-                                        カテゴリーを削除
-                                    </button>
-                                </form>
+                                @if($category->menus_count > 0)
+                                    <div class="rounded-xl bg-stone-100 px-3 py-2 text-center text-xs font-bold leading-5 text-stone-400"
+                                         title="使用中のメニューからカテゴリーを外すと削除できます">
+                                        使用中のため削除不可
+                                    </div>
+                                @else
+                                    <form method="POST"
+                                          action="{{ route('company.menu.category.delete', $category->id) }}"
+                                          onsubmit="return confirm('カテゴリー「{{ addslashes($category->name) }}」を削除しますか？')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-600 transition hover:bg-red-100">
+                                            <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                            カテゴリーを削除
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </div>
                     </article>
@@ -254,6 +296,7 @@
                         カテゴリーはまだ登録されていません
                     </div>
                 @endforelse
+                </div>
             </div>
 
         </div>
@@ -271,36 +314,73 @@
 
         <div class="p-6 space-y-6">
 
-            <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
-                <p class="text-sm text-gray-600 leading-6">
-                    タグは「人気」「おすすめ」「新規向け」など、メニューの特徴をわかりやすく伝えるための目印です。
-                    よく使う言葉を登録しておくことで、統一した表現で管理できます。
-                </p>
+            <details class="group rounded-2xl border border-gray-200 bg-gray-50">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-4 sm:px-5">
+                    <span>
+                        <span class="block font-bold text-gray-800">タグとは</span>
+                        <span class="mt-0.5 block text-xs text-gray-500">カテゴリーとの使い分けを確認できます</span>
+                    </span>
+                    <span class="inline-flex shrink-0 items-center gap-1 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-stone-600 shadow-sm ring-1 ring-stone-200">
+                        <span class="group-open:hidden">説明を開く</span>
+                        <span class="hidden group-open:inline">閉じる</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                    </span>
+                </summary>
+                <div class="border-t border-gray-200 px-5 py-4">
+                    <p class="text-sm text-gray-600 leading-6">
+                        タグは「人気」「おすすめ」「新規向け」など、メニューの特徴をわかりやすく伝えるための目印です。
+                        よく使う言葉を登録しておくことで、統一した表現で管理できます。
+                    </p>
+                </div>
+            </details>
+
+            <div class="rounded-2xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm">
+                <div class="mb-3">
+                    <h3 class="font-black text-stone-900">新しいタグを追加</h3>
+                    <p class="mt-1 text-xs text-stone-500">メニューの特徴を短い言葉で登録してください。</p>
+                </div>
+                <form method="POST"
+                      action="{{ route('company.menu.tag.store') }}"
+                      class="flex flex-col sm:flex-row sm:items-end gap-3">
+                    @csrf
+
+                    <div class="min-w-0 flex-1">
+                        <label for="tag-name" class="mb-1.5 block text-sm font-bold text-stone-700">タグ名</label>
+                        <input id="tag-name"
+                               type="text"
+                               name="tag_name"
+                               value="{{ old('tag_name') }}"
+                               maxlength="50"
+                               required
+                               autocomplete="off"
+                               placeholder="例：人気、おすすめ、新規向け"
+                               class="w-full rounded-2xl border border-stone-300 px-4 py-3 focus:outline-none focus:ring-2"
+                               style="--tw-ring-color: {{ $theme }}55;">
+                    </div>
+
+                    <button type="submit"
+                            class="inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-2xl px-5 py-3 font-bold text-white shadow hover:opacity-90 transition"
+                            style="background: {{ $theme }}">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        タグを追加
+                    </button>
+                </form>
             </div>
 
-            <form method="POST"
-                  action="{{ route('company.menu.tag.store') }}"
-                  class="flex flex-col sm:flex-row gap-3">
-                @csrf
-
-                <input
-                    type="text"
-                    name="name"
-                    placeholder="タグ名を入力"
-                    class="border border-stone-300 rounded-2xl px-4 py-3 flex-1">
-
-                <button
-                    class="text-white px-5 py-3 rounded-2xl shadow hover:opacity-90 transition"
-                    style="background: {{ $theme }}">
-                    追加
-                </button>
-            </form>
-
+            <div>
+                <div class="mb-3 flex items-end justify-between gap-3">
+                    <div>
+                        <h3 class="font-black text-stone-900">登録済みタグ</h3>
+                        <p class="mt-1 text-xs text-stone-500">メニューで使用している件数も確認できます。</p>
+                    </div>
+                    <span class="shrink-0 text-xs font-bold text-stone-500">{{ $tags->count() }}件</span>
+                </div>
             <div class="overflow-x-auto rounded-2xl border border-stone-200">
                 <table class="w-full text-sm">
                     <thead class="bg-stone-50">
                         <tr>
                             <th class="border-b border-stone-200 px-4 py-3 text-left">タグ名</th>
+                            <th class="border-b border-stone-200 px-4 py-3 w-28 text-center">使用状況</th>
                             <th class="border-b border-stone-200 px-4 py-3 w-28 text-center">操作</th>
                         </tr>
                     </thead>
@@ -313,9 +393,15 @@
                                 </td>
 
                                 <td class="border-b border-stone-100 px-4 py-3 text-center">
+                                    <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-bold {{ $tag->menus_count > 0 ? 'bg-sky-50 text-sky-700' : 'bg-stone-100 text-stone-500' }}">
+                                        {{ $tag->menus_count }}件
+                                    </span>
+                                </td>
+
+                                <td class="border-b border-stone-100 px-4 py-3 text-center">
                                     <form method="POST"
                                           action="{{ route('company.menu.tag.delete',$tag->id) }}"
-                                          onsubmit="return confirm('削除しますか？')">
+                                          onsubmit="return confirm('タグ「{{ addslashes($tag->name) }}」を削除しますか？{{ $tag->menus_count > 0 ? '\n使用中のメニューからもタグが外れます。' : '' }}')">
                                         @csrf
                                         @method('DELETE')
 
@@ -327,7 +413,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="2"
+                                <td colspan="3"
                                     class="px-4 py-8 text-center text-gray-400">
                                     タグはまだ登録されていません
                                 </td>
@@ -335,6 +421,7 @@
                         @endforelse
                     </tbody>
                 </table>
+            </div>
             </div>
 
         </div>

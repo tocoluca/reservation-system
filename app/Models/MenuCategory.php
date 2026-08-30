@@ -30,6 +30,7 @@ class MenuCategory extends Model
             '着付け' => 'images/menu-icons/kitsuke.jpg',
             'まつげ', '眉' => 'images/menu-icons/eyelash_brow.jpg',
             'フェイシャル' => 'images/menu-icons/facial.jpg',
+            '整体' => 'images/menu-icons/seitai.jpg',
             'キッズ' => 'images/menu-icons/kids.jpg',
             default => 'images/menu-icons/other.jpg',
         };

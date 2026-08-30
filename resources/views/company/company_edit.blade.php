@@ -95,7 +95,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Company Settings</p>
@@ -167,7 +167,7 @@
                 <button type="submit"
                         form="companyInfoForm"
                         class="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-sm sm:flex-none"
-                        style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                        style="background: var(--company-theme-gradient);">
                     <i data-lucide="save" class="w-4 h-4"></i>
                     変更を保存
                 </button>
@@ -759,7 +759,7 @@
             <p class="text-sm leading-6 text-stone-500">変更内容は、保存後すぐに予約画面と予約受付設定へ反映されます。</p>
             <button type="submit"
                     class="w-full shrink-0 sm:w-auto text-white px-8 py-3 rounded-2xl shadow-lg hover:opacity-90 transition"
-                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                    style="background: var(--company-theme-gradient);">
                 変更を保存
             </button>
         </div>

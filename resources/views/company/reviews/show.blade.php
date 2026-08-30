@@ -53,7 +53,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Review Detail</p>
@@ -150,7 +150,7 @@
                         <div class="flex justify-end">
                             <button type="submit"
                                     class="rounded-2xl text-white px-6 py-3.5 font-semibold shadow hover:opacity-90 transition"
-                                    style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                                    style="background: var(--company-theme-gradient);">
                                 返信を保存する
                             </button>
                         </div>
@@ -174,7 +174,7 @@
                         @csrf
                         <button type="submit"
                                 class="w-full rounded-2xl text-white px-5 py-3.5 font-semibold shadow hover:opacity-90 transition"
-                                style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                                style="background: var(--company-theme-gradient);">
                             公開する
                         </button>
                     </form>

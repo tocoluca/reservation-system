@@ -14,7 +14,7 @@
         <div class="absolute inset-0 opacity-10"
              style="background: radial-gradient(circle at top right, #ffffff 0%, transparent 35%), radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);"></div>
         <div class="relative px-6 py-7 text-white sm:px-8 sm:py-8"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
                 <div class="flex min-w-0 items-center gap-4">
                     <div class="h-20 w-20 shrink-0 overflow-hidden rounded-3xl border border-white/30 bg-white/15 shadow-lg">

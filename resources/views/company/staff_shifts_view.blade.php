@@ -49,7 +49,7 @@
 <div class="staff-shift-view-page max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <div class="shift-desktop-layout hidden lg:block relative overflow-hidden rounded-3xl shadow-lg mb-6">
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Shift View</p>

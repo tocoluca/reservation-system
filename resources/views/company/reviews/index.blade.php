@@ -25,7 +25,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Review Management</p>
@@ -131,7 +131,7 @@
                 <div class="flex gap-3 pt-0 sm:pt-5">
                     <button type="submit"
                             class="text-white px-5 py-3 rounded-2xl text-sm font-semibold shadow hover:opacity-90 transition"
-                            style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                            style="background: var(--company-theme-gradient);">
                         絞り込む
                     </button>
 

@@ -16,7 +16,7 @@
 @section('content')
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
     <div class="rounded-3xl shadow-sm overflow-hidden mb-6 border border-gray-100 bg-white">
-        <div class="p-6 sm:p-8 text-white" style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
+        <div class="p-6 sm:p-8 text-white" style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <p class="text-sm opacity-90 mb-2">Notice Management</p>

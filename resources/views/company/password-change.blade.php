@@ -17,7 +17,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Password Settings</p>
             <h1 class="text-2xl sm:text-3xl font-bold mt-1">パスワード変更</h1>
             <p class="text-sm sm:text-base opacity-90 mt-2 leading-6">
@@ -72,7 +72,7 @@
                 <button type="submit"
                         class="w-full text-white py-4 rounded-2xl shadow-lg
                                hover:opacity-90 transition duration-200 font-semibold"
-                        style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                        style="background: var(--company-theme-gradient);">
                     変更する
                 </button>
             </form>

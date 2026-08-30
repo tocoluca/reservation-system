@@ -21,7 +21,7 @@
         </div>
 
         <div class="relative p-6 sm:p-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Staff Management</p>
@@ -294,7 +294,7 @@
                     <div class="mt-4 space-y-3">
                         <button type="submit"
                                 class="w-full text-white px-6 py-3.5 rounded-2xl shadow-lg font-semibold hover:opacity-90 transition"
-                                style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                                style="background: var(--company-theme-gradient);">
                             更新する
                         </button>
 

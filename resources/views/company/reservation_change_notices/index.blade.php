@@ -11,7 +11,7 @@
     {{-- ヘッダー --}}
     <div class="rounded-3xl overflow-hidden shadow-sm border border-gray-100 bg-white mb-8">
         <div class="px-6 py-7 md:px-8 md:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }}, {{ $theme }}cc);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
                 <div>
                     <p class="text-xs font-semibold tracking-[0.2em] uppercase text-white/80">

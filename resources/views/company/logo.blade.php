@@ -30,7 +30,7 @@
              style="background: radial-gradient(circle at top right, #ffffff 0%, transparent 35%), radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);"></div>
 
         <div class="relative px-6 py-7 text-white sm:px-8 sm:py-8"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90">

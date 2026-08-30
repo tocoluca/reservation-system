@@ -97,7 +97,7 @@
              style="background: radial-gradient(circle at top right, #ffffff 0%, transparent 35%), radial-gradient(circle at bottom left, #ffffff 0%, transparent 30%);"></div>
 
         <div class="relative px-6 py-7 text-white sm:px-8 sm:py-8"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <p class="text-xs uppercase tracking-widest opacity-80 sm:text-sm">Dashboard Settings</p>
@@ -277,7 +277,7 @@
 
             <div class="flex flex-col gap-4 border-t border-stone-100 bg-white px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <p class="text-sm leading-6 text-stone-500">保存後、各役職の次回表示時から設定が反映されます。</p>
-                <button type="submit" class="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-3 font-bold text-white shadow transition hover:opacity-90 sm:w-auto" style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                <button type="submit" class="inline-flex w-full shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-3 font-bold text-white shadow transition hover:opacity-90 sm:w-auto" style="background: var(--company-theme-gradient);">
                     <i data-lucide="save" class="h-4 w-4"></i>
                     変更を保存
                 </button>

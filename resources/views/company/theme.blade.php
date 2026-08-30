@@ -18,7 +18,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Theme Settings</p>
@@ -105,7 +105,7 @@
                 <div class="p-6">
                     <div class="max-w-sm mx-auto bg-white shadow-xl rounded-3xl border border-stone-200 overflow-hidden">
                         <div class="px-5 py-5 text-white"
-                             style="background: linear-gradient(135deg, {{ $company->theme_color }} 0%, {{ $company->theme_color }}dd 100%);"
+                             style="background: linear-gradient(115deg, rgba(255,255,255,.08) 0%, rgba(15,23,42,.10) 58%, rgba(15,23,42,.30) 100%), {{ $company->theme_color }};"
                              id="previewHeader">
                             <div class="text-lg font-bold">{{ $company->name }}</div>
                             <div class="text-sm text-white/80 mt-1">オンライン予約</div>
@@ -154,7 +154,7 @@ document.querySelectorAll('.theme-radio').forEach(radio => {
         document.getElementById('previewButton').style.backgroundColor = selectedColor;
         document.getElementById('saveButton').style.backgroundColor = selectedColor;
         document.getElementById('previewHeader').style.background =
-            `linear-gradient(135deg, ${selectedColor} 0%, ${selectedColor}dd 100%)`;
+            `linear-gradient(115deg, rgba(255,255,255,.08) 0%, rgba(15,23,42,.10) 58%, rgba(15,23,42,.30) 100%), ${selectedColor}`;
 
         document.querySelectorAll('.theme-box').forEach(box => {
             box.classList.remove('border-black');

@@ -22,6 +22,12 @@
     <style>
         :root {
             --main-color: {{ $theme }};
+            --company-theme-gradient: linear-gradient(
+                115deg,
+                rgba(255,255,255,.08) 0%,
+                rgba(15,23,42,.10) 58%,
+                rgba(15,23,42,.30) 100%
+            ), var(--main-color);
             --company-topbar-height: 6rem;
         }
         body {

@@ -49,7 +49,7 @@
         </div>
 
         <div class="relative px-6 sm:px-8 py-7 sm:py-8 text-white"
-             style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+             style="background: var(--company-theme-gradient);">
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
                 <div>
                     <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1.5 text-xs font-semibold text-white/90">
@@ -387,7 +387,7 @@
          class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4 py-6">
         <div class="w-full max-w-md rounded-3xl bg-white shadow-2xl border border-gray-100 overflow-hidden">
             <div class="px-6 py-5 text-white"
-                 style="background: linear-gradient(135deg, {{ $theme }} 0%, #7c5a43 100%);">
+                 style="background: var(--company-theme-gradient);">
                 <div class="text-xs font-bold tracking-wide text-white/75">PASSWORD RESET</div>
                 <h2 class="mt-2 text-xl font-black">パスワード初期化</h2>
                 <p class="mt-2 text-sm text-white/85">対象者へ渡す初期パスワードを入力してください。</p>

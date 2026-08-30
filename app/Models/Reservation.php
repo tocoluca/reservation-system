@@ -18,6 +18,7 @@ class Reservation extends Model
         'company_id',
         'customer_id',
         'staff_id',
+        'is_staff_nominated',
         'customer_name',
         'customer_email',
         'customer_phone',
@@ -45,6 +46,7 @@ class Reservation extends Model
     protected $casts = [
         'start_at'           => 'datetime',
         'end_at'             => 'datetime',
+        'is_staff_nominated' => 'boolean',
         'cancelled_at' => 'datetime',
         'visit_reflected_at' => 'datetime',
         'reminder_sent_at'   => 'datetime',

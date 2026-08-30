@@ -14,8 +14,57 @@
         ['key' => 'first', 'label' => '初回設定', 'title' => '最初にやること', 'icon' => 'flag', 'desc' => '予約を受ける前に必要な設定を順番に確認します。'],
         ['key' => 'daily', 'label' => '通常運用', 'title' => '毎日の操作', 'icon' => 'calendar-check', 'desc' => '予約確認、変更、シフト確認など日々使う操作です。'],
         ['key' => 'features', 'label' => '機能説明', 'title' => '各機能の役割', 'icon' => 'layout-dashboard', 'desc' => 'どの画面で何を設定するのかを一覧で確認できます。'],
-        ['key' => 'trouble', 'label' => '困った時', 'title' => '確認する順番', 'icon' => 'list-checks', 'desc' => '予約できない、スタッフが出ない時の確認手順です。'],
     ];
+
+    $faqCategories = [
+        'reservation' => [
+            'label' => '予約・顧客',
+            'icon' => 'calendar-check',
+            'items' => [
+                ['予約画面にスタッフが表示されません', ['スタッフ管理で対象スタッフが有効か確認します。', '勤務管理で対象日に勤務時間が登録されているか確認します。', '営業日管理で対象日が営業日になっているか確認します。', 'メニュー対応スタッフ設定で対象メニューを担当できるか確認します。']],
+                ['予約できるはずの日付が選べません', ['営業日と営業時間が登録されているか確認します。', '担当スタッフの勤務日程を確認します。', '企業情報設定の予約可能期間と予約受付開始日を確認します。', 'メニューの所要時間が営業時間内に収まるか確認します。']],
+                ['お客様がWebからキャンセルできません', ['予約日時がWebキャンセル期限を過ぎていないか確認します。', '企業情報設定の「Webキャンセル締切」を確認します。', '期限を過ぎている場合は、店舗側の予約管理から対応してください。']],
+                ['電話や来店で受けた予約はどこから登録しますか', ['予約管理を開き、空いている日時を選択します。', 'お客様、メニュー、担当スタッフを入力して保存します。', '保存後、予約一覧に表示されたことを確認します。']],
+            ],
+        ],
+        'staff' => [
+            'label' => 'スタッフ・シフト',
+            'icon' => 'users',
+            'items' => [
+                ['スタッフが急に休む場合はどうすればよいですか', ['最初に予約管理で、そのスタッフの予約有無を確認します。', '予約がある場合は担当変更、日時変更、キャンセルの順で対応します。', '対応後、勤務管理で該当日を休みに変更します。']],
+                ['シフトを登録したのに予約枠が出ません', ['店舗の営業日・営業時間を確認します。', 'スタッフの勤務時間が営業時間内か確認します。', 'メニュー対応スタッフ設定を確認します。', 'メニュー所要時間を確保できる空き時間があるか確認します。']],
+                ['スタッフのパスワードを忘れました', ['マスター、エリアリーダー、リーダー権限の担当者へ依頼します。', '担当者管理から対象スタッフを開き、パスワード初期化を行います。', '対象スタッフは初期パスワードでログインし、新しいパスワードへ変更します。']],
+            ],
+        ],
+        'settings' => [
+            'label' => '設定・表示',
+            'icon' => 'settings',
+            'items' => [
+                ['設定を変更しても画面に反映されません', ['画面下部または上部の保存ボタンを押したか確認します。', '対象画面を再読み込みします。', '別の設定画面に同じ内容の項目がないか確認します。', '解決しない場合は、画面名と操作内容を添えてお問い合わせください。']],
+                ['ロゴやテーマカラーはどこで変更できますか', ['ダッシュボードの「ロゴ設定」または「テーマ設定」を開きます。', 'ロゴは画像選択後のプレビューを確認して保存します。', 'テーマカラーは選択後、予約画面でも見え方を確認してください。']],
+                ['役職によってダッシュボードの項目を変えられますか', ['ダッシュボード管理を開きます。', '対象の役職と表示したい機能にチェックを入れます。', '「変更を保存」を押すと、次回表示時から反映されます。']],
+                ['メニューが予約画面に表示されません', ['メニューが有効・公開状態か確認します。', 'カテゴリーと表示順を確認します。', 'メニュー対応スタッフが設定されているか確認します。', '料金と施術時間が登録されているか確認します。']],
+            ],
+        ],
+        'support' => [
+            'label' => 'アカウント・サポート',
+            'icon' => 'circle-help',
+            'items' => [
+                ['問い合わせへの回答はどこで確認できますか', ['この画面上部の「問い合わせ履歴」を開きます。', '「回答済み」と表示された問い合わせの「詳細を見る」を押します。', '回答を確認すると、ダッシュボードの未読件数にも反映されます。']],
+                ['問い合わせには何を書けばよいですか', ['発生した日時と画面名を書きます。', '対象の予約日、スタッフ名、メニュー名を書きます。', '行った操作と実際に表示された内容を書きます。', '個人のパスワードやカード番号は記載しないでください。']],
+                ['操作中にエラーが表示されました', ['画面に表示されたエラーメッセージを控えます。', '入力内容を確認し、もう一度保存します。', '同じエラーが続く場合は、画面名とメッセージを添えてお問い合わせください。']],
+            ],
+        ],
+    ];
+
+    $allFaqSearchParts = [];
+    foreach ($faqCategories as $category) {
+        foreach ($category['items'] as $faq) {
+            $allFaqSearchParts[] = $faq[0];
+            $allFaqSearchParts = array_merge($allFaqSearchParts, $faq[1]);
+        }
+    }
+    $allFaqSearchText = mb_strtolower(implode(' ', $allFaqSearchParts));
 @endphp
 
 <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -94,10 +143,13 @@ body {
     padding: 14px 16px;
 }
 .faq-item summary::-webkit-details-marker { display: none; }
+.faq-item[open] summary [data-lucide="chevron-down"] { transform: rotate(180deg); }
+.faq-item summary [data-lucide="chevron-down"] { transition: transform .18s ease; }
+.faq-search:focus { border-color: {{ $theme }}; box-shadow: 0 0 0 3px {{ $themeSoft }}; outline: none; }
 [x-cloak] { display: none !important; }
 </style>
 
-<div x-data="{ section: 'first', supportView: @js($errors->any() ? 'contact' : ((session('success') || request('view') === 'history') ? 'history' : 'manual')) }"
+<div x-data="{ section: 'first', supportView: @js($errors->any() ? 'contact' : ((session('success') || request('view') === 'history') ? 'history' : 'manual')), faqQuery: '', faqCategory: 'all' }"
      class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
     <section class="support-hero rounded-[2rem] overflow-hidden text-white">
         <div class="p-6 sm:p-8">
@@ -126,33 +178,43 @@ body {
     @endif
 
     @if ($errors->any())
-        <div class="rounded-2xl border px-5 py-4 text-sm shadow-sm bg-red-50 border-red-200 text-red-700">
-            入力内容を確認してください。
+        <div class="rounded-2xl border px-5 py-4 text-sm shadow-sm bg-red-50 border-red-200 text-red-700" role="alert">
+            <p class="font-bold">入力内容を確認してください。</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
     <div class="sticky z-30 rounded-[1.5rem] border border-white/80 bg-white/95 p-2 shadow-lg backdrop-blur"
          style="top: calc(var(--company-topbar-height, 6rem) + .75rem);">
-        <div class="grid grid-cols-3 gap-2">
+        <div class="grid grid-cols-4 gap-2">
             <button type="button" @click="supportView='manual'"
                     :class="supportView === 'manual' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
                     class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
-                使い方
+                <span class="hidden sm:inline">操作マニュアル</span><span class="sm:hidden">使い方</span>
+            </button>
+            <button type="button" @click="supportView='faq'"
+                    :class="supportView === 'faq' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
+                    class="rounded-2xl px-2 sm:px-3 py-3 text-xs sm:text-sm font-black transition">
+                FAQ
             </button>
             <button type="button" @click="supportView='contact'"
                     :class="supportView === 'contact' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
                     class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
-                問い合わせ
+                <span class="hidden sm:inline">問い合わせ</span><span class="sm:hidden">質問する</span>
             </button>
             <button type="button" @click="supportView='history'"
                     :class="supportView === 'history' ? 'text-white bg-slate-900' : 'text-slate-600 bg-slate-100'"
                     class="rounded-2xl px-3 py-3 text-xs sm:text-sm font-black transition">
-                履歴 {{ $inquiries->total() }}件
+                <span class="hidden sm:inline">問い合わせ履歴 </span><span class="sm:hidden">履歴 </span>{{ $inquiries->total() }}件
             </button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div x-show="supportView === 'history'" x-cloak class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="panel-card p-5"><div class="text-sm text-gray-500">受付中</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-amber-600">{{ $openCount }}</div><span class="rounded-full bg-amber-100 text-amber-700 px-3 py-1 text-xs font-bold">open</span></div></div>
         <div class="panel-card p-5"><div class="text-sm text-gray-500">回答済み</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-emerald-600">{{ $answeredCount }}</div><span class="rounded-full bg-emerald-100 text-emerald-700 px-3 py-1 text-xs font-bold">answered</span></div></div>
         <div class="panel-card p-5"><div class="text-sm text-gray-500">完了</div><div class="mt-2 flex items-end justify-between"><div class="text-3xl font-black text-gray-600">{{ $closedCount }}</div><span class="rounded-full bg-gray-200 text-gray-700 px-3 py-1 text-xs font-bold">closed</span></div></div>
@@ -166,7 +228,7 @@ body {
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
             @foreach($manualCards as $card)
                 <button type="button"
                         @click="section='{{ $card['key'] }}'"
@@ -199,9 +261,20 @@ body {
                     ['勤務管理で実際のシフトを入れる', ['勤務管理でスタッフごとの勤務日、勤務時間を登録します。', '基本シフトを使ってから、休みや時間変更だけ修正すると楽です。', '営業日、勤務時間、対応メニューがそろうと予約受付できます。']],
                     ['予約画面で確認する', ['お客様側の予約画面を開いて、日付、メニュー、スタッフが選べるか確認します。', 'テスト予約を入れて、管理画面に表示されるか確認します。', '問題なければ初期設定は完了です。']],
                 ] as $i => $step)
-                    <div class="rounded-2xl border border-gray-100 bg-white p-4">
-                        <div class="flex gap-3"><span class="step-number">{{ $i + 1 }}</span><div class="flex-1"><div class="font-bold text-gray-900">{{ $step[0] }}</div><ul class="mt-2 space-y-1.5 text-sm text-gray-600 leading-6">@foreach($step[1] as $detail)<li class="flex gap-2"><span class="text-gray-300">●</span><span>{{ $detail }}</span></li>@endforeach</ul></div></div>
-                    </div>
+                    <details class="faq-item rounded-2xl border border-gray-100 bg-white p-4" @if($i === 0) open @endif>
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                            <span class="flex min-w-0 items-center gap-3">
+                                <span class="step-number">{{ $i + 1 }}</span>
+                                <span class="font-bold text-gray-900">{{ $step[0] }}</span>
+                            </span>
+                            <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-gray-400"></i>
+                        </summary>
+                        <ul class="ml-11 mt-3 space-y-1.5 text-sm leading-6 text-gray-600">
+                            @foreach($step[1] as $detail)
+                                <li class="flex gap-2"><span class="text-gray-300">●</span><span>{{ $detail }}</span></li>
+                            @endforeach
+                        </ul>
+                    </details>
                 @endforeach
             </div>
             <div class="space-y-4">
@@ -262,27 +335,90 @@ body {
             ] as $feature)
                 <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-black text-gray-900">{{ $feature[0] }}</div><div class="text-sm text-gray-600 mt-2 leading-6">{{ $feature[1] }}</div></div>
             @endforeach
-        </div><div x-show="section==='trouble'" class="space-y-4">
-            <h3 class="text-lg font-black text-gray-900">こんなときはこの順番で確認</h3>
-            @foreach([
-                ['予約画面にスタッフが出ない', ['スタッフ管理で有効になっているか', '勤務管理で対象日にシフトが入っているか', '営業日管理で対象日が営業日か', 'メニュー対応スタッフ設定で対象メニューを担当できるか']],
-                ['パスワードを忘れた', ['マスター、エリアリーダー、リーダー権限を持つ担当者に依頼します。', '依頼を受けた担当者が、スタッフの担当者管理画面を開きます。', '対象スタッフの初期パスワードを入力して、パスワード初期化を行います。', '初期化後、対象スタッフは初期パスワードでログインし、新しいパスワードへ変更します。']],
-                ['予約できるはずの日が選べない', ['営業日管理で営業日になっているか', '営業時間が入っているか', 'スタッフの勤務日程が入っているか', '予約受付期間の範囲内か']],
-                ['設定を変えたのに画面に反映されない', ['保存ボタンを押したか', '画面を再読み込みしたか', '別の設定画面にも同じ内容がないか', '別ブラウザやスマートフォンで確認する']],
-                ['キャンセルできない', ['予約日時を確認する', 'Webキャンセル期限を確認する', '期限を過ぎている場合は店舗側で対応する']],
-            ] as $faq)
-                <details class="faq-item rounded-2xl bg-white border border-gray-100 p-4">
-                    <summary class="cursor-pointer font-black text-gray-900 flex items-center justify-between gap-3">
-                        {{ $faq[0] }}
-                        <span class="text-gray-400">+</span>
-                    </summary>
-                    <ol class="mt-4 space-y-3">
-                        @foreach($faq[1] as $i => $item)
-                            <li class="flex gap-3 text-sm text-gray-700"><span class="step-number">{{ $i + 1 }}</span><span class="pt-1">{{ $item }}</span></li>
-                        @endforeach
-                    </ol>
-                </details>
+        </div>
+    </section>
+
+    {{-- よくある質問 --}}
+    <section x-show="supportView === 'faq'" x-cloak class="panel-card overflow-hidden">
+        <div class="border-b border-gray-100 px-5 py-5 sm:px-7" style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                    <h2 class="text-xl font-black text-gray-900 sm:text-2xl">よくある質問</h2>
+                    <p class="mt-1 text-sm leading-6 text-gray-500">質問を検索するか、カテゴリを選んで確認してください。</p>
+                </div>
+                <div class="relative w-full lg:max-w-md">
+                    <i data-lucide="search" class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"></i>
+                    <label for="faqSearch" class="sr-only">よくある質問を検索</label>
+                    <input id="faqSearch" type="search" x-model="faqQuery" placeholder="例：スタッフが出ない、キャンセル"
+                           class="faq-search h-12 w-full rounded-2xl border border-gray-300 bg-white pl-11 pr-4 text-sm">
+                </div>
+            </div>
+
+            <div class="mt-4 flex gap-2 overflow-x-auto pb-1" aria-label="FAQカテゴリ">
+                <button type="button" @click="faqCategory='all'" :class="faqCategory === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-gray-600'" class="shrink-0 rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold">すべて</button>
+                @foreach($faqCategories as $categoryKey => $category)
+                    <button type="button" @click="faqCategory='{{ $categoryKey }}'" :class="faqCategory === '{{ $categoryKey }}' ? 'bg-slate-900 text-white' : 'bg-white text-gray-600'" class="shrink-0 rounded-xl border border-gray-200 px-4 py-2 text-xs font-bold">
+                        {{ $category['label'] }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
+
+        <div class="space-y-7 p-5 sm:p-7">
+            @foreach($faqCategories as $categoryKey => $category)
+                @php
+                    $categorySearchParts = [];
+                    foreach ($category['items'] as $categoryFaq) {
+                        $categorySearchParts[] = $categoryFaq[0];
+                        $categorySearchParts = array_merge($categorySearchParts, $categoryFaq[1]);
+                    }
+                    $categorySearchText = mb_strtolower(implode(' ', $categorySearchParts));
+                @endphp
+                <div x-show="(faqCategory === 'all' || faqCategory === '{{ $categoryKey }}') && (!faqQuery || @js($categorySearchText).includes(faqQuery.toLocaleLowerCase('ja')))" class="faq-category space-y-3">
+                    <div class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl text-white" style="background: {{ $theme }};">
+                            <i data-lucide="{{ $category['icon'] }}" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="font-black text-gray-900">{{ $category['label'] }}</h3>
+                            <p class="text-xs text-gray-500">{{ count($category['items']) }}件の質問</p>
+                        </div>
+                    </div>
+
+                    @foreach($category['items'] as $faq)
+                        @php
+                            $faqSearchText = mb_strtolower($faq[0].' '.implode(' ', $faq[1]));
+                        @endphp
+                        <details x-show="!faqQuery || @js($faqSearchText).includes(faqQuery.toLocaleLowerCase('ja'))"
+                                 class="faq-item rounded-2xl border border-gray-200 bg-white p-4 sm:p-5">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-bold text-gray-900">
+                                <span class="flex items-start gap-3"><span class="text-base font-black" style="color: {{ $theme }};">Q</span><span>{{ $faq[0] }}</span></span>
+                                <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 text-gray-400"></i>
+                            </summary>
+                            <div class="ml-0 mt-4 border-t border-gray-100 pt-4 sm:ml-7">
+                                <p class="mb-3 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">確認する順番</p>
+                                <ol class="space-y-3">
+                                    @foreach($faq[1] as $i => $item)
+                                        <li class="flex gap-3 text-sm leading-6 text-gray-700"><span class="step-number">{{ $i + 1 }}</span><span class="pt-1">{{ $item }}</span></li>
+                                    @endforeach
+                                </ol>
+                            </div>
+                        </details>
+                    @endforeach
+                </div>
             @endforeach
+
+            <div x-show="faqQuery && !@js($allFaqSearchText).includes(faqQuery.toLocaleLowerCase('ja'))" class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-5 py-10 text-center">
+                <i data-lucide="search-x" class="mx-auto h-8 w-8 text-gray-300"></i>
+                <p class="mt-3 font-bold text-gray-700">該当する質問が見つかりません</p>
+                <p class="mt-1 text-sm text-gray-500">短い言葉で検索するか、お問い合わせをご利用ください。</p>
+            </div>
+
+            <div class="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5 text-center">
+                <p class="font-bold text-gray-800">解決しませんでしたか？</p>
+                <p class="mt-1 text-sm text-gray-500">状況を詳しくお知らせいただくと、確認がスムーズです。</p>
+                <button type="button" @click="supportView='contact'; window.scrollTo({ top: 0, behavior: 'smooth' })" class="mt-4 rounded-xl px-5 py-2.5 text-sm font-bold text-white" style="background: {{ $theme }};">問い合わせを作成</button>
+            </div>
         </div>
     </section>
 
@@ -292,35 +428,44 @@ body {
             <p class="text-sm text-gray-500 mt-1">いつ、どの画面で、何をした時に起きたかを書いていただくと確認が早くなります。</p>
         </div>
         <div class="p-5 sm:p-6">
-            <form action="{{ route('company.support.store') }}" method="POST" class="space-y-5">
+            <form action="{{ route('company.support.store') }}" method="POST" class="space-y-5" x-data="{ body: @js(old('body', '')) }" data-busy-form="true" data-busy-label="送信中…">
                 @csrf
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">カテゴリ</label>
-                    <select name="category" class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm">
+                    <label for="supportCategory" class="block text-sm font-bold text-gray-700 mb-2">カテゴリ <span class="ml-1 text-xs font-normal text-gray-400">任意</span></label>
+                    <select id="supportCategory" name="category" class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm focus:outline-none focus:ring-2" style="--tw-ring-color: {{ $themeSoft }};">
                         <option value="">選択してください</option>
                         <option value="first_setup" @selected(old('category') === 'first_setup')>初期設定</option>
                         <option value="daily_operation" @selected(old('category') === 'daily_operation')>通常運用</option>
                         <option value="staff_shift" @selected(old('category') === 'staff_shift')>スタッフ・シフト</option>
                         <option value="reservation" @selected(old('category') === 'reservation')>予約</option>
                         <option value="menu" @selected(old('category') === 'menu')>メニュー</option>
+                        <option value="settings" @selected(old('category') === 'settings')>企業・画面設定</option>
+                        <option value="account" @selected(old('category') === 'account')>アカウント・権限</option>
+                        <option value="billing" @selected(old('category') === 'billing')>契約・請求</option>
                         <option value="other" @selected(old('category') === 'other')>その他</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">件名</label>
-                    <input type="text" name="subject" value="{{ old('subject') }}" class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm">
+                    <label for="supportSubject" class="block text-sm font-bold text-gray-700 mb-2">件名 <span class="ml-1 rounded bg-red-50 px-2 py-0.5 text-xs text-red-600">必須</span></label>
+                    <input id="supportSubject" type="text" name="subject" value="{{ old('subject') }}" required maxlength="255" placeholder="例：予約画面にスタッフが表示されない"
+                           class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm focus:outline-none focus:ring-2" style="--tw-ring-color: {{ $themeSoft }};">
                     @error('subject')<div class="mt-1 text-sm text-red-500">{{ $message }}</div>@enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">お問い合わせ内容</label>
-                    <textarea name="body" rows="8" class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm">{{ old('body') }}</textarea>
+                    <div class="mb-2 flex items-center justify-between gap-3">
+                        <label for="supportBody" class="block text-sm font-bold text-gray-700">お問い合わせ内容 <span class="ml-1 rounded bg-red-50 px-2 py-0.5 text-xs text-red-600">必須</span></label>
+                        <span class="text-xs text-gray-400"><span x-text="body.length"></span> / 5,000文字</span>
+                    </div>
+                    <textarea id="supportBody" name="body" rows="8" required maxlength="5000" x-model="body"
+                              placeholder="いつ、どの画面で、何をした時に、どのような表示になったかを入力してください。"
+                              class="w-full border border-gray-300 rounded-2xl px-4 py-3 bg-white text-sm leading-6 focus:outline-none focus:ring-2" style="--tw-ring-color: {{ $themeSoft }};"></textarea>
                     @error('body')<div class="mt-1 text-sm text-red-500">{{ $message }}</div>@enderror
                 </div>
                 <div class="rounded-2xl bg-gray-50 border border-gray-200 p-4 text-sm text-gray-600 leading-7">
                     書くと確認が早くなる内容：発生日時、対象スタッフ名、対象メニュー名、対象日、操作した画面、実際に表示された内容。
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3">
-                    <button type="submit" class="text-white px-5 py-3 rounded-2xl text-sm font-bold shadow hover:opacity-90 transition" style="background: linear-gradient(135deg, {{ $theme }} 0%, #111827 120%);">お問い合わせを送信する</button>
+                    <button type="submit" data-busy-button class="text-white px-5 py-3 rounded-2xl text-sm font-bold shadow hover:opacity-90 transition" style="background: linear-gradient(135deg, {{ $theme }} 0%, #111827 120%);"><span data-busy-text>お問い合わせを送信する</span></button>
                     <a href="{{ route('company.dashboard') }}" class="inline-flex items-center justify-center px-5 py-3 rounded-2xl border border-gray-300 text-sm text-gray-700 bg-white hover:bg-gray-50 transition">ダッシュボードへ戻る</a>
                 </div>
             </form>

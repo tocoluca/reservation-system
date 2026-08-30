@@ -467,6 +467,9 @@ Route::prefix('company')->group(function () {
             Route::post('reservations/{id}/complete', [\App\Http\Controllers\Company\ReservationController::class, 'completeFromList'])
                 ->name('company.reservations.complete');
 
+            Route::post('reservations/{id}/staff', [\App\Http\Controllers\Company\ReservationController::class, 'updateStaff'])
+                ->name('company.reservations.staff.update');
+
             Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
                 ->name('company.reservation_change_notices.index');
 

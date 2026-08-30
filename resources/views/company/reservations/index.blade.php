@@ -54,7 +54,7 @@
                     </h1>
 
                     <p class="text-white/85 mt-2 text-sm sm:text-base leading-relaxed">
-                        全顧客の予約確認とキャンセルができます。顧客名・電話番号・日付で絞り込み可能です。
+                        全顧客の予約確認、担当者変更、来店処理、キャンセルができます。顧客名・電話番号・日付で絞り込み可能です。
                     </p>
                 </div>
 
@@ -212,13 +212,6 @@
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="rounded-2xl border px-4 py-3 text-sm shadow-sm"
-             style="background-color: #ecfdf5; border-color: #a7f3d0; color: #047857;">
-            {{ session('success') }}
-        </div>
-    @endif
-
     @if ($errors->any())
         <div class="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-red-700 text-sm shadow-sm">
             <ul class="space-y-1">
@@ -364,7 +357,7 @@
                         <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[120px] shadow-sm border-b border-stone-300">
                             電話番号
                         </th>
-                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[100px] shadow-sm border-b border-stone-300">
+                        <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[180px] shadow-sm border-b border-stone-300">
                             主担当
                         </th>
                         <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold shadow-sm border-b border-stone-300">
@@ -411,6 +404,9 @@
                                     return $row['menu_name'] . '：' . $row['staff_name'];
                                 })->join(' / ')
                                 : $menuText;
+                            $canChangeStaff = $reservation->status === 'reserved'
+                                && $reservation->start_at
+                                && $reservation->start_at->gte(now()->startOfDay());
                         @endphp
 
                         <tr class="border-b border-stone-100 hover:bg-amber-50/40 transition align-top">
@@ -435,8 +431,46 @@
                                 {{ $displayPhone }}
                             </td>
 
-                            <td class="px-3 py-4 text-stone-700 break-words">
-                                {{ optional($reservation->staff)->name ?: '未指定' }}
+                            <td class="px-3 py-4 text-stone-700">
+                                @if($reservation->is_staff_nominated)
+                                    <span class="mb-2 inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">
+                                        指名
+                                    </span>
+                                @endif
+                                @if($canChangeStaff)
+                                    <form method="POST"
+                                          action="{{ route('company.reservations.staff.update', $reservation->id) }}"
+                                          class="space-y-2"
+                                          data-busy-form="true"
+                                          onsubmit="return confirm('担当者を変更しますか？');">
+                                        @csrf
+                                        @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                            <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                        @endforeach
+                                        <label for="staff-{{ $reservation->id }}" class="sr-only">変更後の担当者</label>
+                                        <select id="staff-{{ $reservation->id }}"
+                                                name="staff_id"
+                                                class="w-full rounded-xl border border-stone-300 bg-white px-2 py-2 text-xs font-semibold text-stone-700 focus:outline-none focus:ring-2"
+                                                style="--tw-ring-color: {{ $theme }};">
+                                            @foreach($staffOptions as $staffOption)
+                                                <option value="{{ $staffOption->id }}" @selected((int) $reservation->staff_id === (int) $staffOption->id)>
+                                                    {{ $staffOption->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <button type="submit"
+                                                data-busy-button
+                                                class="w-full rounded-xl border px-2 py-2 text-[11px] font-bold transition hover:bg-stone-50"
+                                                style="border-color: {{ $theme }}55; color: {{ $theme }};">
+                                            担当者を変更
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="break-words">{{ optional($reservation->staff)->name ?: '未指定' }}</span>
+                                    @if($reservation->status === 'reserved' && $reservation->start_at?->lt(now()->startOfDay()))
+                                        <span class="mt-1 block text-[11px] text-stone-400">過去の予約は変更できません</span>
+                                    @endif
+                                @endif
                             </td>
 
                             <td class="px-3 py-4 text-stone-700">
@@ -566,6 +600,9 @@
                             return $row['menu_name'] . '：' . $row['staff_name'];
                         })->join(' / ')
                         : $menuText;
+                    $canChangeStaff = $reservation->status === 'reserved'
+                        && $reservation->start_at
+                        && $reservation->start_at->gte(now()->startOfDay());
                 @endphp
 
                 <div class="rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-sm space-y-4">
@@ -609,8 +646,48 @@
                         </div>
 
                         <div class="rounded-xl bg-stone-50 px-3 py-3 sm:col-span-2">
-                            <div class="text-xs text-stone-500">主担当</div>
-                            <div class="text-stone-700 mt-1">{{ optional($reservation->staff)->name ?: '未指定' }}</div>
+                            <div class="flex items-center gap-2">
+                                <div class="text-xs text-stone-500">主担当</div>
+                                @if($reservation->is_staff_nominated)
+                                    <span class="inline-flex rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">
+                                        指名
+                                    </span>
+                                @endif
+                            </div>
+                            @if($canChangeStaff)
+                                <form method="POST"
+                                      action="{{ route('company.reservations.staff.update', $reservation->id) }}"
+                                      class="mt-2 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2"
+                                      data-busy-form="true"
+                                      onsubmit="return confirm('担当者を変更しますか？');">
+                                    @csrf
+                                    @foreach($currentReservationFilters as $filterKey => $filterValue)
+                                        <input type="hidden" name="filters[{{ $filterKey }}]" value="{{ $filterValue }}">
+                                    @endforeach
+                                    <label for="mobile-staff-{{ $reservation->id }}" class="sr-only">変更後の担当者</label>
+                                    <select id="mobile-staff-{{ $reservation->id }}"
+                                            name="staff_id"
+                                            class="w-full rounded-xl border border-stone-300 bg-white px-3 py-3 text-sm font-semibold text-stone-700 focus:outline-none focus:ring-2"
+                                            style="--tw-ring-color: {{ $theme }};">
+                                        @foreach($staffOptions as $staffOption)
+                                            <option value="{{ $staffOption->id }}" @selected((int) $reservation->staff_id === (int) $staffOption->id)>
+                                                {{ $staffOption->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit"
+                                            data-busy-button
+                                            class="rounded-xl px-4 py-3 text-sm font-bold text-white hover:opacity-90 transition"
+                                            style="background: {{ $theme }};">
+                                        変更する
+                                    </button>
+                                </form>
+                            @else
+                                <div class="text-stone-700 mt-1">{{ optional($reservation->staff)->name ?: '未指定' }}</div>
+                                @if($reservation->status === 'reserved' && $reservation->start_at?->lt(now()->startOfDay()))
+                                    <div class="mt-1 text-xs text-stone-400">過去の予約は変更できません</div>
+                                @endif
+                            @endif
                         </div>
 
                         <div class="sm:col-span-2">

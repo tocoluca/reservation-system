@@ -97,7 +97,7 @@
                     <p class="text-xs sm:text-sm tracking-widest uppercase opacity-80">Reservation Calendar</p>
                     <h1 class="text-2xl sm:text-3xl font-bold mt-1">予約カレンダー</h1>
                     <p class="reserve-calendar-hero-description text-sm sm:text-base opacity-90 mt-2 leading-6">
-                        空き状況の確認、予約登録、キャンセル確認までこの画面で行えます。
+                        空き状況の確認、予約登録、担当者変更、キャンセル確認までこの画面で行えます。
                     </p>
                 </div>
 
@@ -297,6 +297,7 @@ let selectedMenuPrice = 0;
 let selectedAssignments = [];
 let assignmentCandidatesCache = [];
 let assignmentMode = 'single';
+const reservationStaffUpdateUrlTemplate = @json(route('company.reservations.staff.update', ['id' => '__RESERVATION_ID__'], false));
 let preferLessCapableStaffForMenuAssignment = @json((bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false));
 
 function getLocalDateStr(date = new Date()) {
@@ -663,6 +664,8 @@ function loadCalendar() {
                            data-reservation-date="${escapeAttr(cell.reservation_start ?? `${d} ${time}`)}"
                            data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
                            data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                           data-staff-id="${escapeAttr(cell.staff_id ?? '')}"
+                           data-is-staff-nominated="${cell.is_staff_nominated ? '1' : '0'}"
                            data-staff-name="${escapeAttr(cell.staff_name ?? '')}"
                            data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"`
                         : (hasReservation
@@ -671,6 +674,8 @@ function loadCalendar() {
                                data-id="${escapeAttr(cell.reservation_id)}"
                                data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
                                data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                               data-staff-id="${escapeAttr(cell.staff_id ?? '')}"
+                               data-is-staff-nominated="${cell.is_staff_nominated ? '1' : '0'}"
                                data-staff-name="${escapeAttr(cell.staff_name ?? '')}"
                                data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"`
                             : (canReserve ? `onclick="startReservationFlow('${d} ${time}')"` : ''));
@@ -733,13 +738,16 @@ function getDayCellContent(cell, dateStr, time, staff) {
             return `
                 <td class="p-3 sm:p-4 text-center">
                     <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-red-50 text-red-700 border border-red-200 min-w-[104px] shadow-sm cursor-pointer hover:bg-red-100 transition"
-                         data-id="${cell.reservation_id}"
-                         data-datetime="${cell.reservation_start ?? `${dateStr} ${time}`}"
-                         data-customer-name="${cell.customer_name ?? ''}"
-                         data-customer-phone="${cell.customer_phone ?? ''}"
-                         data-staff-name="${cell.staff_name ?? staff.name}"
+                         data-id="${escapeAttr(cell.reservation_id)}"
+                         data-datetime="${escapeAttr(cell.reservation_start ?? `${dateStr} ${time}`)}"
+                         data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
+                         data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                         data-staff-id="${escapeAttr(cell.staff_id ?? '')}"
+                         data-is-staff-nominated="${cell.is_staff_nominated ? '1' : '0'}"
+                         data-staff-name="${escapeAttr(cell.staff_name ?? staff.name)}"
+                         data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"
                          onclick="handleCancelClick(this)"
-                         title="この担当者の同時予約枠が埋まっています。クリックでキャンセル確認">
+                         title="この担当者の同時予約枠が埋まっています。クリックで予約を確認・変更">
                         <span class="text-xs font-bold">予約あり</span>
                         <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
                     </div>
@@ -770,6 +778,29 @@ function getDayCellContent(cell, dateStr, time, staff) {
                     <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 bg-stone-200 text-stone-500 border border-stone-300 min-w-[104px]">
                         <span class="text-xs font-bold">受付終了</span>
                         <span class="text-[11px] mt-0.5">${used}/${total || 0}</span>
+                    </div>
+                </td>
+            `;
+        }
+
+        if (cell.reservation_id) {
+            return `
+                <td class="p-3 sm:p-4 text-center">
+                    <div class="mx-auto inline-flex flex-col items-center justify-center rounded-xl px-3 py-2 text-white min-w-[104px] shadow-sm cursor-pointer hover:opacity-90 transition"
+                         style="background: {{ $theme }}"
+                         data-id="${escapeAttr(cell.reservation_id)}"
+                         data-datetime="${escapeAttr(`${dateStr} ${time}`)}"
+                         data-reservation-date="${escapeAttr(cell.reservation_start ?? `${dateStr} ${time}`)}"
+                         data-customer-name="${escapeAttr(cell.customer_name ?? '')}"
+                         data-customer-phone="${escapeAttr(cell.customer_phone ?? '')}"
+                         data-staff-id="${escapeAttr(cell.staff_id ?? '')}"
+                         data-is-staff-nominated="${cell.is_staff_nominated ? '1' : '0'}"
+                         data-staff-name="${escapeAttr(cell.staff_name ?? staff.name)}"
+                         data-reservations="${escapeAttr(JSON.stringify(cell.reservations || []))}"
+                         onclick="handleSlotActionClick(this)"
+                         title="空き枠への予約登録、または既存予約の確認・変更">
+                        <span class="text-xs font-bold">空き・予約あり</span>
+                        <span class="text-[11px] mt-0.5 text-white/90">空き ${available}/${total || 0}</span>
                     </div>
                 </td>
             `;
@@ -918,6 +949,9 @@ function startReservationFlow(datetime) {
     selectedMenuPrice = 0;
     assignmentMode = preferLessCapableStaffForMenuAssignment ? 'multi' : 'single';
 
+    const nominationCheckbox = document.getElementById('modal_is_staff_nominated');
+    if (nominationCheckbox) nominationCheckbox.checked = false;
+
     resetMenuStep();
     document.getElementById('menuStepDatetime').innerText = datetime;
     document.getElementById('menuStepModal').classList.remove('hidden');
@@ -931,6 +965,8 @@ function handleSlotActionClick(el) {
         reservationDate: el.dataset.reservationDate || el.dataset.datetime || '',
         customerName: el.dataset.customerName || '',
         customerPhone: el.dataset.customerPhone || '',
+        staffId: el.dataset.staffId || '',
+        isStaffNominated: el.dataset.isStaffNominated === '1',
         staffName: el.dataset.staffName || '',
         reservations: parseReservationOptions(el.dataset.reservations)
     };
@@ -939,6 +975,7 @@ function handleSlotActionClick(el) {
     document.getElementById('slotActionCustomerName').innerText = slotActionData.customerName || '-';
     document.getElementById('slotActionCustomerPhone').innerText = slotActionData.customerPhone || '-';
     document.getElementById('slotActionStaffName').innerText = slotActionData.staffName || '-';
+    document.getElementById('slotActionNominationBadge')?.classList.toggle('hidden', !slotActionData.isStaffNominated);
 
     document.getElementById('slotActionModal').classList.remove('hidden');
     document.getElementById('slotActionModal').classList.add('flex');
@@ -979,6 +1016,8 @@ function chooseSlotCancel() {
             datetime: data.reservationDate || data.datetime,
             customerName: data.customerName,
             customerPhone: data.customerPhone,
+            staffId: data.staffId,
+            isStaffNominated: data.isStaffNominated ? '1' : '0',
             staffName: data.staffName
         }
     });
@@ -1006,6 +1045,8 @@ function openReservationSelectModal(reservations) {
         const customerName = escapeAttr(reservation.customer_name || '-');
         const customerPhone = escapeAttr(reservation.customer_phone || '-');
         const staffName = escapeAttr(reservation.staff_name || '-');
+        const staffId = escapeAttr(reservation.staff_id || '');
+        const isStaffNominated = Boolean(reservation.is_staff_nominated);
 
         return `
             <button type="button"
@@ -1015,10 +1056,15 @@ function openReservationSelectModal(reservations) {
                     data-datetime="${datetime}"
                     data-customer-name="${customerName}"
                     data-customer-phone="${customerPhone}"
+                    data-staff-id="${staffId}"
+                    data-is-staff-nominated="${isStaffNominated ? '1' : '0'}"
                     data-staff-name="${staffName}">
                 <div class="text-sm font-bold text-stone-900">${customerName}</div>
                 <div class="mt-1 text-xs text-stone-500">${datetime}</div>
-                <div class="mt-1 text-xs text-stone-500">${staffName}</div>
+                <div class="mt-1 flex items-center gap-2 text-xs text-stone-500">
+                    ${isStaffNominated ? '<span class="rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800">指名</span>' : ''}
+                    <span>${staffName}</span>
+                </div>
                 <div class="mt-1 text-xs text-stone-500">${customerPhone}</div>
             </button>
         `;
@@ -1264,9 +1310,11 @@ function closeModal() {
     const nameInput = document.getElementById('modal_customer_name');
     const telInput  = document.getElementById('modal_customer_phone');
     const modal     = document.getElementById('reserveModal');
+    const nominationCheckbox = document.getElementById('modal_is_staff_nominated');
 
     if (nameInput) nameInput.value = '';
     if (telInput)  telInput.value  = '';
+    if (nominationCheckbox) nominationCheckbox.checked = false;
 
     if (modal) {
         modal.classList.add('hidden');
@@ -1278,6 +1326,7 @@ function submitReservation() {
     const name = document.getElementById('modal_customer_name').value;
     const phone = document.getElementById('modal_customer_phone').value;
     const phonePattern = /^[0-9\-]*$/;
+    const isStaffNominated = Boolean(document.getElementById('modal_is_staff_nominated')?.checked);
 
     if (!name) {
         alert('お名前を入力してください');
@@ -1304,12 +1353,25 @@ function submitReservation() {
         return;
     }
 
+    const assignedStaffIds = [...new Set(
+        (selectedAssignments.length > 0
+            ? selectedAssignments.map(row => String(row.staff_id))
+            : [String(selectedStaffId)]
+        ).filter(Boolean)
+    )];
+
+    if (isStaffNominated && assignedStaffIds.length !== 1) {
+        alert('「顧客から担当者の指定あり」の場合は、1名の担当者で割り当ててください');
+        return;
+    }
+
     // 🔥 ここが最重要
     const payload = {
         start_at: selectedDatetime,
         customer_name: name,
         customer_phone: phone,
-        menu_ids: selectedMenuIds
+        menu_ids: selectedMenuIds,
+        is_staff_nominated: isStaffNominated
     };
 
     // ✅ assignments優先（サーバー仕様に合わせる）
@@ -1338,6 +1400,7 @@ function submitReservation() {
             // 初期化
             document.getElementById('modal_customer_name').value = '';
             document.getElementById('modal_customer_phone').value = '';
+            document.getElementById('modal_is_staff_nominated').checked = false;
 
             selectedMenuIds = [];
             selectedAssignments = [];
@@ -1378,9 +1441,76 @@ function handleCancelClick(el) {
     document.getElementById('cancelCustomerName').innerText = el.dataset.customerName || '-';
     document.getElementById('cancelCustomerPhone').innerText = el.dataset.customerPhone || '-';
     document.getElementById('cancelStaffName').innerText = el.dataset.staffName || '-';
+    document.getElementById('cancelNominationBadge')?.classList.toggle('hidden', el.dataset.isStaffNominated !== '1');
+
+    const staffSelect = document.getElementById('changeReservationStaffId');
+    if (staffSelect) {
+        const currentStaffId = safeText(el.dataset.staffId);
+        const currentStaffName = safeText(el.dataset.staffName);
+        const matchingOption = Array.from(staffSelect.options).find(option => option.text.trim() === currentStaffName);
+        staffSelect.value = currentStaffId || matchingOption?.value || '';
+    }
 
     document.getElementById('cancelConfirmModal').classList.remove('hidden');
     document.getElementById('cancelConfirmModal').classList.add('flex');
+}
+
+function executeStaffChange() {
+    if (!cancelReservationId) {
+        alert('予約IDが取得できません');
+        return;
+    }
+
+    const staffSelect = document.getElementById('changeReservationStaffId');
+    const staffId = staffSelect?.value;
+    const submitButton = document.getElementById('changeReservationStaffButton');
+
+    if (!staffId) {
+        alert('変更後の担当者を選択してください');
+        return;
+    }
+
+    if (!confirm(`担当者を「${staffSelect.options[staffSelect.selectedIndex].text}」へ変更しますか？`)) {
+        return;
+    }
+
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = '変更中...';
+    }
+
+    const url = reservationStaffUpdateUrlTemplate.replace('__RESERVATION_ID__', encodeURIComponent(cancelReservationId));
+
+    fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({ staff_id: staffId })
+    })
+    .then(async response => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.message || Object.values(result.errors || {})[0]?.[0] || '担当者を変更できませんでした');
+        return result;
+    })
+    .then(result => {
+        closeCancelConfirmModal();
+        alert(result.message || '担当者を変更しました');
+        if (mode === 'week') loadCalendar();
+        if (mode === 'day') loadDayCalendar();
+    })
+    .catch(error => {
+        alert(error.message || '通信エラーが発生しました');
+    })
+    .finally(() => {
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = '担当者を変更';
+        }
+    });
 }
 
 function closeCancelConfirmModal() {
@@ -1533,7 +1663,7 @@ function formatTel(input) {
         <h2 class="text-lg font-bold mb-4 text-stone-800">操作を選択</h2>
 
         <p class="text-sm text-gray-500 mb-4">
-            この時間帯には空き枠と既存予約があります。予約登録または既存予約のキャンセルを選択してください。
+            この時間帯には空き枠と既存予約があります。予約登録または既存予約の確認を選択してください。
         </p>
 
         <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-3 text-sm">
@@ -1551,7 +1681,10 @@ function formatTel(input) {
             </div>
             <div>
                 <div class="text-stone-500">担当者</div>
-                <div id="slotActionStaffName" class="font-semibold text-stone-800">-</div>
+                <div class="mt-1 flex items-center gap-2">
+                    <span id="slotActionNominationBadge" class="hidden rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800">指名</span>
+                    <div id="slotActionStaffName" class="font-semibold text-stone-800">-</div>
+                </div>
             </div>
         </div>
 
@@ -1564,8 +1697,8 @@ function formatTel(input) {
             </button>
             <button type="button"
                     onclick="chooseSlotCancel()"
-                    class="w-full rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition">
-                キャンセル
+                    class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-700 shadow-sm hover:bg-stone-50 transition">
+                既存予約を確認・変更
             </button>
         </div>
 
@@ -1579,14 +1712,13 @@ function formatTel(input) {
     </div>
 </div>
 
-{{-- キャンセル確認 --}}
-{{-- キャンセル対象選択 --}}
+{{-- 操作対象の予約選択 --}}
 <div id="reservationSelectModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6 max-h-[90vh] overflow-y-auto">
-        <h2 class="text-lg font-bold mb-2 text-stone-800">キャンセルする予約を選択</h2>
+        <h2 class="text-lg font-bold mb-2 text-stone-800">操作する予約を選択</h2>
         <p class="text-sm text-gray-500 mb-4">
-            この時間帯には複数の予約があります。キャンセルする予約を選んでください。
+            この時間帯には複数の予約があります。担当者変更またはキャンセルを行う予約を選んでください。
         </p>
 
         <div id="reservationSelectList" class="space-y-3"></div>
@@ -1604,10 +1736,10 @@ function formatTel(input) {
 <div id="cancelConfirmModal"
      class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-md rounded-3xl shadow-xl p-6">
-        <h2 class="text-lg font-bold mb-4 text-stone-800">予約キャンセル確認</h2>
+        <h2 class="text-lg font-bold mb-2 text-stone-800">予約の操作</h2>
 
         <p class="text-sm text-gray-500 mb-4">
-            以下の予約をキャンセルします。内容にお間違いがないかご確認ください。
+            予約内容を確認し、担当者の変更またはキャンセルを選択してください。
         </p>
 
         <div class="rounded-2xl border border-stone-200 bg-stone-50 p-4 space-y-3 text-sm">
@@ -1625,11 +1757,44 @@ function formatTel(input) {
             </div>
             <div>
                 <div class="text-stone-500">担当者</div>
-                <div id="cancelStaffName" class="font-semibold text-stone-800">-</div>
+                <div class="mt-1 flex items-center gap-2">
+                    <span id="cancelNominationBadge" class="hidden rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-black text-amber-800">指名</span>
+                    <div id="cancelStaffName" class="font-semibold text-stone-800">-</div>
+                </div>
             </div>
         </div>
 
-        <div class="mt-5 grid gap-3">
+        <div class="mt-5 rounded-2xl border border-stone-200 bg-white p-4">
+            <label for="changeReservationStaffId" class="block text-sm font-bold text-stone-800">
+                担当者を変更
+            </label>
+            <p class="mt-1 text-xs leading-5 text-stone-500">
+                対応メニュー、勤務時間、重複予約を確認してから変更します。
+            </p>
+            <div class="mt-3 grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
+                <select id="changeReservationStaffId"
+                        class="w-full rounded-xl border border-stone-300 bg-white px-3 py-3 text-sm font-semibold text-stone-700 focus:outline-none focus:ring-2"
+                        style="--tw-ring-color: {{ $theme }};">
+                    <option value="">担当者を選択</option>
+                    @foreach($staffOptions as $staffOption)
+                        <option value="{{ $staffOption->id }}">{{ $staffOption->name }}</option>
+                    @endforeach
+                </select>
+                <button type="button"
+                        id="changeReservationStaffButton"
+                        onclick="executeStaffChange()"
+                        class="rounded-xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 disabled:cursor-wait disabled:opacity-60 transition"
+                        style="background: {{ $theme }};">
+                    担当者を変更
+                </button>
+            </div>
+        </div>
+
+        <details class="mt-4 rounded-2xl border border-rose-100 bg-rose-50/40 p-3">
+            <summary class="cursor-pointer list-none px-1 py-2 text-sm font-bold text-rose-700">
+                予約をキャンセルする
+            </summary>
+            <div class="mt-2 grid gap-3">
             <button type="button"
                     onclick="executeCancelReservation('customer')"
                     class="w-full rounded-2xl bg-sky-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 transition">
@@ -1646,7 +1811,8 @@ function formatTel(input) {
                     style="background: {{ $theme }};">
                 店舗都合
             </button>
-        </div>
+            </div>
+        </details>
 
         <div class="flex justify-end mt-4">
             <button type="button"
@@ -1711,6 +1877,19 @@ function formatTel(input) {
             <div class="text-sm font-semibold text-stone-700 mb-2">担当割り当て</div>
             <div id="finalAssignmentArea" class="space-y-1"></div>
         </div>
+
+        <label for="modal_is_staff_nominated"
+               class="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 transition hover:bg-amber-100/70">
+            <input type="checkbox"
+                   id="modal_is_staff_nominated"
+                   class="mt-0.5 h-5 w-5 shrink-0 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
+            <span>
+                <span class="block text-sm font-black text-amber-950">顧客から担当者の指定あり</span>
+                <span class="mt-1 block text-xs leading-5 text-amber-800">
+                    電話予約・来店予約で、顧客が担当者を指定した場合にチェックしてください。未チェックの場合は「店舗側で割り振り」として記録します。
+                </span>
+            </span>
+        </label>
 
         <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">
             <div class="font-bold text-stone-800 mb-2">確定前チェック</div>

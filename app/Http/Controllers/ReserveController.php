@@ -972,7 +972,7 @@ public function store(Request $request, $company_code)
     }
 
     try {
-        if ($company->prefer_less_capable_staff_for_menu_assignment) {
+        if ($company->prefer_less_capable_staff_for_menu_assignment && !$request->filled('staff_id')) {
             [$detailPlans, $end, $totalPrice, $representativeStaffId] =
                 $this->buildReservationDetailsWithPriorityPolicy(
                     $company,
@@ -1072,10 +1072,16 @@ public function store(Request $request, $company_code)
             ->where('role', '!=', 'store_operator')
             ->first();
 
+        $isStaffNominated = $request->filled('staff_id');
+        $nominationFee = $isStaffNominated
+            ? (int) ($representativeStaff->nomination_fee ?? 0)
+            : 0;
+
         $reservation = Reservation::create([
             'company_id'      => $company->id,
             'customer_id'     => $customer->id,
             'staff_id'        => $representativeStaffId,
+            'is_staff_nominated' => $isStaffNominated,
             'start_at'        => $start,
             'end_at'          => $end,
             'status'          => 'reserved',
@@ -1083,8 +1089,8 @@ public function store(Request $request, $company_code)
             'customer_phone'  => !empty($normalizedPhone) ? $normalizedPhone : null,
             'customer_email'  => $resolvedEmail ?: null,
             'price'           => $totalPrice,
-            'nomination_fee'  => (int) ($representativeStaff->nomination_fee ?? 0),
-            'total_price'     => $totalPrice + (int) ($representativeStaff->nomination_fee ?? 0),
+            'nomination_fee'  => $nominationFee,
+            'total_price'     => $totalPrice + $nominationFee,
             'cancel_token'    => Str::random(40),
         ]);
 

@@ -47,7 +47,10 @@ class ReservationChangeNoticeController extends Controller
         $company = auth()->guard('company')->user()->company;
         abort_unless((int) $notice->company_id === (int) $company->id, 403);
 
-        $notice->load(['items.reservation.customer']);
+        $notice->load([
+            'items.reservation.customer',
+            'items.reservation.staff',
+        ]);
 
         return view('company.reservation_change_notices.show', compact('notice'));
     }

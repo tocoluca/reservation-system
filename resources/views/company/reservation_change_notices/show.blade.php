@@ -207,7 +207,9 @@
                     default => '未送信',
                 };
 
-                $reservationAt = optional($item->reservation->start_at)->format('Y/m/d H:i');
+                $reservationAt = optional(optional($item->reservation)->start_at)->format('Y/m/d H:i');
+                $isStaffNominated = (bool) optional($item->reservation)->is_staff_nominated;
+                $staffName = optional(optional($item->reservation)->staff)->name ?: '担当者未設定';
                 $confirmedAt = optional($item->confirmed_at)->format('Y/m/d H:i');
                 $isDone = in_array($item->response_status, ['closed', 'confirmed', 'phone_confirmed'], true);
 
@@ -221,7 +223,14 @@
                         class="notice-item-toggle flex w-full items-center justify-between gap-4 border-b border-gray-100 bg-white px-5 py-4 text-left hover:bg-gray-50 md:px-6"
                         aria-expanded="true">
                     <span class="min-w-0">
-                        <span class="block truncate font-black text-gray-900">{{ $item->customer_name }}</span>
+                        <span class="flex flex-wrap items-center gap-2">
+                            <span class="truncate font-black text-gray-900">{{ $item->customer_name }}</span>
+                            @if($isStaffNominated)
+                                <span class="inline-flex shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-black text-amber-800">
+                                    担当者指名あり
+                                </span>
+                            @endif
+                        </span>
                         <span class="mt-1 block text-xs text-gray-500">{{ $reservationAt ?: '予約日時未登録' }}・{{ $statusLabel }}</span>
                     </span>
                     <span class="notice-item-toggle-label shrink-0 rounded-full bg-gray-100 px-3 py-1.5 text-xs font-bold text-gray-600">閉じる</span>
@@ -251,6 +260,33 @@
                                             <div class="text-xs text-gray-500 mb-1">顧客名</div>
                                             <div class="text-lg font-bold text-gray-900 break-words">
                                                 {{ $item->customer_name }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 rounded-2xl border px-4 py-4 {{ $isStaffNominated ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white' }}">
+                                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div>
+                                                <div class="text-xs font-semibold {{ $isStaffNominated ? 'text-amber-700' : 'text-gray-500' }}">
+                                                    予約時の担当者選択
+                                                </div>
+                                                <div class="mt-1 flex flex-wrap items-center gap-2">
+                                                    @if($isStaffNominated)
+                                                        <span class="inline-flex rounded-full bg-amber-500 px-2.5 py-1 text-xs font-black text-white">
+                                                            担当者指名あり
+                                                        </span>
+                                                        <span class="font-black text-amber-950">{{ $staffName }}</span>
+                                                    @else
+                                                        <span class="inline-flex rounded-full bg-gray-100 px-2.5 py-1 text-xs font-bold text-gray-600">
+                                                            指名なし
+                                                        </span>
+                                                        <span class="font-semibold text-gray-700">現在の担当：{{ $staffName }}</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            <div class="text-xs leading-5 {{ $isStaffNominated ? 'text-amber-700' : 'text-gray-400' }}">
+                                                {{ $isStaffNominated ? '顧客が予約時に担当者を選択しています' : '空き状況に応じて担当者が割り当てられています' }}
                                             </div>
                                         </div>
                                     </div>

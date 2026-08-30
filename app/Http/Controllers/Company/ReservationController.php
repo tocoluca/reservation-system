@@ -74,6 +74,13 @@ class ReservationController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        $staffOptions = Staff::where('company_id', $company->id)
+            ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
+            ->orderBy('priority_order')
+            ->orderBy('id')
+            ->get(['id', 'name']);
+
         $today = now()->toDateString();
         $tomorrow = now()->addDay()->toDateString();
         $dayAfterTomorrow = now()->addDays(2)->toDateString();
@@ -108,7 +115,157 @@ class ReservationController extends Controller
             'today' => $today,
             'tomorrow' => $tomorrow,
             'dayAfterTomorrow' => $dayAfterTomorrow,
+            'staffOptions' => $staffOptions,
         ]);
+    }
+
+    public function updateStaff(Request $request, $id)
+    {
+        $company = auth()->guard('company')->user()->company;
+        $redirectParams = $this->reservationIndexRedirectParams($request);
+
+        $validated = $request->validate([
+            'staff_id' => ['required', 'integer'],
+        ], [
+            'staff_id.required' => '変更後の担当者を選択してください。',
+        ]);
+
+        $errorResponse = function (string $message, int $status = 422) use ($request, $redirectParams) {
+            if ($request->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $message], $status);
+            }
+
+            return redirect()
+                ->route('company.reservations.index', $redirectParams)
+                ->withErrors(['staff_id' => $message]);
+        };
+
+        $reservation = Reservation::with(['details.menu', 'menus'])
+            ->where('company_id', $company->id)
+            ->find($id);
+
+        if (!$reservation) {
+            return $errorResponse('予約が見つかりません。', 404);
+        }
+
+        if ($reservation->status !== Reservation::STATUS_RESERVED) {
+            return $errorResponse('予約中の予約だけ担当者を変更できます。');
+        }
+
+        if (!$reservation->start_at || $reservation->start_at->lt(now()->startOfDay())) {
+            return $errorResponse('昨日以前の予約は担当者を変更できません。');
+        }
+
+        $staff = Staff::where('company_id', $company->id)
+            ->with('menus:id')
+            ->find($validated['staff_id']);
+
+        if (!$staff || !$staff->isActiveForReservation(optional($reservation->start_at)->toDateTimeString())) {
+            return $errorResponse('予約対応可能な担当者を選択してください。');
+        }
+
+        $allDetailsAlreadyAssigned = $reservation->details->isEmpty()
+            || $reservation->details->every(fn ($detail) => (int) $detail->staff_id === (int) $staff->id);
+
+        if ((int) $reservation->staff_id === (int) $staff->id && $allDetailsAlreadyAssigned) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => '担当者は変更されていません。',
+                    'staff' => ['id' => $staff->id, 'name' => $staff->name],
+                ]);
+            }
+
+            return redirect()
+                ->route('company.reservations.index', $redirectParams)
+                ->with('success', '担当者は変更されていません。');
+        }
+
+        $menuIds = $reservation->details->pluck('menu_id')
+            ->merge($reservation->menus->pluck('id'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($menuIds->contains(fn ($menuId) => !$staff->menus->contains('id', (int) $menuId))) {
+            return $errorResponse('選択した担当者は、この予約のすべてのメニューに対応していません。');
+        }
+
+        $segments = $reservation->details->map(function ($detail) {
+            return [
+                'start_at' => Carbon::parse($detail->start_at),
+                'end_at' => Carbon::parse($detail->end_at),
+            ];
+        })->values();
+
+        if ($segments->isEmpty()) {
+            $segments->push([
+                'start_at' => Carbon::parse($reservation->start_at),
+                'end_at' => Carbon::parse($reservation->end_at),
+            ]);
+        }
+
+        $rangeStart = $segments->min('start_at');
+        $rangeEnd = $segments->max('end_at');
+        $shifts = StaffShift::where('staff_id', $staff->id)
+            ->whereBetween('date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
+            ->get()
+            ->keyBy(fn ($shift) => $shift->staff_id . '_' . Carbon::parse($shift->date)->toDateString());
+        $shiftPatterns = ShiftPattern::whereIn('id', $shifts->pluck('shift_pattern_id')->filter())
+            ->get()
+            ->keyBy('id');
+        $vacations = Vacation::where('staff_id', $staff->id)
+            ->where('status', 'approved')
+            ->where('start_at', '<', $rangeEnd)
+            ->where('end_at', '>', $rangeStart)
+            ->get();
+        $maxSimultaneous = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
+
+        foreach ($segments as $segment) {
+            if (!$this->isStaffSchedulable($staff, $segment['start_at'], $segment['end_at'], $shifts, $shiftPatterns, $vacations)) {
+                return $errorResponse('選択した担当者は予約時間内に勤務していません。シフト・休暇を確認してください。');
+            }
+
+            if ($this->getBusinessStatus($company, $segment['start_at'], $segment['end_at']) !== 'open') {
+                return $errorResponse('この予約時間は営業時間外のため担当者を変更できません。');
+            }
+
+            $overlapCount = ReservationDetail::query()
+                ->where('staff_id', $staff->id)
+                ->where('reservation_id', '!=', $reservation->id)
+                ->where('start_at', '<', $segment['end_at'])
+                ->where('end_at', '>', $segment['start_at'])
+                ->whereHas('reservation', fn ($query) => $query
+                    ->where('company_id', $company->id)
+                    ->where('status', Reservation::STATUS_RESERVED))
+                ->count();
+
+            if ($overlapCount >= $maxSimultaneous) {
+                return $errorResponse('選択した担当者には同じ時間帯の予約があるため変更できません。');
+            }
+        }
+
+        DB::transaction(function () use ($reservation, $staff) {
+            $reservation->details()->update(['staff_id' => $staff->id]);
+            $reservation->staff_id = $staff->id;
+            $reservation->nomination_fee = $reservation->is_staff_nominated
+                ? (int) ($staff->nomination_fee ?? 0)
+                : 0;
+            $reservation->total_price = (int) ($reservation->price ?? 0) + $reservation->nomination_fee;
+            $reservation->save();
+        });
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => '担当者を変更しました。',
+                'staff' => ['id' => $staff->id, 'name' => $staff->name],
+            ]);
+        }
+
+        return redirect()
+            ->route('company.reservations.index', $redirectParams)
+            ->with('success', '担当者を変更しました。');
     }
 
     public function cancelFromList(Request $request, $id)
@@ -256,9 +413,17 @@ class ReservationController extends Controller
                     return optional($menu->category)->name ?? 'その他';
                 });
 
+            $staffOptions = Staff::where('company_id', $company->id)
+                ->where('is_reservable', true)
+                ->where('role', '!=', 'store_operator')
+                ->orderBy('priority_order')
+                ->orderBy('id')
+                ->get(['id', 'name']);
+
             return view('company.calendar', [
                 'mode' => $mode,
                 'menus' => $menus,
+                'staffOptions' => $staffOptions,
             ]);
         } catch (\Throwable $e) {
             dd($e->getMessage(), $e->getLine());
@@ -413,20 +578,58 @@ class ReservationController extends Controller
                             && $staffReservedCount >= $perStaffLimit
                         ) {
                             $reservation = $overlapDetail->reservation;
+                            $reservationOptions = $this->overlappingReservationOptionsForSlot(
+                                $company,
+                                collect([$staff]),
+                                $slotStart,
+                                $slotEnd,
+                                $shifts,
+                                $shiftPatterns,
+                                $vacations
+                            );
 
                             $data[$slotStart->format('H:i')][$staff->id] = [
                                 'status'            => '×',
                                 'reservation_id'    => $reservation?->id,
                                 'customer_name'     => $reservation?->customer_name,
                                 'customer_phone'    => $reservation?->customer_phone,
+                                'staff_id'          => $reservation?->staff_id,
+                                'is_staff_nominated'=> (bool) ($reservation?->is_staff_nominated ?? false),
                                 'staff_name'        => $staff->name,
                                 'reservation_start' => optional($reservation?->start_at)->format('Y-m-d H:i'),
+                                'reservations'      => $reservationOptions,
                                 'available'         => 0,
                                 'total'             => $perStaffLimit,
                                 'is_closed'         => false,
                                 'unavailable_reason'=> 'already_booked',
                             ];
                         } else {
+                            if ($overlapDetail) {
+                                $reservationOptions = $this->overlappingReservationOptionsForSlot(
+                                    $company,
+                                    collect([$staff]),
+                                    $slotStart,
+                                    $slotEnd,
+                                    $shifts,
+                                    $shiftPatterns,
+                                    $vacations
+                                );
+                                $primaryReservation = $reservationOptions[0] ?? null;
+
+                                if ($primaryReservation) {
+                                    $result = array_merge($result, [
+                                        'reservation_id' => $primaryReservation['id'],
+                                        'customer_name' => $primaryReservation['customer_name'],
+                                        'customer_phone' => $primaryReservation['customer_phone'],
+                                        'staff_id' => $primaryReservation['staff_id'],
+                                        'is_staff_nominated' => $primaryReservation['is_staff_nominated'],
+                                        'staff_name' => $primaryReservation['staff_name'],
+                                        'reservation_start' => $primaryReservation['reservation_start'],
+                                        'reservations' => $reservationOptions,
+                                    ]);
+                                }
+                            }
+
                             $data[$slotStart->format('H:i')][$staff->id] = $result;
                         }
                     }
@@ -594,6 +797,8 @@ class ReservationController extends Controller
                                 $result['reservation_id'] = $firstReservation['id'];
                                 $result['customer_name'] = $firstReservation['customer_name'];
                                 $result['customer_phone'] = $firstReservation['customer_phone'];
+                                $result['staff_id'] = $firstReservation['staff_id'];
+                                $result['is_staff_nominated'] = $firstReservation['is_staff_nominated'];
                                 $result['staff_name'] = $firstReservation['staff_name'];
                                 $result['reservation_start'] = $firstReservation['reservation_start'];
                             }
@@ -634,6 +839,7 @@ class ReservationController extends Controller
                 'menu_ids'                  => 'required|array|min:1',
                 'menu_ids.*'                => 'integer',
                 'staff_id'                  => 'nullable|integer',
+                'is_staff_nominated'        => 'nullable|boolean',
                 'assignments'               => 'nullable|array',
                 'assignments.*.menu_id'     => 'required_with:assignments|integer',
                 'assignments.*.staff_id'    => 'required_with:assignments|integer',
@@ -728,6 +934,7 @@ class ReservationController extends Controller
                 ->values();
 
             $requestedStaffId = $request->staff_id ? (int) $request->staff_id : null;
+            $isStaffNominated = $request->boolean('is_staff_nominated');
             $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
 
             DB::transaction(function () use (
@@ -743,6 +950,7 @@ class ReservationController extends Controller
                 $vacations,
                 $requestedAssignments,
                 $requestedStaffId,
+                $isStaffNominated,
                 $preferLessCapable
             ) {
                 $finalAssignments = [];
@@ -875,7 +1083,18 @@ class ReservationController extends Controller
                     throw new \Exception('担当者の割当ができませんでした');
                 }
 
-                $nominationFee = (int) ($mainStaff->nomination_fee ?? 0);
+                $assignedStaffCount = collect($finalAssignments)
+                    ->pluck('staff.id')
+                    ->unique()
+                    ->count();
+
+                if ($isStaffNominated && $assignedStaffCount !== 1) {
+                    throw new \Exception('担当者指定ありの予約は、1名の担当者で割り当ててください');
+                }
+
+                $nominationFee = $isStaffNominated
+                    ? (int) ($mainStaff->nomination_fee ?? 0)
+                    : 0;
                 $totalPrice = (int) $price + $nominationFee;
 
                 $normalizedPhone = str_replace('-', '', $request->customer_phone);
@@ -907,6 +1126,7 @@ class ReservationController extends Controller
                 $reservation = Reservation::create([
                     'company_id'     => $company->id,
                     'staff_id'       => $mainStaff->id,
+                    'is_staff_nominated' => $isStaffNominated,
                     'customer_name'  => $request->customer_name,
                     'customer_phone' => $normalizedPhone,
                     'customer_email' => $request->customer_email ?? null,
@@ -1479,6 +1699,8 @@ class ReservationController extends Controller
                         'customer_name' => $reservation->customer_name,
                         'customer_phone' => $reservation->customer_phone,
                         'reservation_start' => optional($reservation->start_at)->format('Y-m-d H:i'),
+                        'staff_id' => $reservation->staff_id,
+                        'is_staff_nominated' => (bool) $reservation->is_staff_nominated,
                         'staff_names' => [],
                     ];
                 }

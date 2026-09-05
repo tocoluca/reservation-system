@@ -208,7 +208,7 @@
                                         </form>
                                     @endif
 
-                                    @if(in_array($current->role, ['leader', 'area_leader', 'master']) && $vacation->status === 'approved')
+                                    @if(in_array($current->role, ['leader', 'area_leader', 'chief', 'master']) && $vacation->status === 'approved')
                                         <form method="POST"
                                               action="{{ route('company.vacation.cancel', $vacation->id) }}"
                                               class="m-0">
@@ -350,7 +350,7 @@
                             </form>
                         @endif
 
-                        @if(in_array($current->role, ['leader', 'area_leader', 'master']) && $vacation->status === 'approved')
+                        @if(in_array($current->role, ['leader', 'area_leader', 'chief', 'master']) && $vacation->status === 'approved')
                             <form method="POST"
                                   action="{{ route('company.vacation.cancel', $vacation->id) }}">
                                 @csrf

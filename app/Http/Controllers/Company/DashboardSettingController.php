@@ -8,17 +8,36 @@ use Illuminate\Http\Request;
 
 class DashboardSettingController extends Controller
 {
+    private function manageableRoles(string $role): array
+    {
+        return match ($role) {
+            'master' => array_keys(CompanyDashboardPermission::roleLabels()),
+            'chief' => ['staff', 'leader', 'area_leader', 'store_operator'],
+            default => [],
+        };
+    }
+
+    private function authorizeDashboardSettings($staff, int $companyId): void
+    {
+        abort_unless(
+            in_array($staff->role, ['chief', 'master'], true)
+                && CompanyDashboardPermission::can($companyId, $staff->role, 'dashboard.manage'),
+            403
+        );
+    }
+
     public function index()
     {
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
 
-        abort_unless(
-            CompanyDashboardPermission::can($company->id, $staff->role, 'dashboard.manage'),
-            403
-        );
+        $this->authorizeDashboardSettings($staff, (int) $company->id);
 
-        $roleSettings = CompanyDashboardPermission::resolveAllForCompany($company->id);
+        $manageableRoles = $this->manageableRoles($staff->role);
+        $roleSettings = array_intersect_key(
+            CompanyDashboardPermission::resolveAllForCompany($company->id),
+            array_flip($manageableRoles)
+        );
         $permissionLabels = CompanyDashboardPermission::permissionLabels();
 
         return view('company.dashboard-settings.index', compact(
@@ -34,10 +53,7 @@ class DashboardSettingController extends Controller
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
 
-        abort_unless(
-            CompanyDashboardPermission::can($company->id, $staff->role, 'dashboard.manage'),
-            403
-        );
+        $this->authorizeDashboardSettings($staff, (int) $company->id);
 
         $submittedPermissions = $request->input('permissions', []);
 
@@ -62,7 +78,13 @@ class DashboardSettingController extends Controller
 
         $permissionLabels = CompanyDashboardPermission::permissionLabels();
 
+        $manageableRoles = $this->manageableRoles($staff->role);
+
         foreach (CompanyDashboardPermission::roleLabels() as $role => $label) {
+            if (!in_array($role, $manageableRoles, true)) {
+                continue;
+            }
+
             $rolePermissions = $submittedPermissions[$role] ?? [];
 
             $normalizedRolePermissions = [];
@@ -76,6 +98,14 @@ class DashboardSettingController extends Controller
 
                 if ($role === 'master' && $permissionKey === 'dashboard.manage') {
                     $isEnabled = true;
+                }
+
+                if (!in_array($role, ['chief', 'master'], true) && $permissionKey === 'dashboard.manage') {
+                    $isEnabled = false;
+                }
+
+                if (in_array($permissionKey, CompanyDashboardPermission::fixedDisabledPermissions($role), true)) {
+                    $isEnabled = false;
                 }
 
                 CompanyDashboardPermission::updateOrCreate(

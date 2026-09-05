@@ -109,8 +109,8 @@ form section:has(input[name="retired_at"]) > div:first-child p {
                                    placeholder="権限に応じて自動採番されます"
                                    class="w-full border border-gray-200 rounded-2xl px-4 py-3 bg-gray-50 text-gray-500">
                             <div class="mt-2 text-xs text-gray-500 leading-6">
-                                一般スタッフ・リーダー・エリアリーダーは <span class="font-mono">0001</span> 形式、<br>
-                                店舗運営は <span class="font-mono">SHOP01</span> 形式、マスターは <span class="font-mono">MASTER01</span> 形式で自動採番されます。
+                                スタッフ・リーダー・統括リーダー・チーフは <span class="font-mono">0001</span> 形式、<br>
+                                店舗運営は <span class="font-mono">SHOP01</span> 形式、マスターは <span class="font-mono">MST01</span> 形式で自動採番されます。
                             </div>
                         </div>
 
@@ -157,10 +157,11 @@ form section:has(input[name="retired_at"]) > div:first-child p {
                             <select name="role"
                                     class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:ring-2 focus:outline-none bg-white"
                                     style="--tw-ring-color: {{ $theme }}">
-                                <option value="staff" {{ old('role', 'staff') === 'staff' ? 'selected' : '' }}>一般スタッフ</option>
+                                <option value="staff" {{ old('role', 'staff') === 'staff' ? 'selected' : '' }}>スタッフ</option>
                                 <option value="leader" {{ old('role') === 'leader' ? 'selected' : '' }}>リーダー</option>
-                                <option value="area_leader" {{ old('role') === 'area_leader' ? 'selected' : '' }}>エリアリーダー</option>
+                                <option value="area_leader" {{ old('role') === 'area_leader' ? 'selected' : '' }}>統括リーダー</option>
                                 <option value="store_operator" {{ old('role') === 'store_operator' ? 'selected' : '' }}>店舗運営</option>
+                                <option value="chief" {{ old('role') === 'chief' ? 'selected' : '' }}>チーフ</option>
                                 <option value="master" {{ old('role') === 'master' ? 'selected' : '' }}>マスター</option>
                             </select>
 
@@ -174,7 +175,7 @@ form section:has(input[name="retired_at"]) > div:first-child p {
 
                             <div class="mt-3 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
                                 @if($selectedRole === 'master')
-                                    マスターは <span class="font-mono">MASTER01</span> 形式で採番されます。
+                                    マスターは <span class="font-mono">MST01</span> 形式で採番されます。
                                 @elseif($selectedRole === 'store_operator')
                                     店舗運営は <span class="font-mono">SHOP01</span> 形式で採番されます。
                                 @else

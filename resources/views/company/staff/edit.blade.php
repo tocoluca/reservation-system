@@ -63,7 +63,7 @@
             </div>
             <div class="rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3">
                 <div class="text-xs font-bold text-amber-700">権限</div>
-                <div class="mt-1 text-sm font-bold text-amber-900">{{ $staff->role }}</div>
+                <div class="mt-1 text-sm font-bold text-amber-900">{{ $staff->roleLabel() }}</div>
             </div>
         </div>
     </div>
@@ -139,10 +139,11 @@
                             <select name="role"
                                     class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:ring-2 focus:outline-none bg-white"
                                     style="--tw-ring-color: {{ $theme }}">
-                                <option value="staff" {{ old('role', $staff->role) === 'staff' ? 'selected' : '' }}>一般スタッフ</option>
+                                <option value="staff" {{ old('role', $staff->role) === 'staff' ? 'selected' : '' }}>スタッフ</option>
                                 <option value="leader" {{ old('role', $staff->role) === 'leader' ? 'selected' : '' }}>リーダー</option>
-                                <option value="area_leader" {{ old('role', $staff->role) === 'area_leader' ? 'selected' : '' }}>エリアリーダー</option>
+                                <option value="area_leader" {{ old('role', $staff->role) === 'area_leader' ? 'selected' : '' }}>統括リーダー</option>
                                 <option value="store_operator" {{ old('role', $staff->role) === 'store_operator' ? 'selected' : '' }}>店舗運営</option>
+                                <option value="chief" {{ old('role', $staff->role) === 'chief' ? 'selected' : '' }}>チーフ</option>
                                 <option value="master" {{ old('role', $staff->role) === 'master' ? 'selected' : '' }}>マスター</option>
                             </select>
 
@@ -152,7 +153,7 @@
 
                             @if(in_array(old('role', $staff->role), ['master', 'store_operator']))
                                 <div class="mt-3 rounded-2xl bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-800">
-                                    {{ old('role', $staff->role) === 'master' ? 'マスターは MASTER01 形式で採番されます。' : '店舗運営は SHOP01 形式で採番されます。' }}
+                                    {{ old('role', $staff->role) === 'master' ? 'マスターは MST01 形式で採番されます。' : '店舗運営は SHOP01 形式で採番されます。' }}
                                 </div>
                             @endif
                         </div>
@@ -277,7 +278,7 @@
 
                         <div class="rounded-2xl bg-gray-50 p-4">
                             <div class="text-xs text-gray-500">権限</div>
-                            <div class="font-semibold text-gray-800 mt-1">{{ $staff->role }}</div>
+                            <div class="font-semibold text-gray-800 mt-1">{{ $staff->roleLabel() }}</div>
                         </div>
 
                         <div class="rounded-2xl bg-gray-50 p-4">

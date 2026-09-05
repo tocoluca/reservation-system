@@ -79,6 +79,11 @@ class Staff extends Authenticatable
         return $this->role === 'area_leader';
     }
 
+    public function isChief(): bool
+    {
+        return $this->role === 'chief';
+    }
+
     public function isLeader(): bool
     {
         return $this->role === 'leader';
@@ -114,9 +119,10 @@ class Staff extends Authenticatable
         return match ($this->role) {
             'master' => 'マスター',
             'store_operator' => '店舗運営',
-            'area_leader' => 'エリアリーダー',
+            'chief' => 'チーフ',
+            'area_leader' => '統括リーダー',
             'leader' => 'リーダー',
-            'staff' => '一般スタッフ',
+            'staff' => 'スタッフ',
             default => (string) $this->role,
         };
     }
@@ -124,10 +130,11 @@ class Staff extends Authenticatable
     public static function roleOptions(): array
     {
         return [
-            'staff' => '一般スタッフ',
+            'staff' => 'スタッフ',
             'leader' => 'リーダー',
-            'area_leader' => 'エリアリーダー',
+            'area_leader' => '統括リーダー',
             'store_operator' => '店舗運営',
+            'chief' => 'チーフ',
             'master' => 'マスター',
         ];
     }

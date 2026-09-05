@@ -27,7 +27,7 @@
                     <div class="min-w-0">
                         <p class="text-xs uppercase tracking-widest text-white/75">My Profile</p>
                         <h1 class="mt-1 truncate text-2xl font-black sm:text-3xl">{{ $staff->name }}</h1>
-                        <p class="mt-1 text-sm text-white/80">{{ $roleLabel ?? $staff->role }}</p>
+                        <p class="mt-1 text-sm text-white/80">{{ $roleLabel ?? $staff->roleLabel() }}</p>
                     </div>
                 </div>
 

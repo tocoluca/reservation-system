@@ -20,11 +20,12 @@ class CompanyDashboardPermission extends Model
     public static function roleLabels(): array
     {
         return [
-            'master' => 'マスター',
-            'store_operator' => '店舗運営',
-            'area_leader' => 'エリアリーダー',
-            'leader' => 'リーダー',
             'staff' => 'スタッフ',
+            'leader' => 'リーダー',
+            'area_leader' => '統括リーダー',
+            'store_operator' => '店舗運営',
+            'chief' => 'チーフ',
+            'master' => 'マスター',
         ];
     }
 
@@ -58,6 +59,26 @@ class CompanyDashboardPermission extends Model
             'card.reservation_change_notices' => '予約変更連絡管理',
 
         ];
+    }
+
+    public static function fixedDisabledPermissions(string $role): array
+    {
+        return match ($role) {
+            'store_operator' => [
+                'dashboard.manage',
+                'card.menu_staff',
+                'card.shift_patterns',
+                'card.default_shift',
+                'card.vacation',
+                'card.my_profile',
+                'card.company_info',
+                'card.logo',
+                'card.theme',
+                'card.billing',
+                'card.notices',
+            ],
+            default => [],
+        };
     }
 
     public static function defaultPermissions(string $role): array
@@ -107,18 +128,40 @@ class CompanyDashboardPermission extends Model
                 'card.customers' => true,
                 'card.style' => true,
                 'card.reviews' => true,
-                'card.notices' => true,
+                'card.notices' => false,
                 'card.support' => true,
                 'card.vacation' => false,
-                'card.theme' => true,
-                'card.company_info' => true,
-                'card.logo' => true,
+                'card.theme' => false,
+                'card.company_info' => false,
+                'card.logo' => false,
                 'card.billing' => false,
                 'card.my_profile' => false,
                 'card.reservation_change_notices' => true,
             ],
 
             'area_leader' => [
+                'dashboard.sales' => true,
+                'card.reserve' => true,
+                'card.business_calendar' => true,
+                'card.staff' => true,
+                'card.menu_category_tag' => true,
+                'card.menu' => true,
+                'card.menu_staff' => true,
+                'card.shift_patterns' => true,
+                'card.default_shift' => true,
+                'card.month_shift' => true,
+                'card.month_shift_view' => true,
+                'card.customers' => true,
+                'card.style' => true,
+                'card.reviews' => true,
+                'card.notices' => true,
+                'card.support' => true,
+                'card.vacation' => true,
+                'card.my_profile' => true,
+                'card.reservation_change_notices' => true,
+            ],
+
+            'chief' => [
                 'dashboard.sales' => true,
                 'card.reserve' => true,
                 'card.business_calendar' => true,
@@ -219,16 +262,12 @@ class CompanyDashboardPermission extends Model
             $defaults['dashboard.manage'] = true;
         }
 
-        if ($role === 'store_operator') {
-            foreach ([
-                'card.menu_staff',
-                'card.shift_patterns',
-                'card.default_shift',
-                'card.vacation',
-                'card.my_profile',
-            ] as $permissionKey) {
-                $defaults[$permissionKey] = false;
-            }
+        if (!in_array($role, ['chief', 'master'], true)) {
+            $defaults['dashboard.manage'] = false;
+        }
+
+        foreach (static::fixedDisabledPermissions($role) as $permissionKey) {
+            $defaults[$permissionKey] = false;
         }
 
         return $defaults;

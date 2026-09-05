@@ -10,18 +10,19 @@ class CompanyController extends Controller
 {
     public function edit()
     {
-        $company = Auth::guard('company')->user()->company;
+        $current = Auth::guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.company_info'), 403);
+
+        $company = $current->company;
         return view('company.company_edit', compact('company'));
     }
 
     public function update(Request $request)
     {
-        $company = Auth::guard('company')->user()->company;
         $current = Auth::guard('company')->user();
+        abort_if(!$current || !$current->canDashboard('card.company_info'), 403);
 
-        if ($current->role !== 'master') {
-            abort(403);
-        }
+        $company = $current->company;
 
         $rules = [
             'email' => 'nullable|email:rfc,dns',

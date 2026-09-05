@@ -306,7 +306,7 @@
         <div class="px-5 py-4 border-b bg-amber-50">
             <h2 class="text-lg font-bold text-gray-900">月別 シフト一覧</h2>
             <p class="text-sm text-gray-600 mt-1">
-                並び順：先頭表示スタッフ → マスター → エリアリーダー → リーダー → スタッフ → ユーザー番号順
+                並び順：先頭表示スタッフ → マスター → チーフ → 統括リーダー → リーダー → スタッフ → ユーザー番号順
             </p>
         </div>
 

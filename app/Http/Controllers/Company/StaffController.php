@@ -49,7 +49,8 @@ class StaffController extends Controller
     private function roleLevel(?string $role): int
     {
         return match ($role) {
-            'master' => 5,
+            'master' => 6,
+            'chief' => 5,
             'store_operator' => 4,
             'area_leader' => 3,
             'leader' => 2,
@@ -67,7 +68,7 @@ class StaffController extends Controller
             return true;
         }
 
-        if (in_array($current->role, ['leader', 'area_leader'], true)) {
+        if (in_array($current->role, ['leader', 'area_leader', 'chief'], true)) {
             return $target->role !== 'master';
         }
 
@@ -100,7 +101,7 @@ class StaffController extends Controller
         }
 
         if ($role === 'master') {
-            $prefix = 'MASTER';
+            $prefix = 'MST';
 
             $existingCodes = DB::table('staff')
                 ->where('company_id', $companyId)
@@ -116,7 +117,7 @@ class StaffController extends Controller
             $nextNumber = $maxNumber + 1;
 
             if ($nextNumber > 99) {
-                throw new \RuntimeException('マスターユーザーコードは MASTER99 までです。');
+                throw new \RuntimeException('マスターユーザーコードは MST99 までです。');
             }
 
             return $prefix . str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
@@ -144,14 +145,16 @@ class StaffController extends Controller
 	        ->orderByRaw("
 	            CASE
 	                WHEN role = 'master' THEN 1
-	                WHEN role = 'store_operator' THEN 2
-	                WHEN role = 'area_leader' THEN 3
-	                WHEN role = 'leader' THEN 4
-	                ELSE 5
+	                WHEN role = 'chief' THEN 2
+	                WHEN role = 'store_operator' THEN 3
+	                WHEN role = 'area_leader' THEN 4
+	                WHEN role = 'leader' THEN 5
+	                ELSE 6
 	            END ASC
 	        ")
 	        ->orderByRaw("
 	            CASE
+	                WHEN staff_code LIKE 'MST%' THEN CAST(REPLACE(staff_code, 'MST', '') AS UNSIGNED)
 	                WHEN staff_code LIKE 'MASTER%' THEN CAST(REPLACE(staff_code, 'MASTER', '') AS UNSIGNED)
 	                WHEN staff_code LIKE 'SHOP%' THEN CAST(REPLACE(staff_code, 'SHOP', '') AS UNSIGNED)
 	                WHEN staff_code REGEXP '^[0-9]+$' THEN CAST(staff_code AS UNSIGNED)
@@ -180,7 +183,7 @@ class StaffController extends Controller
 		$request->validate([
 		    'name' => 'required|string|max:255',
 		    'password' => 'required|string|min:8',
-		    'role' => 'required|string|in:staff,leader,area_leader,store_operator,master',
+		    'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
 		    'image' => 'nullable|image|max:2048',
 		    'priority_order' => 'nullable|integer|min:0',
 		    'nomination_fee' => 'nullable|numeric|min:0',
@@ -289,7 +292,7 @@ class StaffController extends Controller
 
 		$request->validate([
 		    'name' => 'required|string|max:255',
-		    'role' => 'required|string|in:staff,leader,area_leader,store_operator,master',
+		    'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
 		    'image' => 'nullable|image|max:2048',
 		    'priority_order' => 'nullable|integer|min:0',
 		    'nomination_fee' => 'nullable|numeric|min:0',

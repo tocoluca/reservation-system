@@ -68,13 +68,23 @@
     $lockedPermissions = [
         'master' => ['dashboard.manage' => '常に有効'],
         'store_operator' => [
+            'dashboard.manage' => '役職の仕様により対象外',
             'card.menu_staff' => '役職の仕様により対象外',
             'card.shift_patterns' => '役職の仕様により対象外',
             'card.default_shift' => '役職の仕様により対象外',
             'card.vacation' => '役職の仕様により対象外',
             'card.my_profile' => '役職の仕様により対象外',
+            'card.company_info' => '役職の仕様により対象外',
+            'card.logo' => '役職の仕様により対象外',
+            'card.theme' => '役職の仕様により対象外',
+            'card.billing' => '役職の仕様により対象外',
+            'card.notices' => '役職の仕様により対象外',
         ],
     ];
+
+    foreach (['staff', 'leader', 'area_leader'] as $roleWithoutDashboardManagement) {
+        $lockedPermissions[$roleWithoutDashboardManagement]['dashboard.manage'] = '役職の仕様により対象外';
+    }
 @endphp
 
 <style>
@@ -131,7 +141,7 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 @foreach($roleSettings as $role => $setting)
                     @php
                         $enabledCount = collect($setting['permissions'])->filter()->count();

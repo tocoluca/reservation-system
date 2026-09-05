@@ -303,7 +303,7 @@ body {
 <div x-data="{
         tab: @js(request()->hasAny(['period', 'year', 'month']) ? 'analytics' : 'dashboard'),
         showTomorrow: false,
-        showFeatureCards: @js(request()->hasAny(['period', 'year', 'month'])),
+        showFeatureCards: true,
         allowedTabs: @js($availableFeatureTabs),
         defaultTab: @js($defaultFeatureTab),
         toggleFeatureCards() {
@@ -324,9 +324,7 @@ body {
             const analyticsRequested = @js(request()->hasAny(['period', 'year', 'month']));
             try {
                 const storedTab = localStorage.getItem('company-dashboard-feature-tab');
-                const storedOpen = localStorage.getItem('company-dashboard-feature-open');
                 if (!analyticsRequested && storedTab && this.allowedTabs.includes(storedTab)) this.tab = storedTab;
-                if (!analyticsRequested && storedOpen !== null) this.showFeatureCards = storedOpen === 'true';
             } catch (error) {}
             if (this.showFeatureCards && this.tab === 'dashboard') this.tab = this.defaultTab;
             if (!this.showFeatureCards) this.tab = 'dashboard';
@@ -334,9 +332,6 @@ body {
                 if (this.allowedTabs.includes(value)) {
                     try { localStorage.setItem('company-dashboard-feature-tab', value); } catch (error) {}
                 }
-            });
-            this.$watch('showFeatureCards', value => {
-                try { localStorage.setItem('company-dashboard-feature-open', value ? 'true' : 'false'); } catch (error) {}
             });
         }
      }"
@@ -350,7 +345,7 @@ body {
                         STORE DASHBOARD
                     </div>
                     <h1 class="mt-5 text-2xl sm:text-4xl font-black tracking-tight">{{ $staff->company->name ?? $company->name }}</h1>
-                    <p class="mt-2 text-sm sm:text-base text-white/70">{{ $staff->name }} / {{ $roleLabel ?? $staff->role }}</p>
+                    <p class="mt-2 text-sm sm:text-base text-white/70">{{ $staff->name }} / {{ $roleLabel ?? $staff->roleLabel() }}</p>
                     <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl">
                         <a href="{{ $todayReservationListUrl }}"
                            class="rounded-2xl bg-white/10 border border-white/15 p-4 hover:bg-white/15 transition block">

@@ -111,9 +111,10 @@ class StaffShiftController extends Controller
             ->orderByRaw("
                 CASE role
                     WHEN 'master' THEN 1
-                    WHEN 'area_leader' THEN 2
-                    WHEN 'leader' THEN 3
-                    WHEN 'staff' THEN 4
+                    WHEN 'chief' THEN 2
+                    WHEN 'area_leader' THEN 3
+                    WHEN 'leader' THEN 4
+                    WHEN 'staff' THEN 5
                     ELSE 99
                 END
             ")
@@ -201,9 +202,10 @@ class StaffShiftController extends Controller
             ->orderByRaw("
                 CASE role
                     WHEN 'master' THEN 1
-                    WHEN 'area_leader' THEN 2
-                    WHEN 'leader' THEN 3
-                    WHEN 'staff' THEN 4
+                    WHEN 'chief' THEN 2
+                    WHEN 'area_leader' THEN 3
+                    WHEN 'leader' THEN 4
+                    WHEN 'staff' THEN 5
                     ELSE 99
                 END
             ")

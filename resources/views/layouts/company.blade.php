@@ -290,7 +290,7 @@
                         </div>
                         <div class="leading-tight text-right">
                             <div class="font-bold text-sm text-slate-900">{{ $staff->name }}</div>
-                            <div class="text-xs text-slate-500">{{ $roleLabel ?? $staff->role }}</div>
+                            <div class="text-xs text-slate-500">{{ $roleLabel ?? $staff->roleLabel() }}</div>
                         </div>
                     </div>
 

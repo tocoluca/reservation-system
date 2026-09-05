@@ -28,7 +28,7 @@
             return true;
         }
 
-        if (in_array($current->role, ['leader', 'area_leader'], true)) {
+        if (in_array($current->role, ['leader', 'area_leader', 'chief'], true)) {
             return $target->role !== 'master';
         }
 

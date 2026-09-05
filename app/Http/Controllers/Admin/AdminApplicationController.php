@@ -117,7 +117,7 @@ class AdminApplicationController extends Controller
             CompanyDashboardPermission::seedForCompany($company->id);
 
             $initialPassword = Str::random(10);
-            $staffCode = 'MASTER01';
+            $staffCode = 'MST01';
             $loginUrl = url('/company/login');
 
             Staff::create([

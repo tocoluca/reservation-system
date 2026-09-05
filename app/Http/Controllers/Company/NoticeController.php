@@ -11,8 +11,15 @@ class NoticeController extends Controller
 {
     public function __construct(private readonly NoticeImageProcessor $imageProcessor) {}
 
+    private function authorizeNotices(): void
+    {
+        $staff = auth()->guard('company')->user();
+        abort_if(!$staff || !$staff->canDashboard('card.notices'), 403);
+    }
+
     public function index()
     {
+        $this->authorizeNotices();
         $company = auth()->guard('company')->user()->company;
 
         $notices = Notice::where('company_id', $company->id)
@@ -24,11 +31,13 @@ class NoticeController extends Controller
 
     public function create()
     {
+        $this->authorizeNotices();
         return view('company.notices.create');
     }
 
     public function store(Request $request)
     {
+        $this->authorizeNotices();
         $company = auth()->guard('company')->user()->company;
 
         $data = $request->validate([
@@ -60,6 +69,7 @@ class NoticeController extends Controller
 
     public function edit(Notice $notice)
     {
+        $this->authorizeNotices();
         $this->ensureCompanyNotice($notice);
 
         return view('company.notices.edit', compact('notice'));
@@ -67,7 +77,7 @@ class NoticeController extends Controller
 
     public function update(Request $request, Notice $notice)
     {
-
+        $this->authorizeNotices();
         $company = auth()->guard('company')->user()->company;
         $this->ensureCompanyNotice($notice);
 
@@ -110,6 +120,7 @@ class NoticeController extends Controller
 
     public function destroy(Notice $notice)
     {
+        $this->authorizeNotices();
         $company = auth()->guard('company')->user()->company;
         $this->ensureCompanyNotice($notice);
         $oldImagePath = $notice->image;

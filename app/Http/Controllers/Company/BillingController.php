@@ -12,8 +12,15 @@ use Stripe\Stripe;
 
 class BillingController extends Controller
 {
+    private function authorizeBilling(): void
+    {
+        $staff = Auth::guard('company')->user();
+        abort_if(!$staff || !$staff->canDashboard('card.billing'), 403);
+    }
+
     public function index()
     {
+        $this->authorizeBilling();
         $staff = Auth::guard('company')->user();
         $company = $staff->company;
 
@@ -39,6 +46,7 @@ class BillingController extends Controller
 
     public function checkout(Request $request)
     {
+        $this->authorizeBilling();
         $request->validate([
             'plan' => ['required', 'in:standard,platinum'],
         ], [
@@ -157,6 +165,7 @@ class BillingController extends Controller
 
     public function success()
     {
+        $this->authorizeBilling();
         return redirect()
             ->route('company.billing.index')
             ->with('success', 'お支払い手続きが完了しました。契約状態が反映されるまで少しお待ちください。');
@@ -164,6 +173,7 @@ class BillingController extends Controller
 
     public function portal()
     {
+        $this->authorizeBilling();
         $staff = Auth::guard('company')->user();
         $company = $staff->company;
 

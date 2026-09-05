@@ -60,7 +60,7 @@
                         {{ $staff->name }}
                     </div>
                     <div class="text-xs text-gray-500">
-                        権限：{{ $staff->role }}
+                        権限：{{ $staff->roleLabel() }}
                     </div>
                 </div>
 

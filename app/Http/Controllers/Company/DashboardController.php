@@ -443,21 +443,22 @@ class DashboardController extends Controller
                 'card.vacation' => false,
                 'card.my_profile' => false,
                 'dashboard.sales' => true,
-                'card.company_info' => true,
+                'card.company_info' => false,
                 'card.staff' => true,
-                'card.logo' => true,
+                'card.logo' => false,
                 'card.menu_category_tag' => true,
                 'card.menu' => true,
                 'card.menu_staff' => false,
                 'card.shift_patterns' => false,
                 'card.default_shift' => false,
-                'card.notices' => true,
+                'card.notices' => false,
                 'card.billing' => false,
-                'card.theme' => true,
+                'card.theme' => false,
                 'dashboard.manage' => false,
             ],
 
             'area_leader' => array_fill_keys($canonicalKeys, false),
+            'chief' => array_fill_keys($canonicalKeys, false),
             'leader' => array_fill_keys($canonicalKeys, false),
             'staff' => array_fill_keys($canonicalKeys, false),
         ];
@@ -478,16 +479,8 @@ class DashboardController extends Controller
             $base['dashboard.manage'] = true;
         }
 
-        if ($role === 'store_operator') {
-            foreach ([
-                'card.menu_staff',
-                'card.shift_patterns',
-                'card.default_shift',
-                'card.vacation',
-                'card.my_profile',
-            ] as $permissionKey) {
-                $base[$permissionKey] = false;
-            }
+        foreach (CompanyDashboardPermission::fixedDisabledPermissions($role) as $permissionKey) {
+            $base[$permissionKey] = false;
         }
 
         return $base;

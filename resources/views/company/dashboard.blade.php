@@ -647,6 +647,14 @@ body {
     </div>
     @endif
 
+    @if($canAny(['card.month_shift', 'card.month_shift_view']))
+    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4 mb-6">
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">日常操作</h3><p class="mt-1 text-xs text-slate-500">毎月のシフト登録と勤務状況の確認に使います。</p></div>
+        @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
+        @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
+    </div>
+    @endif
+
     @if($canAny(['card.staff', 'card.vacation', 'card.my_profile']))
     <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4 mb-6">
         <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">スタッフ管理</h3><p class="mt-1 text-xs text-slate-500">スタッフ情報と個人設定を管理します。</p></div>
@@ -656,12 +664,9 @@ body {
     </div>
     @endif
 
-    @if($canAny(['card.business_calendar', 'card.month_shift', 'card.month_shift_view', 'card.default_shift', 'card.shift_patterns']))
+    @if($canAny(['card.business_calendar', 'card.default_shift', 'card.shift_patterns']))
     <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">日常操作</h3><p class="mt-1 text-xs text-slate-500">毎月のシフト登録と勤務状況の確認に使います。</p></div>
-        @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
-        @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
-        <div class="md:col-span-2 mt-2"><h3 class="text-base font-black text-slate-900">事前設定</h3><p class="mt-1 text-xs text-slate-500">営業日と繰り返し利用する勤務ルールを設定します。</p></div>
+        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">事前設定</h3><p class="mt-1 text-xs text-slate-500">営業日と繰り返し利用する勤務ルールを設定します。</p></div>
         @if($can('card.shift_patterns'))<a href="{{ route('company.shift-patterns') }}" class="card card-link"><div class="card-icon"><i data-lucide="layers"></i></div><div><div class="font-bold">シフトパターン</div><div class="text-sm text-gray-500">勤務時間テンプレート</div></div></a>@endif
         @if($can('card.default_shift'))<a href="{{ route('company.staff-default-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="repeat"></i></div><div><div class="font-bold">基本シフト</div><div class="text-sm text-gray-500">定期シフト設定</div></div></a>@endif
         @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif

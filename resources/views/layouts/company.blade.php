@@ -390,10 +390,6 @@
 </div>
 <script>
 (() => {
-    let isInternalNavigation = false;
-    const logoutUrl = @json(route('company.logout'));
-    const csrfToken = @json(csrf_token());
-
     const companyTopbar = document.querySelector('.company-topbar');
     if (companyTopbar) {
         const updateCompanyTopbarHeight = () => {
@@ -474,37 +470,6 @@
         }
     }, true);
 
-    document.addEventListener('click', (event) => {
-        const link = event.target.closest('a[href]');
-        if (!link) return;
-
-        const href = link.getAttribute('href') || '';
-        const target = link.getAttribute('target') || '';
-
-        if (
-            target === '_blank' ||
-            href.startsWith('#') ||
-            href.startsWith('tel:') ||
-            href.startsWith('mailto:') ||
-            link.hasAttribute('download')
-        ) {
-            return;
-        }
-
-        isInternalNavigation = true;
-    }, true);
-
-    document.addEventListener('submit', () => {
-        isInternalNavigation = true;
-    }, true);
-
-    window.addEventListener('pagehide', () => {
-        if (isInternalNavigation) return;
-
-        const payload = new FormData();
-        payload.append('_token', csrfToken);
-        navigator.sendBeacon(logoutUrl, payload);
-    });
 })();
 </script>
 @endif

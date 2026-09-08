@@ -17,9 +17,7 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Auth::guard('company')->check()) {
-            Auth::guard('company')->logout();
-            request()->session()->invalidate();
-            request()->session()->regenerateToken();
+            return redirect()->route('company.dashboard');
         }
 
         return view('company.login');

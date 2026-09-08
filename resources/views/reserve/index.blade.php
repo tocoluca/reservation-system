@@ -216,7 +216,7 @@
                                 $categoryPanelId = 'menuCategoryPanel' . $loop->iteration;
                                 $categorySelectedCount = collect($categoryMenus)->filter(fn ($menu) => in_array((string) $menu->id, $oldMenuIds, true))->count();
                                 $categoryHasChecked = $categorySelectedCount > 0;
-                                $categoryIsOpen = $loop->first || $categoryHasChecked;
+                                $categoryIsOpen = $categoryHasChecked;
                             @endphp
 
                             <div class="menu-category rounded-2xl border border-[#eadfd3] bg-[#fcf8f4] overflow-hidden {{ !$loop->first ? 'mt-4' : '' }}">

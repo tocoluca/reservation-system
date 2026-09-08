@@ -94,13 +94,30 @@
         outline-offset: -2px;
     }
     @media (max-width: 1023px) {
-        .permission-table { min-width: 520px; }
+        .dashboard-settings-page { padding: 0; }
+        .permission-panel { overflow: visible; }
+        .permission-toolbar { border-radius: 1.5rem 1.5rem 0 0; }
+        .permission-table-wrapper { overflow: visible; }
+        .permission-table { width: 100%; table-layout: fixed; }
+        .permission-table th:first-child { width: 62%; min-width: 0; }
+        .permission-table th, .permission-table td { padding: 12px; overflow-wrap: anywhere; }
+        .permission-table .sticky { position: static; }
+        .permission-table .role-column { min-width: 0; width: 38%; }
         .permission-table .role-column { display: none; }
         .permission-table .role-column.is-mobile-active { display: table-cell; }
+        .permission-table label { min-width: 48px; min-height: 48px; }
+        .permission-checkbox { width: 24px; height: 24px; }
+        .mobile-role-button { min-height: 44px; }
+        #permissionSearch { font-size: 16px; }
+        .permission-table { scroll-margin-top: calc(var(--company-topbar-height, 0px) + 260px); }
+    }
+    @media (max-width: 639px) {
+        .permission-toolbar { padding: 12px; }
+        .permission-toolbar > div:first-child { gap: 8px; }
     }
 </style>
 
-<div class="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+<div class="dashboard-settings-page mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
     {{-- ヘッダー --}}
     <div class="relative overflow-hidden rounded-3xl shadow-lg">
         <div class="absolute inset-0 opacity-10"
@@ -159,9 +176,9 @@
     <form id="dashboardPermissionForm" method="POST" action="{{ route('company.dashboard-settings.update') }}">
         @csrf
 
-        <section class="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
+        <section class="permission-panel overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
             {{-- 操作バー --}}
-            <div class="sticky top-[var(--company-topbar-height)] z-30 border-b border-stone-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
+            <div class="permission-toolbar sticky top-[var(--company-topbar-height)] z-30 border-b border-stone-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-6">
                 <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div class="min-w-0 flex-1">
                         <label for="permissionSearch" class="sr-only">権限項目を検索</label>
@@ -189,10 +206,10 @@
                 {{-- モバイル役職切替 --}}
                 <div class="mt-4 lg:hidden">
                     <p class="mb-2 text-xs font-bold text-stone-500">表示する役職</p>
-                    <div class="flex gap-2 overflow-x-auto pb-1" aria-label="役職を切り替え">
+                    <div class="grid grid-cols-3 gap-2" aria-label="役職を切り替え">
                         @foreach($roleSettings as $role => $setting)
                             <button type="button" data-mobile-role="{{ $role }}"
-                                    class="mobile-role-button shrink-0 rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-xs font-bold text-stone-600">
+                                    class="mobile-role-button rounded-xl border border-stone-200 bg-stone-50 px-2 py-2 text-xs font-bold text-stone-600">
                                 {{ $setting['role_label'] }}
                             </button>
                         @endforeach
@@ -200,7 +217,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto">
+            <div class="permission-table-wrapper overflow-x-auto">
                 <table class="permission-table w-full text-sm">
                     <thead>
                         <tr class="border-b border-stone-200 bg-stone-50 text-stone-600">

@@ -18,7 +18,7 @@ class CompanyApplicationController extends Controller
     {
         $data = $request->validate([
             'company_name'   => ['required', 'string', 'max:255'],
-            'industry_type'  => ['required', 'in:beauty,dental'],
+            'industry_type'  => ['required', \Illuminate\Validation\Rule::in(array_keys(config('industries.options')))],
             'contact_person' => ['required', 'string', 'max:255'],
             'email'          => ['required', 'email', 'max:255'],
             'phone'          => ['required', 'string', 'max:255'],

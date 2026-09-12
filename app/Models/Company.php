@@ -246,4 +246,17 @@ class Company extends Authenticatable
     {
         return $this->subscribed_at ? '契約開始' : '登録日';
     }
+    public function getNeedsBillingAttentionAttribute(): bool
+    {
+        return !$this->isInBillingStartCampaign()
+            && (!$this->is_billing_active || in_array($this->subscription_status,
+                ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'], true));
+    }
+
+    public function getIndustryLabelAttribute()
+    {
+        return config('industries.options')[$this->industry_type]
+            ?? config('industries.legacy')[$this->industry_type]
+            ?? $this->industry_type;
+    }
 }

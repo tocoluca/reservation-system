@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800">
+@include('admin.partials.navigation')
 
 @php
     $theme = old('theme_color', $company->theme_color ?? '#3b82f6');
@@ -32,7 +33,7 @@
             </a>
             <a href="{{ $companyIndexUrl }}"
                class="px-4 py-2 rounded-lg border border-gray-300 bg-white hover:bg-gray-50">
-                企業一覧へ戻る
+                {{ $companyIndexUrl === route('admin.dashboard') ? 'ダッシュボードへ戻る' : '企業一覧へ戻る' }}
             </a>
         </div>
     </div>
@@ -78,11 +79,10 @@
                     <div>
                         <label class="block font-semibold mb-2">業種</label>
                         <select name="industry_type" class="w-full border rounded-lg p-3">
-                            <option value="beauty" {{ old('industry_type', $company->industry_type) === 'beauty' ? 'selected' : '' }}>美容院</option>
-                            <option value="dental" {{ old('industry_type', $company->industry_type) === 'dental' ? 'selected' : '' }}>歯科</option>
-                            <option value="clinic" {{ old('industry_type', $company->industry_type) === 'clinic' ? 'selected' : '' }}>クリニック</option>
-                            <option value="other" {{ old('industry_type', $company->industry_type) === 'other' ? 'selected' : '' }}>その他</option>
-                        </select>
+                            @foreach(config('industries.options') + config('industries.legacy') as $value => $label)
+                                <option value="{{ $value }}" @selected(old('industry_type', $company->industry_type) === $value)>{{ $label }}</option>
+                            @endforeach
+                            </select>
                     </div>
 
                     <div>

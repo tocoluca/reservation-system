@@ -20,6 +20,10 @@ class AdminApplicationController extends Controller
     {
         $query = Application::query();
 
+        if ($request->filled('application_id')) {
+            $query->whereKey($request->integer('application_id'));
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }

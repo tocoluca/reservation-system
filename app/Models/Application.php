@@ -35,11 +35,9 @@ class Application extends Model
 
     public function getIndustryLabelAttribute()
     {
-        return match ($this->industry_type) {
-            'beauty' => '美容',
-            'dental' => '歯科',
-            default  => $this->industry_type,
-        };
+        return config('industries.options')[$this->industry_type]
+            ?? config('industries.legacy')[$this->industry_type]
+            ?? $this->industry_type;
     }
 
     public function getStatusLabelAttribute()

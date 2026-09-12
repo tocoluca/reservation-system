@@ -1,51 +1,21 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <title>企業ダッシュボードお知らせ編集</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('-translate-x-full');
-        }
-        function toggleCompanySelect() {
-            const target = document.getElementById('target_type').value;
-            const wrap = document.getElementById('companySelectWrap');
-            wrap.style.display = (target === 'company') ? 'block' : 'none';
-        }
-    </script>
+
 </head>
 <body class="bg-gray-100">
+@include('admin.partials.navigation')
 
 <div class="flex min-h-screen">
 
-    <div id="sidebar"
-         class="fixed inset-y-0 left-0 w-64 bg-gray-800 text-white p-6 transform -translate-x-full md:translate-x-0 transition duration-200 ease-in-out z-50">
 
-        <h1 class="text-xl font-bold mb-8">管理者</h1>
 
-        <ul class="space-y-4">
-            <li><a href="{{ route('admin.dashboard') }}" class="block hover:text-gray-300">ダッシュボード</a></li>
-            <li><a href="{{ route('admin.company.index') }}" class="block hover:text-gray-300">企業一覧</a></li>
-            <li><a href="{{ route('admin.company.create') }}" class="block hover:text-gray-300">企業登録</a></li>
-            <li><a href="{{ route('admin.applications') }}" class="block hover:text-gray-300">申請管理</a></li>
-            <li><a href="{{ route('admin.company-dashboard-notices.index') }}" class="block hover:text-gray-300">企業向けお知らせ管理</a></li>
-            <li><a href="{{ route('admin.company-dashboard-notices.create') }}" class="block hover:text-gray-300">企業向けお知らせ登録</a></li>
-            <li class="pt-6 border-t border-gray-600">
-                <form method="POST" action="{{ route('admin.logout') }}">
-                    @csrf
-                    <button class="hover:text-gray-300">ログアウト</button>
-                </form>
-            </li>
-        </ul>
-    </div>
+    <div class="flex-1 w-full min-w-0">
 
-    <div class="flex-1 w-full md:ml-64">
 
-        <div class="md:hidden bg-white p-4 shadow flex justify-between items-center">
-            <button onclick="toggleMenu()" class="text-gray-700 text-2xl">☰</button>
-            <h1 class="font-bold">管理画面</h1>
-        </div>
 
         <div class="max-w-4xl mx-auto px-4 py-6 md:py-10">
 

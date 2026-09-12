@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <title>企業一覧</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,7 @@
 </head>
 
 <body class="bg-gray-100">
+@include('admin.partials.navigation')
 
 <div class="max-w-7xl mx-3 sm:mx-auto mt-3 md:mt-10 bg-white p-4 md:p-8 rounded-xl shadow">
 
@@ -39,7 +40,7 @@
     @endif
 
     {{-- サマリー --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 mb-5">
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
         <a href="{{ route('admin.company.index') }}" class="rounded-xl border border-gray-200 bg-gray-50 p-4">
             <div class="text-xs font-bold text-gray-500">全企業</div>
             <div class="mt-1 text-2xl font-black text-gray-900">{{ number_format($summary['total'] ?? 0) }}</div>
@@ -67,12 +68,48 @@
     </div>
 
     {{-- 検索・状態フィルタ --}}
+    <form method="GET" action="{{ route('admin.company.index') }}" class="mb-6 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto_auto] gap-3">
+        <input type="text"
+               aria-label="企業検索" name="keyword"
+               value="{{ request('keyword') }}"
+               placeholder="企業名・企業コード・業種・メールアドレスで検索"
+               class="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
+
+        <select aria-label="企業の状態" name="status" class="border border-gray-300 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <option value="">すべての状態</option>
+            <option value="active" @selected(request('status') === 'active')>利用中</option>
+            <option value="inactive" @selected(request('status') === 'inactive')>停止中</option>
+            <option value="uninitialized" @selected(request('status') === 'uninitialized')>初期設定未完了</option>
+            <option value="billing_attention" @selected(request('status') === 'billing_attention')>請求確認</option>
+            <option value="billing_campaign" @selected(request('status') === 'billing_campaign')>請求開始前</option>
+            <option value="line_enabled" @selected(request('status') === 'line_enabled')>LINE有効</option>
+        </select>
+
+        <select name="industry_type" aria-label="業種" class="border border-gray-300 p-3 rounded-lg bg-white">
+            <option value="">すべての業種</option>
+            @foreach(config('industries.options') + config('industries.legacy') as $value => $label)
+                <option value="{{ $value }}" @selected(request('industry_type') === $value)>{{ $label }}</option>
+            @endforeach
+        </select>
+
+        <button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition">
+            検索
+        </button>
+
+        <a href="{{ route('admin.company.index') }}"
+           class="inline-flex items-center justify-center border border-gray-300 bg-white text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition">
+            リセット
+        </a>
+    </form>
+
+    <p class="text-sm text-gray-600 mb-4" role="status">検索結果 {{ number_format($companies->total()) }}件 @if($companies->total())（{{ $companies->firstItem() }}〜{{ $companies->lastItem() }}件を表示）@endif</p>
     @if(($billingAttentionCompanies ?? collect())->isNotEmpty())
-        <div class="sticky top-2 z-20 mb-5 rounded-2xl border border-amber-200 bg-amber-50/95 p-4 shadow-lg backdrop-blur">
+        <details class="mb-5 rounded-2xl border border-amber-200 bg-amber-50/95 p-4 shadow-lg backdrop-blur">
+            <summary class="cursor-pointer text-sm font-bold text-amber-800">請求確認が必要な企業（{{ $summary['billing_attention'] ?? 0 }}社）を表示</summary>
             <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-3">
                 <div>
                     <div class="text-sm font-black text-amber-800">請求確認が必要な企業</div>
-                    <div class="text-xs text-amber-700 mt-1">停止前・未払い・請求開始済み未確認の企業を上部に固定表示しています。</div>
+                    <div class="text-xs text-amber-700 mt-1">停止前・未払い・請求開始済み未確認の企業を表示しています。</div>
                 </div>
                 <a href="{{ route('admin.company.index', ['status' => 'billing_attention']) }}"
                    class="inline-flex items-center justify-center rounded-xl bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-700">
@@ -121,35 +158,8 @@
                     </div>
                 @endforeach
             </div>
-        </div>
+        </details>
     @endif
-
-    <form method="GET" action="{{ route('admin.company.index') }}" class="mb-6 grid grid-cols-1 lg:grid-cols-[1fr_220px_auto_auto] gap-3">
-        <input type="text"
-               name="keyword"
-               value="{{ request('keyword') }}"
-               placeholder="企業名・企業コード・業種・メールアドレスで検索"
-               class="border border-gray-300 p-3 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-400">
-
-        <select name="status" class="border border-gray-300 p-3 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-400">
-            <option value="">すべての状態</option>
-            <option value="active" @selected(request('status') === 'active')>利用中</option>
-            <option value="inactive" @selected(request('status') === 'inactive')>停止中</option>
-            <option value="uninitialized" @selected(request('status') === 'uninitialized')>初期設定未完了</option>
-            <option value="billing_attention" @selected(request('status') === 'billing_attention')>請求確認</option>
-            <option value="billing_campaign" @selected(request('status') === 'billing_campaign')>請求開始前</option>
-            <option value="line_enabled" @selected(request('status') === 'line_enabled')>LINE有効</option>
-        </select>
-
-        <button class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition">
-            検索
-        </button>
-
-        <a href="{{ route('admin.company.index') }}"
-           class="inline-flex items-center justify-center border border-gray-300 bg-white text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition">
-            リセット
-        </a>
-    </form>
 
     {{-- 上部操作 --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -168,10 +178,11 @@
         @csrf
     </form>
 
-        <div class="mb-4 flex justify-end">
-            <button type="submit"
+        <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
+            <span id="selection-count" role="status" class="text-sm text-gray-600">0社を選択中</span>
+            <button type="submit" id="bulk-edit-button"
                     form="company-bulk-edit-form"
-                    class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 sm:py-2 rounded-lg transition">
+                    class="disabled:opacity-40 disabled:cursor-not-allowed w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 sm:py-2 rounded-lg transition">
                 選択した企業を一括編集
             </button>
         </div>
@@ -183,7 +194,7 @@
                     <div class="flex items-start gap-3">
                         <input type="checkbox"
                                form="company-bulk-edit-form"
-                               name="company_ids[]"
+                               name="company_ids[]" aria-label="{{ $company->name }}（{{ $company->company_code }}）を選択"
                                value="{{ $company->id }}"
                                class="mt-1 h-5 w-5">
 
@@ -207,7 +218,7 @@
                             <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600">
                                 <div class="rounded-xl bg-gray-50 p-3">
                                     <div class="font-bold text-gray-500">業種</div>
-                                    <div class="mt-1">{{ $company->industry_type ?: '-' }}</div>
+                                    <div class="mt-1">{{ $company->industry_label ?: '-' }}</div>
                                 </div>
                                 <div class="rounded-xl bg-gray-50 p-3">
                                     <div class="font-bold text-gray-500">契約</div>
@@ -235,7 +246,7 @@
                                     請求開始 {{ $company->billing_starts_at->format('Y/m/d') }}
                                 </div>
                             @endif
-                            @if(!$company->is_billing_active)
+                            @if($company->needs_billing_attention)
                                 <div class="mt-3 inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
                                     請求確認
                                 </div>
@@ -302,7 +313,7 @@
                 <thead class="bg-gray-100">
                     <tr>
                         <th class="p-3 border text-center w-12">
-                            <input type="checkbox" onclick="toggleAll(this)">
+                            <input type="checkbox" id="select-all-companies" aria-label="このページの企業をすべて選択" onclick="toggleAll(this)">
                         </th>
                         <th class="p-3 border text-left">ID</th>
                         <th class="p-3 border text-left">企業コード</th>
@@ -322,7 +333,7 @@
                     @forelse($companies as $company)
                         <tr class="hover:bg-gray-50 align-top">
                             <td class="border p-3 text-center">
-                                <input type="checkbox" form="company-bulk-edit-form" name="company_ids[]" value="{{ $company->id }}">
+                                <input type="checkbox" form="company-bulk-edit-form" name="company_ids[]" aria-label="{{ $company->name }}（{{ $company->company_code }}）を選択" value="{{ $company->id }}">
                             </td>
 
                             <td class="border p-3">{{ $company->id }}</td>
@@ -340,7 +351,7 @@
                             </td>
 
                             <td class="border p-3">
-                                {{ $company->industry_type }}
+                                {{ $company->industry_label }}
                             </td>
 
                             <td class="border p-3">
@@ -405,7 +416,7 @@
                                         </span>
                                     </div>
                                 @endif
-                                @if(!$company->is_billing_active)
+                                @if($company->needs_billing_attention)
                                     <div class="mt-2">
                                         <span class="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
                                             請求確認
@@ -490,11 +501,31 @@ function copyUrl(id) {
     alert("予約URLをコピーしました");
 }
 
-function toggleAll(master) {
-    document.querySelectorAll('input[name="company_ids[]"]').forEach(el => {
-        el.checked = master.checked;
-    });
+const companyCheckboxes = [...document.querySelectorAll('input[name="company_ids[]"]')];
+function updateCompanySelection() {
+    const selected = new Set(companyCheckboxes.filter(el => el.checked).map(el => el.value));
+    const total = new Set(companyCheckboxes.map(el => el.value)).size;
+    document.getElementById('selection-count').textContent = `${selected.size}社を選択中`;
+    document.getElementById('bulk-edit-button').disabled = selected.size === 0;
+    const master = document.getElementById('select-all-companies');
+    master.checked = total > 0 && selected.size === total;
+    master.indeterminate = selected.size > 0 && selected.size < total;
 }
+companyCheckboxes.forEach(el => el.addEventListener('change', () => {
+    companyCheckboxes.filter(other => other.value === el.value).forEach(other => other.checked = el.checked);
+    updateCompanySelection();
+}));
+function toggleAll(master) {
+    companyCheckboxes.forEach(el => el.checked = master.checked);
+    updateCompanySelection();
+}
+document.getElementById('company-bulk-edit-form').addEventListener('formdata', event => {
+    const selected = [...new Set(event.formData.getAll('company_ids[]'))];
+    event.formData.delete('company_ids[]');
+    selected.forEach(id => event.formData.append('company_ids[]', id));
+});
+window.addEventListener('pageshow', updateCompanySelection);
+updateCompanySelection();
 
 /* QR表示 */
 function showQR(url) {

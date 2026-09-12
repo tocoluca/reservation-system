@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
     <title>企業登録</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,6 +7,7 @@
 </head>
 
 <body class="bg-gray-100">
+@include('admin.partials.navigation')
 
 <div class="max-w-2xl mx-3 sm:mx-auto mt-3 md:mt-16 bg-white p-4 md:p-8 rounded-2xl shadow-lg">
 
@@ -60,9 +61,10 @@
             <select name="industry_type"
                     class="w-full border border-gray-300 p-3 rounded-lg
                            focus:outline-none focus:ring-2 focus:ring-green-400">
-                <option value="beauty">美容院</option>
-                <option value="dental">歯科</option>
-            </select>
+                @foreach(config('industries.options') as $value => $label)
+                    <option value="{{ $value }}" @selected(old('industry_type') === $value)>{{ $label }}</option>
+                @endforeach
+                </select>
         </div>
 
         <hr class="my-8">

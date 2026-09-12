@@ -93,6 +93,8 @@ Route::view('/tokusho', 'apply.tokusho')->name('tokusho');
 
 Route::prefix('admin')->group(function () {
 
+    Route::redirect('/', '/admin/dashboard');
+
     Route::get('login', [AuthController::class, 'showLogin'])
         ->name('admin.login');
 

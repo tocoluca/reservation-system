@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
+@include('admin.partials.navigation')
 
 <div class="max-w-7xl mx-auto px-4 md:px-6 py-6">
 
@@ -44,47 +45,39 @@
         </div>
     @endif
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-2xl shadow-sm border p-4">
-            <div class="text-sm text-gray-500">全件</div>
-            <div class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['all'] ?? 0 }}</div>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border p-4">
-            <div class="text-sm text-gray-500">審査待ち</div>
-            <div class="text-2xl font-bold text-amber-600 mt-1">{{ $stats['pending'] ?? 0 }}</div>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border p-4">
-            <div class="text-sm text-gray-500">承認済</div>
-            <div class="text-2xl font-bold text-emerald-600 mt-1">{{ $stats['approved'] ?? 0 }}</div>
-        </div>
-        <div class="bg-white rounded-2xl shadow-sm border p-4">
-            <div class="text-sm text-gray-500">却下</div>
-            <div class="text-2xl font-bold text-red-600 mt-1">{{ $stats['rejected'] ?? 0 }}</div>
-        </div>
-    </div>
+    <nav aria-label="申請の状態" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        @foreach(['all' => '全件', 'pending' => '確認待ち', 'approved' => '承認済', 'rejected' => '却下'] as $status => $label)
+            <a href="{{ route('admin.applications', ['status' => $status === 'all' ? null : $status]) }}"
+               class="rounded-xl border bg-white p-4 hover:border-sky-500 {{ request('status', '') === ($status === 'all' ? '' : $status) ? 'ring-2 ring-sky-600' : '' }}">
+                <span class="text-sm text-slate-600">{{ $label }}</span>
+                <span class="block text-2xl font-bold mt-1">{{ number_format($stats[$status]) }}</span>
+            </a>
+        @endforeach
+    </nav>
 
     <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-5 mb-6">
         <form method="GET" action="{{ route('admin.applications') }}"
               class="grid grid-cols-1 md:grid-cols-4 gap-3">
 
             <input type="text"
-                   name="keyword"
+                   aria-label="申請検索" name="keyword"
                    value="{{ request('keyword') }}"
                    placeholder="企業名・担当者名・メール・電話で検索"
                    class="w-full rounded-xl border-gray-300 px-4 py-3 border">
 
-            <select name="status" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
+            <select aria-label="申請の状態" name="status" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
                 <option value="">状態すべて</option>
                 <option value="pending"  @selected(request('status') === 'pending')>審査待ち</option>
                 <option value="approved" @selected(request('status') === 'approved')>承認済</option>
                 <option value="rejected" @selected(request('status') === 'rejected')>却下</option>
             </select>
 
-            <select name="industry_type" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
+            <select aria-label="業種" name="industry_type" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
                 <option value="">業種すべて</option>
-                <option value="beauty" @selected(request('industry_type') === 'beauty')>美容</option>
-                <option value="dental" @selected(request('industry_type') === 'dental')>歯科</option>
-            </select>
+                @foreach(config('industries.options') + config('industries.legacy') as $value => $label)
+                    <option value="{{ $value }}" @selected(request('industry_type') === $value)>{{ $label }}</option>
+                @endforeach
+                </select>
 
             <div class="flex gap-2">
                 <button type="submit"
@@ -99,6 +92,10 @@
         </form>
     </div>
 
+    @if(request('application_id'))
+        <p class="mb-3 text-sm text-slate-600">受付番号 #{{ request('application_id') }} を表示中 · <a class="text-sky-700 underline" href="{{ route('admin.applications', ['status' => 'pending']) }}">確認待ちの一覧へ</a></p>
+    @endif
+    <p class="mb-3 text-sm text-slate-600" role="status">検索結果 {{ number_format($applications->total()) }}件</p>
     <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
@@ -196,11 +193,11 @@
     </div>
 </div>
 
-<div id="detailModal" class="hidden fixed inset-0 bg-black/50 z-50 p-4">
+<div id="detailModal" role="dialog" aria-modal="true" aria-label="申請詳細" tabindex="-1" class="hidden fixed inset-0 bg-black/50 z-50 p-4 overflow-y-auto">
     <div class="max-w-2xl mx-auto mt-10 bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b">
             <h2 class="text-lg font-bold text-gray-800">申請詳細</h2>
-            <button onclick="closeDetail()" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
+            <button aria-label="申請詳細を閉じる" onclick="closeDetail()" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
         </div>
         <div id="detailBody" class="p-5 space-y-3 text-sm md:text-base"></div>
         <div class="px-5 py-4 border-t bg-gray-50">
@@ -211,11 +208,11 @@
     </div>
 </div>
 
-<div id="rejectModal" class="hidden fixed inset-0 bg-black/50 z-50 p-4">
+<div id="rejectModal" role="dialog" aria-modal="true" aria-label="申請却下" tabindex="-1" class="hidden fixed inset-0 bg-black/50 z-50 p-4 overflow-y-auto">
     <div class="max-w-xl mx-auto mt-16 bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="flex items-center justify-between px-5 py-4 border-b">
             <h2 class="text-lg font-bold text-gray-800">申請却下</h2>
-            <button onclick="closeReject()" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
+            <button aria-label="申請却下を閉じる" onclick="closeReject()" class="text-gray-500 hover:text-gray-700 text-xl">×</button>
         </div>
 
         <form id="rejectForm" method="POST">
@@ -255,15 +252,40 @@
 </div>
 
 <script>
+let applicationModalTrigger = null;
+let applicationBodyOverflow = '';
+function showApplicationModal(modal) {
+    applicationModalTrigger = document.activeElement;
+    applicationBodyOverflow = document.body.style.overflow;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    modal.querySelector('button').focus();
+}
+function hideApplicationModal(modal) {
+    modal.classList.add('hidden');
+    document.body.style.overflow = applicationBodyOverflow;
+    applicationModalTrigger?.focus();
+}
+document.addEventListener('keydown', event => {
+    const modal = [...document.querySelectorAll('[role="dialog"]')].find(el => !el.classList.contains('hidden'));
+    if (!modal) return;
+    if (event.key === 'Escape') { hideApplicationModal(modal); return; }
+    if (event.key !== 'Tab') return;
+    const controls = [...modal.querySelectorAll('button, input, textarea, a[href], select')].filter(el => !el.disabled && el.getClientRects().length);
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 async function openDetail(id) {
     const modal = document.getElementById('detailModal');
     const body = document.getElementById('detailBody');
 
     body.innerHTML = '<div class="text-gray-500">読み込み中...</div>';
-    modal.classList.remove('hidden');
+    showApplicationModal(modal);
 
     try {
         const response = await fetch(`/admin/applications/${id}`);
+        if (!response.ok) throw new Error('Failed to load application');
         const app = await response.json();
 
         body.innerHTML = `
@@ -310,7 +332,7 @@ async function openDetail(id) {
 }
 
 function closeDetail() {
-    document.getElementById('detailModal').classList.add('hidden');
+    hideApplicationModal(document.getElementById('detailModal'));
 }
 
 function openReject(id, companyName) {
@@ -320,11 +342,11 @@ function openReject(id, companyName) {
 
     form.action = `/admin/applications/reject/${id}`;
     label.textContent = companyName;
-    modal.classList.remove('hidden');
+    showApplicationModal(modal);
 }
 
 function closeReject() {
-    document.getElementById('rejectModal').classList.add('hidden');
+    hideApplicationModal(document.getElementById('rejectModal'));
 }
 
 function escapeHtml(value) {

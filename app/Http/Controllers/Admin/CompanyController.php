@@ -107,14 +107,21 @@ class CompanyController extends Controller
         $query = Company::query();
 
         if ($request->filled('keyword')) {
-            $keyword = $request->keyword;
+            $keyword = trim($request->string('keyword')->toString());
+            $industryKeys = array_keys(array_filter(config('industries.options') + config('industries.legacy'),
+                fn ($label) => str_contains($label, $keyword)));
 
-            $query->where(function ($q) use ($keyword) {
+            $query->where(function ($q) use ($keyword, $industryKeys) {
                 $q->where('name', 'like', "%{$keyword}%")
                     ->orWhere('company_code', 'like', "%{$keyword}%")
                     ->orWhere('industry_type', 'like', "%{$keyword}%")
+                    ->orWhereIn('industry_type', $industryKeys)
                     ->orWhere('email', 'like', "%{$keyword}%");
             });
+        }
+
+        if ($request->filled('industry_type')) {
+            $query->where('industry_type', $request->string('industry_type')->toString());
         }
 
         if ($request->filled('status')) {

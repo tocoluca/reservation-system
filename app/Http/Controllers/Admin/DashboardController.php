@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Models\Company;
-use App\Models\CompanyApplication;
+use App\Models\Application;
 use App\Models\Inquiry;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Schema;
@@ -18,7 +18,7 @@ class DashboardController extends Controller
         $answeredInquiryCount = Inquiry::where('status', 'answered')->count();
         $latestOpenInquiries = Inquiry::with('company')
             ->where('status', 'open')
-            ->latest()
+            ->oldest()
             ->limit(5)
             ->get();
         $attentionStatuses = ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'];
@@ -68,7 +68,8 @@ class DashboardController extends Controller
 
         return view('admin.dashboard', [
             'companyCount'         => Company::count(),
-            'pendingCount'         => CompanyApplication::where('status', 'pending')->count(),
+            'pendingApplications' => Application::where('status', 'pending')->oldest()->limit(5)->get(),
+            'pendingCount'         => Application::where('status', 'pending')->count(),
             'inactiveCount'        => Company::where('is_active', false)->count(),
             'uninitializedCount'   => Company::where('is_initialized', false)->count(),
             'billingAttentionCount' => Company::where(function ($query) use ($attentionStatuses, $hasBillingStartsAt) {

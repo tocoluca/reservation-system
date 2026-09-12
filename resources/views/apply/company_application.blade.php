@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>企業利用申請</title>
+    <title>システム利用のお申し込み</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,6 +11,9 @@
             background: linear-gradient(135deg, #f0f9ff 0%, #eff6ff 100%);
             box-shadow: 0 10px 25px rgba(14, 165, 233, 0.12);
         }
+        .industry-radio:focus-visible + .industry-card { outline: 3px solid #0284c7; outline-offset: 3px; }
+        .industry-indicator { width: 18px; height: 18px; border: 2px solid #94a3b8; border-radius: 50%; background: white; }
+        .industry-radio:checked + .industry-card .industry-indicator { border: 5px solid #0284c7; }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-50 via-white to-sky-50 min-h-screen text-slate-800">
@@ -20,33 +23,33 @@
 
         <div class="text-center mb-8 lg:mb-10">
             <div class="inline-flex items-center px-4 py-1.5 rounded-full bg-sky-100 text-sky-700 text-sm font-semibold mb-4">
-                BUSINESS APPLICATION
+                ご利用をお考えの方へ
             </div>
             <h1 class="text-3xl lg:text-5xl font-bold tracking-tight mb-4">
-                システム利用申請
+                システム利用のお申し込み
             </h1>
             <p class="text-slate-500 max-w-2xl mx-auto leading-7 text-sm sm:text-base">
-                予約受付、顧客管理、シフト管理まで一元化できるシステムです。<br>
-                必要事項を入力して送信すると、管理者側へ申請内容が通知されます。
+                毎日の予約受付や顧客管理、シフト管理をもっとスムーズに。<br>
+                ご利用をご希望の方は、こちらからお申し込みください。
             </p>
         </div>
 
-        <div class="grid lg:grid-cols-[1.05fr_1.35fr] gap-6 lg:gap-8">
+        <div class="grid lg:grid-cols-[0.8fr_1.6fr] gap-6 lg:gap-8">
 
             {{-- 左側案内 --}}
-            <div class="space-y-6">
+            <div class="space-y-6 order-2 lg:order-1">
                 <div class="bg-slate-900 text-white rounded-3xl p-7 lg:p-8 shadow-2xl">
                     <h2 class="text-2xl font-bold mb-5">
-                        申請の流れ
+                        お申し込みの流れ
                     </h2>
 
                     <div class="space-y-5">
                         <div class="flex gap-4">
                             <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center font-bold shrink-0">1</div>
                             <div>
-                                <div class="font-semibold mb-1">必要事項を入力</div>
+                                <div class="font-semibold mb-1">基本情報を入力</div>
                                 <div class="text-white/70 text-sm leading-6">
-                                    企業名、担当者名、連絡先などの基本情報を入力します。
+                                    業種や企業名、ご担当者の連絡先をご入力ください。
                                 </div>
                             </div>
                         </div>
@@ -54,9 +57,9 @@
                         <div class="flex gap-4">
                             <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center font-bold shrink-0">2</div>
                             <div>
-                                <div class="font-semibold mb-1">申請を送信</div>
+                                <div class="font-semibold mb-1">お申し込み内容を送信</div>
                                 <div class="text-white/70 text-sm leading-6">
-                                    送信された内容は管理者画面に登録され、確認対象になります。
+                                    送信後、ご入力のメールアドレスに受付メールをお送りします。
                                 </div>
                             </div>
                         </div>
@@ -64,9 +67,9 @@
                         <div class="flex gap-4">
                             <div class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center font-bold shrink-0">3</div>
                             <div>
-                                <div class="font-semibold mb-1">審査後にご案内</div>
+                                <div class="font-semibold mb-1">メールでご案内</div>
                                 <div class="text-white/70 text-sm leading-6">
-                                    承認後、ログイン情報や利用開始案内がメールで届きます。
+                                    お申し込み内容を確認し、利用開始についてメールでご連絡します。
                                 </div>
                             </div>
                         </div>
@@ -74,7 +77,7 @@
                 </div>
 
                 <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm">
-                    <h3 class="text-lg font-bold mb-4">こんな企業におすすめ</h3>
+                    <h3 class="text-lg font-bold mb-4">こんなお悩みに</h3>
                     <div class="space-y-3 text-sm text-slate-600 leading-6">
                         <div class="flex gap-3">
                             <span class="text-sky-600 font-bold">●</span>
@@ -92,26 +95,26 @@
                 </div>
 
                 <div class="bg-sky-50 rounded-3xl border border-sky-100 p-6 shadow-sm">
-                    <h3 class="text-lg font-bold text-sky-800 mb-3">ご入力いただく内容</h3>
+                    <h3 class="text-lg font-bold text-sky-800 mb-3">ご相談もあわせてどうぞ</h3>
                     <p class="text-sm text-sky-900/80 leading-6">
-                        企業名、担当者名、メールアドレス、電話番号、補足情報のみです。<br>
-                        入力しやすい内容だけに絞っているので、短時間で申請できます。
+                        導入にあたって気になることがあれば、補足欄にお書きください。<br>
+                        補足欄は空欄のままでもお申し込みいただけます。
                     </p>
                 </div>
             </div>
 
             {{-- 右側フォーム --}}
-            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 lg:p-10">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-xl p-5 sm:p-8 lg:p-10 order-1 lg:order-2 min-w-0">
                 <div class="mb-6">
-                    <h2 class="text-2xl font-bold mb-2">利用申請フォーム</h2>
+                    <h2 class="text-2xl font-bold mb-2">お申し込みフォーム</h2>
                     <p class="text-sm text-slate-500">
-                        必須項目をご入力のうえ、送信してください。
+                        「必須」「*」の項目をご入力ください。補足・ご相談は任意です。
                     </p>
                 </div>
 
                 @if($errors->any())
                     <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-red-700">
-                        <div class="font-semibold mb-2">入力内容を確認してください</div>
+                        <div class="font-semibold mb-2">以下の項目をご確認ください。</div>
                         <ul class="list-disc pl-5 space-y-1 text-sm">
                             @foreach($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -123,93 +126,72 @@
                 <form action="{{ route('company.application.store') }}" method="POST" class="space-y-6" id="applicationForm">
                     @csrf
 
-                    <div>
-                        <label class="block text-sm font-semibold mb-3">
-                            業種 <span class="text-red-500">*</span>
-                        </label>
-
-                        <div class="grid sm:grid-cols-2 gap-4">
-                            <label class="block cursor-pointer">
-                                <input type="radio"
-                                       name="industry_type"
-                                       value="beauty"
-                                       class="industry-radio sr-only"
-                                       {{ old('industry_type') === 'beauty' ? 'checked' : '' }}>
-                                <div class="industry-card rounded-2xl border-2 border-slate-200 p-5 transition">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <div class="font-bold text-lg">美容</div>
-                                        <div class="text-sky-600">✦</div>
-                                    </div>
-                                    <div class="text-sm text-slate-500 leading-6">
-                                        美容院、サロン、まつげ、ネイルなど
-                                    </div>
-                                </div>
-                            </label>
-
-{{-- いったん非表示
-                            <label class="block cursor-pointer">
-                                <input type="radio"
-                                       name="industry_type"
-                                       value="dental"
-                                       class="industry-radio sr-only"
-                                       {{ old('industry_type') === 'dental' ? 'checked' : '' }}>
-                                <div class="industry-card rounded-2xl border-2 border-slate-200 p-5 transition">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <div class="font-bold text-lg">歯科</div>
-                                        <div class="text-sky-600">✦</div>
-                                    </div>
-                                    <div class="text-sm text-slate-500 leading-6">
-                                        歯科医院、矯正歯科、クリニックなど
-                                    </div>
-                                </div>
-                            </label>
-いったん非表示 --}}
+                    <fieldset aria-describedby="industry-help{{ $errors->has('industry_type') ? ' industry-error' : '' }}">
+                        <legend class="text-base font-bold mb-2">業種 <span class="text-xs text-red-600 ml-2">必須</span></legend>
+                        <p id="industry-help" class="text-sm text-slate-500 mb-4">主な業種を1つお選びください。</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            @foreach(config('industries.options') as $value => $label)
+                                <label class="block cursor-pointer min-w-0">
+                                    <input type="radio" name="industry_type" value="{{ $value }}"
+                                           class="industry-radio sr-only" required
+                                           @checked(old('industry_type') === $value)
+                                           aria-invalid="{{ $errors->has('industry_type') ? 'true' : 'false' }}">
+                                    <span class="industry-card flex items-center gap-2 rounded-xl border-2 border-slate-200 px-3 py-4 h-full text-sm sm:text-base font-semibold transition hover:border-sky-300">
+                                        <span class="industry-indicator shrink-0" aria-hidden="true"></span>
+                                        <span>{{ $label }}</span>
+                                    </span>
+                                </label>
+                            @endforeach
                         </div>
-                    </div>
+                        <p class="text-xs text-slate-500 mt-3">選択に迷う場合や、当てはまる業種がない場合は「その他」をお選びください。</p>
+                        @error('industry_type')
+                            <p id="industry-error" class="mt-2 text-sm text-red-600" role="alert">{{ $message }}</p>
+                        @enderror
+                    </fieldset>
 
                     <div>
-                        <label class="block text-sm font-semibold mb-2">
+                        <label for="company_name" class="block text-sm font-semibold mb-2">
                             企業名 <span class="text-red-500">*</span>
                         </label>
                         <input type="text"
-                               name="company_name"
+                               id="company_name" name="company_name" required maxlength="255" autocomplete="organization"
                                value="{{ old('company_name') }}"
                                placeholder="例：株式会社サンプル美容"
                                class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold mb-2">
+                        <label for="contact_person" class="block text-sm font-semibold mb-2">
                             担当者名 <span class="text-red-500">*</span>
                         </label>
                         <input type="text"
-                               name="contact_person"
+                               id="contact_person" name="contact_person" required maxlength="255" autocomplete="name"
                                value="{{ old('contact_person') }}"
                                placeholder="例：山田 太郎"
                                class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
                     </div>
 
-                    <div class="grid sm:grid-cols-2 gap-4">
+                    <div class="grid gap-5">
                         <div>
-                            <label class="block text-sm font-semibold mb-2">
+                            <label for="email" class="block text-sm font-semibold mb-2">
                                 メールアドレス <span class="text-red-500">*</span>
                             </label>
                             <input type="email"
-                                   name="email"
+                                   id="email" name="email" required maxlength="255" autocomplete="email"
                                    value="{{ old('email') }}"
                                    placeholder="example@company.co.jp"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
                             <p class="mt-2 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 leading-6">
-                                @tocoluca.com ドメインからのメールを受信できるよう、あらかじめ設定をお願いいたします。
+                                ご案内は @tocoluca.com からお送りします。受信制限を設定されている方は、このドメインの受信を許可してください。
                             </p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold mb-2">
+                            <label for="phone" class="block text-sm font-semibold mb-2">
                                 電話番号 <span class="text-red-500">*</span>
                             </label>
-                            <input type="text"
-                                   name="phone"
+                            <input type="tel"
+                                   id="phone" name="phone" required maxlength="255" autocomplete="tel"
                                    value="{{ old('phone') }}"
                                    placeholder="090-1234-5678"
                                    class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">
@@ -217,15 +199,15 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold mb-2">
-                            補足・お問い合わせ
+                        <label for="message" class="block text-sm font-semibold mb-2">
+                            補足・ご相談（任意）
                         </label>
-                        <textarea name="message"
+                        <textarea id="message" name="message" maxlength="3000"
                                   rows="5"
-                                  placeholder="導入予定時期、相談したい内容、店舗数など"
+                                  placeholder="例：導入時期について相談したい／複数店舗で利用したい"
                                   class="w-full rounded-2xl border border-slate-300 px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-sky-400">{{ old('message') }}</textarea>
                         <p class="text-xs text-slate-400 mt-2">
-                            任意入力です。ご相談内容があれば自由にご記入ください。
+                            気になることがあればお気軽にどうぞ。「その他」を選んだ方は、業種もこちらにご記入いただけます。
                         </p>
                     </div>
 
@@ -267,11 +249,11 @@
                     <button type="submit"
                             id="submitButton"
                             class="w-full rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-bold py-4 shadow-lg shadow-sky-200 transition">
-                        利用申請を送信する
+                        利用を申し込む
                     </button>
 
                     <p class="text-xs text-center text-slate-400">
-                        送信後、管理者に通知されます。
+                        受付後、お申し込み内容を確認し、利用開始についてメールでご案内します。
                     </p>
                 </form>
             </div>

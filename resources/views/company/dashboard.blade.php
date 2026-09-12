@@ -69,9 +69,12 @@ body {
 }
 .dashboard-shell { color: #0f172a; }
 .lux-hero {
-    background:
-        radial-gradient(circle at top right, {{ $theme }}66, transparent 26rem),
-        linear-gradient(135deg, rgba(15,23,42,.98), rgba(30,41,59,.94) 52%, rgba(17,24,39,.98));
+    /* Keep white headings readable even if the theme or color-mix is unsupported. */
+    background-color: #172238;
+    background-image: linear-gradient(135deg, #0f172a, #1e293b 52%, #111827);
+    background-image:
+        radial-gradient(circle at top right, color-mix(in srgb, var(--main-color) 25%, transparent), transparent 26rem),
+        linear-gradient(135deg, #0f172a, #1e293b 52%, #111827);
     border: 1px solid rgba(255,255,255,.18);
     box-shadow: 0 30px 80px rgba(15,23,42,.23);
 }

@@ -112,10 +112,11 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">担当者名</label>
+                            <label for="staff-name" class="block text-sm font-semibold text-gray-700 mb-2">担当者名</label>
                             <input type="text"
+                                   id="staff-name"
                                    name="name"
-                                   value="{{ old('name', $staff->name) }}"
+                                   value="{{ old('role', $staff->role) === 'store_operator' ? '店舗ユーザ' : old('name', $staff->name) }}"
                                    class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:ring-2 focus:outline-none"
                                    style="--tw-ring-color: {{ $theme }}">
                             @error('name')
@@ -136,7 +137,7 @@
                     <div class="p-5 sm:p-6 space-y-6">
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">権限</label>
-                            <select name="role"
+                            <select name="role" id="staff-role"
                                     class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:ring-2 focus:outline-none bg-white"
                                     style="--tw-ring-color: {{ $theme }}">
                                 <option value="staff" {{ old('role', $staff->role) === 'staff' ? 'selected' : '' }}>スタッフ</option>
@@ -158,9 +159,10 @@
                             @endif
                         </div>
 
-                        <div class="rounded-2xl border border-gray-200 p-4">
+                        <div id="reservable-setting" class="rounded-2xl border border-gray-200 p-4">
                             <label class="flex items-start gap-3">
                                 <input type="checkbox"
+                                       id="is-reservable"
                                        name="is_reservable"
                                        value="1"
                                        class="mt-1 w-5 h-5 rounded"
@@ -172,6 +174,9 @@
                                     </span>
                                 </span>
                             </label>
+                            <p id="store-operator-reservation-note" class="hidden mt-3 text-sm font-semibold text-amber-700">
+                                店舗運営ユーザーは店舗内で共有する管理用ユーザーのため、予約受付の担当者には表示されません。
+                            </p>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -309,5 +314,41 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const role = document.getElementById('staff-role');
+    const name = document.getElementById('staff-name');
+    const reservable = document.getElementById('is-reservable');
+    let previousName = @js(old('name', $staff->name));
+    let previousReservable = @js((bool) old('is_reservable', $staff->is_reservable));
+
+    function applyStoreOperatorRules() {
+        const isStoreOperator = role.value === 'store_operator';
+
+        if (isStoreOperator) {
+            if (name.value !== '店舗ユーザ') previousName = name.value;
+            previousReservable = reservable.checked;
+            name.value = '店舗ユーザ';
+            name.readOnly = true;
+            name.classList.add('bg-gray-100', 'text-gray-600');
+            reservable.checked = false;
+            reservable.disabled = true;
+            document.getElementById('store-operator-reservation-note').classList.remove('hidden');
+        } else {
+            if (name.readOnly && previousName) name.value = previousName;
+            name.readOnly = false;
+            name.classList.remove('bg-gray-100', 'text-gray-600');
+            reservable.disabled = false;
+            reservable.checked = previousReservable;
+            document.getElementById('store-operator-reservation-note').classList.add('hidden');
+        }
+    }
+
+    role.addEventListener('change', applyStoreOperatorRules);
+    reservable.addEventListener('change', () => previousReservable = reservable.checked);
+    applyStoreOperatorRules();
+});
+</script>
 
 @endsection

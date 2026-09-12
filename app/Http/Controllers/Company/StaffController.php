@@ -135,35 +135,58 @@ class StaffController extends Controller
         return str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
-	public function index()
+	public function index(Request $request)
 	{
 	    $this->authorizeStaffIndex();
 
 	    $company = $this->currentStaff()->company;
 
-	    $staffs = $company->staff()
-	        ->orderByRaw("
-	            CASE
-	                WHEN role = 'master' THEN 1
-	                WHEN role = 'chief' THEN 2
-	                WHEN role = 'store_operator' THEN 3
-	                WHEN role = 'area_leader' THEN 4
-	                WHEN role = 'leader' THEN 5
-	                ELSE 6
-	            END ASC
-	        ")
-	        ->orderByRaw("
-	            CASE
-	                WHEN staff_code LIKE 'MST%' THEN CAST(REPLACE(staff_code, 'MST', '') AS UNSIGNED)
-	                WHEN staff_code LIKE 'MASTER%' THEN CAST(REPLACE(staff_code, 'MASTER', '') AS UNSIGNED)
-	                WHEN staff_code LIKE 'SHOP%' THEN CAST(REPLACE(staff_code, 'SHOP', '') AS UNSIGNED)
-	                WHEN staff_code REGEXP '^[0-9]+$' THEN CAST(staff_code AS UNSIGNED)
-	                ELSE 999999
-	            END ASC
-	        ")
-	        ->get();
+        $filters = $request->validate([
+            'q' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', 'in:all,active,reservable,retiring,retired,not_reservable'],
+            'sort' => ['nullable', 'in:priority,name,code,role'],
+        ]);
 
-	    return view('company.staff.index', compact('staffs'));
+        $status = $filters['status'] ?? 'all';
+        $sort = $filters['sort'] ?? 'priority';
+        $today = now()->startOfDay();
+        $allStaff = $company->staff();
+
+        $staffStats = [
+            'total' => (clone $allStaff)->count(),
+            'active' => (clone $allStaff)->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $today))->count(),
+            'retiring' => (clone $allStaff)->where('retired_at', '>', $today)->count(),
+            'retired' => (clone $allStaff)->whereNotNull('retired_at')->where('retired_at', '<=', $today)->count(),
+            'reservable' => (clone $allStaff)->where('is_reservable', true)->where('role', '!=', 'store_operator')
+                ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $today))->count(),
+        ];
+
+        $staffs = (clone $allStaff)
+            ->when($filters['q'] ?? null, function ($query, $keyword) {
+                $query->where(function ($staffQuery) use ($keyword) {
+                    $staffQuery->where('name', 'like', "%{$keyword}%")
+                        ->orWhere('staff_code', 'like', "%{$keyword}%");
+                });
+            })
+            ->when($status === 'active', fn ($query) => $query->where(fn ($staffQuery) => $staffQuery->whereNull('retired_at')->orWhere('retired_at', '>', $today)))
+            ->when($status === 'reservable', fn ($query) => $query->where('is_reservable', true)->where('role', '!=', 'store_operator')->where(fn ($staffQuery) => $staffQuery->whereNull('retired_at')->orWhere('retired_at', '>', $today)))
+            ->when($status === 'retiring', fn ($query) => $query->where('retired_at', '>', $today))
+            ->when($status === 'retired', fn ($query) => $query->whereNotNull('retired_at')->where('retired_at', '<=', $today))
+            ->when($status === 'not_reservable', fn ($query) => $query->where(fn ($staffQuery) => $staffQuery->where('is_reservable', false)->orWhere('role', 'store_operator'))->where(fn ($staffQuery) => $staffQuery->whereNull('retired_at')->orWhere('retired_at', '>', $today)))
+            ->when($sort === 'name', fn ($query) => $query->orderBy('name'))
+            ->when($sort === 'code', fn ($query) => $query->orderBy('staff_code'))
+            ->when($sort === 'role', fn ($query) => $query->orderByRaw("CASE role
+                WHEN 'master' THEN 1
+                WHEN 'chief' THEN 2
+                WHEN 'store_operator' THEN 3
+                WHEN 'area_leader' THEN 4
+                WHEN 'leader' THEN 5
+                ELSE 6
+            END"))
+            ->when($sort === 'priority', fn ($query) => $query->orderBy('priority_order')->orderBy('name'))
+            ->get();
+
+	    return view('company.staff.index', compact('staffs', 'staffStats', 'status', 'sort'));
 	}
 
     public function create()
@@ -179,6 +202,13 @@ class StaffController extends Controller
 
         $current = $this->currentStaff();
         $company = $current->company;
+
+        if ($request->input('role') === 'store_operator') {
+            $request->merge([
+                'name' => '店舗ユーザ',
+                'is_reservable' => false,
+            ]);
+        }
 
 		$request->validate([
 		    'name' => 'required|string|max:255',
@@ -227,7 +257,7 @@ class StaffController extends Controller
 				$staff = Staff::create([
 				    'company_id' => $company->id,
 				    'staff_code' => $newCode,
-				    'name' => $request->name,
+				    'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
 				    'password' => Hash::make($request->password),
 				    'role' => $request->role,
 				    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
@@ -290,6 +320,13 @@ class StaffController extends Controller
                 ->withInput();
         }
 
+        if ($request->input('role') === 'store_operator') {
+            $request->merge([
+                'name' => '店舗ユーザ',
+                'is_reservable' => false,
+            ]);
+        }
+
 		$request->validate([
 		    'name' => 'required|string|max:255',
 		    'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
@@ -325,7 +362,7 @@ class StaffController extends Controller
             $isStoreOperator = $request->role === 'store_operator';
 
 			$staff->update([
-			    'name' => $request->name,
+			    'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
 			    'role' => $request->role,
 			    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
 			    'priority_order' => $request->priority_order ?? 0,

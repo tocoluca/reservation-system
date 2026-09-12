@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <meta charset="utf-8">
     @php
         $staff = auth()->guard('company')->user();
         $company = $staff ? $staff->company : null;
@@ -227,7 +228,7 @@
     </style>
 </head>
 
-<body class="min-h-screen pb-24 lg:pb-0 text-slate-900">
+<body class="company-ui min-h-screen pb-24 lg:pb-0 text-slate-900">
 
 @php
     $companyPrimaryNavItems = $company ? [
@@ -329,7 +330,7 @@
 
                     <form method="POST" action="{{ route('company.logout') }}">
                         @csrf
-                        <button type="submit" class="company-logout-btn inline-flex items-center gap-2 px-4 py-3 text-sm font-bold">
+                        <button type="submit" aria-label="ログアウト" class="company-logout-btn inline-flex items-center gap-2 px-4 py-3 text-sm font-bold">
                             <i data-lucide="log-out" class="w-4 h-4"></i>
                             <span class="hidden sm:inline">ログアウト</span>
                         </button>
@@ -380,6 +381,8 @@
 <main class="company-main-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     @yield('content')
 </main>
+
+<link rel="stylesheet" href="{{ asset('css/company-ui.css') }}?v={{ filemtime(public_path('css/company-ui.css')) }}">
 
 @if($company)
 <div id="companyToast"

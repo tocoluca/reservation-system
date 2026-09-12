@@ -7,17 +7,11 @@
     $theme = $company->theme_color ?? '#3b82f6';
     $current = auth()->guard('company')->user();
 
-    $totalCount = $staffs->count();
-    $activeCount = $staffs->filter(function ($staff) {
-        return empty($staff->retired_at) || Carbon::parse($staff->retired_at)->startOfDay()->gt(now()->startOfDay());
-    })->count();
-    $retiredCount = $staffs->filter(function ($staff) {
-        return !empty($staff->retired_at) && Carbon::parse($staff->retired_at)->startOfDay()->lte(now()->startOfDay());
-    })->count();
-    $reservableCount = $staffs->filter(function ($staff) {
-        $isRetired = !empty($staff->retired_at) && Carbon::parse($staff->retired_at)->startOfDay()->lte(now()->startOfDay());
-        return !$isRetired && (bool) $staff->is_reservable && $staff->role !== 'store_operator';
-    })->count();
+    $totalCount = $staffStats['total'];
+    $activeCount = $staffStats['active'];
+    $retiringCount = $staffStats['retiring'];
+    $retiredCount = $staffStats['retired'];
+    $reservableCount = $staffStats['reservable'];
 
     $canResetPassword = function ($target) use ($current) {
         if ((int) $current->id === (int) $target->id) {
@@ -35,7 +29,7 @@
         return false;
     };
 
-    $canManageStaff = !$current->isStoreOperator();
+    $canManageStaff = $current->isMaster();
 @endphp
 
 @section('content')
@@ -61,7 +55,7 @@
                     </h1>
 
                     <p class="mt-2 text-sm sm:text-base text-white/85 leading-relaxed">
-                        担当者の登録状況、予約受付、権限、表示順をまとめて確認できます。
+                        担当者を探して、予約を受け付ける状態や権限を確認・変更できます。
                     </p>
                 </div>
 
@@ -70,13 +64,6 @@
                        class="inline-flex items-center justify-center px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm text-white font-semibold transition">
                         ダッシュボードへ
                     </a>
-
-                    @if($current->isMaster())
-                        <a href="{{ route('company.staff.create') }}"
-                           class="inline-flex items-center justify-center px-5 py-3 rounded-2xl bg-white/15 hover:bg-white/20 backdrop-blur-sm text-white font-bold transition">
-                            新規登録
-                        </a>
-                    @endif
                 </div>
             </div>
         </div>
@@ -88,20 +75,20 @@
                     <div class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($totalCount) }}</div>
                 </div>
 
-                <div class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm">
+                <a href="{{ route('company.staff.index', ['status' => 'active']) }}" class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm hover:border-gray-400">
                     <div class="text-xs text-gray-500 font-semibold">在籍中</div>
                     <div class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($activeCount) }}</div>
-                </div>
+                </a>
 
-                <div class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm">
-                    <div class="text-xs text-gray-500 font-semibold">予約受付対象</div>
+                <a href="{{ route('company.staff.index', ['status' => 'reservable']) }}" class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm hover:border-gray-400">
+                    <div class="text-xs text-gray-500 font-semibold">予約受付中</div>
                     <div class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($reservableCount) }}</div>
-                </div>
+                </a>
 
-                <div class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm">
-                    <div class="text-xs text-gray-500 font-semibold">退職済み</div>
-                    <div class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($retiredCount) }}</div>
-                </div>
+                <a href="{{ route('company.staff.index', ['status' => 'retiring']) }}" class="rounded-2xl bg-white border border-gray-200 px-4 py-4 shadow-sm hover:border-gray-400">
+                    <div class="text-xs text-gray-500 font-semibold">退職予定</div>
+                    <div class="mt-2 text-2xl font-bold text-gray-900">{{ number_format($retiringCount) }}</div>
+                </a>
             </div>
         </div>
     </div>
@@ -112,26 +99,53 @@
         ])
     </div>
 
-    <div class="sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <section class="mb-6 rounded-3xl border border-gray-100 bg-white p-4 sm:p-5 shadow-sm" aria-labelledby="staff-search-title">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between mb-4">
             <div>
-                <div class="text-sm font-bold text-gray-900">状態別の確認</div>
-                <div class="text-xs text-gray-500 mt-1">予約受付対象と退職予定を見落とさないための確認バーです。</div>
+                <h2 id="staff-search-title" class="text-lg font-bold text-gray-900">担当者を探す</h2>
+                <p class="text-sm text-gray-500">名前・担当者コードや状態で絞り込めます。</p>
+                @if(request()->hasAny(['q', 'status', 'sort']))
+                    <a href="{{ route('company.staff.index') }}" class="mt-2 inline-flex text-sm font-semibold text-gray-600 underline">絞り込みを解除</a>
+                @endif
             </div>
-            <div class="flex flex-wrap gap-2">
-                <span class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-2.5 text-sm font-bold text-emerald-700">在籍中 {{ number_format($activeCount) }}</span>
-                <span class="rounded-2xl bg-green-50 border border-green-100 px-4 py-2.5 text-sm font-bold text-green-700">予約受付 {{ number_format($reservableCount) }}</span>
-                <span class="rounded-2xl bg-gray-100 border border-gray-200 px-4 py-2.5 text-sm font-bold text-gray-700">退職済み {{ number_format($retiredCount) }}</span>
-            </div>
+            @if($current->isMaster())
+                <a href="{{ route('company.staff.create') }}"
+                   class="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold text-white shadow-sm transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2"
+                   style="background: {{ $theme }}; --tw-ring-color: {{ $theme }}">
+                    <i data-lucide="user-plus" class="h-5 w-5" aria-hidden="true"></i>
+                    担当者を登録
+                </a>
+            @endif
         </div>
-    </div>
+        <form method="GET" action="{{ route('company.staff.index') }}" class="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px_auto]">
+            <label class="sr-only" for="staff-search">名前または担当者コード</label>
+            <input id="staff-search" type="search" name="q" value="{{ request('q') }}" placeholder="名前または担当者コードで検索" class="min-w-0 rounded-xl border border-gray-300 px-4 py-3">
+            <label class="sr-only" for="staff-status">状態</label>
+            <select id="staff-status" name="status" class="rounded-xl border border-gray-300 px-4 py-3 bg-white">
+                <option value="all" @selected($status === 'all')>すべての状態</option>
+                <option value="active" @selected($status === 'active')>在籍中</option>
+                <option value="reservable" @selected($status === 'reservable')>予約受付中</option>
+                <option value="not_reservable" @selected($status === 'not_reservable')>予約受付停止中</option>
+                <option value="retiring" @selected($status === 'retiring')>退職予定</option>
+                <option value="retired" @selected($status === 'retired')>退職済み</option>
+            </select>
+            <label class="sr-only" for="staff-sort">並び順</label>
+            <select id="staff-sort" name="sort" class="rounded-xl border border-gray-300 px-4 py-3 bg-white">
+                <option value="priority" @selected($sort === 'priority')>表示順</option>
+                <option value="name" @selected($sort === 'name')>名前順</option>
+                <option value="code" @selected($sort === 'code')>コード順</option>
+                <option value="role" @selected($sort === 'role')>権限順</option>
+            </select>
+            <button class="rounded-xl px-5 py-3 text-white font-bold hover:opacity-90" style="background: {{ $theme }}">表示する</button>
+        </form>
+    </section>
 
     <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-bold text-gray-900">担当者一覧</h2>
-                    <p class="text-sm text-gray-500 mt-1">状態と操作をまとめて確認できます。</p>
+                    <p class="text-sm text-gray-500 mt-1">{{ number_format($staffs->count()) }}名を表示中。予約受付と在籍状況を確認できます。</p>
                 </div>
             </div>
         </div>
@@ -228,27 +242,18 @@
                                     </a>
                                 @endif
 
-                                @if($canResetPassword($staff))
-                                    <button type="button"
-                                            onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))"
-                                            class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-red-500 text-white font-semibold shadow-sm hover:bg-red-600 transition">
-                                        PW初期化
-                                    </button>
-                                @endif
-
-                                @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
-                                    <form method="POST"
-                                          action="{{ route('company.staff.destroy', $staff->id) }}"
-                                          class="m-0"
-                                          onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));">
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <button type="submit"
-                                                class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-900 text-white font-semibold shadow-sm hover:bg-black transition">
-                                            削除
-                                        </button>
-                                    </form>
+                                @if($canResetPassword($staff) || ($current->isMaster() && (int) $staff->id !== (int) $current->id))
+                                    <details class="relative">
+                                        <summary class="cursor-pointer list-none inline-flex items-center justify-center px-4 py-2 rounded-xl border border-gray-300 bg-white font-semibold text-gray-700 hover:bg-gray-50">その他</summary>
+                                        <div class="absolute right-0 z-20 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+                                            @if($canResetPassword($staff))
+                                                <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50">パスワード初期化</button>
+                                            @endif
+                                            @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
+                                                <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));"><input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE"><button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-100">削除する</button></form>
+                                            @endif
+                                        </div>
+                                    </details>
                                 @endif
                             </div>
                         </td>
@@ -341,26 +346,18 @@
                             </a>
                         @endif
 
-                        @if($canResetPassword($staff))
-                            <button type="button"
-                                    onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))"
-                                    class="w-full bg-red-500 text-white py-3 rounded-2xl font-semibold shadow-sm">
-                                パスワード初期化
-                            </button>
-                        @endif
-
-                        @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
-                            <form method="POST"
-                                  action="{{ route('company.staff.destroy', $staff->id) }}"
-                                  onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));">
-                                @csrf
-                                @method('DELETE')
-
-                                <button type="submit"
-                                        class="w-full bg-gray-900 text-white py-3 rounded-2xl font-semibold shadow-sm">
-                                    削除する
-                                </button>
-                            </form>
+                        @if($canResetPassword($staff) || ($current->isMaster() && (int) $staff->id !== (int) $current->id))
+                            <details class="rounded-2xl border border-gray-200 bg-gray-50">
+                                <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-700">その他の操作</summary>
+                                <div class="border-t border-gray-200 p-3 space-y-2">
+                                    @if($canResetPassword($staff))
+                                        <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-xl border border-red-200 bg-white py-3 text-sm font-semibold text-red-600">パスワード初期化</button>
+                                    @endif
+                                    @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
+                                        <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));">@csrf @method('DELETE')<button type="submit" class="w-full rounded-xl border border-gray-300 bg-white py-3 text-sm font-semibold text-gray-700">削除する</button></form>
+                                    @endif
+                                </div>
+                            </details>
                         @endif
                     </div>
                 </div>
@@ -368,20 +365,10 @@
         @empty
             <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 text-center">
                 <div class="text-lg font-bold text-gray-700">担当者がまだ登録されていません</div>
-                <p class="text-sm text-gray-400 mt-2">新規登録から担当者を追加してください。</p>
+                <p class="text-sm text-gray-400 mt-2">「担当者を登録」から担当者を追加してください。</p>
             </div>
         @endforelse
     </div>
-
-    @if($current->isMaster())
-        <div class="mt-8 lg:hidden">
-            <a href="{{ route('company.staff.create') }}"
-               class="w-full inline-flex items-center justify-center text-white px-4 py-4 rounded-2xl shadow font-bold hover:opacity-90 transition"
-               style="background: {{ $theme }}">
-                新規登録
-            </a>
-        </div>
-    @endif
 
     <div id="passwordResetModal"
          class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 px-4 py-6">

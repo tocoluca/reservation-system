@@ -1,0 +1,138 @@
+/* Shared company workspace surfaces. Customer-facing pages do not load this file. */
+body.company-ui {
+    --company-canvas: #e8edf2;
+    --company-surface: #fbfcfd;
+    --company-border: #cbd5e1;
+    --company-field: #f0f5f9;
+    --company-field-border: #74879c;
+    --company-focus: #1d4ed8;
+    background: var(--company-canvas);
+    color: #1e293b;
+    line-height: 1.65;
+    font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+}
+
+.company-ui .company-topbar {
+    background: #f4f7fa;
+    border-bottom-color: #b8c5d3;
+    box-shadow: 0 2px 8px rgb(15 23 42 / 6%);
+    backdrop-filter: none;
+}
+.company-ui .company-brand-shell {
+    background: var(--company-surface);
+    border-color: var(--company-border);
+    box-shadow: none;
+}
+.company-ui .company-primary-nav {
+    background: #e8eef4;
+    border-color: var(--company-border);
+    box-shadow: none;
+}
+.company-ui .company-primary-nav a { min-height: 40px; }
+.company-ui .company-primary-nav a.active {
+    background: #243b53;
+    color: #fff;
+    box-shadow: inset 0 -3px 0 #93c5fd;
+}
+.company-ui .company-mobile-nav { background: #f8fafc; border-color: #b8c5d3; }
+.company-ui .company-mobile-nav a { min-height: 44px; }
+.company-ui .company-mobile-nav a.active {
+    color: #1e40af;
+    background: #dbeafe;
+    border-radius: 14px;
+}
+
+/* Keep status colors and calendar cells; strengthen only neutral panel borders. */
+.company-ui .company-main-content :is(div, section, form, article).bg-white {
+    background-color: var(--company-surface);
+}
+.company-ui .company-main-content :is(.border-gray-100, .border-slate-100, .border-gray-200, .border-slate-200) {
+    border-color: var(--company-border);
+}
+.company-ui .company-main-content :is(.text-gray-400, .text-slate-400, .text-gray-500, .text-slate-500) {
+    color: #526176;
+}
+
+/* Explicit control types exclude hidden fields, toggles, sliders, and color pickers.
+   Important is limited to control states to unify page-local and inline form styles. */
+.company-ui .company-main-content :is(input:not([type]), input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="url"], input[type="search"], input[type="number"], input[type="date"], input[type="time"], input[type="month"], input[type="datetime-local"], select, textarea) {
+    min-height: 44px;
+    background-color: var(--company-field) !important;
+    border: 1px solid var(--company-field-border);
+    color: #1e293b;
+    box-shadow: inset 0 1px 2px rgb(15 23 42 / 4%);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.company-ui .company-main-content :is(input, textarea)::placeholder { color: #607086; opacity: 1; }
+.company-ui .company-main-content :is(input, select, textarea):hover:not(:disabled):not([readonly]):not([aria-invalid="true"]) {
+    border-color: #526b85;
+}
+.company-ui .company-main-content :is(input, select, textarea):focus {
+    outline: 2px solid var(--company-focus) !important;
+    outline-offset: 2px;
+    border-color: var(--company-focus) !important;
+    box-shadow: 0 0 0 4px #dbeafe !important;
+}
+.company-ui .company-main-content :is(input, select, textarea)[aria-invalid="true"] {
+    border-color: #b91c1c;
+    background-color: #fff1f2 !important;
+}
+.company-ui .company-main-content :is(input, select, textarea):is(:disabled, [readonly]) {
+    background-color: #e2e8f0 !important;
+    color: #526176;
+    border-style: dashed;
+}
+.company-ui :is(button, input, select, textarea):disabled { cursor: not-allowed; }
+.company-ui :is(a, button, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--company-focus) !important;
+    outline-offset: 3px;
+}
+.company-ui input:is([type="checkbox"], [type="radio"]) { accent-color: #1d4ed8; }
+
+.company-ui .dashboard-shell .card {
+    background: var(--company-surface);
+    border-color: var(--company-border);
+    box-shadow: 0 2px 6px rgb(15 23 42 / 5%);
+    backdrop-filter: none;
+}
+.company-ui .dashboard-shell .card:hover {
+    transform: none;
+    box-shadow: 0 4px 12px rgb(15 23 42 / 9%);
+}
+.company-ui .dashboard-shell .card:has(a:hover) { border-color: #8293a7; }
+.company-ui .dashboard-shell .card.border-red-200 { background: #fff1f2; border-color: #fca5a5; }
+.company-ui .dashboard-shell .card.border-amber-200 { background: #fffbeb; border-color: #fcd34d; }
+.company-ui .dashboard-shell .kpi {
+    background: #f4f8fc;
+    border-color: #b8c8d9;
+    box-shadow: 0 2px 6px rgb(15 23 42 / 5%);
+}
+.company-ui .dashboard-shell :is(.tab-nav, .tab-category-heading) {
+    background: #f1f5f9;
+    border-color: #b8c5d3;
+    box-shadow: 0 2px 8px rgb(15 23 42 / 5%);
+    backdrop-filter: none;
+}
+.company-ui .company-login-shell { background: var(--company-canvas); }
+
+@media (max-width: 640px) {
+    .company-ui .company-main-content :is(input, select, textarea) { font-size: 16px; }
+    .company-ui .company-main-content .tooltip .tooltip-text {
+        position: fixed;
+        left: 1rem;
+        right: 1rem;
+        bottom: 6.5rem;
+        width: auto;
+        transform: none;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .company-ui *, .company-ui *::before, .company-ui *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+@media print {
+    body.company-ui { background: #fff; }
+}

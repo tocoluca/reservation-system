@@ -13,6 +13,7 @@ use App\Models\Vacation;
 use App\Models\CompanyBusinessCalendar;
 use App\Services\ReservationChangeNoticeService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 
 
 class StaffShiftController extends Controller
@@ -39,6 +40,7 @@ class StaffShiftController extends Controller
 
         $staffs = Staff::where('company_id', $company->id)
             ->where('role', '!=', 'store_operator')
+            ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $start->toDateString()))
             ->orderBy('priority_order')
             ->orderBy('id')
             ->get();
@@ -79,6 +81,14 @@ class StaffShiftController extends Controller
                 fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
             ]);
 
+        $reviewStaffIds = DB::table('shift_review_requirements')
+            ->where('company_id', $company->id)
+            ->where('scope', 'monthly')
+            ->where('period', $month)
+            ->whereIn('staff_id', $staffIds)
+            ->pluck('staff_id')
+            ->map(fn ($id) => (int) $id);
+
         return view('company.staff_shifts', [
             'month' => $month,
             'staffs' => $staffs,
@@ -86,6 +96,7 @@ class StaffShiftController extends Controller
             'shifts' => $shifts,
             'vacations' => $vacations,
             'businessDays' => $businessDays,
+            'reviewStaffIds' => $reviewStaffIds,
         ]);
     }
 
@@ -107,6 +118,7 @@ class StaffShiftController extends Controller
 
         $staffs = Staff::where('company_id', $company->id)
             ->where('role', '!=', 'store_operator')
+            ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $start->toDateString()))
             ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
             ->orderByRaw("
                 CASE role
@@ -198,6 +210,7 @@ class StaffShiftController extends Controller
 
         $staffs = Staff::where('company_id', $company->id)
             ->where('role', '!=', 'store_operator')
+            ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $start->toDateString()))
             ->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$topStaffId])
             ->orderByRaw("
                 CASE role
@@ -294,13 +307,27 @@ class StaffShiftController extends Controller
 
         $staffs = Staff::where('company_id', $company->id)
             ->where('role', '!=', 'store_operator')
+            ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $start->toDateString()))
             ->orderBy('priority_order')
             ->orderBy('id')
             ->get();
+        $alreadyRegisteredStaffIds = StaffShift::whereIn('staff_id', $staffs->pluck('id'))
+            ->whereBetween('date', [$start->toDateString(), $start->copy()->endOfMonth()->toDateString()])
+            ->distinct()
+            ->pluck('staff_id')
+            ->map(fn ($id) => (int) $id);
 
+        $createdCount = 0;
         foreach ($staffs as $staff) {
+            if ($alreadyRegisteredStaffIds->contains((int) $staff->id)) {
+                continue;
+            }
+
             for ($d = 1; $d <= $days; $d++) {
                 $date = Carbon::parse($month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT));
+                if ($staff->isRetired($date->toDateString())) {
+                    continue;
+                }
                 $weekday = $date->dayOfWeek;
 
                 $default = StaffDefaultShift::where('staff_id', $staff->id)
@@ -311,7 +338,7 @@ class StaffShiftController extends Controller
                     continue;
                 }
 
-                StaffShift::updateOrCreate(
+                $shift = StaffShift::firstOrCreate(
                     [
                         'staff_id' => $staff->id,
                         'date' => $date->format('Y-m-d'),
@@ -321,10 +348,13 @@ class StaffShiftController extends Controller
                         'is_work' => (int) $default->is_work,
                     ]
                 );
+                if ($shift->wasRecentlyCreated) {
+                    $createdCount++;
+                }
             }
         }
 
-        return back()->with('success', '基本シフトから月シフトを生成しました');
+        return back()->with('success', '基本シフトから、対象月が未登録のスタッフへ月シフトを '.$createdCount.'件生成しました。登録済みのスタッフは変更していません。');
     }
 
     /*
@@ -348,6 +378,18 @@ class StaffShiftController extends Controller
             ->map(fn ($id) => (string) $id);
         $validPatterns = ShiftPattern::where('company_id', $company->id)->get()->keyBy('id');
         $validPatternIds = $validPatterns->keys()->map(fn ($id) => (string) $id);
+        $reviewKeys = collect();
+
+        foreach ($request->shifts as $staffId => $dates) {
+            if (!$validStaffIds->contains((string) $staffId) || !is_array($dates)) {
+                continue;
+            }
+            foreach ($dates as $patternId) {
+                if ($patternId !== null && $patternId !== '' && !$validPatternIds->contains((string) $patternId)) {
+                    return back()->withInput()->with('error', '削除済み、または利用できないシフトパターンが含まれています。画面を再読み込みして選び直してください。');
+                }
+            }
+        }
 
         foreach ($request->shifts as $staffId => $dates) {
             if (!$validStaffIds->contains((string) $staffId) || !is_array($dates)) {
@@ -364,7 +406,7 @@ class StaffShiftController extends Controller
             foreach ($dates as $date => $patternId) {
                 $dateString = Carbon::parse($date)->format('Y-m-d');
 
-                if ($patternId !== null && $patternId !== '' && !$validPatternIds->contains((string) $patternId)) {
+                if ($staff->isRetired($dateString)) {
                     continue;
                 }
 
@@ -402,6 +444,8 @@ class StaffShiftController extends Controller
                     ]
                 );
 
+                $reviewKeys->push($staff->id.'|'.substr($dateString, 0, 7));
+
                 if ($wasWorking && !$isWork) {
                     $notice = $this->changeNoticeService->createForStaffShiftOff(
                         company: $company,
@@ -436,10 +480,31 @@ class StaffShiftController extends Controller
             }
         }
 
+        foreach ($reviewKeys->unique() as $reviewKey) {
+            [$staffId, $period] = explode('|', $reviewKey, 2);
+            DB::table('shift_review_requirements')
+                ->where('company_id', $company->id)
+                ->where('staff_id', $staffId)
+                ->where('scope', 'monthly')
+                ->where('period', $period)
+                ->delete();
+        }
+
         $message = 'シフトを保存しました';
 
         if ($createdNoticeCount > 0) {
             $message .= '（予約変更連絡管理を ' . $createdNoticeCount . ' 件作成しました）';
+        }
+
+        $nextMonthlyReview = DB::table('shift_review_requirements')
+            ->where('company_id', $company->id)
+            ->where('scope', 'monthly')
+            ->orderBy('period')
+            ->first();
+
+        if ($nextMonthlyReview) {
+            return redirect()->route('company.staff-shifts', ['month' => $nextMonthlyReview->period])
+                ->with('success', $message.'。続けて、削除されたパターンを利用していた勤務シフトを確認してください。');
         }
 
         return back()->with('success', $message);
@@ -467,23 +532,40 @@ class StaffShiftController extends Controller
         $prevStart = $currentStart->copy()->subMonthNoOverflow()->startOfMonth();
         $prevEnd = $prevStart->copy()->endOfMonth();
 
-        $staffIds = Staff::where('company_id', $company->id)
+        $staffs = Staff::where('company_id', $company->id)
             ->where('role', '!=', 'store_operator')
-            ->pluck('id');
+            ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', $currentStart->toDateString()))
+            ->get();
+        $staffIds = $staffs->pluck('id');
+        $alreadyRegisteredStaffIds = StaffShift::whereIn('staff_id', $staffIds)
+            ->whereBetween('date', [$currentStart->toDateString(), $currentEnd->toDateString()])
+            ->distinct()
+            ->pluck('staff_id')
+            ->map(fn ($id) => (int) $id);
 
         $prevShifts = StaffShift::whereIn('staff_id', $staffIds)
-            ->whereBetween('date', [$prevStart, $prevEnd])
+            ->whereBetween('date', [$prevStart->toDateString(), $prevEnd->toDateString()])
             ->get()
             ->groupBy([
                 'staff_id',
                 fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
             ]);
 
-        foreach ($staffIds as $staffId) {
+        $copiedCount = 0;
+        foreach ($staffs as $staff) {
+            $staffId = $staff->id;
+            if ($alreadyRegisteredStaffIds->contains((int) $staffId)) {
+                continue;
+            }
+
             $date = $currentStart->copy();
 
             while ($date->lte($currentEnd)) {
                 $targetDate = $date->copy();
+                if ($staff->isRetired($targetDate->toDateString())) {
+                    $date->addDay();
+                    continue;
+                }
                 $targetDay = $targetDate->day;
 
                 $shift = null;
@@ -513,7 +595,7 @@ class StaffShiftController extends Controller
                 }
 
                 if ($shift) {
-                    StaffShift::updateOrCreate(
+                    $created = StaffShift::firstOrCreate(
                         [
                             'staff_id' => $staffId,
                             'date' => $targetDate->format('Y-m-d'),
@@ -523,12 +605,15 @@ class StaffShiftController extends Controller
                             'is_work' => $shift->is_work,
                         ]
                     );
+                    if ($created->wasRecentlyCreated) {
+                        $copiedCount++;
+                    }
                 }
 
                 $date->addDay();
             }
         }
 
-        return back()->with('success', '前月シフトをコピーしました');
+        return back()->with('success', '前月から、対象月が未登録のスタッフへシフトを '.$copiedCount.'件コピーしました。登録済みのスタッフは変更していません。');
     }
 }

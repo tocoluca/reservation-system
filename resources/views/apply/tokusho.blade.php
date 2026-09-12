@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.legal')
 
 @section('title', '特定商取引法に基づく表記')
 

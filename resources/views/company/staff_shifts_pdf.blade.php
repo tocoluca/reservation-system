@@ -248,7 +248,9 @@
                     <td class="staff-col">{{ $staff->name }}</td>
                     @foreach ($dayColumns as $col)
                         @php
-                            $cell = $getCell($staff->id, $col['date'], $col['day_of_week']);
+                            $cell = $staff->isRetired($col['date'])
+                                ? ['text' => '退職', 'class' => 'off']
+                                : $getCell($staff->id, $col['date'], $col['day_of_week']);
                             $tdClass = $cell['class'];
                             if ($isBusinessClosed($col['date'])) {
                                 $tdClass .= ' closed-day';

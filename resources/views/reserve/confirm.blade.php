@@ -1,6 +1,8 @@
 @extends('layouts.app')
 
 @section('content')
+
+<link rel="stylesheet" href="{{ asset('css/reserve-form.css') }}?v={{ filemtime(public_path('css/reserve-form.css')) }}">
 @php
     $theme = $company->theme_color ?? '#b7875c';
     $selectedStaff = $staff ?? null;
@@ -28,7 +30,7 @@
 
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm">
             <div class="px-6 sm:px-8 py-8 text-white text-center"
-                 style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
+                 style="background: #243b53; background: linear-gradient(135deg, var(--main-color), #243b53);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">RESERVATION CONFIRM</div>
                 <h1 class="mt-3 text-2xl sm:text-3xl font-bold leading-tight">ご予約内容の確認</h1>
                 <p class="mt-3 text-sm sm:text-base leading-7 opacity-95">
@@ -264,12 +266,15 @@
 
                                 <div class="grid grid-cols-1 gap-5">
                                     <div>
-                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                        <label for="customer_name" class="block text-[14px] font-bold text-[#6f5743] mb-2">
                                             お名前 <span class="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             name="customer_name"
+                                            id="customer_name"
+                                            autocomplete="name"
+                                            aria-invalid="{{ $errors->has('customer_name') ? 'true' : 'false' }}"
                                             value="{{ old('customer_name', $lineName ?? '') }}"
                                             class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_name') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
                                             style="--tw-ring-color: {{ $errors->has('customer_name') ? '#ef4444' : $theme }};"
@@ -280,12 +285,16 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                        <label for="customer_phone" class="block text-[14px] font-bold text-[#6f5743] mb-2">
                                             電話番号 <span class="text-red-500">*</span>
                                         </label>
                                         <input
                                             type="text"
                                             name="customer_phone"
+                                            id="customer_phone"
+                                            inputmode="tel"
+                                            autocomplete="tel"
+                                            aria-invalid="{{ $errors->has('customer_phone') ? 'true' : 'false' }}"
                                             value="{{ old('customer_phone', $lineCustomer->phone ?? '') }}"
                                             class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_phone') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
                                             style="--tw-ring-color: {{ $errors->has('customer_phone') ? '#ef4444' : $theme }};"
@@ -302,7 +311,7 @@
                                     </div>
 
                                     <div>
-                                        <label class="block text-[14px] font-bold text-[#6f5743] mb-2">
+                                        <label for="customer_email" class="block text-[14px] font-bold text-[#6f5743] mb-2">
                                             メールアドレス
                                             <span class="ml-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold text-white"
                                                   style="background: {{ $theme }};">
@@ -318,6 +327,9 @@
                                         <input
                                             type="email"
                                             name="customer_email"
+                                            id="customer_email"
+                                            autocomplete="email"
+                                            aria-invalid="{{ $errors->has('customer_email') ? 'true' : 'false' }}"
                                             value="{{ old('customer_email', $lineEmail ?? '') }}"
                                             class="w-full rounded-2xl px-4 py-3.5 text-[15px] border shadow-sm transition focus:outline-none focus:ring-2 {{ $errors->has('customer_email') ? 'border-red-300 bg-red-50' : 'border-[#d8c7b7] bg-[#fffdfa]' }}"
                                             style="--tw-ring-color: {{ $errors->has('customer_email') ? '#ef4444' : $theme }};"

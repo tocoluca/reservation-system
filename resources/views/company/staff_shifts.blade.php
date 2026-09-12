@@ -343,8 +343,18 @@
         </div>
     </div>
 
+    @if(($reviewStaffIds ?? collect())->isNotEmpty())
+        <div class="mb-6 rounded-2xl border-2 border-amber-400 bg-amber-50 px-5 py-4 text-amber-950" role="alert">
+            <div class="font-black">削除されたシフトパターンの確認が必要です</div>
+            <p class="mt-1 text-sm leading-6">
+                対象スタッフの {{ $month }} の該当日は「休み」に変更されています。勤務内容を選び直し、「変更内容を保存」を押してください。
+            </p>
+        </div>
+    @endif
+
     <form id="shiftForm" method="POST" action="{{ route('company.staff-shifts.update') }}" data-busy-form="true" data-busy-label="保存中…">
         @csrf
+        <input type="hidden" name="month" value="{{ $month }}">
 
         <div class="shift-mobile-layout lg:hidden mb-4">
             <div class="shift-mobile-toolbar rounded-[1.5rem] border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
@@ -396,6 +406,8 @@
                     <section data-mobile-shift-day="{{ $mobileDate }}" class="hidden space-y-2">
                         @forelse($staffs as $staff)
                             @php
+                                $mobileIsRetired = $staff->isRetired($mobileDate);
+                                $mobileNeedsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id);
                                 $mobileShift = $shifts[$staff->id][$mobileDate][0] ?? null;
                                 $mobileShiftId = $mobileShift->shift_pattern_id ?? '';
                                 $mobileStaffVacations = $vacations[$staff->id] ?? collect();
@@ -407,7 +419,7 @@
                                 $mobileShiftColor = $mobileShift?->shiftPattern->color ?? ($mobileShiftId ? ($patternMap[$mobileShiftId]->color ?? '#64748b') : '');
                             @endphp
 
-                            <div class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm"
+                            <div class="rounded-2xl border bg-white p-3 shadow-sm {{ $mobileNeedsReview ? 'border-amber-400 ring-2 ring-amber-200' : 'border-gray-200' }}"
                                  data-shift-cell
                                  data-staff="{{ $staff->id }}"
                                  data-day="{{ $d }}">
@@ -416,7 +428,9 @@
                                         <div class="truncate font-black text-gray-900">{{ $staff->name }}</div>
                                         <div class="mt-1 text-xs text-gray-500">この日のシフト</div>
                                     </div>
-                                    @if($mobileIsClosed)
+                                    @if($mobileIsRetired)
+                                        <span class="shrink-0 rounded-full bg-slate-200 px-3 py-2 text-xs font-black text-slate-600">退職済</span>
+                                    @elseif($mobileIsClosed)
                                         <span class="shrink-0 rounded-full bg-gray-100 px-3 py-2 text-xs font-black text-gray-500">休業</span>
                                     @elseif($mobileIsVacation)
                                         <span class="shrink-0 rounded-full bg-red-100 px-3 py-2 text-xs font-black text-red-600">休暇</span>
@@ -430,7 +444,7 @@
                                     @endif
                                 </div>
 
-                                @if(!$mobileIsClosed && !$mobileIsVacation)
+                                @if(!$mobileIsRetired && !$mobileIsClosed && !$mobileIsVacation)
                                     <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                                         <button type="button"
                                                 class="shift-btn rounded-xl bg-gray-100 px-2 py-2.5 text-xs font-bold text-gray-700"
@@ -526,10 +540,16 @@
 
                     <tbody>
                         @foreach($staffs as $staff)
-                            <tr class="border-b hover:bg-gray-50">
+                            @php
+                                $needsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id);
+                            @endphp
+                            <tr class="border-b {{ $needsReview ? 'bg-amber-50' : 'hover:bg-gray-50' }}">
                                 <td class="p-3 font-semibold sticky left-0 bg-white z-20 min-w-[240px] border-r align-top">
                                     <div class="space-y-3">
-                                        <div class="font-semibold text-gray-900">{{ $staff->name }}</div>
+                                        <div class="font-semibold text-gray-900">
+                                            {{ $staff->name }}
+                                            @if($needsReview)<span class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">要確認</span>@endif
+                                        </div>
 
                                         <div class="flex flex-wrap gap-2">
                                             <button type="button"
@@ -553,6 +573,7 @@
                                 @for($d = 1; $d <= $days; $d++)
                                     @php
                                         $date = $month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT);
+                                        $isRetired = $staff->isRetired($date);
 
                                         $shift = $shifts[$staff->id][$date][0] ?? null;
                                         $currentShiftId = $shift->shift_pattern_id ?? '';
@@ -585,7 +606,9 @@
                                         data-shift-cell
                                         data-staff="{{ $staff->id }}"
                                         data-day="{{ $d }}">
-                                        @if($isClosed)
+                                        @if($isRetired)
+                                            <div class="text-slate-500 text-center font-semibold text-xs py-3">退職済</div>
+                                        @elseif($isClosed)
                                             <div class="text-gray-400 text-center font-semibold text-xs py-3">休業</div>
                                         @elseif($isVacation)
                                             <div class="text-red-500 text-center font-bold text-xs py-3">休暇</div>

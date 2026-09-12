@@ -16,6 +16,87 @@ form div:has(> input[name="retired_at"]) {
 form section:has(input[name="retired_at"]) > div:first-child p {
     display: none;
 }
+
+.role-help {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.role-help-button {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border: 1px solid #bfdbfe;
+    border-radius: 9999px;
+    color: #1d4ed8;
+    background: #eff6ff;
+    font-size: 13px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.role-help-button:hover,
+.role-help-button:focus-visible,
+.role-help-button[aria-expanded="true"] {
+    color: #ffffff;
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    outline: none;
+}
+
+.role-help-button:focus-visible {
+    box-shadow: 0 0 0 3px #dbeafe;
+}
+
+.role-help-balloon {
+    position: absolute;
+    z-index: 60;
+    top: calc(100% + 12px);
+    left: 50%;
+    width: min(360px, calc(100vw - 48px));
+    padding: 16px;
+    border-radius: 16px;
+    color: #f8fafc;
+    background: #172033;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, .24);
+    font-size: 13px;
+    line-height: 1.75;
+    transform: translateX(-20%);
+}
+
+.role-help-balloon::before {
+    content: "";
+    position: absolute;
+    top: -7px;
+    left: calc(20% - 7px);
+    width: 14px;
+    height: 14px;
+    background: #172033;
+    transform: rotate(45deg);
+}
+
+.role-help-balloon[hidden] {
+    display: none;
+}
+
+@media (max-width: 640px) {
+    .role-help-balloon {
+        position: fixed;
+        top: auto;
+        right: 16px;
+        bottom: 24px;
+        left: 16px;
+        width: auto;
+        transform: none;
+    }
+
+    .role-help-balloon::before {
+        display: none;
+    }
+}
 </style>
 
 <div class="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -103,7 +184,29 @@ form section:has(input[name="retired_at"]) > div:first-child p {
 
                     <div class="p-5 sm:p-6 space-y-6">
                         <div>
-                            <label for="staff-role" class="block text-sm font-semibold text-gray-700 mb-2">権限 <span class="text-red-500">*</span></label>
+                            <div class="mb-2 flex items-center gap-2">
+                                <label for="staff-role" class="block text-sm font-semibold text-gray-700">権限 <span class="text-red-500">*</span></label>
+                                <span class="role-help">
+                                    <button type="button"
+                                            id="role-help-button"
+                                            class="role-help-button"
+                                            aria-label="担当者の権限について説明を表示"
+                                            aria-controls="role-help-balloon"
+                                            aria-expanded="false">?</button>
+                                    <span id="role-help-balloon" class="role-help-balloon" role="tooltip" hidden>
+                                        <strong class="block text-sm text-white">担当者の権限について</strong>
+                                        <span class="mt-2 block">
+                                            権限は6種類あります。担当者に割り当てた権限に応じて、アクセスできる画面や操作できる機能を制限できます。
+                                        </span>
+                                        <span class="mt-2 block rounded-xl border border-blue-300/30 bg-blue-400/10 px-3 py-2 text-blue-50">
+                                            各権限で表示・実行できるメニューは、「ダッシュボード → 店舗設定 → ダッシュボード管理」から設定・変更できます。
+                                        </span>
+                                        <span class="mt-2 block">
+                                            「店舗運営」は、日々の営業で使う機能を利用するための権限です。管理権限が低い担当者でも、通常営業に必要な操作を行えるように用意しています。
+                                        </span>
+                                    </span>
+                                </span>
+                            </div>
                             <select name="role" id="staff-role"
                                     class="w-full border border-gray-200 rounded-2xl px-4 py-3 text-base focus:ring-2 focus:outline-none bg-white"
                                     style="--tw-ring-color: {{ $theme }}">
@@ -351,6 +454,8 @@ form section:has(input[name="retired_at"]) > div:first-child p {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const role = document.getElementById('staff-role');
+    const roleHelpButton = document.getElementById('role-help-button');
+    const roleHelpBalloon = document.getElementById('role-help-balloon');
     const name = document.getElementById('staff-name');
     const reservable = document.getElementById('is-reservable');
     const note = document.getElementById('store-operator-reservation-note');
@@ -364,6 +469,26 @@ document.addEventListener('DOMContentLoaded', function () {
     let previousName = name.value;
     let previousReservable = reservable.checked;
     let imagePreviewUrl = null;
+
+    function setRoleHelpOpen(open) {
+        roleHelpBalloon.hidden = !open;
+        roleHelpButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    roleHelpButton.addEventListener('click', function () {
+        setRoleHelpOpen(roleHelpButton.getAttribute('aria-expanded') !== 'true');
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.role-help')) setRoleHelpOpen(false);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && roleHelpButton.getAttribute('aria-expanded') === 'true') {
+            setRoleHelpOpen(false);
+            roleHelpButton.focus();
+        }
+    });
 
     function applyStoreOperatorRules() {
         const isStoreOperator = role.value === 'store_operator';

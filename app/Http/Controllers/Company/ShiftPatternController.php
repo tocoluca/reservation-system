@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Staff;
+use App\Models\StaffDefaultShift;
+use App\Models\StaffShift;
 use App\Models\ShiftPattern;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ShiftPatternController extends Controller
 {
@@ -127,13 +131,77 @@ class ShiftPatternController extends Controller
 
         if ($pattern) {
             $deletedSortOrder = $pattern->sort_order;
-            $pattern->delete();
+            $activeStaffIds = Staff::where('company_id', $company->id)
+                ->where(fn ($query) => $query->whereNull('retired_at')->orWhere('retired_at', '>', today()->toDateString()))
+                ->pluck('id');
+            $defaultStaffIds = StaffDefaultShift::where('shift_pattern_id', $pattern->id)
+                ->whereIn('staff_id', $activeStaffIds)
+                ->distinct()
+                ->pluck('staff_id');
+            $monthlyRows = StaffShift::where('shift_pattern_id', $pattern->id)->get(['staff_id', 'date']);
+            $monthlyStaff = Staff::where('company_id', $company->id)
+                ->whereIn('id', $monthlyRows->pluck('staff_id'))
+                ->get()
+                ->keyBy('id');
+            $monthlyUses = $monthlyRows
+                ->filter(function ($shift) use ($monthlyStaff) {
+                    $staff = $monthlyStaff->get($shift->staff_id);
+                    return $staff && !$staff->isRetired((string) $shift->date);
+                })
+                ->map(fn ($shift) => [
+                    'staff_id' => (int) $shift->staff_id,
+                    'period' => substr((string) $shift->date, 0, 7),
+                ])
+                ->unique(fn ($use) => $use['staff_id'].'|'.$use['period'])
+                ->values();
 
-            ShiftPattern::where('company_id', $company->id)
-                ->where('sort_order', '>', $deletedSortOrder)
-                ->decrement('sort_order');
+            DB::transaction(function () use ($pattern, $company, $deletedSortOrder, $defaultStaffIds, $monthlyUses) {
+                StaffDefaultShift::where('shift_pattern_id', $pattern->id)->update([
+                    'shift_pattern_id' => null,
+                    'is_work' => false,
+                ]);
+                StaffShift::where('shift_pattern_id', $pattern->id)->update([
+                    'shift_pattern_id' => null,
+                    'is_work' => false,
+                ]);
+
+                $now = now();
+                foreach ($defaultStaffIds as $staffId) {
+                    DB::table('shift_review_requirements')->updateOrInsert(
+                        ['company_id' => $company->id, 'staff_id' => $staffId, 'scope' => 'default', 'period' => ''],
+                        ['reason' => $pattern->name, 'updated_at' => $now, 'created_at' => $now]
+                    );
+                }
+                foreach ($monthlyUses as $use) {
+                    DB::table('shift_review_requirements')->updateOrInsert(
+                        ['company_id' => $company->id, 'staff_id' => $use['staff_id'], 'scope' => 'monthly', 'period' => $use['period']],
+                        ['reason' => $pattern->name, 'updated_at' => $now, 'created_at' => $now]
+                    );
+                }
+
+                $pattern->delete();
+                ShiftPattern::where('company_id', $company->id)
+                    ->where('sort_order', '>', $deletedSortOrder)
+                    ->decrement('sort_order');
+            });
+
+            $affected = $defaultStaffIds->count() + $monthlyUses->count();
+            $message = 'シフトパターンを削除しました。';
+            if ($affected > 0) {
+                $message .= ' 利用中だったシフトは「休み」に変更したため、基本シフト・勤務管理を確認して保存してください。';
+            }
+
+            if ($defaultStaffIds->isNotEmpty()) {
+                return redirect()->route('company.staff-default-shifts')->with('success', $message);
+            }
+            if ($monthlyUses->isNotEmpty()) {
+                return redirect()->route('company.staff-shifts', ['month' => $monthlyUses->first()['period']])
+                    ->with('success', $message);
+            }
+
+            return back()->with('success', $message);
         }
 
-        return back()->with('success', 'シフトパターンを削除しました。');
+        return back()->with('error', 'シフトパターンが見つかりません。');
     }
 }

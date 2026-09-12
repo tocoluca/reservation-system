@@ -2,6 +2,8 @@
 
 @section('content')
 
+<link rel="stylesheet" href="{{ asset('css/reserve-form.css') }}?v={{ filemtime(public_path('css/reserve-form.css')) }}">
+
 @php
     $theme = $company->theme_color ?? '#b7875c';
 @endphp
@@ -12,7 +14,7 @@
         {{-- ヘッダー --}}
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm mb-4 sm:mb-5">
             <div class="px-6 sm:px-8 py-7 sm:py-9 text-white text-center"
-                 style="background: linear-gradient(135deg, {{ $theme }} 0%, {{ $theme }}dd 100%);">
+                 style="background: #243b53; background: linear-gradient(135deg, var(--main-color), #243b53);">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">ONLINE RESERVATION</div>
                 <h1 class="mt-3 text-3xl sm:text-4xl font-bold leading-tight">
                     ご予約
@@ -355,7 +357,7 @@
                             ご希望日を選ぶと、予約できる時間が表示されます。
                         </div>
 
-                        <label class="block text-sm font-semibold text-[#7a614d] mb-2">
+                        <label for="date" class="block text-sm font-semibold text-[#7a614d] mb-2">
                             日付
                         </label>
                         <input

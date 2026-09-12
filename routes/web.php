@@ -72,6 +72,8 @@ Route::post('/stripe/webhook', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
+Route::redirect('/', '/company/login');
+
 Route::get('/apply', [CompanyApplicationController::class, 'create'])
     ->name('company.application.create');
 

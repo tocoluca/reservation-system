@@ -78,6 +78,15 @@
         </div>
     @endif
 
+    @if(($reviewStaffIds ?? collect())->isNotEmpty())
+        <div class="mb-5 rounded-2xl border-2 border-amber-400 bg-amber-50 px-5 py-4 text-amber-950" role="alert">
+            <div class="font-black">削除されたシフトパターンの確認が必要です</div>
+            <p class="mt-1 text-sm leading-6">
+                対象スタッフの該当曜日は「休」に変更されています。新しいパターンを選び直し、この画面を保存してください。
+            </p>
+        </div>
+    @endif
+
     <form id="defaultShiftForm" method="POST" action="{{ route('company.staff-default-shifts') }}"
           data-busy-form="true" data-busy-label="保存中…">
         @csrf
@@ -109,9 +118,15 @@
 
                     <tbody>
                         @foreach($staffs as $staff)
-                            <tr class="odd:bg-stone-50 even:bg-white">
+                            @php
+                                $needsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id);
+                            @endphp
+                            <tr class="odd:bg-stone-50 even:bg-white {{ $needsReview ? 'outline outline-2 outline-amber-400 outline-offset-[-2px]' : '' }}">
                                 <td class="sticky left-0 z-20 p-4 font-semibold text-stone-800 border-b border-stone-200 border-r border-stone-200 shadow-sm min-w-[180px] {{ $loop->odd ? 'bg-stone-50' : 'bg-white' }}">
                                     {{ $staff->name }}
+                                    @if($needsReview)
+                                        <span class="mt-2 block w-fit rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">要確認</span>
+                                    @endif
                                 </td>
 
                                 @for($w = 1; $w <= 7; $w++)

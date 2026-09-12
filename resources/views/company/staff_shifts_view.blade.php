@@ -253,6 +253,7 @@
                 <section data-mobile-shift-day="{{ $mobileDate }}" class="hidden space-y-2">
                     @forelse($staffs as $staff)
                         @php
+                            $mobileIsRetired = $staff->isRetired($mobileDate);
                             $mobileIsTop = (int)$staff->id === (int)$topStaffId;
                             $mobileIsMe = (int)$staff->id === (int)$loginStaffId;
                             $mobileShift = $shifts[$staff->id][$mobileDate][0] ?? null;
@@ -283,7 +284,9 @@
                                 <div class="mt-1 truncate text-xs text-gray-500">{{ $staff->roleLabel() }} / {{ $staff->staff_code ?: '-' }}</div>
                             </div>
 
-                            @if($mobileIsClosed)
+                            @if($mobileIsRetired)
+                                <span class="shrink-0 rounded-full bg-slate-200 px-3 py-2 text-xs font-black text-slate-600">退職済</span>
+                            @elseif($mobileIsClosed)
                                 <span class="shrink-0 rounded-full bg-gray-100 px-3 py-2 text-xs font-black text-gray-500">休業</span>
                             @elseif($mobileIsVacation)
                                 <span class="shrink-0 rounded-full bg-red-100 px-3 py-2 text-xs font-black text-red-600">休暇</span>
@@ -367,6 +370,7 @@
                                 @php
                                     $date = $month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT);
                                     $dateObj = \Carbon\Carbon::parse($date);
+                                    $isRetired = $staff->isRetired($date);
                                     $weekday = $dateObj->dayOfWeek;
 
                                     $shift = $shifts[$staff->id][$date][0] ?? null;
@@ -406,7 +410,11 @@
                                 @endphp
 
                                 <td class="p-2 min-w-[110px] text-center align-middle {{ $isTop ? 'bg-amber-50' : '' }}">
-                                    @if($isClosed)
+                                    @if($isRetired)
+                                        <span class="inline-flex rounded-full bg-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600">
+                                            退職済
+                                        </span>
+                                    @elseif($isClosed)
                                         <span class="inline-flex rounded-full px-2 py-1 text-[11px] font-semibold bg-gray-100 text-gray-500">
                                             休業
                                         </span>

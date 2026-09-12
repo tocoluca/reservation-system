@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.legal')
 
 @section('title', '利用規約')
 

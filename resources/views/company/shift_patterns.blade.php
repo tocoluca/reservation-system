@@ -54,14 +54,15 @@
             <div>
                 <h2 class="text-lg font-bold text-gray-900">使い方</h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    ここで登録した名前・色・表示順が、そのまま勤務管理画面に反映されます。
+                    ここは勤務時間の選択肢を作る画面です。追加後、基本シフトで各曜日に割り当てます。
                 </p>
             </div>
 
             <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
                 <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">1. パターンを追加</span>
                 <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">2. 色を決める</span>
-                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">3. 表示順を整える</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">3. 追加する</span>
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 font-bold text-blue-700">次に基本シフトへ</span>
             </div>
         </div>
     </div>

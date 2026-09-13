@@ -19,6 +19,9 @@
         '0',
         STR_PAD_LEFT
     );
+    $displayMonth = \Carbon\Carbon::parse($month . '-01')->format('Y年n月');
+    $previousDisplayMonth = \Carbon\Carbon::parse(($shiftSourceStats['previous_month'] ?? $month) . '-01')->format('Y年n月');
+    $editableFromDate = today()->toDateString();
 @endphp
 
 <style>
@@ -240,7 +243,7 @@
         </div>
     </div>
 
-    <div class="shift-desktop-layout mb-6">
+    <div class="mb-6">
         @include('company._shift_setup_nav', [
             'currentStep' => 3,
             'links' => [
@@ -249,68 +252,92 @@
         ])
     </div>
 
-    {{-- ガイド --}}
-    <div class="shift-desktop-layout mb-6 bg-white rounded-3xl border border-gray-100 shadow-sm p-5 sm:p-6">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <h2 class="text-lg font-bold text-gray-900">操作の流れ</h2>
-                <p class="text-sm text-gray-500 mt-1">
-                    まず自動生成で土台を作り、そのあと必要な日だけ個別調整すると効率的です。
-                </p>
-            </div>
+    @if($errors->any() || session('error'))
+        <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+            <div class="font-black">処理できませんでした</div>
+            @if(session('error'))<p class="mt-1">{{ session('error') }}</p>@endif
+            @foreach($errors->all() as $error)<p class="mt-1">{{ $error }}</p>@endforeach
+        </div>
+    @endif
 
-            <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
-                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">1. 月を選ぶ</span>
-                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">2. 自動生成</span>
-                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">3. 微調整</span>
+    @if(session('success'))
+        <div class="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
+            <i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
+            <div><div class="font-black">完了しました</div><p class="mt-1">{{ session('success') }}</p></div>
+        </div>
+    @endif
+
+    <section class="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm" aria-labelledby="monthly-shift-start-title">
+        <div class="border-b border-gray-100 px-5 py-5 sm:px-6" style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div>
+                    <p class="text-xs font-black" style="color: {{ $theme }}">毎月の作業</p>
+                    <h2 id="monthly-shift-start-title" class="mt-1 text-xl font-black text-gray-950">{{ $displayMonth }}の勤務表を作る</h2>
+                    <p class="mt-1 text-sm text-gray-600">①月を選び、②作り方を1つ選び、③下の表を確認・修正して保存します。</p>
+                </div>
+                @if(($shiftSourceStats['current_count'] ?? 0) > 0)
+                    <span class="w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-black text-emerald-800">登録済み {{ number_format($shiftSourceStats['current_count']) }}件</span>
+                @else
+                    <span class="w-fit rounded-full bg-amber-100 px-3 py-1.5 text-xs font-black text-amber-800">まだ未作成です</span>
+                @endif
             </div>
         </div>
-    </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-6">
-        <div class="xl:col-span-2 bg-white border border-gray-200 rounded-3xl shadow-sm p-5">
-            <div class="flex flex-col lg:flex-row lg:items-end gap-3">
-                <form method="GET" class="flex flex-col sm:flex-row gap-3 w-full">
-                    <div class="flex-1">
-                        <label class="block text-xs font-semibold text-gray-500 mb-2">表示する月</label>
-                        <input type="month"
-                               name="month"
-                               value="{{ $month }}"
-                               class="w-full border border-gray-300 rounded-2xl px-4 py-3">
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(240px,0.75fr)_minmax(0,2fr)] xl:divide-x divide-gray-100">
+            <div class="p-5 sm:p-6">
+                <div class="mb-3 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black text-white" style="background: {{ $theme }}">1</div>
+                <h3 class="font-black text-gray-900">対象月を選ぶ</h3>
+                <form method="GET" class="mt-3 flex flex-col gap-3 w-full">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-2">勤務表を作る月</label>
+                        <input type="month" name="month" value="{{ $month }}" class="w-full border border-gray-300 rounded-2xl px-4 py-3">
                     </div>
+                    <button class="w-full px-5 py-3 text-white rounded-2xl font-semibold hover:opacity-90 transition" style="background: {{ $theme }}">この月を表示</button>
+                </form>
+            </div>
 
-                    <div class="sm:self-end">
-                        <button class="w-full sm:w-auto px-5 py-3 text-white rounded-2xl font-semibold hover:opacity-90 transition"
-                                style="background: {{ $theme }}">
-                            表示
+            <div class="border-t border-gray-100 p-5 sm:p-6 xl:border-t-0">
+                <div class="mb-3 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-black text-white" style="background: {{ $theme }}">2</div>
+                <h3 class="font-black text-gray-900">勤務表の作り方を選ぶ</h3>
+                <p class="mt-1 text-xs text-gray-500">どちらか一方だけでOKです。登録済みスタッフの内容は変更しません。</p>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <form method="POST" action="{{ route('company.staff-shifts.generate') }}" class="rounded-2xl border-2 border-blue-100 bg-blue-50/60 p-4" onsubmit="return confirm('{{ $displayMonth }}の未作成スタッフに、基本シフトを反映しますか？\nすでに登録があるスタッフは変更されません。')">
+                        @csrf
+                        <input type="hidden" name="month" value="{{ $month }}">
+                        <div class="flex items-start gap-3">
+                            <span class="rounded-xl bg-blue-100 p-2 text-blue-700"><i data-lucide="calendar-sync" class="h-5 w-5"></i></span>
+                            <div><div class="font-black text-gray-950">毎週ほぼ同じなら</div><p class="mt-1 text-xs leading-5 text-gray-600">「基本シフト」に登録した曜日別の勤務を使います。</p></div>
+                        </div>
+                        <div class="mt-3 text-xs font-bold {{ ($shiftSourceStats['default_count'] ?? 0) > 0 ? 'text-blue-700' : 'text-amber-700' }}">基本シフト：{{ number_format($shiftSourceStats['default_count'] ?? 0) }}件登録</div>
+                        <button class="mt-3 w-full px-4 py-3 bg-blue-700 text-white rounded-2xl font-black hover:bg-blue-600 transition disabled:cursor-not-allowed disabled:opacity-40" @disabled(($shiftSourceStats['default_count'] ?? 0) === 0)>
+                            基本シフトから作る
                         </button>
-                    </div>
-                </form>
+                        @if(($shiftSourceStats['default_count'] ?? 0) === 0)
+                            <a href="{{ route('company.staff-default-shifts') }}" class="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700">先に基本シフトを登録 <i data-lucide="arrow-right" class="h-3 w-3"></i></a>
+                        @endif
+                    </form>
+
+                    <form method="POST" action="{{ route('company.staff-shifts.copy') }}" class="rounded-2xl border-2 border-violet-100 bg-violet-50/60 p-4" onsubmit="return confirm('{{ $previousDisplayMonth }}の勤務表を{{ $displayMonth }}へコピーしますか？\nすでに登録があるスタッフは変更されません。')">
+                        @csrf
+                        <input type="hidden" name="month" value="{{ $month }}">
+                        <div class="flex items-start gap-3">
+                            <span class="rounded-xl bg-violet-100 p-2 text-violet-700"><i data-lucide="copy" class="h-5 w-5"></i></span>
+                            <div><div class="font-black text-gray-950">先月とほぼ同じなら</div><p class="mt-1 text-xs leading-5 text-gray-600">{{ $previousDisplayMonth }}の実際の勤務表を日付順にコピーします。</p></div>
+                        </div>
+                        <div class="mt-3 text-xs font-bold {{ ($shiftSourceStats['previous_count'] ?? 0) > 0 ? 'text-violet-700' : 'text-amber-700' }}">{{ $previousDisplayMonth }}：{{ number_format($shiftSourceStats['previous_count'] ?? 0) }}件登録</div>
+                        <button class="mt-3 w-full px-4 py-3 bg-violet-700 text-white rounded-2xl font-black hover:bg-violet-600 transition disabled:cursor-not-allowed disabled:opacity-40" @disabled(($shiftSourceStats['previous_count'] ?? 0) === 0)>
+                            前月の勤務表から作る
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div class="bg-white border border-gray-200 rounded-3xl shadow-sm p-5">
-            <div class="text-xs font-semibold text-gray-500 mb-3">初期反映</div>
-
-            <div class="flex flex-col gap-3">
-                <form method="POST" action="{{ route('company.staff-shifts.generate') }}">
-                    @csrf
-                    <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="w-full px-4 py-3 bg-gray-800 text-white rounded-2xl font-semibold hover:bg-gray-700 transition">
-                        基本シフト生成
-                    </button>
-                </form>
-
-                <form method="POST" action="{{ route('company.staff-shifts.copy') }}">
-                    @csrf
-                    <input type="hidden" name="month" value="{{ $month }}">
-                    <button class="w-full px-4 py-3 bg-indigo-600 text-white rounded-2xl font-semibold hover:bg-indigo-500 transition">
-                        前月コピー
-                    </button>
-                </form>
-            </div>
+        <div class="border-t border-gray-100 bg-gray-50 px-5 py-3 text-xs leading-5 text-gray-600 sm:px-6">
+            <span class="font-black text-gray-800">安心：</span>作成ボタンは、{{ $displayMonth }}に1件でも勤務登録があるスタッフを丸ごとスキップします。個別の変更は下の勤務表で行います。
         </div>
-    </div>
+    </section>
 
     <div class="shift-save-toolbar sticky top-24 z-30 mb-6 rounded-[1.75rem] border border-white/80 bg-white/90 p-3 shadow-lg backdrop-blur">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -356,6 +383,19 @@
         @csrf
         <input type="hidden" name="month" value="{{ $month }}">
 
+        <aside class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-amber-950" aria-label="個別シフト変更の案内">
+            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                <i data-lucide="calendar-clock" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="text-sm font-black">急なお休み・個別のシフト変更は、下の「スタッフ別 シフト表」で行います</div>
+                <p class="mt-1 text-xs leading-5 text-amber-900/80">
+                    変更したいスタッフと日付を選び、「休み」または勤務パターンを押してください。変更後は「変更内容を保存」を押します。
+                    昨日以前の勤務状況は確認のみで、変更できません。
+                </p>
+            </div>
+        </aside>
+
         <div class="shift-mobile-layout lg:hidden mb-4">
             <div class="shift-mobile-toolbar rounded-[1.5rem] border border-gray-200 bg-white/95 p-3 shadow-lg backdrop-blur">
                 <div class="flex items-center justify-between gap-2">
@@ -376,13 +416,14 @@
                         @php
                             $mobileDateObj = \Carbon\Carbon::parse($month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT));
                             $mobileDate = $mobileDateObj->format('Y-m-d');
+                            $mobileIsPast = $mobileDate < $editableFromDate;
                             $mobileDayOfWeek = $mobileDateObj->dayOfWeek;
                             $mobileDateColor = $mobileDayOfWeek === 0 ? 'text-red-600' : ($mobileDayOfWeek === 6 ? 'text-blue-600' : 'text-gray-700');
                         @endphp
                         <button type="button"
                                 data-mobile-shift-date-button="{{ $mobileDate }}"
                                 data-date-label="{{ $mobileDateObj->format('n月j日') }}（{{ ['日','月','火','水','木','金','土'][$mobileDayOfWeek] }}）"
-                            class="mobile-shift-date-button snap-center shrink-0 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-1.5 py-1.5 text-center text-xs font-black {{ $mobileDateColor }}"
+                            class="mobile-shift-date-button snap-center shrink-0 whitespace-nowrap rounded-xl border border-gray-200 px-1.5 py-1.5 text-center text-xs font-black {{ $mobileIsPast ? 'bg-gray-100 text-gray-400' : 'bg-white '.$mobileDateColor }}"
                             style="min-width: min(4.25rem, calc((100vw - 3rem) / 7));"
                             aria-selected="false">
                             {{ $d }}（{{ ['日','月','火','水','木','金','土'][$mobileDayOfWeek] }}）
@@ -396,6 +437,7 @@
                     @php
                         $mobileDate = $month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT);
                         $mobileDateObj = \Carbon\Carbon::parse($mobileDate);
+                        $mobileIsPast = $mobileDate < $editableFromDate;
                         $mobileBusiness = $businessDays[$mobileDateObj->format('Y-m-d H:i:s')] ?? null;
                         $mobileIsClosed = $mobileBusiness
                             && $mobileBusiness->is_open === false
@@ -444,7 +486,7 @@
                                     @endif
                                 </div>
 
-                                @if(!$mobileIsRetired && !$mobileIsClosed && !$mobileIsVacation)
+                                @if(!$mobileIsRetired && !$mobileIsClosed && !$mobileIsVacation && !$mobileIsPast)
                                     <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
                                         <button type="button"
                                                 class="shift-btn rounded-xl bg-gray-100 px-2 py-2.5 text-xs font-bold text-gray-700"
@@ -468,6 +510,11 @@
                                             </button>
                                         @endforeach
                                     </div>
+                                @elseif($mobileIsPast && !$mobileIsRetired && !$mobileIsClosed && !$mobileIsVacation)
+                                    <div class="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-500">
+                                        <i data-lucide="lock-keyhole" class="h-3.5 w-3.5"></i>
+                                        過去日のため変更できません
+                                    </div>
                                 @endif
                             </div>
                         @empty
@@ -482,7 +529,7 @@
             <div class="px-5 py-4 border-b bg-gray-50">
                 <h2 class="text-lg font-bold text-gray-900">スタッフ別 シフト表</h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    各マスのボタンを押すだけで変更できます。表示されるシフトは登録済みパターンです。
+                    日付とスタッフが交わるマスで、その日の勤務状況を個別に変更できます。
                 </p>
             </div>
 
@@ -497,6 +544,7 @@
                             @for($d = 1; $d <= $days; $d++)
                                 @php
                                     $dateObj = \Carbon\Carbon::parse("$month-$d");
+                                    $isPast = $dateObj->toDateString() < $editableFromDate;
                                     $isHoliday = $holidays->isHoliday($dateObj);
                                     $dayOfWeek = $dateObj->dayOfWeek;
 
@@ -517,22 +565,22 @@
                                         {{ $d }}（{{ ['日','月','火','水','木','金','土'][$dayOfWeek] }}）
                                     </div>
 
-                                    <div class="flex flex-wrap justify-center gap-1">
-                                        <button type="button"
-                                                onclick="setDayShift({{ $d }}, '')"
-                                                class="text-[10px] bg-gray-500 text-white px-2 py-1 rounded-md hover:bg-gray-400 transition">
-                                            休
-                                        </button>
-
-                                        @foreach($patterns as $p)
-                                            <button type="button"
-                                                    onclick="setDayShift({{ $d }}, '{{ $p->id }}')"
-                                                    class="text-[10px] text-white px-2 py-1 rounded-md hover:opacity-85 transition"
-                                                    style="background: {{ $p->color ?: '#64748b' }}">
-                                                {{ \Illuminate\Support\Str::limit($p->name, 4, '') }}
+                                    @if($isPast)
+                                        <div class="flex items-center justify-center gap-1 text-[10px] font-bold text-gray-400">
+                                            <i data-lucide="lock-keyhole" class="h-3 w-3"></i> 変更不可
+                                        </div>
+                                    @else
+                                        <div class="flex flex-wrap justify-center gap-1">
+                                            <button type="button" onclick="setDayShift({{ $d }}, '')" class="text-[10px] bg-gray-500 text-white px-2 py-1 rounded-md hover:bg-gray-400 transition">
+                                                休
                                             </button>
-                                        @endforeach
-                                    </div>
+                                            @foreach($patterns as $p)
+                                                <button type="button" onclick="setDayShift({{ $d }}, '{{ $p->id }}')" class="text-[10px] text-white px-2 py-1 rounded-md hover:opacity-85 transition" style="background: {{ $p->color ?: '#64748b' }}">
+                                                    {{ \Illuminate\Support\Str::limit($p->name, 4, '') }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </th>
                             @endfor
                         </tr>
@@ -573,6 +621,7 @@
                                 @for($d = 1; $d <= $days; $d++)
                                     @php
                                         $date = $month . '-' . str_pad($d, 2, '0', STR_PAD_LEFT);
+                                        $isPast = $date < $editableFromDate;
                                         $isRetired = $staff->isRetired($date);
 
                                         $shift = $shifts[$staff->id][$date][0] ?? null;
@@ -612,6 +661,13 @@
                                             <div class="text-gray-400 text-center font-semibold text-xs py-3">休業</div>
                                         @elseif($isVacation)
                                             <div class="text-red-500 text-center font-bold text-xs py-3">休暇</div>
+                                        @elseif($isPast)
+                                            <div class="rounded-xl bg-gray-50 px-2 py-3 text-center">
+                                                <div class="text-xs font-bold text-gray-600">{{ $currentShiftName ?: '休み' }}</div>
+                                                <div class="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-gray-400">
+                                                    <i data-lucide="lock-keyhole" class="h-3 w-3"></i> 変更不可
+                                                </div>
+                                            </div>
                                         @else
                                             <input type="hidden"
                                                    name="shifts[{{ $staff->id }}][{{ $date }}]"

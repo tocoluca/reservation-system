@@ -55,14 +55,15 @@
             <div>
                 <h2 class="text-lg font-bold text-gray-900">使い方</h2>
                 <p class="text-sm text-gray-500 mt-1">
-                    曜日ごとの基本シフトを決めておくと、勤務管理画面の自動生成が使いやすくなります。
+                    ここは「普段の1週間」を保存するテンプレートです。実際の月の勤務表は、勤務管理で作成します。
                 </p>
             </div>
 
             <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
                 <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">月〜日を設定</span>
                 <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">休みも設定可能</span>
-                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">保存して反映</span>
+                <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1 text-stone-700">保存</span>
+                <span class="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 font-bold text-blue-700">勤務管理で月へ反映</span>
             </div>
         </div>
     </div>
@@ -75,6 +76,13 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
+        </div>
+    @endif
+
+    @if(session('success'))
+        <div class="mb-5 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
+            <i data-lucide="circle-check" class="mt-0.5 h-5 w-5 shrink-0"></i>
+            <div><div class="font-black">保存しました</div><p class="mt-1">{{ session('success') }}</p></div>
         </div>
     @endif
 
@@ -98,68 +106,50 @@
                 <p class="text-sm text-gray-500 mt-1">各スタッフの曜日ごとの標準シフトを設定します。</p>
             </div>
 
-            <div class="max-h-[72vh] overflow-auto p-4 sm:p-6">
-                <table class="min-w-[980px] w-full text-sm border-separate border-spacing-0">
-                    <thead>
-                        <tr>
-                            <th class="sticky top-0 left-0 z-40 p-4 text-left rounded-tl-2xl border-b border-white/30 shadow-sm min-w-[180px]"
-                                style="background: {{ $theme }}; color: white;">
-                                スタッフ
-                            </th>
+            <div class="max-h-[72vh] space-y-3 overflow-auto p-4 sm:p-6">
+                @forelse($staffs as $staff)
+                    @php $needsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id); @endphp
+                    <section class="rounded-2xl border bg-white p-4 {{ $needsReview ? 'border-amber-400 ring-2 ring-amber-200' : 'border-gray-200' }}">
+                        <div class="flex flex-col gap-1 border-b border-gray-100 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="user-round" class="h-4 w-4 text-gray-400"></i>
+                                <h3 class="font-black text-gray-900">{{ $staff->name }}</h3>
+                                @if($needsReview)
+                                    <span class="rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">要確認</span>
+                                @endif
+                            </div>
+                            <p class="text-xs text-gray-500">普段の1週間を設定</p>
+                        </div>
 
-                            @foreach(['月','火','水','木','金','土','日'] as $i => $d)
-                                <th class="sticky top-0 z-30 p-4 text-center border-b border-white/30 shadow-sm min-w-[120px] {{ $loop->last ? 'rounded-tr-2xl' : '' }}"
-                                    style="background: {{ $theme }}; color: white;">
-                                    {{ $d }}
-                                </th>
+                        <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
+                            @foreach([1 => '月', 2 => '火', 3 => '水', 4 => '木', 5 => '金', 6 => '土', 0 => '日'] as $weekday => $dayLabel)
+                                @php
+                                    $shift = $shifts
+                                        ->where('staff_id', $staff->id)
+                                        ->where('weekday', $weekday)
+                                        ->first();
+                                @endphp
+                                <label class="block rounded-xl bg-gray-50 p-2">
+                                    <span class="mb-1.5 block text-center text-xs font-black {{ $weekday === 0 ? 'text-red-600' : ($weekday === 6 ? 'text-blue-600' : 'text-gray-600') }}">{{ $dayLabel }}曜日</span>
+                                    <select
+                                        name="shifts[{{ $staff->id }}][{{ $weekday }}]"
+                                        class="default-shift-input w-full rounded-xl border border-gray-300 bg-white p-2.5 text-sm font-bold focus:outline-none focus:ring-2"
+                                        style="--tw-ring-color: {{ $theme }}"
+                                    >
+                                        <option value="">休み</option>
+                                        @foreach($patterns as $p)
+                                            <option value="{{ $p->id }}" @selected($shift && $shift->shift_pattern_id == $p->id)>
+                                                {{ $p->name }}（{{ substr($p->start_time, 0, 5) }}〜{{ substr($p->end_time, 0, 5) }}）
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </label>
                             @endforeach
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach($staffs as $staff)
-                            @php
-                                $needsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id);
-                            @endphp
-                            <tr class="odd:bg-stone-50 even:bg-white {{ $needsReview ? 'outline outline-2 outline-amber-400 outline-offset-[-2px]' : '' }}">
-                                <td class="sticky left-0 z-20 p-4 font-semibold text-stone-800 border-b border-stone-200 border-r border-stone-200 shadow-sm min-w-[180px] {{ $loop->odd ? 'bg-stone-50' : 'bg-white' }}">
-                                    {{ $staff->name }}
-                                    @if($needsReview)
-                                        <span class="mt-2 block w-fit rounded-full bg-amber-100 px-2 py-1 text-[11px] font-black text-amber-800">要確認</span>
-                                    @endif
-                                </td>
-
-                                @for($w = 1; $w <= 7; $w++)
-                                    @php
-                                        $shift = $shifts
-                                            ->where('staff_id', $staff->id)
-                                            ->where('weekday', $w % 7)
-                                            ->first();
-                                    @endphp
-
-                                    <td class="p-3 border-b border-stone-200 min-w-[120px]">
-                                        <select
-                                            name="shifts[{{ $staff->id }}][{{ $w % 7 }}]"
-                                            class="default-shift-input border border-stone-300 rounded-xl p-3 w-full bg-white focus:outline-none focus:ring-2"
-                                            style="--tw-ring-color: {{ $theme }}"
-                                        >
-                                            <option value="">休</option>
-
-                                            @foreach($patterns as $p)
-                                                <option
-                                                    value="{{ $p->id }}"
-                                                    @if($shift && $shift->shift_pattern_id == $p->id) selected @endif
-                                                >
-                                                    {{ $p->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                @endfor
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </div>
+                    </section>
+                @empty
+                    <div class="rounded-2xl bg-gray-50 p-8 text-center text-sm text-gray-500">設定できるスタッフがいません。</div>
+                @endforelse
             </div>
 
             <div class="px-6 pb-6 flex justify-end">

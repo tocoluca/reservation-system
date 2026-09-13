@@ -73,13 +73,27 @@ class StaffShiftController extends Controller
                 return Carbon::parse($row->date)->format('Y-m-d H:i:s');
             });
 
-        $shifts = StaffShift::whereIn('staff_id', $staffIds)
+        $shiftRows = StaffShift::whereIn('staff_id', $staffIds)
             ->whereBetween('date', [$start, $end])
-            ->get()
+            ->get();
+
+        $shifts = $shiftRows
             ->groupBy([
                 'staff_id',
                 fn ($row) => Carbon::parse($row->date)->format('Y-m-d'),
             ]);
+
+        $previousStart = $start->copy()->subMonthNoOverflow()->startOfMonth();
+        $previousEnd = $previousStart->copy()->endOfMonth();
+        $shiftSourceStats = [
+            'current_count' => $shiftRows->count(),
+            'current_staff_count' => $shiftRows->pluck('staff_id')->unique()->count(),
+            'default_count' => StaffDefaultShift::whereIn('staff_id', $staffIds)->where('is_work', true)->count(),
+            'previous_count' => StaffShift::whereIn('staff_id', $staffIds)
+                ->whereBetween('date', [$previousStart, $previousEnd])
+                ->count(),
+            'previous_month' => $previousStart->format('Y-m'),
+        ];
 
         $reviewStaffIds = DB::table('shift_review_requirements')
             ->where('company_id', $company->id)
@@ -97,6 +111,7 @@ class StaffShiftController extends Controller
             'vacations' => $vacations,
             'businessDays' => $businessDays,
             'reviewStaffIds' => $reviewStaffIds,
+            'shiftSourceStats' => $shiftSourceStats,
         ]);
     }
 
@@ -379,6 +394,7 @@ class StaffShiftController extends Controller
         $validPatterns = ShiftPattern::where('company_id', $company->id)->get()->keyBy('id');
         $validPatternIds = $validPatterns->keys()->map(fn ($id) => (string) $id);
         $reviewKeys = collect();
+        $editableFrom = today()->startOfDay();
 
         foreach ($request->shifts as $staffId => $dates) {
             if (!$validStaffIds->contains((string) $staffId) || !is_array($dates)) {
@@ -404,7 +420,12 @@ class StaffShiftController extends Controller
             }
 
             foreach ($dates as $date => $patternId) {
-                $dateString = Carbon::parse($date)->format('Y-m-d');
+                $dateObject = Carbon::parse($date)->startOfDay();
+                $dateString = $dateObject->format('Y-m-d');
+
+                if ($dateObject->lt($editableFrom)) {
+                    continue;
+                }
 
                 if ($staff->isRetired($dateString)) {
                     continue;

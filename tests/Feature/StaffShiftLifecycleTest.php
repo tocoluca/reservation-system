@@ -162,6 +162,33 @@ class StaffShiftLifecycleTest extends TestCase
         $this->assertSame($patternA->id, StaffShift::where('staff_id', $newStaff->id)->whereDate('date', '2026-10-01')->value('shift_pattern_id'));
     }
 
+    public function test_monthly_shift_update_ignores_past_dates_but_allows_today_and_future(): void
+    {
+        [$company, $master, $patternA, $patternB] = $this->baseRecords();
+        $staff = $this->staff($company, 'Editable', 'ST001');
+
+        StaffShift::create([
+            'staff_id' => $staff->id,
+            'date' => '2026-09-12',
+            'shift_pattern_id' => $patternA->id,
+            'is_work' => true,
+        ]);
+
+        app(StaffShiftController::class)->update(Request::create('/company/staff-shifts/update', 'POST', [
+            'shifts' => [
+                $staff->id => [
+                    '2026-09-12' => $patternB->id,
+                    '2026-09-13' => $patternB->id,
+                    '2026-09-14' => $patternB->id,
+                ],
+            ],
+        ]));
+
+        $this->assertSame($patternA->id, StaffShift::where('staff_id', $staff->id)->whereDate('date', '2026-09-12')->value('shift_pattern_id'));
+        $this->assertDatabaseHas('staff_shifts', ['staff_id' => $staff->id, 'date' => '2026-09-13', 'shift_pattern_id' => $patternB->id]);
+        $this->assertDatabaseHas('staff_shifts', ['staff_id' => $staff->id, 'date' => '2026-09-14', 'shift_pattern_id' => $patternB->id]);
+    }
+
     public function test_deleting_a_pattern_removes_all_references_and_requires_review(): void
     {
         [$company, $master, $pattern, $replacementPattern] = $this->baseRecords();

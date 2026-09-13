@@ -24,7 +24,11 @@ class StaffDefaultShiftController extends Controller
             ->orderBy('priority_order')
             ->get();
 
-        $patterns = ShiftPattern::where('company_id', $company->id)->get();
+        $patterns = ShiftPattern::where('company_id', $company->id)
+            ->orderBy('sort_order')
+            ->orderBy('start_time')
+            ->orderBy('id')
+            ->get();
 
         $shifts = StaffDefaultShift::whereIn('staff_id', $staffs->pluck('id'))->get();
         $reviewStaffIds = DB::table('shift_review_requirements')

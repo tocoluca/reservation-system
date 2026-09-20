@@ -297,7 +297,7 @@
 
     <div class="mb-6">
         @include('company._shift_setup_nav', [
-            'currentStep' => 3,
+            'currentStep' => 4,
             'links' => [
                 ['label' => '基本シフトへ', 'route' => 'company.staff-default-shifts', 'icon' => 'arrow-left'],
             ],

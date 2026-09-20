@@ -13,6 +13,12 @@
             'route' => 'company.staff-default-shifts',
         ],
         3 => [
+            'label' => '営業日・休日を設定',
+            'screen' => '営業日カレンダー',
+            'description' => '勤務表の前に、店舗の営業日と休日を決める',
+            'route' => 'company.calendar.index',
+        ],
+        4 => [
             'label' => '毎月の勤務表を作成',
             'screen' => '勤務管理',
             'description' => '月の勤務表を作り、休みなどを調整する',
@@ -28,12 +34,12 @@
     <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2">
         <div>
             <p class="text-xs font-black tracking-[0.12em] text-gray-400">シフト設定ガイド</p>
-            <h2 id="shift-flow-title" class="mt-1 text-lg font-black text-gray-950">最初に ①②、毎月 ③ の順で使います</h2>
+            <h2 id="shift-flow-title" class="mt-1 text-lg font-black text-gray-950">最初に ①②、毎月 ③→④ の順で使います</h2>
         </div>
         <p class="text-xs sm:text-sm text-gray-500">画面名ではなく「何をするか」で選べます</p>
     </div>
 
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-2">
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
         @foreach($shiftSetupSteps as $stepNumber => $step)
             @php $isActive = $currentStep === $stepNumber; @endphp
             <a href="{{ route($step['route']) }}"

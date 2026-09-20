@@ -175,6 +175,13 @@
         </div>
     </div>
 
+    <div class="mb-6">
+        @include('company._shift_setup_nav', [
+            'currentStep' => 3,
+            'theme' => $theme,
+        ])
+    </div>
+
     {{-- 月ナビ --}}
     <div class="business-calendar-month-card bg-white rounded-[1.75rem] shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div class="px-5 sm:px-6 py-5 bg-gradient-to-r from-white to-gray-50 border-b">
@@ -399,11 +406,17 @@
         </div>
     </div>
 
-    <div id="selectedDayPanel" class="business-calendar-selected-panel hidden mb-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm" aria-live="polite">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0">
+    <div id="selectedDayPanel" class="business-calendar-selected-panel hidden mb-4 overflow-hidden rounded-[1.5rem] border-2 border-slate-300 bg-white shadow-xl" aria-live="polite">
+        <div class="border-b border-slate-200 bg-slate-50 px-4 py-2.5 text-xs font-black tracking-[0.12em] text-slate-600 sm:px-5">
+            日付を選択しました。下のボタンから操作してください
+        </div>
+        <div class="flex flex-col gap-5 p-4 lg:flex-row lg:items-center lg:justify-between sm:p-5">
+            <div class="min-w-0 lg:min-w-[300px]">
                 <div class="flex items-center justify-between gap-3">
-                    <div class="text-xs font-bold tracking-wide text-slate-400">選択中の日付</div>
+                    <div class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black tracking-wide" style="background: {{ $theme }}18; color: {{ $theme }};">
+                        <span class="h-2 w-2 rounded-full animate-pulse" style="background: {{ $theme }};"></span>
+                        選択中の日付
+                    </div>
                     <button type="button"
                             onclick="closeSelectedDayPanel()"
                             class="sm:hidden inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-500"
@@ -411,7 +424,10 @@
                         ×
                     </button>
                 </div>
-                <div id="selectedDayLabel" class="mt-1 text-lg font-black text-slate-900">-</div>
+                <div class="mt-2 flex items-center gap-3 rounded-2xl border-2 bg-white px-4 py-3 shadow-sm" style="border-color: {{ $theme }}55; background: {{ $theme }}0d;">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-sm" style="background: {{ $theme }};"><i data-lucide="calendar-check-2" class="h-5 w-5"></i></span>
+                    <div><div class="text-[11px] font-bold text-slate-500">操作対象日</div><div id="selectedDayLabel" class="mt-0.5 text-xl font-black tracking-tight text-slate-950 sm:text-2xl">-</div></div>
+                </div>
                 <div class="mt-2 flex flex-wrap gap-2 text-xs font-bold">
                     <span id="selectedDayStatus" class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">-</span>
                     <span id="selectedDayReservations" class="rounded-full bg-slate-100 px-3 py-1 text-slate-700">予約 -件</span>
@@ -419,20 +435,32 @@
                 </div>
                 <div id="selectedDayTime" class="mt-2 text-sm text-slate-500">個別の営業時間変更なし</div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 lg:min-w-[360px]">
+            <div class="lg:min-w-[520px]">
+                <div class="mb-2 flex items-center gap-2 text-sm font-black text-slate-900">
+                    <i data-lucide="mouse-pointer-click" class="h-4 w-4" style="color: {{ $theme }};"></i>
+                    この日の操作
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button type="button"
                         id="selectedDayToggleButton"
                         onclick="toggleSelectedDayStatus()"
-                        class="inline-flex items-center justify-center rounded-2xl border px-4 py-3 text-sm font-bold transition hover:bg-gray-50"
-                        style="border-color: {{ $theme }}44; color: {{ $theme }};">
-                    営業 / 休業を切り替える
+                        class="group flex min-h-[88px] items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-4">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/80 shadow-sm"><i data-lucide="calendar-off" class="h-5 w-5"></i></span>
+                    <span class="min-w-0 flex-1">
+                        <span id="selectedDayToggleLabel" class="block text-sm font-black">休業日に変更</span>
+                        <span id="selectedDayToggleDescription" class="mt-1 block text-xs font-semibold leading-5 opacity-75">この日の営業を停止します</span>
+                    </span>
+                    <i data-lucide="chevron-right" class="h-5 w-5 shrink-0 transition group-hover:translate-x-1"></i>
                 </button>
                 <button type="button"
                         onclick="openSelectedDayModal()"
-                        class="inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-sm hover:opacity-90"
+                        class="group flex min-h-[88px] items-center gap-3 rounded-2xl border-2 border-transparent px-4 py-3 text-left text-white shadow-md transition hover:-translate-y-0.5 hover:brightness-110 hover:shadow-lg focus:outline-none focus:ring-4"
                         style="background: {{ $theme }};">
-                    営業時間を変更
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/20"><i data-lucide="clock-3" class="h-5 w-5"></i></span>
+                    <span class="min-w-0 flex-1"><span class="block text-sm font-black">営業時間を変更</span><span class="mt-1 block text-xs font-semibold leading-5 text-white/80">この日だけの開店・閉店時刻を設定</span></span>
+                    <i data-lucide="chevron-right" class="h-5 w-5 shrink-0 transition group-hover:translate-x-1"></i>
                 </button>
+                </div>
             </div>
         </div>
     </div>
@@ -608,7 +636,16 @@ function selectCalendarDay(date, el) {
 
     const toggleButton = document.getElementById('selectedDayToggleButton');
     if (toggleButton) {
-        toggleButton.textContent = isOpen ? '休業日に変更' : '営業日に変更';
+        const toggleLabel = document.getElementById('selectedDayToggleLabel');
+        const toggleDescription = document.getElementById('selectedDayToggleDescription');
+        if (toggleLabel) toggleLabel.textContent = isOpen ? '休業日に変更' : '営業日に変更';
+        if (toggleDescription) toggleDescription.textContent = isOpen
+            ? 'この日の営業を停止します'
+            : 'この日を営業日に戻します';
+        toggleButton.style.borderColor = isOpen ? '#fda4af' : '#86efac';
+        toggleButton.style.backgroundColor = isOpen ? '#fff1f2' : '#f0fdf4';
+        toggleButton.style.color = isOpen ? '#9f1239' : '#166534';
+        toggleButton.style.setProperty('--tw-ring-color', isOpen ? '#fecdd3' : '#bbf7d0');
     }
 }
 

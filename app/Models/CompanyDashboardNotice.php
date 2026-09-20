@@ -36,17 +36,23 @@ class CompanyDashboardNotice extends Model
 
     public function scopeVisibleForCompany(Builder $query, int $companyId): Builder
     {
-        $today = Carbon::today();
-
         return $query
-            ->where('is_active', true)
+            ->currentlyPublished()
             ->where(function ($q) use ($companyId) {
                 $q->where('target_type', 'all')
                   ->orWhere(function ($q2) use ($companyId) {
                       $q2->where('target_type', 'company')
                          ->where('company_id', $companyId);
                   });
-            })
+            });
+    }
+
+    public function scopeCurrentlyPublished(Builder $query): Builder
+    {
+        $today = Carbon::today();
+
+        return $query
+            ->where('is_active', true)
             ->where(function ($q) use ($today) {
                 $q->whereNull('start_date')
                   ->orWhereDate('start_date', '<=', $today);
@@ -55,6 +61,25 @@ class CompanyDashboardNotice extends Model
                 $q->whereNull('end_date')
                   ->orWhereDate('end_date', '>=', $today);
             });
+    }
+
+    public function getDisplayStatusAttribute(): string
+    {
+        if (!$this->is_active) {
+            return 'inactive';
+        }
+
+        $today = Carbon::today();
+
+        if ($this->start_date?->isAfter($today)) {
+            return 'scheduled';
+        }
+
+        if ($this->end_date?->isBefore($today)) {
+            return 'expired';
+        }
+
+        return 'active';
     }
 
     public function getTargetLabelAttribute(): string

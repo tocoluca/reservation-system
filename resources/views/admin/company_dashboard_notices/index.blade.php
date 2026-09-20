@@ -46,10 +46,18 @@
 
     <div class="space-y-3 md:hidden">
         @forelse($notices as $notice)
-            <article class="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm {{ $notice->is_active ? 'border-l-[6px] border-l-sky-500' : 'border-l-[6px] border-l-slate-400 bg-slate-50' }}">
+            @php
+                [$statusLabel, $statusClasses, $statusBorder] = match($notice->display_status) {
+                    'active' => ['表示中', 'bg-emerald-100 text-emerald-800', 'border-l-sky-500'],
+                    'scheduled' => ['開始前', 'bg-blue-100 text-blue-800', 'border-l-blue-500'],
+                    'expired' => ['期限切れ', 'bg-amber-100 text-amber-800', 'border-l-amber-500'],
+                    default => ['非表示', 'bg-slate-200 text-slate-700', 'border-l-slate-400'],
+                };
+            @endphp
+            <article class="rounded-2xl border-2 border-slate-200 bg-white p-4 shadow-sm border-l-[6px] {{ $statusBorder }} {{ $notice->display_status === 'inactive' ? 'bg-slate-50' : '' }}">
                 <div class="flex items-start justify-between gap-3">
                     <div class="min-w-0"><div class="flex flex-wrap gap-2">@if($notice->is_important)<span class="rounded-full bg-rose-100 px-2 py-1 text-[11px] font-black text-rose-800">重要</span>@endif @if($notice->is_new)<span class="rounded-full bg-blue-100 px-2 py-1 text-[11px] font-black text-blue-800">NEW</span>@endif</div><h3 class="mt-2 break-words font-black text-slate-950">{{ $notice->title }}</h3></div>
-                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-black {{ $notice->is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700' }}">{{ $notice->is_active ? '表示中' : '非表示' }}</span>
+                    <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-black {{ $statusClasses }}">{{ $statusLabel }}</span>
                 </div>
                 <div class="mt-3 rounded-xl border p-3 {{ $notice->target_type === 'all' ? 'border-blue-200 bg-blue-50 text-blue-900' : 'border-violet-200 bg-violet-50 text-violet-900' }}"><div class="text-xs font-black">{{ $notice->target_label }}</div></div>
                 <div class="mt-3 text-xs font-semibold text-slate-600">表示期間：{{ optional($notice->start_date)->format('Y/m/d') ?: '指定なし' }} 〜 {{ optional($notice->end_date)->format('Y/m/d') ?: '指定なし' }}</div>
@@ -66,11 +74,19 @@
                 <thead class="bg-slate-800 text-white"><tr><th class="p-4 text-left text-xs font-black">題名</th><th class="p-4 text-left text-xs font-black">公開対象</th><th class="p-4 text-left text-xs font-black">表示期間</th><th class="p-4 text-center text-xs font-black">状態</th><th class="p-4 text-center text-xs font-black">操作</th></tr></thead>
                 <tbody>
                     @forelse($notices as $notice)
-                        <tr class="notice-row {{ $notice->is_active ? '' : 'notice-row-inactive' }} border-b-2 border-slate-200 align-top transition hover:bg-sky-50/60">
+                        @php
+                            [$statusLabel, $statusClasses] = match($notice->display_status) {
+                                'active' => ['表示中', 'border-emerald-300 bg-emerald-100 text-emerald-800'],
+                                'scheduled' => ['開始前', 'border-blue-300 bg-blue-100 text-blue-800'],
+                                'expired' => ['期限切れ', 'border-amber-300 bg-amber-100 text-amber-800'],
+                                default => ['非表示', 'border-slate-300 bg-slate-200 text-slate-700'],
+                            };
+                        @endphp
+                        <tr class="notice-row {{ $notice->display_status === 'active' ? '' : 'notice-row-inactive' }} border-b-2 border-slate-200 align-top transition hover:bg-sky-50/60">
                             <td class="p-4"><div class="flex flex-wrap items-center gap-2">@if($notice->is_important)<span class="rounded-full bg-rose-100 px-2 py-1 text-xs font-black text-rose-800">重要</span>@endif @if($notice->is_new)<span class="rounded-full bg-blue-100 px-2 py-1 text-xs font-black text-blue-800">NEW</span>@endif <span class="font-black text-slate-950">{{ $notice->title }}</span></div></td>
                             <td class="p-4"><span class="inline-flex rounded-full border px-3 py-1.5 text-xs font-black {{ $notice->target_type === 'all' ? 'border-blue-300 bg-blue-50 text-blue-800' : 'border-violet-300 bg-violet-50 text-violet-800' }}">{{ $notice->target_label }}</span></td>
                             <td class="whitespace-nowrap p-4 font-semibold text-slate-600">{{ optional($notice->start_date)->format('Y/m/d') ?: '指定なし' }}<span class="mx-1 text-slate-400">〜</span>{{ optional($notice->end_date)->format('Y/m/d') ?: '指定なし' }}</td>
-                            <td class="p-4 text-center"><span class="inline-flex rounded-full border px-3 py-1 text-xs font-black {{ $notice->is_active ? 'border-emerald-300 bg-emerald-100 text-emerald-800' : 'border-slate-300 bg-slate-200 text-slate-700' }}">{{ $notice->is_active ? '表示中' : '非表示' }}</span></td>
+                            <td class="p-4 text-center"><span class="inline-flex rounded-full border px-3 py-1 text-xs font-black {{ $statusClasses }}">{{ $statusLabel }}</span></td>
                             <td class="p-4"><div class="flex justify-center gap-2"><a href="{{ route('admin.company-dashboard-notices.edit', $notice) }}" class="rounded-xl bg-amber-500 px-4 py-2 text-sm font-black text-white hover:bg-amber-600">編集</a><form action="{{ route('admin.company-dashboard-notices.destroy', $notice) }}" method="POST" onsubmit="return confirm('削除しますか？')">@csrf @method('DELETE')<button class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-black text-white hover:bg-rose-700">削除</button></form></div></td>
                         </tr>
                     @empty

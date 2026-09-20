@@ -729,11 +729,12 @@ body {
         @endif
     </div>
 
-    <section data-company-notices-always-visible aria-labelledby="company-notices-title"
-             class="relative mb-6 overflow-hidden rounded-2xl border-2 {{ $notices->isNotEmpty() ? 'border-amber-200 bg-white' : 'border-slate-200 bg-white' }} shadow-sm">
-        <div class="flex items-center justify-between gap-3 border-b px-4 py-3 md:px-5 {{ $notices->isNotEmpty() ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50' }}">
+    @if($notices->isNotEmpty())
+    <section aria-labelledby="company-notices-title"
+             class="relative mb-6 overflow-hidden rounded-2xl border-2 border-amber-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-3 md:px-5">
             <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white {{ $notices->isNotEmpty() ? 'bg-amber-600' : 'bg-slate-500' }}">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white">
                     <i data-lucide="megaphone" class="h-5 w-5"></i>
                 </span>
                 <div>
@@ -741,25 +742,22 @@ body {
                     <p class="mt-0.5 text-xs font-medium text-slate-500">見出しを選択すると詳細を確認できます。</p>
                 </div>
             </div>
-            <span class="inline-flex shrink-0 items-center rounded-full border bg-white px-2.5 py-1 text-xs font-bold {{ $notices->isNotEmpty() ? 'border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600' }}">
+            <span class="inline-flex shrink-0 items-center rounded-full border border-amber-300 bg-white px-2.5 py-1 text-xs font-bold text-amber-800">
                 {{ $notices->count() }}件
             </span>
         </div>
 
         <div class="grid gap-2 p-3 md:grid-cols-2 md:p-4">
-            @forelse($notices as $notice)
+            @foreach($notices as $notice)
                 <a href="{{ route('company.dashboard-notices.show', $notice) }}"
                    class="group flex min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 transition hover:border-amber-300 hover:bg-amber-50 {{ $notice->is_important ? 'border-rose-200' : 'border-slate-200' }}">
                     <h3 class="min-w-0 truncate text-sm font-bold text-slate-800 group-hover:text-amber-900">{{ $notice->title }}</h3>
                     <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-amber-700"></i>
                 </a>
-            @empty
-                <div class="py-4 text-center md:col-span-2">
-                    <p class="text-sm font-semibold text-slate-500">現在表示中のお知らせはありません。</p>
-                </div>
-            @endforelse
+            @endforeach
         </div>
     </section>
+    @endif
 
     <div class="tab-category-heading">
         <div>
@@ -905,9 +903,10 @@ body {
     </div>
     @endif
 
-    @if($canAny(['card.month_shift', 'card.month_shift_view']))
+    @if($canAny(['card.business_calendar', 'card.month_shift', 'card.month_shift_view']))
     <div x-show="showFeatureCards && tab==='staffwork'" class="feature-card-grid feature-group-staff grid md:grid-cols-2 gap-4 mb-6">
-        <div class="feature-group-heading md:col-span-2"><div><h3>日常操作</h3><p>毎月のシフト登録と勤務状況の確認に使います。</p></div></div>
+        <div class="feature-group-heading md:col-span-2"><div><h3>日常操作</h3><p>営業日・営業時間の変更や、毎月のシフト登録・確認に使います。</p></div></div>
+        @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日・営業時間管理</div><div class="text-sm text-gray-500">営業日・休業日・営業時間の変更</div></div></a>@endif
         @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
         @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
     </div>
@@ -922,12 +921,11 @@ body {
     </div>
     @endif
 
-    @if($canAny(['card.business_calendar', 'card.default_shift', 'card.shift_patterns']))
+    @if($canAny(['card.default_shift', 'card.shift_patterns']))
     <div x-show="showFeatureCards && tab==='staffwork'" class="feature-card-grid feature-group-prep grid md:grid-cols-2 gap-4 mb-6">
-        <div class="feature-group-heading md:col-span-2"><div><h3>事前設定</h3><p>営業日と繰り返し利用する勤務ルールを設定します。</p></div></div>
+        <div class="feature-group-heading md:col-span-2"><div><h3>事前設定</h3><p>繰り返し利用する勤務ルールを設定します。</p></div></div>
         @if($can('card.shift_patterns'))<a href="{{ route('company.shift-patterns') }}" class="card card-link"><div class="card-icon"><i data-lucide="layers"></i></div><div><div class="font-bold">シフトパターン</div><div class="text-sm text-gray-500">勤務時間テンプレート</div></div></a>@endif
         @if($can('card.default_shift'))<a href="{{ route('company.staff-default-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="repeat"></i></div><div><div class="font-bold">基本シフト</div><div class="text-sm text-gray-500">定期シフト設定</div></div></a>@endif
-        @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif
     </div>
     @endif
 

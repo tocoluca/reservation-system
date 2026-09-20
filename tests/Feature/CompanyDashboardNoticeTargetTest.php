@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Http\Controllers\Admin\AdminCompanyDashboardNoticeController;
 use App\Models\Company;
 use App\Models\CompanyDashboardNotice;
+use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -135,5 +136,32 @@ class CompanyDashboardNoticeTargetTest extends TestCase
             'target_type' => 'all',
             'company_id' => null,
         ]);
+    }
+
+    public function test_notice_display_status_respects_active_flag_and_display_period(): void
+    {
+        Carbon::setTestNow('2026-09-21 12:00:00');
+
+        $active = CompanyDashboardNotice::create([
+            'title' => 'Displaying', 'is_active' => true,
+            'start_date' => '2026-09-20', 'end_date' => '2026-09-21',
+        ]);
+        $scheduled = CompanyDashboardNotice::create([
+            'title' => 'Scheduled', 'is_active' => true, 'start_date' => '2026-09-22',
+        ]);
+        $expired = CompanyDashboardNotice::create([
+            'title' => 'Expired', 'is_active' => true, 'end_date' => '2026-09-20',
+        ]);
+        $inactive = CompanyDashboardNotice::create([
+            'title' => 'Inactive', 'is_active' => false,
+        ]);
+
+        $this->assertSame('active', $active->display_status);
+        $this->assertSame('scheduled', $scheduled->display_status);
+        $this->assertSame('expired', $expired->display_status);
+        $this->assertSame('inactive', $inactive->display_status);
+        $this->assertSame([$active->id], CompanyDashboardNotice::currentlyPublished()->pluck('id')->all());
+
+        Carbon::setTestNow();
     }
 }

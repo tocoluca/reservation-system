@@ -22,7 +22,7 @@ class AdminCompanyDashboardNoticeController extends Controller
 
         $summary = [
             'total' => CompanyDashboardNotice::count(),
-            'active' => CompanyDashboardNotice::where('is_active', true)->count(),
+            'active' => CompanyDashboardNotice::currentlyPublished()->count(),
             'all' => CompanyDashboardNotice::where('target_type', 'all')->count(),
             'company' => CompanyDashboardNotice::where('target_type', 'company')->count(),
         ];

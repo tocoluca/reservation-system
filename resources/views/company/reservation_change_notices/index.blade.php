@@ -23,7 +23,7 @@
                     </h1>
 
                     <p class="text-sm md:text-base text-white/85 mt-3 leading-7">
-                        店都合による予約変更の連絡状況を、案件ごとに分かりやすく確認できます。
+                        対応が必要な案件を上に表示しています。赤は要対応、緑は確認完了です。
                     </p>
                 </div>
 
@@ -36,36 +36,44 @@
             </div>
         </div>
 
-        <div class="px-6 py-5 md:px-8 bg-amber-50 border-t border-amber-100">
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-                <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
-                    <div class="text-xs text-gray-500">変更案件数</div>
-                    <div class="text-2xl font-bold text-gray-800 mt-1">
-                        {{ $notices->total() }}
+        <div class="border-t border-slate-200 bg-slate-50 px-6 py-5 md:px-8">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-2xl border-2 border-rose-300 bg-rose-50 px-5 py-4 shadow-sm">
+                    <div class="flex items-center gap-2 text-xs font-black text-rose-700">
+                        <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                        対応が必要な案件
                     </div>
-                    <div class="mt-1 text-xs text-gray-400">変更連絡のまとまり</div>
+                    <div class="mt-1 text-3xl font-black text-rose-800">
+                        {{ number_format($pendingNoticeCount ?? 0) }}<span class="ml-1 text-sm">件</span>
+                    </div>
+                    <div class="mt-1 text-xs font-semibold text-rose-700">優先して確認してください</div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
-                    <div class="text-xs text-gray-500">対象予約数</div>
-                    <div class="text-2xl font-bold text-gray-800 mt-1">
-                        {{ number_format($targetReservationCount ?? 0) }}
+                <div class="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-5 py-4 shadow-sm">
+                    <div class="flex items-center gap-2 text-xs font-black text-emerald-700">
+                        <i data-lucide="circle-check" class="h-4 w-4"></i>
+                        確認完了した案件
                     </div>
-                    <div class="mt-1 text-xs text-gray-400">重複を除いた予約数</div>
+                    <div class="mt-1 text-3xl font-black text-emerald-800">
+                        {{ number_format($completedNoticeCount ?? 0) }}<span class="ml-1 text-sm">件</span>
+                    </div>
+                    <div class="mt-1 text-xs font-semibold text-emerald-700">すべての対象者へ対応済み</div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
-                    <div class="text-xs text-gray-500">対応の流れ</div>
-                    <div class="text-sm font-semibold text-gray-800 mt-1">
-                        対象抽出 → 送信 → 確認 → 完了
+                <div class="rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 shadow-sm">
+                    <div class="text-xs font-bold text-slate-500">対象予約数</div>
+                    <div class="mt-1 text-3xl font-black text-slate-900">
+                        {{ number_format($targetReservationCount ?? 0) }}<span class="ml-1 text-sm">件</span>
                     </div>
+                    <div class="mt-1 text-xs font-semibold text-slate-500">重複を除いた予約数</div>
                 </div>
 
-                <div class="bg-white rounded-2xl border border-amber-100 px-4 py-4">
-                    <div class="text-xs text-gray-500">用途</div>
-                    <div class="text-sm font-semibold text-gray-800 mt-1">
-                        休業・シフト変更・営業時間変更時の連絡
+                <div class="rounded-2xl border-2 border-blue-200 bg-blue-50 px-5 py-4 shadow-sm">
+                    <div class="text-xs font-bold text-blue-700">対応の流れ</div>
+                    <div class="mt-2 text-sm font-black leading-6 text-blue-950">
+                        対象抽出 → 通知 → 確認 → 完了
                     </div>
+                    <div class="mt-1 text-xs font-semibold text-blue-700">店舗都合キャンセルなどの連絡</div>
                 </div>
             </div>
         </div>
@@ -97,6 +105,23 @@
     @endif
 
     @if($notices->count())
+        <div class="mb-5 flex flex-col gap-3 rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <div class="text-sm font-black text-slate-900">対応状況の見方</div>
+                <div class="mt-1 text-xs font-semibold text-slate-500">対応が必要な案件を先頭に表示しています。</div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <span class="inline-flex items-center gap-2 rounded-full border-2 border-rose-300 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-800">
+                    <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                    赤：対応が必要
+                </span>
+                <span class="inline-flex items-center gap-2 rounded-full border-2 border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">
+                    <i data-lucide="circle-check" class="h-4 w-4"></i>
+                    緑：確認完了
+                </span>
+            </div>
+        </div>
+
         <div class="space-y-5">
             @foreach($notices as $notice)
                 @php
@@ -107,15 +132,26 @@
                     $isUrgent = $pending > 0;
                 @endphp
 
-                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition">
+                <div class="overflow-hidden rounded-3xl border-2 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg
+                    {{ $isUrgent ? 'border-rose-300 bg-rose-50/40' : 'border-emerald-200 bg-emerald-50/30' }}">
+                    <div class="flex flex-col gap-2 border-b-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between md:px-6
+                        {{ $isUrgent ? 'border-rose-300 bg-rose-100' : 'border-emerald-200 bg-emerald-100' }}">
+                        <div class="flex items-center gap-2 text-sm font-black {{ $isUrgent ? 'text-rose-900' : 'text-emerald-900' }}">
+                            <i data-lucide="{{ $isUrgent ? 'circle-alert' : 'circle-check' }}" class="h-5 w-5"></i>
+                            {{ $isUrgent ? '対応が必要な案件です' : 'この案件は確認完了しています' }}
+                        </div>
+                        <div class="text-xs font-bold {{ $isUrgent ? 'text-rose-700' : 'text-emerald-700' }}">
+                            {{ $isUrgent ? '未対応 ' . number_format($pending) . '件' : '対応済み ' . number_format($confirmed) . '件' }}
+                        </div>
+                    </div>
                     <div class="p-5 md:p-6">
                         <div class="flex flex-col xl:flex-row xl:items-start xl:justify-between gap-6">
 
                             <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2 mb-4">
-                                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold
-                                        {{ $isUrgent ? 'bg-rose-100 text-rose-700' : 'bg-green-100 text-green-700' }}">
-                                        {{ $isUrgent ? '優先対応あり' : '確認完了' }}
+                                    <span class="inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-black
+                                        {{ $isUrgent ? 'border-rose-300 bg-white text-rose-800' : 'border-emerald-200 bg-white text-emerald-800' }}">
+                                        {{ $isUrgent ? '要対応' : '確認完了' }}
                                     </span>
 
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
@@ -128,43 +164,38 @@
                                         </span>
                                     @endif
 
-                                    @if(!empty($notice->status))
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
-                                            {{ $notice->status }}
-                                        </span>
-                                    @endif
                                 </div>
 
-                                <h2 class="text-lg md:text-xl font-bold text-gray-800 leading-8 break-words">
+                                <h2 class="break-words text-lg font-black leading-8 text-slate-950 md:text-xl">
                                     {{ $notice->title }}
                                 </h2>
 
                                 @if(!empty($notice->reason_text))
-                                    <p class="mt-3 text-sm text-gray-500 leading-7 break-words">
+                                    <p class="mt-3 break-words text-sm font-medium leading-7 text-slate-600">
                                         {{ $notice->reason_text }}
                                     </p>
                                 @endif
 
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5">
-                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
-                                        <div class="text-xs text-gray-500">対象件数</div>
-                                        <div class="text-2xl font-bold text-gray-800 mt-1">
+                                <div class="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                    <div class="rounded-2xl border-2 border-slate-200 bg-white px-4 py-4 shadow-sm">
+                                        <div class="text-xs font-bold text-slate-500">対象件数</div>
+                                        <div class="mt-1 text-2xl font-black text-slate-900">
                                             {{ $total }}
                                             <span class="text-xs font-medium text-gray-400">件</span>
                                         </div>
                                     </div>
 
-                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
-                                        <div class="text-xs text-gray-500">確認済み</div>
-                                        <div class="text-2xl font-bold text-green-700 mt-1">
+                                    <div class="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-4 shadow-sm">
+                                        <div class="text-xs font-bold text-emerald-700">確認済み</div>
+                                        <div class="mt-1 text-2xl font-black text-emerald-800">
                                             {{ $confirmed }}
                                             <span class="text-xs font-medium text-gray-400">件</span>
                                         </div>
                                     </div>
 
-                                    <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
-                                        <div class="text-xs text-gray-500">確認待ち</div>
-                                        <div class="text-2xl font-bold {{ $pending > 0 ? 'text-rose-700' : 'text-gray-800' }} mt-1">
+                                    <div class="rounded-2xl border-2 px-4 py-4 shadow-sm {{ $isUrgent ? 'border-rose-300 bg-rose-50' : 'border-slate-200 bg-white' }}">
+                                        <div class="text-xs font-bold {{ $isUrgent ? 'text-rose-700' : 'text-slate-500' }}">確認待ち</div>
+                                        <div class="mt-1 text-2xl font-black {{ $pending > 0 ? 'text-rose-800' : 'text-slate-800' }}">
                                             {{ $pending }}
                                             <span class="text-xs font-medium text-gray-400">件</span>
                                         </div>
@@ -177,15 +208,16 @@
                                         <span>{{ $confirmed }} / {{ $total }}</span>
                                     </div>
 
-                                    <div class="w-full h-3 rounded-full bg-gray-100 overflow-hidden">
+                                    <div class="h-4 w-full overflow-hidden rounded-full border border-slate-200 bg-white">
                                         <div class="h-full rounded-full transition-all duration-300"
-                                             style="width: {{ $progress }}%; background: {{ $theme }};"></div>
+                                             style="width: {{ $progress }}%; background: {{ $isUrgent ? '#e11d48' : '#059669' }};"></div>
                                     </div>
                                 </div>
 
                                 @if($pending > 0)
-                                    <div class="mt-4 rounded-2xl bg-rose-50 border border-rose-100 px-4 py-3">
-                                        <p class="text-sm font-semibold text-rose-700">
+                                    <div class="mt-4 rounded-2xl border-2 border-rose-300 bg-rose-100 px-4 py-3">
+                                        <p class="flex items-center gap-2 text-sm font-black text-rose-900">
+                                            <i data-lucide="bell-ring" class="h-4 w-4 shrink-0"></i>
                                             まだ {{ $pending }} 件の確認待ちがあります。優先して確認してください。
                                         </p>
                                     </div>
@@ -193,13 +225,13 @@
                             </div>
 
                             <div class="xl:w-56 shrink-0">
-                                <div class="rounded-2xl bg-gray-50 border border-gray-100 p-4">
-                                    <p class="text-xs text-gray-500 mb-2">操作</p>
+                                <div class="rounded-2xl border-2 bg-white p-4 shadow-sm {{ $isUrgent ? 'border-rose-300' : 'border-emerald-200' }}">
+                                    <p class="mb-2 text-xs font-black {{ $isUrgent ? 'text-rose-700' : 'text-emerald-700' }}">{{ $isUrgent ? '対応してください' : '対応済み' }}</p>
 
                                     <a href="{{ route('company.reservation_change_notices.show', $notice) }}"
                                        class="w-full inline-flex items-center justify-center px-4 py-3 rounded-2xl text-white font-bold shadow hover:opacity-90 transition"
-                                       style="background: {{ $theme }};">
-                                        詳細を見る
+                                       style="background: {{ $isUrgent ? '#be123c' : '#047857' }};">
+                                        {{ $isUrgent ? '未対応を確認する' : '完了内容を見る' }}
                                     </a>
 
                                     <form method="POST"
@@ -239,7 +271,7 @@
             </h2>
 
             <p class="text-sm text-gray-500 leading-7 max-w-xl mx-auto">
-                営業日変更、休暇、シフト変更などで影響する予約が発生すると、ここに案件一覧が表示されます。
+                店舗都合キャンセル、営業日変更、休暇、シフト変更などで影響する予約が発生すると、ここに案件一覧が表示されます。
             </p>
 
             <div class="mt-6">

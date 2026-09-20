@@ -90,12 +90,187 @@ body {
 }
 .card:hover { transform: translateY(-3px); box-shadow: 0 24px 60px rgba(15,23,42,.14); }
 .card-link { display: flex; align-items: center; gap: 14px; font-weight: 600; }
+.card.card-link {
+    min-height: 118px;
+    padding: 20px 64px 20px 20px;
+    overflow: hidden;
+    border: 2px solid #d6d3d1;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(15,23,42,.08);
+}
+.card.card-link::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 6px;
+    background: var(--feature-accent, {{ $theme }});
+}
+.card.card-link::after {
+    content: "›";
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    display: flex;
+    width: 32px;
+    height: 32px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d6d3d1;
+    border-radius: 999px;
+    background: #f5f5f4;
+    color: #57534e;
+    font-size: 1.5rem;
+    font-weight: 900;
+    line-height: 1;
+    transform: translateY(-50%);
+    transition: .22s;
+}
+.card.card-link:hover {
+    border-color: var(--feature-accent, {{ $theme }});
+    background: var(--feature-soft, #f8fafc);
+    box-shadow: 0 18px 38px rgba(15,23,42,.14);
+}
+.card.card-link:hover::after {
+    border-color: var(--feature-accent, {{ $theme }});
+    background: var(--feature-accent, {{ $theme }});
+    color: #fff;
+    transform: translate(3px, -50%);
+}
+.card.card-link:focus-visible {
+    outline: 3px solid {{ $theme }}55;
+    outline: 3px solid color-mix(in srgb, var(--feature-accent, {{ $theme }}) 30%, transparent);
+    outline-offset: 3px;
+}
+.card-link > .card-icon + div {
+    min-width: 0;
+}
+.card-link > .card-icon + div > .font-bold {
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 900;
+    line-height: 1.4;
+}
+.card-link > .card-icon + div > .text-sm {
+    margin-top: .35rem;
+    color: #64748b;
+    line-height: 1.55;
+}
 .card-icon {
-    width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center;
+    width: 50px; height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
     background: linear-gradient(135deg, {{ $theme }}, #111827 115%);
     color: #fff; box-shadow: 0 10px 24px {{ $theme }}55; flex: none;
 }
-.card-icon svg { width: 21px; height: 21px; }
+.card-icon svg { width: 23px; height: 23px; }
+.feature-card-grid {
+    --feature-accent: {{ $theme }};
+    --feature-soft: #f8fafc;
+    padding: 18px;
+    border: 1px solid #cbd5e1;
+    border-radius: 28px;
+    background: rgba(255,255,255,.72);
+    box-shadow: 0 14px 34px rgba(15,23,42,.08), inset 0 1px 0 rgba(255,255,255,.9);
+}
+.feature-card-grid .card-icon {
+    background: linear-gradient(135deg, var(--feature-accent), #111827 125%);
+    box-shadow: 0 10px 24px color-mix(in srgb, var(--feature-accent) 35%, transparent);
+}
+.feature-group-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    padding: 0 2px 14px;
+    border-bottom: 2px solid #d6d3d1;
+}
+.feature-group-heading::before {
+    content: "";
+    width: 6px;
+    height: 42px;
+    flex: none;
+    border-radius: 999px;
+    background: var(--feature-accent);
+}
+.feature-group-heading h3 {
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 900;
+}
+.feature-group-heading p {
+    margin-top: .2rem;
+    color: #64748b;
+    font-size: .75rem;
+}
+.feature-group-daily { --feature-accent: #2563eb; --feature-soft: #eff6ff; }
+.feature-group-outreach { --feature-accent: #e11d48; --feature-soft: #fff1f2; }
+.feature-group-staff { --feature-accent: #059669; --feature-soft: #ecfdf5; }
+.feature-group-prep { --feature-accent: #d97706; --feature-soft: #fffbeb; }
+.feature-group-menu { --feature-accent: #7c3aed; --feature-soft: #f5f3ff; }
+.feature-group-support { --feature-accent: #0284c7; --feature-soft: #f0f9ff; }
+.feature-group-settings { --feature-accent: #475569; --feature-soft: #f8fafc; }
+.feature-card-alert.card.card-link {
+    border-color: #fecdd3;
+    background: #fff1f2;
+}
+.change-notice-attention {
+    overflow: hidden;
+    border: 3px solid #e11d48 !important;
+    background:
+        radial-gradient(circle at top right, rgba(251, 191, 36, .2), transparent 22rem),
+        linear-gradient(135deg, #fff1f2 0%, #fff7ed 100%) !important;
+    box-shadow: 0 18px 44px rgba(190, 18, 60, .2), inset 0 1px 0 rgba(255,255,255,.9) !important;
+}
+.change-notice-attention::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 8px;
+    background: linear-gradient(90deg, #be123c, #e11d48 48%, #f59e0b);
+}
+.change-notice-alert-icon {
+    display: flex;
+    width: 58px;
+    height: 58px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fecdd3;
+    border-radius: 18px;
+    background: #be123c;
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(190,18,60,.28);
+}
+.change-notice-alert-icon svg { width: 28px; height: 28px; }
+.change-notice-alert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border-radius: 999px;
+    background: #be123c;
+    padding: .4rem .75rem;
+    color: #fff;
+    font-size: .75rem;
+    font-weight: 900;
+    letter-spacing: .08em;
+}
+.change-notice-alert-dot {
+    width: .55rem;
+    height: .55rem;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 0 0 0 rgba(255,255,255,.7);
+    animation: changeNoticePulse 1.8s infinite;
+}
+.change-notice-action-button {
+    background: #be123c;
+    box-shadow: 0 10px 22px rgba(190,18,60,.25);
+}
+.change-notice-action-button:hover { background: #9f1239; transform: translateY(-1px); }
+@keyframes changeNoticePulse {
+    70% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .change-notice-alert-dot { animation: none; }
+}
 .action-panel {
     border: 1px solid rgba(255,255,255,.18);
     background: rgba(255,255,255,.08);
@@ -287,6 +462,23 @@ body {
     outline-offset: 3px;
 }
 @media (max-width: 640px) {
+    .feature-card-grid {
+        padding: 12px;
+        border-radius: 22px;
+    }
+    .card.card-link {
+        min-height: 104px;
+        padding: 16px 54px 16px 16px;
+    }
+    .card.card-link::after {
+        right: 12px;
+        width: 28px;
+        height: 28px;
+    }
+    .card-icon {
+        width: 44px;
+        height: 44px;
+    }
     .tab-category-heading {
         align-items: stretch;
         flex-direction: column;
@@ -486,12 +678,52 @@ body {
             </div>
         @endif
         @if($hasChangeNoticeAlert ?? false)
-            <div class="card border-rose-200 bg-rose-50/80">
-                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
-                    <div class="flex-1"><div class="flex items-start gap-3"><div class="card-icon"><i data-lucide="refresh-cw"></i></div><div><h2 class="section-title text-rose-950">予約変更連絡の未対応があります</h2><p class="text-sm text-rose-800 mt-1">まだ確認や連絡が完了していない予約変更があります。</p></div></div>
-                        <div class="grid sm:grid-cols-3 gap-3 mt-4"><div class="rounded-2xl bg-white/85 border border-rose-100 px-4 py-3"><div class="metric-label">確認待ち</div><div class="text-2xl font-black text-rose-700">{{ number_format($changePending) }}件</div></div><div class="rounded-2xl bg-white/85 border border-amber-100 px-4 py-3"><div class="metric-label">電話対応待ち</div><div class="text-2xl font-black text-amber-700">{{ number_format($changePhonePending) }}件</div></div><div class="rounded-2xl bg-white/85 border border-green-100 px-4 py-3"><div class="metric-label">確認済み</div><div class="text-2xl font-black text-green-700">{{ number_format($changeConfirmed) }}件</div></div></div>
+            <div class="card change-notice-attention" role="alert" aria-labelledby="change-notice-alert-title">
+                <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start">
+                            <div class="change-notice-alert-icon">
+                                <i data-lucide="bell-ring"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="change-notice-alert-badge">
+                                        <span class="change-notice-alert-dot"></span>
+                                        要対応
+                                    </span>
+                                    <span class="rounded-full border border-rose-300 bg-white px-3 py-1 text-xs font-black text-rose-800">
+                                        未対応 {{ number_format($changeTotalActive) }}件
+                                    </span>
+                                </div>
+                                <h2 id="change-notice-alert-title" class="mt-3 text-xl font-black text-rose-950 md:text-2xl">
+                                    予約変更連絡の未対応があります
+                                </h2>
+                                <p class="mt-2 text-sm font-semibold leading-7 text-rose-900">
+                                    お客様への連絡または確認が完了していません。内容を確認し、早めに対応してください。
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-5 grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl border-2 border-rose-300 bg-white px-4 py-3 shadow-sm">
+                                <div class="text-xs font-black text-rose-700">確認待ち</div>
+                                <div class="mt-1 text-3xl font-black text-rose-800">{{ number_format($changePending) }}<span class="ml-1 text-sm">件</span></div>
+                            </div>
+                            <div class="rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3 shadow-sm">
+                                <div class="text-xs font-black text-amber-800">電話対応待ち</div>
+                                <div class="mt-1 text-3xl font-black text-amber-800">{{ number_format($changePhonePending) }}<span class="ml-1 text-sm">件</span></div>
+                            </div>
+                            <div class="rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm">
+                                <div class="text-xs font-black text-emerald-700">確認済み</div>
+                                <div class="mt-1 text-3xl font-black text-emerald-800">{{ number_format($changeConfirmed) }}<span class="ml-1 text-sm">件</span></div>
+                            </div>
+                        </div>
                     </div>
-                    <a href="{{ route('company.reservation_change_notices.index') }}" class="inline-flex items-center justify-center px-5 py-3 rounded-2xl text-white font-bold" style="background: {{ $theme }}">予約変更連絡管理を開く</a>
+                    <a href="{{ route('company.reservation_change_notices.index') }}"
+                       class="change-notice-action-button inline-flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-4 text-base font-black text-white transition focus:outline-none focus:ring-4 focus:ring-rose-300">
+                        未対応を確認する
+                        <i data-lucide="arrow-right" class="h-5 w-5"></i>
+                    </a>
                 </div>
             </div>
         @endif
@@ -605,20 +837,21 @@ body {
         </div>
     </div>
 
-    <div x-show="showFeatureCards && tab==='daily'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='daily'" class="feature-card-grid feature-group-daily grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>予約・顧客管理</h3><p>日々の予約確認、登録、顧客情報の管理を行います。</p></div></div>
         @if($can('card.reserve'))<a href="{{ route('company.reserve') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-check"></i></div><div><div class="font-bold">予約カレンダー</div><div class="text-sm text-gray-500">空き状況の確認と予約登録</div></div></a>@endif
         @if($can('card.reserve'))<a href="{{ route('company.reservations.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list-checks"></i></div><div><div class="font-bold">予約一覧</div><div class="text-sm text-gray-500">予約状況、来店済、キャンセル、無断キャンセルの管理</div></div></a>@endif
         @if($can('card.customers'))<a href="{{ route('company.customers') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">顧客管理</div><div class="text-sm text-gray-500">来店履歴・顧客情報の管理</div></div></a>@endif
     </div>
 
     @if($canAny(['card.reviews', 'card.style', 'card.notices', 'card.reservation_change_notices']))
-    <div x-show="showFeatureCards && tab==='outreach'" class="grid md:grid-cols-2 gap-4 mb-6">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">発信・連絡</h3><p class="mt-1 text-xs text-slate-500">お客様へのお知らせや対応状況を管理します。</p></div>
+    <div x-show="showFeatureCards && tab==='outreach'" class="feature-card-grid feature-group-outreach grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>発信・連絡</h3><p>お客様へのお知らせや対応状況を管理します。</p></div></div>
         @if($can('card.reviews') && ($company->review_enabled ?? false))<a href="{{ route('company.reviews.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="star"></i></div><div><div class="font-bold">口コミ管理</div><div class="text-sm text-gray-500">評価確認・返信対応</div></div></a>@endif
         @if($can('card.style'))<a href="{{ route('company.style-posts.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">最新スタイル投稿</div><div class="text-sm text-gray-500">ヘアスタイルの発信</div></div></a>@endif
         @if($can('card.notices'))<a href="{{ route('company.notices.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="megaphone"></i></div><div><div class="font-bold">お知らせ情報管理</div><div class="text-sm text-gray-500">キャンペーン・重要告知</div></div></a>@endif
         @if($can('card.reservation_change_notices'))
-            <a href="{{ route('company.reservation_change_notices.index') }}" class="card card-link md:col-span-2 border-rose-100 bg-rose-50/60">
+            <a href="{{ route('company.reservation_change_notices.index') }}" class="feature-card-alert card card-link md:col-span-2">
                 <div class="card-icon"><i data-lucide="refresh-cw"></i></div>
                 <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
@@ -651,16 +884,16 @@ body {
     @endif
 
     @if($canAny(['card.month_shift', 'card.month_shift_view']))
-    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4 mb-6">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">日常操作</h3><p class="mt-1 text-xs text-slate-500">毎月のシフト登録と勤務状況の確認に使います。</p></div>
+    <div x-show="showFeatureCards && tab==='staffwork'" class="feature-card-grid feature-group-staff grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>日常操作</h3><p>毎月のシフト登録と勤務状況の確認に使います。</p></div></div>
         @if($can('card.month_shift'))<a href="{{ route('company.staff-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="clock"></i></div><div><div class="font-bold">勤務管理</div><div class="text-sm text-gray-500">日別シフト登録</div></div></a>@endif
         @if($can('card.month_shift_view'))<a href="{{ route('company.staff-shifts.view') }}" class="card card-link"><div class="card-icon"><i data-lucide="layout-grid"></i></div><div><div class="font-bold">スタッフ別シフト表</div><div class="text-sm text-gray-500">稼働状況の確認</div></div></a>@endif
     </div>
     @endif
 
     @if($canAny(['card.staff', 'card.vacation', 'card.my_profile']))
-    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4 mb-6">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">スタッフ管理</h3><p class="mt-1 text-xs text-slate-500">スタッフ情報と個人設定を管理します。</p></div>
+    <div x-show="showFeatureCards && tab==='staffwork'" class="feature-card-grid feature-group-staff grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>スタッフ管理</h3><p>スタッフ情報と個人設定を管理します。</p></div></div>
         @if($can('card.staff'))<a href="{{ route('company.staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="user"></i></div><div><div class="font-bold">担当者管理</div><div class="text-sm text-gray-500">スタッフ登録・権限管理</div></div></a>@endif
         @if($can('card.vacation'))<a href="{{ route('company.vacation.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar-x"></i></div><div><div class="font-bold">休暇管理</div><div class="text-sm text-gray-500">休み・有給の設定</div></div></a>@endif
         @if($can('card.my_profile'))<a href="{{ route('company.my-profile') }}" class="card card-link"><div class="card-icon"><i data-lucide="settings"></i></div><div><div class="font-bold">マイプロフィール</div><div class="text-sm text-gray-500">個人設定・アカウント管理</div></div></a>@endif
@@ -668,8 +901,8 @@ body {
     @endif
 
     @if($canAny(['card.business_calendar', 'card.default_shift', 'card.shift_patterns']))
-    <div x-show="showFeatureCards && tab==='staffwork'" class="grid md:grid-cols-2 gap-4">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">事前設定</h3><p class="mt-1 text-xs text-slate-500">営業日と繰り返し利用する勤務ルールを設定します。</p></div>
+    <div x-show="showFeatureCards && tab==='staffwork'" class="feature-card-grid feature-group-prep grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>事前設定</h3><p>営業日と繰り返し利用する勤務ルールを設定します。</p></div></div>
         @if($can('card.shift_patterns'))<a href="{{ route('company.shift-patterns') }}" class="card card-link"><div class="card-icon"><i data-lucide="layers"></i></div><div><div class="font-bold">シフトパターン</div><div class="text-sm text-gray-500">勤務時間テンプレート</div></div></a>@endif
         @if($can('card.default_shift'))<a href="{{ route('company.staff-default-shifts') }}" class="card card-link"><div class="card-icon"><i data-lucide="repeat"></i></div><div><div class="font-bold">基本シフト</div><div class="text-sm text-gray-500">定期シフト設定</div></div></a>@endif
         @if($can('card.business_calendar'))<a href="{{ route('company.calendar.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="calendar"></i></div><div><div class="font-bold">営業日管理</div><div class="text-sm text-gray-500">営業日・営業時間設定</div></div></a>@endif
@@ -677,20 +910,22 @@ body {
     @endif
 
     @if($canAny(['card.menu_category_tag', 'card.menu', 'card.menu_staff']))
-    <div x-show="showFeatureCards && tab==='outreach'" class="grid md:grid-cols-2 gap-4">
-        <div class="md:col-span-2"><h3 class="text-base font-black text-slate-900">メニュー設定</h3><p class="mt-1 text-xs text-slate-500">予約で選択するメニューと担当スタッフを設定します。</p></div>
+    <div x-show="showFeatureCards && tab==='outreach'" class="feature-card-grid feature-group-menu grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>メニュー設定</h3><p>予約で選択するメニューと担当スタッフを設定します。</p></div></div>
         @if($can('card.menu_category_tag'))<a href="{{ route('company.menu.settings') }}" class="card card-link"><div class="card-icon"><i data-lucide="tag"></i></div><div><div class="font-bold">カテゴリー・タグ管理</div><div class="text-sm text-gray-500">分類・検索用タグ設定</div></div></a>@endif
         @if($can('card.menu'))<a href="{{ route('company.menu.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="list"></i></div><div><div class="font-bold">メニュー管理</div><div class="text-sm text-gray-500">料金・施術時間の設定</div></div></a>@endif
         @if($can('card.menu_staff'))<a href="{{ route('company.menu-staff.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="users"></i></div><div><div class="font-bold">メニュー対応スタッフ設定</div><div class="text-sm text-gray-500">担当可能スタッフ設定</div></div></a>@endif
     </div>
     @endif
 
-    <div x-show="showFeatureCards && tab==='support'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='support'" class="feature-card-grid feature-group-support grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>契約・サポート</h3><p>契約内容の確認や、操作についてのお問い合わせを行います。</p></div></div>
         @if($can('card.billing'))<a href="{{ route('company.billing.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="credit-card"></i></div><div><div class="font-bold">契約管理</div><div class="text-sm text-gray-500">プラン・支払い情報</div>@if($billingWarning)<div class="mt-2 text-xs text-amber-700">{{ $billingWarning }}</div>@endif</div></a>@endif
         @if($can('card.support'))<a href="{{ route('company.support.index') }}" class="card card-link"><div class="card-icon"><i data-lucide="help-circle"></i></div><div><div class="font-bold">よくあるご質問・お問い合わせ</div><div class="text-sm text-gray-500">サポート・FAQ</div>@if($supportUnreadCount > 0)<span class="inline-flex mt-2 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">{{ $supportUnreadCount }}件</span>@endif</div></a>@endif
     </div>
 
-    <div x-show="showFeatureCards && tab==='settings'" class="grid md:grid-cols-2 gap-4">
+    <div x-show="showFeatureCards && tab==='settings'" class="feature-card-grid feature-group-settings grid md:grid-cols-2 gap-4 mb-6">
+        <div class="feature-group-heading md:col-span-2"><div><h3>店舗・画面設定</h3><p>企業情報、ロゴ、テーマ、カード表示権限を設定します。</p></div></div>
         @if($can('card.company_info'))<a href="{{ route('company.info.edit') }}" class="card card-link"><div class="card-icon"><i data-lucide="building"></i></div><div><div class="font-bold">企業情報編集</div><div class="text-sm text-gray-500">店舗情報・基本設定</div></div></a>@endif
         @if($can('card.theme'))<a href="{{ route('company.theme') }}" class="card card-link"><div class="card-icon"><i data-lucide="palette"></i></div><div><div class="font-bold">テーマ設定</div><div class="text-sm text-gray-500">カラー・UI調整</div></div></a>@endif
         @if($can('card.logo'))<a href="{{ route('company.logo') }}" class="card card-link"><div class="card-icon"><i data-lucide="image"></i></div><div><div class="font-bold">ロゴ設定</div><div class="text-sm text-gray-500">ブランド設定</div></div></a>@endif

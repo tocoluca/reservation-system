@@ -1093,11 +1093,44 @@ function resetMenuStep() {
     document.querySelectorAll('.step-menu-checkbox').forEach(el => {
         el.checked = false;
     });
+    document.querySelectorAll('[data-step-menu-category-toggle]').forEach(button => {
+        const panel = document.getElementById(button.getAttribute('aria-controls'));
+        panel?.classList.add('hidden');
+        button.setAttribute('aria-expanded', 'false');
+        button.querySelector('[data-step-menu-category-chevron]')?.classList.remove('rotate-180');
+
+        const selectedCount = button.querySelector('[data-step-menu-category-selected]');
+        if (selectedCount) {
+            selectedCount.textContent = '';
+            selectedCount.classList.add('hidden');
+        }
+    });
     document.getElementById('stepTotalDuration').innerText = 0;
     document.getElementById('stepTotalPrice').innerText = 0;
     selectedAssignments = [];
     selectedStaffId = null;
     assignmentCandidatesCache = [];
+}
+
+function toggleMenuStepCategory(button) {
+    const panel = document.getElementById(button.getAttribute('aria-controls'));
+    if (!panel) return;
+
+    const isOpening = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !isOpening);
+    button.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+    button.querySelector('[data-step-menu-category-chevron]')?.classList.toggle('rotate-180', isOpening);
+}
+
+function updateMenuStepCategorySelection() {
+    document.querySelectorAll('[data-step-menu-category]').forEach(category => {
+        const selectedCount = category.querySelectorAll('.step-menu-checkbox:checked').length;
+        const label = category.querySelector('[data-step-menu-category-selected]');
+        if (!label) return;
+
+        label.textContent = selectedCount > 0 ? `選択中 ${selectedCount}件` : '';
+        label.classList.toggle('hidden', selectedCount === 0);
+    });
 }
 
 document.addEventListener('change', function(e){
@@ -1113,6 +1146,7 @@ document.addEventListener('change', function(e){
 
     document.getElementById('stepTotalDuration').innerText = totalTime;
     document.getElementById('stepTotalPrice').innerText = totalPrice.toLocaleString();
+    updateMenuStepCategorySelection();
 });
 
 function normalizeAssignmentCandidates(data) {
@@ -1294,9 +1328,9 @@ function openFinalReservationModal() {
             `;
         } else {
             area.innerHTML = selectedAssignments.map(row => `
-                <div class="flex items-center justify-between py-2 border-b border-stone-100 last:border-b-0">
-                    <span class="text-sm text-stone-700">${row.menu_name ?? '選択メニュー'}</span>
-                    <span class="text-sm font-semibold text-stone-800">${row.staff_name}</span>
+                <div class="flex items-center justify-between gap-3 rounded-xl border border-sky-100 bg-white px-3 py-2">
+                    <span class="text-sm text-sky-800">${row.menu_name ?? '選択メニュー'}</span>
+                    <span class="text-sm font-semibold text-sky-950">${row.staff_name}</span>
                 </div>
             `).join('');
         }
@@ -1565,16 +1599,37 @@ function formatTel(input) {
             <h2 class="text-lg font-bold text-stone-800">メニューを選択</h2>
         </div>
 
-        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4">
-            <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
-            <div id="menuStepDatetime" class="font-bold text-stone-800"></div>
+        <div class="rounded-2xl bg-sky-50 border border-sky-200 px-4 py-3 mb-4">
+            <div class="text-xs font-bold text-sky-700 mb-1">選択中の日時（確認）</div>
+            <div id="menuStepDatetime" class="font-bold text-sky-950"></div>
         </div>
 
-        <div class="space-y-4 max-h-80 overflow-y-auto border border-stone-200 rounded-2xl p-4 bg-white">
+        <div class="space-y-3 max-h-80 overflow-y-auto border border-stone-200 rounded-2xl p-3 sm:p-4 bg-white">
             @foreach($menus as $category => $menuList)
-                <div>
-                    <div class="font-bold text-sm mb-2 text-stone-700">{{ $category }}</div>
-                    <div class="space-y-2">
+                @php($categoryPanelId = 'stepMenuCategoryPanel'.$loop->iteration)
+                <div data-step-menu-category class="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+                    <button type="button"
+                            class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition hover:bg-stone-100"
+                            onclick="toggleMenuStepCategory(this)"
+                            data-step-menu-category-toggle
+                            aria-expanded="false"
+                            aria-controls="{{ $categoryPanelId }}">
+                        <span class="min-w-0">
+                            <span class="block truncate text-sm font-bold text-stone-700">{{ $category }}</span>
+                            <span class="mt-0.5 flex items-center gap-2 text-xs text-stone-500">
+                                <span>{{ $menuList->count() }}件</span>
+                                <span data-step-menu-category-selected class="hidden rounded-full bg-amber-100 px-2 py-0.5 font-bold text-amber-800"></span>
+                            </span>
+                        </span>
+                        <svg data-step-menu-category-chevron
+                             class="h-4 w-4 shrink-0 text-stone-500 transition-transform duration-200"
+                             viewBox="0 0 20 20"
+                             fill="currentColor"
+                             aria-hidden="true">
+                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.168l3.71-3.938a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <div id="{{ $categoryPanelId }}" class="hidden space-y-2 border-t border-stone-200 bg-white p-3">
                         @foreach($menuList as $menu)
                             <label class="flex items-start gap-3 p-3 border border-stone-200 rounded-xl cursor-pointer hover:bg-stone-50 transition">
                                 <input type="checkbox"
@@ -1634,14 +1689,14 @@ function formatTel(input) {
             </p>
         </div>
 
-        <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 mb-4 text-sm">
-            <div class="text-stone-500">予約日時</div>
-            <div id="stepStaffDatetime" class="font-semibold text-stone-800 mb-2"></div>
-            <div class="flex justify-between text-stone-700">
+        <div class="rounded-2xl bg-sky-50 border border-sky-200 px-4 py-3 mb-4 text-sm">
+            <div class="text-xs font-bold text-sky-700">選択中の予約内容（確認）</div>
+            <div id="stepStaffDatetime" class="mt-1 font-semibold text-sky-950 mb-2"></div>
+            <div class="flex justify-between text-sky-900">
                 <span>合計時間</span>
                 <span><span id="stepStaffDuration">0</span>分</span>
             </div>
-            <div class="flex justify-between text-stone-700 mt-1">
+            <div class="flex justify-between text-sky-900 mt-1">
                 <span>合計料金</span>
                 <span>¥<span id="stepStaffPrice">0</span></span>
             </div>
@@ -1833,63 +1888,95 @@ function formatTel(input) {
                 <span class="inline-flex items-center rounded-full bg-stone-100 px-3 py-1">STEP 3</span>
                 <span>予約確定</span>
             </div>
-            <h2 class="text-lg font-bold text-stone-800">予約内容の確認</h2>
+            <h2 class="text-lg font-bold text-stone-800">予約情報を入力・確認</h2>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-            <div class="rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3 sm:col-span-2">
-                <div class="text-xs text-stone-500 mb-1">選択中の日時</div>
-                <div id="reserveDatetime" class="font-bold text-stone-800"></div>
+        <section class="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+            <div class="mb-3 flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-sm font-black text-sky-950">確認内容</div>
+                    <div class="mt-0.5 text-xs text-sky-700">選択済みの予約情報です</div>
+                </div>
+                <span class="shrink-0 rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[11px] font-bold text-sky-700">表示のみ</span>
             </div>
-            <div class="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3">
-                <div class="text-xs text-emerald-700 mb-1">予約内容</div>
-                <div class="text-sm font-bold text-emerald-900">
-                    <span id="finalTotalDuration">0</span>分 / ¥<span id="finalTotalPrice">0</span>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div class="rounded-xl border border-sky-100 bg-white px-4 py-3 sm:col-span-2">
+                    <div class="text-xs font-bold text-sky-700 mb-1">予約日時</div>
+                    <div id="reserveDatetime" class="font-bold text-sky-950"></div>
+                </div>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+                    <div class="text-xs font-bold text-emerald-700 mb-1">時間・料金</div>
+                    <div class="text-sm font-bold text-emerald-950">
+                        <span id="finalTotalDuration">0</span>分 / ¥<span id="finalTotalPrice">0</span>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <div class="rounded-2xl border border-stone-200 p-4">
-            <div class="text-sm font-bold text-stone-800 mb-3">顧客情報</div>
+            <div class="mt-3 rounded-xl border border-sky-100 bg-white p-3">
+                <div class="text-xs font-bold text-sky-700 mb-2">担当割り当て</div>
+                <div id="finalAssignmentArea" class="space-y-2"></div>
+            </div>
+        </section>
+
+        <section class="mt-4 rounded-2xl border-2 border-amber-200 bg-amber-50/60 p-4">
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <div class="text-sm font-black text-amber-950">顧客情報を入力</div>
+                    <div class="mt-0.5 text-xs text-amber-800">予約受付に必要な情報を入力してください</div>
+                </div>
+                <span class="shrink-0 rounded-full bg-amber-800 px-2.5 py-1 text-[11px] font-bold text-white">入力項目</span>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label class="block text-sm font-semibold text-stone-700 mb-1">お名前</label>
+                    <label for="modal_customer_name" class="mb-1.5 flex items-center gap-2 text-sm font-bold text-amber-950">
+                        お名前
+                        <span class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">必須</span>
+                    </label>
                     <input type="text"
                            id="modal_customer_name"
-                           class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                           required
+                           aria-required="true"
+                           class="w-full rounded-xl border-2 border-amber-300 bg-white p-3 text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-transparent focus:outline-none focus:ring-2"
                            style="--tw-ring-color: {{ $theme }};"
                            placeholder="例：山田 花子">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-stone-700 mb-1">電話番号（数字と-のみ）</label>
+                    <label for="modal_customer_phone" class="mb-1.5 flex items-center gap-2 text-sm font-bold text-amber-950">
+                        電話番号
+                        <span class="rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">必須</span>
+                    </label>
                     <input type="text"
                            id="modal_customer_phone"
-                           class="border border-stone-300 rounded-xl p-3 w-full focus:outline-none focus:ring-2"
+                           required
+                           aria-required="true"
+                           class="w-full rounded-xl border-2 border-amber-300 bg-white p-3 text-stone-900 shadow-sm placeholder:text-stone-400 focus:border-transparent focus:outline-none focus:ring-2"
                            style="--tw-ring-color: {{ $theme }};"
                            placeholder="例：090-1234-5678"
+                           inputmode="tel"
                            oninput="formatTel(this)">
+                    <p class="mt-1 text-xs text-amber-800">数字とハイフンのみ</p>
                 </div>
             </div>
-        </div>
 
-        <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4">
-            <div class="text-sm font-semibold text-stone-700 mb-2">担当割り当て</div>
-            <div id="finalAssignmentArea" class="space-y-1"></div>
-        </div>
-
-        <label for="modal_is_staff_nominated"
-               class="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 transition hover:bg-amber-100/70">
-            <input type="checkbox"
-                   id="modal_is_staff_nominated"
-                   class="mt-0.5 h-5 w-5 shrink-0 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
-            <span>
-                <span class="block text-sm font-black text-amber-950">顧客から担当者の指定あり</span>
-                <span class="mt-1 block text-xs leading-5 text-amber-800">
-                    電話予約・来店予約で、顧客が担当者を指定した場合にチェックしてください。未チェックの場合は「店舗側で割り振り」として記録します。
+            <label for="modal_is_staff_nominated"
+                   class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-300 bg-white px-4 py-3 shadow-sm transition hover:border-amber-400">
+                <input type="checkbox"
+                       id="modal_is_staff_nominated"
+                       class="mt-0.5 h-5 w-5 shrink-0 rounded border-amber-400 text-amber-600 focus:ring-amber-500">
+                <span>
+                    <span class="flex flex-wrap items-center gap-2 text-sm font-black text-amber-950">
+                        顧客から担当者の指定あり
+                        <span class="rounded-full bg-stone-100 px-2 py-0.5 text-[10px] font-bold text-stone-600">任意</span>
+                    </span>
+                    <span class="mt-1 block text-xs leading-5 text-amber-800">
+                        電話予約・来店予約で、顧客が担当者を指定した場合にチェックしてください。未チェックの場合は「店舗側で割り振り」として記録します。
+                    </span>
                 </span>
-            </span>
-        </label>
+            </label>
+        </section>
 
         <div class="mt-4 rounded-2xl bg-stone-50 border border-stone-200 p-4 text-sm text-stone-700">
             <div class="font-bold text-stone-800 mb-2">確定前チェック</div>

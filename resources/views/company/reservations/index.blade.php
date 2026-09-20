@@ -30,6 +30,47 @@
     $hasActiveReservationFilters = count($currentReservationFilters) > 0;
 @endphp
 
+<style>
+    .reservation-list-table thead th {
+        border-bottom: 2px solid #a8a29e;
+        background-color: #f5f5f4;
+    }
+
+    .reservation-list-table thead th + th,
+    .reservation-list-table tbody td + td {
+        border-left: 1px solid #d6d3d1;
+    }
+
+    .reservation-list-table tbody tr {
+        border-bottom: 2px solid #d6d3d1;
+    }
+
+    .reservation-list-table tbody tr:nth-child(odd) {
+        background-color: #ffffff;
+    }
+
+    .reservation-list-table tbody tr:nth-child(even) {
+        background-color: #f5f5f4;
+    }
+
+    .reservation-list-table tbody tr:hover {
+        background-color: #fef3c7;
+    }
+
+    .reservation-list-table tbody tr:last-child {
+        border-bottom-width: 0;
+    }
+
+    .reservation-mobile-card {
+        border-width: 2px;
+        border-color: #d6d3d1;
+    }
+
+    .reservation-mobile-card:nth-child(even) {
+        background-color: #fafaf9;
+    }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
     {{-- ヘッダー --}}
@@ -345,8 +386,8 @@
 
         {{-- PC表示 --}}
         <div class="hidden lg:block max-h-[72vh] overflow-y-auto overflow-x-hidden">
-            <table class="w-full text-sm table-fixed">
-                <thead class="bg-stone-50 border-b border-stone-200">
+            <table class="reservation-list-table w-full text-sm table-fixed">
+                <thead>
                     <tr class="text-left text-stone-600">
                         <th class="sticky top-0 z-20 bg-stone-50 px-3 py-3 font-semibold w-[120px] shadow-sm border-b border-stone-300">
                             予約日時
@@ -409,7 +450,7 @@
                                 && $reservation->start_at->gte(now()->startOfDay());
                         @endphp
 
-                        <tr class="border-b border-stone-100 hover:bg-amber-50/40 transition align-top">
+                        <tr class="transition-colors align-top">
                             <td class="px-3 py-4 text-stone-800 font-semibold break-words">
                                 <div>{{ optional($reservation->start_at)->format('Y/m/d') }}</div>
                                 <div class="text-sm text-stone-500 mt-1">{{ optional($reservation->start_at)->format('H:i') }}</div>
@@ -605,7 +646,7 @@
                         && $reservation->start_at->gte(now()->startOfDay());
                 @endphp
 
-                <div class="rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-sm space-y-4">
+                <div class="reservation-mobile-card rounded-[1.75rem] bg-white p-4 shadow-sm space-y-4">
                     <div class="flex items-start justify-between gap-3">
                         <div>
                             <div class="text-xs text-stone-500">予約日時</div>

@@ -30,8 +30,18 @@ class ReservationChangeNoticeController extends Controller
                     $q->whereIn('response_status', ['confirmed', 'phone_confirmed', 'closed']);
                 },
             ])
+            ->orderByDesc('pending_count')
             ->latest()
             ->paginate(20);
+
+        $pendingNoticeCount = ReservationChangeNotice::query()
+            ->where('company_id', $company->id)
+            ->whereHas('items', function ($q) {
+                $q->whereIn('response_status', ['waiting', 'mail_sent', 'no_response']);
+            })
+            ->count();
+
+        $completedNoticeCount = max($notices->total() - $pendingNoticeCount, 0);
 
         $targetReservationCount = ReservationChangeNoticeItem::query()
             ->where('company_id', $company->id)
@@ -39,7 +49,12 @@ class ReservationChangeNoticeController extends Controller
             ->distinct()
             ->count('reservation_id');
 
-        return view('company.reservation_change_notices.index', compact('notices', 'targetReservationCount'));
+        return view('company.reservation_change_notices.index', compact(
+            'notices',
+            'targetReservationCount',
+            'pendingNoticeCount',
+            'completedNoticeCount'
+        ));
     }
 
     public function show(ReservationChangeNotice $notice)

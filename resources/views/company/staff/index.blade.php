@@ -5,6 +5,7 @@
 
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
     $current = auth()->guard('company')->user();
 
     $totalCount = $staffStats['total'];
@@ -33,6 +34,54 @@
 @endphp
 
 @section('content')
+
+<style>
+    .staff-list-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .staff-list-table thead th {
+        border-bottom: 3px solid #a8a29e;
+        background: #f5f5f4;
+    }
+
+    .staff-list-table thead th + th,
+    .staff-list-table tbody td + td {
+        border-left: 1px solid #d6d3d1;
+    }
+
+    .staff-list-table tbody td {
+        border-bottom: 2px solid #d6d3d1;
+        vertical-align: middle;
+        transition: background-color 150ms ease;
+    }
+
+    .staff-list-table tbody tr:nth-child(odd) td {
+        background: #ffffff;
+    }
+
+    .staff-list-table tbody tr:nth-child(even) td {
+        background: #fafaf9;
+    }
+
+    .staff-list-table tbody tr:hover td {
+        background: #fef3c7;
+    }
+
+    .staff-list-table tbody tr:last-child td {
+        border-bottom-width: 0;
+    }
+
+    .staff-mobile-card {
+        border-width: 2px;
+        border-color: #d6d3d1;
+    }
+
+    .staff-mobile-card:nth-child(even) {
+        background: #fafaf9;
+    }
+</style>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
     <div class="relative overflow-hidden rounded-3xl shadow-lg mb-6">
@@ -140,27 +189,31 @@
         </form>
     </section>
 
-    <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+    <div class="hidden lg:block bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-5 border-b border-stone-200"
+             style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-bold text-gray-900">担当者一覧</h2>
-                    <p class="text-sm text-gray-500 mt-1">{{ number_format($staffs->count()) }}名を表示中。予約受付と在籍状況を確認できます。</p>
+                    <h2 class="text-lg font-black text-gray-900">担当者一覧</h2>
+                    <p class="text-sm text-gray-500 mt-1">予約受付と在籍状況を確認できます。</p>
                 </div>
+                <span class="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm">
+                    表示中 {{ number_format($staffs->count()) }}名
+                </span>
             </div>
         </div>
 
         <div class="max-h-[72vh] overflow-auto">
-            <table class="w-full min-w-[980px] text-sm">
+            <table class="staff-list-table w-full min-w-[980px] text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 bg-white border-b border-gray-100">
-                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold border-b border-gray-200 shadow-sm">担当者</th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">コード</th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">権限</th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">状態</th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">予約受付</th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">表示順</th>
-                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold text-right border-b border-gray-200 shadow-sm">操作</th>
+                    <tr class="text-left">
+                        <th class="sticky top-0 z-20 px-6 py-3 shadow-sm min-w-[230px]"><span class="block text-[10px] font-bold tracking-wider text-stone-400">STAFF</span><span class="mt-0.5 block font-black text-stone-700">担当者</span></th>
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">CODE</span><span class="mt-0.5 block font-black text-stone-700">コード</span></th>
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">ROLE</span><span class="mt-0.5 block font-black text-stone-700">権限</span></th>
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">STATUS</span><span class="mt-0.5 block font-black text-stone-700">在籍状態</span></th>
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">RESERVATION</span><span class="mt-0.5 block font-black text-stone-700">予約受付</span></th>
+                        <th class="sticky top-0 z-20 px-4 py-3 text-center shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">ORDER</span><span class="mt-0.5 block font-black text-stone-700">表示順</span></th>
+                        <th class="sticky top-0 z-20 px-6 py-3 text-right shadow-sm"><span class="block text-[10px] font-bold tracking-wider text-stone-400">ACTION</span><span class="mt-0.5 block font-black text-stone-700">操作</span></th>
                     </tr>
                 </thead>
 
@@ -172,16 +225,16 @@
                         $roleLabel = method_exists($staff, 'roleLabel') ? $staff->roleLabel() : $staff->role;
                     @endphp
 
-                    <tr class="border-b border-gray-100 hover:bg-gray-50/70 transition">
+                    <tr>
                         <td class="px-6 py-5">
                             <div class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm"
+                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-sm ring-4 ring-white"
                                      style="background: {{ $theme }}">
                                     {{ mb_substr($staff->name, 0, 1) }}
                                 </div>
 
                                 <div>
-                                    <div class="font-bold text-gray-900">{{ $staff->name }}</div>
+                                    <div class="font-black text-base text-gray-900">{{ $staff->name }}</div>
 
                                     @if(!empty($staff->retired_at))
                                         <div class="text-xs text-gray-400 mt-1">
@@ -195,7 +248,7 @@
                         </td>
 
                         <td class="px-4 py-5">
-                            <span class="inline-flex items-center rounded-xl bg-gray-50 border border-gray-200 px-3 py-2 font-mono text-gray-700">
+                            <span class="inline-flex items-center rounded-xl bg-white border-2 border-stone-200 px-3 py-2 font-mono font-bold text-gray-800 shadow-sm">
                                 {{ $staff->staff_code }}
                             </span>
                         </td>
@@ -226,7 +279,7 @@
                             @endif
                         </td>
 
-                        <td class="px-4 py-5">
+                        <td class="px-4 py-5 text-center">
                             <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 font-semibold">
                                 {{ $staff->priority_order }}
                             </span>
@@ -283,17 +336,17 @@
                 $roleLabel = method_exists($staff, 'roleLabel') ? $staff->roleLabel() : $staff->role;
             @endphp
 
-            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="staff-mobile-card bg-white rounded-3xl shadow-sm overflow-hidden">
                 <div class="px-5 py-5">
                     <div class="flex items-start gap-4">
-                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm shrink-0"
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-sm ring-4 ring-white shrink-0"
                              style="background: {{ $theme }}">
                             {{ mb_substr($staff->name, 0, 1) }}
                         </div>
 
                         <div class="min-w-0 flex-1">
-                            <div class="text-lg font-bold text-gray-900 truncate">{{ $staff->name }}</div>
-                            <div class="mt-1 text-sm font-mono text-gray-500">{{ $staff->staff_code }}</div>
+                            <div class="text-lg font-black text-gray-900 truncate">{{ $staff->name }}</div>
+                            <div class="mt-1 inline-flex rounded-lg border border-stone-200 bg-white px-2 py-1 text-sm font-mono font-bold text-gray-600">{{ $staff->staff_code }}</div>
 
                             <div class="flex flex-wrap gap-2 mt-3">
                                 <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-100 text-gray-700">{{ $roleLabel }}</span>
@@ -310,7 +363,7 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 mt-5">
-                        <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+                        <div class="rounded-2xl bg-stone-50 border-2 border-stone-200 px-4 py-3">
                             <div class="text-xs text-gray-500">予約受付</div>
                             <div class="mt-1 text-sm font-bold text-gray-900">
                                 @if($isRetired || $staff->role === 'store_operator')
@@ -323,7 +376,7 @@
                             </div>
                         </div>
 
-                        <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+                        <div class="rounded-2xl bg-stone-50 border-2 border-stone-200 px-4 py-3">
                             <div class="text-xs text-gray-500">表示順</div>
                             <div class="mt-1 text-sm font-bold text-gray-900">{{ $staff->priority_order }}</div>
                         </div>

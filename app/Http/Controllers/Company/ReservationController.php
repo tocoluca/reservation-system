@@ -13,14 +13,20 @@ use App\Models\Staff;
 use App\Models\StaffShift;
 use App\Models\ShiftPattern;
 use App\Models\Customer;
+use App\Models\Company;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Yasumi\Yasumi;
 use Illuminate\Support\Facades\Log;
+use App\Services\ReservationChangeNoticeService;
 
 class ReservationController extends Controller
 {
+    public function __construct(
+        protected ReservationChangeNoticeService $changeNoticeService
+    ) {}
+
     public function index(Request $request)
     {
         $company = auth()->guard('company')->user()->company;
@@ -301,12 +307,7 @@ class ReservationController extends Controller
             $cancelKind = 'customer';
         }
 
-        $reservation->status = $cancelKind === 'no_show'
-            ? Reservation::STATUS_NO_SHOW
-            : Reservation::STATUS_CANCELLED;
-        $reservation->cancelled_at = now();
-        $reservation->cancelled_type = $cancelKind;
-        $reservation->save();
+        $this->applyCancellation($company, $reservation, $cancelKind);
 
         return redirect()
             ->route('company.reservations.index', $redirectParams)
@@ -1461,14 +1462,25 @@ class ReservationController extends Controller
             $cancelKind = 'shop';
         }
 
-        $reservation->status = $cancelKind === 'no_show'
-            ? Reservation::STATUS_NO_SHOW
-            : Reservation::STATUS_CANCELLED;
-        $reservation->cancelled_at = now();
-        $reservation->cancelled_type = $cancelKind;
-        $reservation->save();
+        $this->applyCancellation($company, $reservation, $cancelKind);
 
         return response()->json(['success' => true]);
+    }
+
+    private function applyCancellation(Company $company, Reservation $reservation, string $cancelKind): void
+    {
+        DB::transaction(function () use ($company, $reservation, $cancelKind) {
+            $reservation->status = $cancelKind === 'no_show'
+                ? Reservation::STATUS_NO_SHOW
+                : Reservation::STATUS_CANCELLED;
+            $reservation->cancelled_at = now();
+            $reservation->cancelled_type = $cancelKind;
+            $reservation->save();
+
+            if ($cancelKind === 'shop') {
+                $this->changeNoticeService->createForShopCancellation($company, $reservation);
+            }
+        });
     }
 
     public function availableStaff(Request $request)

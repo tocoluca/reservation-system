@@ -77,6 +77,58 @@
         box-shadow: 0 6px 14px rgba(245,158,11,.14);
     }
 
+    .shift-matrix-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .shift-matrix-table thead th {
+        border-bottom: 3px solid #a8a29e;
+    }
+
+    .shift-matrix-table tbody td {
+        border-right: 1px solid #d6d3d1;
+        border-bottom: 2px solid #d6d3d1;
+        transition: background-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .shift-matrix-table tbody tr:nth-child(odd) td {
+        background: #ffffff;
+    }
+
+    .shift-matrix-table tbody tr:nth-child(even) td {
+        background: #fafaf9;
+    }
+
+    .shift-matrix-table tbody tr:hover td {
+        background: #fef3c7;
+    }
+
+    .shift-matrix-table tbody tr:last-child td {
+        border-bottom-width: 0;
+    }
+
+    .shift-matrix-table .shift-needs-review td {
+        background: #fffbeb;
+    }
+
+    .shift-matrix-cell:hover {
+        box-shadow: inset 0 0 0 3px {{ $theme }};
+    }
+
+    .shift-date-header.is-today {
+        box-shadow: inset 0 -4px 0 {{ $theme }}, inset 0 0 0 2px {{ $theme }};
+    }
+
+    .shift-mobile-staff-card {
+        border-width: 2px;
+        border-color: #d6d3d1;
+    }
+
+    .shift-mobile-staff-card:nth-child(even) {
+        background: #fafaf9;
+    }
+
     @media (min-width: 1024px) {
         .shift-save-toolbar {
             padding: .5rem .65rem !important;
@@ -461,7 +513,7 @@
                                 $mobileShiftColor = $mobileShift?->shiftPattern->color ?? ($mobileShiftId ? ($patternMap[$mobileShiftId]->color ?? '#64748b') : '');
                             @endphp
 
-                            <div class="rounded-2xl border bg-white p-3 shadow-sm {{ $mobileNeedsReview ? 'border-amber-400 ring-2 ring-amber-200' : 'border-gray-200' }}"
+                            <div class="shift-mobile-staff-card rounded-2xl bg-white p-3 shadow-sm {{ $mobileNeedsReview ? 'border-amber-400 ring-2 ring-amber-200' : '' }}"
                                  data-shift-cell
                                  data-staff="{{ $staff->id }}"
                                  data-day="{{ $d }}">
@@ -525,25 +577,33 @@
             </div>
         </div>
 
-        <div class="shift-desktop-layout hidden lg:block bg-white border border-gray-200 rounded-3xl shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b bg-gray-50">
-                <h2 class="text-lg font-bold text-gray-900">スタッフ別 シフト表</h2>
-                <p class="text-sm text-gray-500 mt-1">
-                    日付とスタッフが交わるマスで、その日の勤務状況を個別に変更できます。
-                </p>
+        <div class="shift-desktop-layout hidden lg:block bg-white border border-stone-200 rounded-3xl shadow-sm overflow-hidden">
+            <div class="flex items-center justify-between gap-3 border-b border-stone-200 px-5 py-5"
+                 style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+                <div>
+                    <h2 class="text-lg font-black text-gray-900">スタッフ別 シフト表</h2>
+                    <p class="text-sm text-gray-500 mt-1">
+                        日付とスタッフが交わるマスで、その日の勤務状況を個別に変更できます。
+                    </p>
+                </div>
+                <span class="inline-flex shrink-0 items-center rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm">
+                    {{ number_format($staffs->count()) }}名 × {{ $days }}日
+                </span>
             </div>
 
             <div class="overflow-auto max-h-[72vh]">
-                <table class="min-w-max text-sm w-full">
+                <table class="shift-matrix-table min-w-max text-sm w-full">
                     <thead>
                         <tr style="background: {{ $theme }}; color: white;">
-                            <th class="sticky top-0 left-0 z-40 min-w-[240px] border-r border-b bg-white px-3 py-1.5 text-xs leading-tight text-black">
-                                スタッフ
+                            <th class="sticky top-0 left-0 z-40 min-w-[260px] border-r border-stone-300 bg-stone-100 px-4 py-3 text-left leading-tight text-stone-900">
+                                <span class="block text-[10px] font-bold tracking-wider text-stone-400">STAFF</span>
+                                <span class="mt-1 block text-sm font-black">スタッフ</span>
                             </th>
 
                             @for($d = 1; $d <= $days; $d++)
                                 @php
                                     $dateObj = \Carbon\Carbon::parse("$month-$d");
+                                    $isToday = $dateObj->isToday();
                                     $isPast = $dateObj->toDateString() < $editableFromDate;
                                     $isHoliday = $holidays->isHoliday($dateObj);
                                     $dayOfWeek = $dateObj->dayOfWeek;
@@ -558,12 +618,16 @@
                                     }
                                 @endphp
 
-                                <th class="sticky top-0 z-30 min-w-[156px] border-b border-r border-gray-200 px-2 py-1 text-center {{ $color }}"
+                                <th class="shift-date-header {{ $isToday ? 'is-today' : '' }} sticky top-0 z-30 min-w-[164px] border-r border-stone-300 px-2 py-2 text-center {{ $color }}"
                                     data-day="{{ $d }}"
                                     data-weekday="{{ $dayOfWeek }}">
-                                    <div class="mb-1 whitespace-nowrap text-xs font-bold leading-none">
+                                    <div class="mb-1 whitespace-nowrap text-sm font-black leading-none">
                                         {{ $d }}（{{ ['日','月','火','水','木','金','土'][$dayOfWeek] }}）
                                     </div>
+
+                                    @if($isToday)
+                                        <div class="mb-1 text-[10px] font-black" style="color: {{ $theme }};">今日</div>
+                                    @endif
 
                                     @if($isPast)
                                         <div class="flex items-center justify-center gap-1 text-[10px] font-bold text-gray-400">
@@ -591,12 +655,17 @@
                             @php
                                 $needsReview = ($reviewStaffIds ?? collect())->contains((int) $staff->id);
                             @endphp
-                            <tr class="border-b {{ $needsReview ? 'bg-amber-50' : 'hover:bg-gray-50' }}">
-                                <td class="p-3 font-semibold sticky left-0 bg-white z-20 min-w-[240px] border-r align-top">
+                            <tr class="{{ $needsReview ? 'shift-needs-review' : '' }}">
+                                <td class="sticky left-0 z-20 min-w-[260px] border-r border-stone-300 p-4 align-top">
                                     <div class="space-y-3">
-                                        <div class="font-semibold text-gray-900">
-                                            {{ $staff->name }}
-                                            @if($needsReview)<span class="ml-2 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">要確認</span>@endif
+                                        <div class="flex items-center gap-3">
+                                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white shadow-sm ring-2 ring-white"
+                                                  style="background: {{ $theme }};">{{ mb_substr($staff->name, 0, 1) }}</span>
+                                            <span class="min-w-0">
+                                                <span class="block truncate font-black text-gray-900">{{ $staff->name }}</span>
+                                                <span class="mt-0.5 block truncate text-[11px] font-medium text-stone-500">{{ $staff->roleLabel() }} / {{ $staff->staff_code ?: '-' }}</span>
+                                            </span>
+                                            @if($needsReview)<span class="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-1 text-[10px] font-black text-amber-800">要確認</span>@endif
                                         </div>
 
                                         <div class="flex flex-wrap gap-2">
@@ -651,16 +720,16 @@
                                         }
                                     @endphp
 
-                                    <td class="p-1 min-w-[156px] align-middle"
+                                    <td class="shift-matrix-cell p-1.5 min-w-[164px] align-middle"
                                         data-shift-cell
                                         data-staff="{{ $staff->id }}"
                                         data-day="{{ $d }}">
                                         @if($isRetired)
-                                            <div class="text-slate-500 text-center font-semibold text-xs py-3">退職済</div>
+                                            <div class="rounded-xl border border-slate-200 bg-slate-100 px-2 py-3 text-center text-xs font-bold text-slate-600">退職済</div>
                                         @elseif($isClosed)
-                                            <div class="text-gray-400 text-center font-semibold text-xs py-3">休業</div>
+                                            <div class="rounded-xl border border-stone-200 bg-stone-100 px-2 py-3 text-center text-xs font-bold text-stone-500">休業</div>
                                         @elseif($isVacation)
-                                            <div class="text-red-500 text-center font-bold text-xs py-3">休暇</div>
+                                            <div class="rounded-xl border border-red-200 bg-red-50 px-2 py-3 text-center text-xs font-black text-red-600">休暇</div>
                                         @elseif($isPast)
                                             <div class="rounded-xl bg-gray-50 px-2 py-3 text-center">
                                                 <div class="text-xs font-bold text-gray-600">{{ $currentShiftName ?: '休み' }}</div>
@@ -679,7 +748,7 @@
                                                    data-current-name="{{ $currentShiftName }}"
                                                    data-current-color="{{ $currentShiftColor }}">
 
-                                            <div class="rounded-xl border border-gray-200 p-1.5 bg-white">
+                                            <div class="rounded-xl border-2 border-stone-200 p-1.5 bg-white shadow-sm">
                                                 <div class="grid gap-1" style="grid-template-columns: repeat({{ count($patterns) + 1 }}, minmax(0, 1fr));">
                                                     <button type="button"
                                                             class="shift-btn text-[11px] px-0 py-1.5 rounded-md font-semibold"

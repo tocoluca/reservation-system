@@ -14,6 +14,48 @@ use Illuminate\Support\Str;
 
 class ReservationChangeNoticeService
 {
+    public function createForShopCancellation(
+        Company $company,
+        Reservation $reservation,
+        ?string $reasonText = null
+    ): ReservationChangeNotice {
+        $existingNotice = ReservationChangeNotice::query()
+            ->where('company_id', $company->id)
+            ->where('reason_type', 'shop_cancel')
+            ->whereHas('items', function ($query) use ($reservation) {
+                $query->where('reservation_id', $reservation->id);
+            })
+            ->first();
+
+        if ($existingNotice) {
+            return $existingNotice;
+        }
+
+        $targetDate = Carbon::parse($reservation->start_at)->toDateString();
+        $title = $targetDate . ' 予約 #' . $reservation->id . ' 店舗都合キャンセル連絡';
+        $reasonText = $reasonText ?: '店舗都合により、ご予約をキャンセルいたしました。';
+
+        $notice = $this->createNoticeWithReservations(
+            company: $company,
+            reservations: collect([$reservation]),
+            title: $title,
+            targetDate: $targetDate,
+            reasonType: 'shop_cancel',
+            reasonText: $reasonText
+        );
+
+        $notice->items()
+            ->where('reservation_id', $reservation->id)
+            ->update([
+                'cancel_reason_type' => 'shop',
+                'cancelled_at' => $reservation->cancelled_at ?? now(),
+                'cancel_processed_by' => auth()->guard('company')->id(),
+                'updated_by' => auth()->guard('company')->id(),
+            ]);
+
+        return $notice;
+    }
+
     public function createForClosedDate(
         Company $company,
         string $date,

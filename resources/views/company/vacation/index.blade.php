@@ -7,6 +7,7 @@
 
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $themeSoft = $theme . '15';
     $current = auth()->guard('company')->user();
 
     $vacationCollection = collect($vacations ?? []);
@@ -14,7 +15,65 @@
     $approvedCount = $vacationCollection->where('status', 'approved')->count();
     $rejectedCount = $vacationCollection->where('status', 'rejected')->count();
     $cancelledCount = $vacationCollection->where('status', 'cancelled')->count();
+    $vacationStatusColor = fn ($status) => match ($status) {
+        'pending' => '#f59e0b',
+        'approved' => '#16a34a',
+        'cancelled' => '#78716c',
+        default => '#dc2626',
+    };
 @endphp
+
+<style>
+    .vacation-list-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .vacation-list-table thead th {
+        border-bottom: 3px solid #a8a29e;
+        background: #f5f5f4;
+    }
+
+    .vacation-list-table thead th + th,
+    .vacation-list-table tbody td + td {
+        border-left: 1px solid #d6d3d1;
+    }
+
+    .vacation-list-table tbody td {
+        border-bottom: 2px solid #d6d3d1;
+        vertical-align: middle;
+        transition: background-color 150ms ease;
+    }
+
+    .vacation-list-table tbody tr:nth-child(odd) td {
+        background: #ffffff;
+    }
+
+    .vacation-list-table tbody tr:nth-child(even) td {
+        background: #fafaf9;
+    }
+
+    .vacation-list-table tbody tr:hover td {
+        background: #fef3c7;
+    }
+
+    .vacation-list-table tbody tr:last-child td {
+        border-bottom-width: 0;
+    }
+
+    .vacation-list-row td:first-child {
+        box-shadow: inset 5px 0 0 var(--vacation-status-color);
+    }
+
+    .vacation-mobile-card {
+        border: 2px solid #d6d3d1;
+        border-left: 6px solid var(--vacation-status-color);
+    }
+
+    .vacation-mobile-card:nth-child(even) {
+        background: #fafaf9;
+    }
+</style>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
@@ -100,30 +159,41 @@
     @endif
 
     {{-- PC表示 --}}
-    <div class="hidden lg:block bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-900">申請一覧</h2>
-            <p class="text-sm text-gray-500 mt-1">状態確認と対応操作をまとめて行えます。</p>
+    <div class="hidden lg:block bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between gap-3 border-b border-stone-200 px-6 py-5"
+             style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+            <div>
+                <h2 class="text-lg font-black text-gray-900">申請一覧</h2>
+                <p class="text-sm text-gray-500 mt-1">状態確認と対応操作をまとめて行えます。</p>
+            </div>
+            <span class="inline-flex items-center rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm">
+                表示中 {{ number_format($vacationCollection->count()) }}件
+            </span>
         </div>
 
         <div class="max-h-[72vh] overflow-auto">
-            <table class="w-full min-w-[980px] text-sm">
+            <table class="vacation-list-table w-full min-w-[980px] text-sm">
                 <thead>
-                    <tr class="text-left text-gray-500 bg-white border-b border-gray-100">
-                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold border-b border-gray-200 shadow-sm">
-                            担当者
+                    <tr class="text-left">
+                        <th class="sticky top-0 z-20 px-6 py-3 shadow-sm min-w-[230px]">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">APPLICANT</span>
+                            <span class="mt-0.5 block font-black text-stone-700">申請者</span>
                         </th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
-                            開始
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">START</span>
+                            <span class="mt-0.5 block font-black text-stone-700">開始日時</span>
                         </th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
-                            終了
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">END</span>
+                            <span class="mt-0.5 block font-black text-stone-700">終了日時</span>
                         </th>
-                        <th class="sticky top-0 z-20 bg-white px-4 py-4 font-semibold border-b border-gray-200 shadow-sm">
-                            状態
+                        <th class="sticky top-0 z-20 px-4 py-3 shadow-sm">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">STATUS</span>
+                            <span class="mt-0.5 block font-black text-stone-700">状態</span>
                         </th>
-                        <th class="sticky top-0 z-20 bg-white px-6 py-4 font-semibold text-right border-b border-gray-200 shadow-sm">
-                            操作
+                        <th class="sticky top-0 z-20 px-6 py-3 text-right shadow-sm">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">ACTION</span>
+                            <span class="mt-0.5 block font-black text-stone-700">操作</span>
                         </th>
                     </tr>
                 </thead>
@@ -135,19 +205,19 @@
                             $endAt = Carbon::parse($vacation->end_at);
                         @endphp
 
-                        <tr class="border-b border-gray-100 hover:bg-gray-50/70 transition">
+                        <tr class="vacation-list-row" style="--vacation-status-color: {{ $vacationStatusColor($vacation->status) }};">
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-4">
-                                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm"
+                                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-sm ring-4 ring-white"
                                          style="background: {{ $theme }}">
                                         {{ mb_substr($vacation->staff->name ?? '-', 0, 1) }}
                                     </div>
 
                                     <div>
-                                        <div class="font-bold text-gray-900">
+                                        <div class="font-black text-base text-gray-900">
                                             {{ $vacation->staff->name ?? '-' }}
                                         </div>
-                                        <div class="text-xs text-gray-400 mt-1">
+                                        <div class="mt-1 inline-flex rounded-lg border border-stone-200 bg-white px-2 py-0.5 text-xs font-bold text-stone-500">
                                             申請ID：#{{ $vacation->id }}
                                         </div>
                                     </div>
@@ -155,13 +225,17 @@
                             </td>
 
                             <td class="px-4 py-5 text-gray-700">
-                                <div class="font-semibold">{{ $startAt->format('Y/m/d') }}</div>
-                                <div class="text-xs text-gray-400 mt-1">{{ $startAt->format('H:i') }}</div>
+                                <div class="inline-flex min-w-[120px] flex-col rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+                                    <div class="font-black text-stone-900">{{ $startAt->format('Y/m/d') }}</div>
+                                    <div class="text-xs font-bold text-stone-500 mt-1">{{ $startAt->format('H:i') }}</div>
+                                </div>
                             </td>
 
                             <td class="px-4 py-5 text-gray-700">
-                                <div class="font-semibold">{{ $endAt->format('Y/m/d') }}</div>
-                                <div class="text-xs text-gray-400 mt-1">{{ $endAt->format('H:i') }}</div>
+                                <div class="inline-flex min-w-[120px] flex-col rounded-xl border border-stone-200 bg-white px-3 py-2 shadow-sm">
+                                    <div class="font-black text-stone-900">{{ $endAt->format('Y/m/d') }}</div>
+                                    <div class="text-xs font-bold text-stone-500 mt-1">{{ $endAt->format('H:i') }}</div>
+                                </div>
                             </td>
 
                             <td class="px-4 py-5">
@@ -270,18 +344,21 @@
                 $endAt = Carbon::parse($vacation->end_at);
             @endphp
 
-            <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="vacation-mobile-card bg-white rounded-3xl shadow-sm overflow-hidden"
+                 style="--vacation-status-color: {{ $vacationStatusColor($vacation->status) }};">
                 <div class="px-5 py-5">
                     <div class="flex items-start gap-4">
-                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white font-bold shadow-sm shrink-0"
+                        <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-sm ring-4 ring-white shrink-0"
                              style="background: {{ $theme }}">
                             {{ mb_substr($vacation->staff->name ?? '-', 0, 1) }}
                         </div>
 
                         <div class="min-w-0 flex-1">
-                            <div class="text-lg font-bold text-gray-900 truncate">
+                            <div class="text-lg font-black text-gray-900 truncate">
                                 {{ $vacation->staff->name ?? '-' }}
                             </div>
+
+                            <div class="mt-1 text-xs font-bold text-stone-500">申請ID：#{{ $vacation->id }}</div>
 
                             <div class="flex flex-wrap gap-2 mt-3">
                                 @if($vacation->status === 'pending')
@@ -306,7 +383,7 @@
                     </div>
 
                     <div class="grid grid-cols-2 gap-3 mt-5">
-                        <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+                        <div class="rounded-2xl bg-stone-50 border-2 border-stone-200 px-4 py-3">
                             <div class="text-xs text-gray-500">開始</div>
                             <div class="mt-1 text-sm font-bold text-gray-900">
                                 {{ $startAt->format('Y/m/d') }}
@@ -316,7 +393,7 @@
                             </div>
                         </div>
 
-                        <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3">
+                        <div class="rounded-2xl bg-stone-50 border-2 border-stone-200 px-4 py-3">
                             <div class="text-xs text-gray-500">終了</div>
                             <div class="mt-1 text-sm font-bold text-gray-900">
                                 {{ $endAt->format('Y/m/d') }}

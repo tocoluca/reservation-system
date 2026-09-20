@@ -12,6 +12,44 @@
     $averageDuration = $menuCount > 0 ? (int) round($menuCollection->avg('duration')) : 0;
 @endphp
 
+<style>
+    .menu-list-table {
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .menu-list-table thead th {
+        border-bottom: 3px solid #a8a29e;
+        background: #f5f5f4;
+    }
+
+    .menu-list-table thead th + th,
+    .menu-list-table tbody td + td {
+        border-left: 1px solid #d6d3d1;
+    }
+
+    .menu-list-table tbody td {
+        border-bottom: 2px solid #d6d3d1;
+        transition: background-color 150ms ease;
+    }
+
+    .menu-list-table tbody tr:nth-child(odd) td {
+        background: #ffffff;
+    }
+
+    .menu-list-table tbody tr:nth-child(even) td {
+        background: #fafaf9;
+    }
+
+    .menu-list-table tbody tr:hover td {
+        background: #fef3c7;
+    }
+
+    .menu-list-table tbody tr:last-child td {
+        border-bottom-width: 0;
+    }
+</style>
+
 <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
     {{-- ヘッダー --}}
@@ -172,15 +210,22 @@
     </div>
 
     {{-- メニュー一覧 --}}
-    <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="font-bold text-lg text-gray-900">
-                メニュー一覧
-            </h2>
+    <div class="bg-white rounded-3xl shadow-sm border border-stone-200 overflow-hidden">
+        <div class="flex flex-col gap-3 border-b border-stone-200 px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+             style="background: linear-gradient(180deg, {{ $themeSoft }} 0%, #ffffff 100%);">
+            <div>
+                <h2 class="font-black text-lg text-gray-900">
+                    メニュー一覧
+                </h2>
 
-            <p class="text-sm text-gray-500 mt-1">
-                登録済みのメニューを確認できます。
-            </p>
+                <p class="text-sm text-gray-500 mt-1">
+                    カテゴリー、施術時間、料金を一覧で確認できます。
+                </p>
+            </div>
+
+            <span class="inline-flex w-fit items-center rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-bold text-stone-700 shadow-sm">
+                表示中 {{ number_format($menuCount) }}件
+            </span>
         </div>
 
         <div class="px-6 py-4 border-b border-gray-100 bg-stone-50/70">
@@ -198,69 +243,85 @@
         </div>
 
         <div class="max-h-[72vh] overflow-auto">
-            <table class="w-full min-w-[900px] text-sm">
-                <thead class="bg-stone-50">
+            <table class="menu-list-table w-full min-w-[900px] text-sm">
+                <thead>
                     <tr>
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm whitespace-nowrap">
-                            カテゴリ
+                        <th class="sticky top-0 z-20 px-4 py-3 text-left shadow-sm whitespace-nowrap w-44">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">CATEGORY</span>
+                            <span class="mt-0.5 block font-black text-stone-700">カテゴリー</span>
                         </th>
 
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm whitespace-nowrap">
-                            名前
+                        <th class="sticky top-0 z-20 px-4 py-3 text-left shadow-sm whitespace-nowrap">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">MENU</span>
+                            <span class="mt-0.5 block font-black text-stone-700">メニュー名</span>
                         </th>
 
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-left shadow-sm">
-                            タグ
+                        <th class="sticky top-0 z-20 px-4 py-3 text-left shadow-sm">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">TAG</span>
+                            <span class="mt-0.5 block font-black text-stone-700">タグ</span>
                         </th>
 
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-28 shadow-sm whitespace-nowrap">
-                            時間
+                        <th class="sticky top-0 z-20 px-4 py-3 text-center w-28 shadow-sm whitespace-nowrap">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">TIME</span>
+                            <span class="mt-0.5 block font-black text-stone-700">時間</span>
                         </th>
 
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-32 shadow-sm whitespace-nowrap">
-                            料金
+                        <th class="sticky top-0 z-20 px-4 py-3 text-center w-32 shadow-sm whitespace-nowrap">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">PRICE</span>
+                            <span class="mt-0.5 block font-black text-stone-700">料金</span>
                         </th>
 
-                        <th class="sticky top-0 z-20 bg-stone-50 border-b border-stone-300 px-4 py-3 text-center w-40 shadow-sm whitespace-nowrap">
-                            操作
+                        <th class="sticky top-0 z-20 px-4 py-3 text-center w-40 shadow-sm whitespace-nowrap">
+                            <span class="block text-[10px] font-bold tracking-wider text-stone-400">ACTION</span>
+                            <span class="mt-0.5 block font-black text-stone-700">操作</span>
                         </th>
                     </tr>
                 </thead>
 
                 <tbody>
                 @forelse($menus as $menu)
-                    <tr class="hover:bg-stone-50 transition">
-                        <td class="border-b border-stone-100 px-4 py-3 text-stone-700">
-                            {{ $menu->category->name ?? '-' }}
+                    <tr>
+                        <td class="px-4 py-4 text-stone-700">
+                            <span class="inline-flex rounded-full border px-3 py-1.5 text-xs font-black"
+                                  style="border-color: {{ $theme }}45; background-color: {{ $theme }}12; color: {{ $theme }};">
+                                {{ $menu->category->name ?? '未設定' }}
+                            </span>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3 font-semibold text-stone-800">
-                            {{ $menu->name }}
+                        <td class="px-4 py-4 text-stone-900">
+                            <div class="flex items-start gap-3">
+                                <span class="mt-2 h-2.5 w-2.5 shrink-0 rounded-full" style="background: {{ $theme }};"></span>
+                                <span class="font-black leading-6">{{ $menu->name }}</span>
+                            </div>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3">
+                        <td class="px-4 py-4">
                             <div class="flex flex-wrap gap-1">
-                                @foreach($menu->tags as $tag)
+                                @forelse($menu->tags as $tag)
                                     <span class="text-xs px-2.5 py-1 rounded-full"
                                           style="background-color: {{ $theme }}15; color: {{ $theme }};">
                                         {{ $tag->name }}
                                     </span>
-                                @endforeach
+                                @empty
+                                    <span class="text-xs font-medium text-stone-400">タグなし</span>
+                                @endforelse
                             </div>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3 text-center text-stone-700 whitespace-nowrap">
-                            {{ $menu->duration }}分
+                        <td class="px-4 py-4 text-center text-stone-700 whitespace-nowrap">
+                            <span class="inline-flex min-w-[70px] justify-center rounded-xl border border-stone-200 bg-white px-3 py-2 font-bold shadow-sm">
+                                {{ $menu->duration }}分
+                            </span>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3 text-center font-medium text-stone-800 whitespace-nowrap">
-                            ¥{{ number_format($menu->price) }}
+                        <td class="px-4 py-4 text-center font-medium text-stone-800 whitespace-nowrap">
+                            <span class="font-black text-base">¥{{ number_format($menu->price) }}</span>
                         </td>
 
-                        <td class="border-b border-stone-100 px-4 py-3">
+                        <td class="px-4 py-4">
                             <div class="flex justify-center gap-2">
                                 <a href="{{ route('company.menu.edit', $menu->id) }}"
-                                   class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-blue-50 text-blue-600 hover:bg-blue-100 transition">
+                                   class="inline-flex items-center justify-center rounded-xl border border-blue-200 px-3 py-2 text-sm font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 transition">
                                     編集
                                 </a>
 
@@ -270,7 +331,7 @@
                                     @csrf
                                     @method('DELETE')
 
-                                    <button class="inline-flex items-center justify-center rounded-xl px-3 py-2 text-sm font-medium bg-red-50 text-red-600 hover:bg-red-100 transition">
+                                    <button class="inline-flex items-center justify-center rounded-xl border border-red-200 px-3 py-2 text-sm font-bold bg-red-50 text-red-700 hover:bg-red-100 transition">
                                         削除
                                     </button>
                                 </form>

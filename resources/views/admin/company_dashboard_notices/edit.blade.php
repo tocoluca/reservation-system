@@ -91,22 +91,33 @@
 
                 <div>
                     <label class="block text-sm font-semibold mb-2">公開対象</label>
-                    <select name="target_type" id="target_type" class="w-full border rounded-xl px-4 py-3" onchange="toggleCompanySelect()">
+                    <select name="target_type" id="target_type" class="w-full border rounded-xl px-4 py-3" onchange="toggleCompanySelect(true)">
                         <option value="all" {{ old('target_type', $notice->target_type) === 'all' ? 'selected' : '' }}>全企業向け</option>
                         <option value="company" {{ old('target_type', $notice->target_type) === 'company' ? 'selected' : '' }}>特定企業向け</option>
                     </select>
                 </div>
 
                 <div id="companySelectWrap" style="{{ old('target_type', $notice->target_type) === 'company' ? '' : 'display:none;' }}">
-                    <label class="block text-sm font-semibold mb-2">対象企業</label>
-                    <select name="company_id" class="w-full border rounded-xl px-4 py-3">
-                        <option value="">企業を選択してください</option>
-                        @foreach($companies as $company)
-                            <option value="{{ $company->id }}" @selected(old('company_id', $notice->company_id) == $company->id)>
-                                {{ $company->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4">
+                        <label for="company_code" class="block text-sm font-bold text-blue-950 mb-2">
+                            対象企業コード <span class="text-red-600">必須</span>
+                        </label>
+                        <input type="text"
+                               name="company_code"
+                               id="company_code"
+                               list="companyCodeOptions"
+                               value="{{ old('company_code', optional($notice->company)->company_code) }}"
+                               maxlength="8"
+                               autocomplete="off"
+                               class="w-full rounded-xl border-2 border-blue-300 bg-white px-4 py-3 font-mono uppercase focus:border-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-100"
+                               placeholder="例：ABCD1234">
+                        <datalist id="companyCodeOptions">
+                            @foreach($companies as $company)
+                                <option value="{{ $company->company_code }}">{{ $company->name }}</option>
+                            @endforeach
+                        </datalist>
+                        <p class="mt-2 text-xs font-medium text-blue-800">入力した企業コードの企業にだけ表示されます。候補には企業名も表示されます。</p>
+                    </div>
                 </div>
 
                 <div class="pt-4">
@@ -120,5 +131,21 @@
     </div>
 </div>
 @include('admin.partials.mobile_nav')
+<script>
+function toggleCompanySelect(focusInput = false) {
+    const isCompany = document.getElementById('target_type')?.value === 'company';
+    const wrap = document.getElementById('companySelectWrap');
+    const input = document.getElementById('company_code');
+
+    if (wrap) wrap.style.display = isCompany ? '' : 'none';
+    if (input) {
+        input.required = isCompany;
+        input.disabled = !isCompany;
+        if (isCompany && focusInput) input.focus();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', toggleCompanySelect);
+</script>
 </body>
 </html>

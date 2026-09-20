@@ -729,6 +729,38 @@ body {
         @endif
     </div>
 
+    <section data-company-notices-always-visible aria-labelledby="company-notices-title"
+             class="relative mb-6 overflow-hidden rounded-2xl border-2 {{ $notices->isNotEmpty() ? 'border-amber-200 bg-white' : 'border-slate-200 bg-white' }} shadow-sm">
+        <div class="flex items-center justify-between gap-3 border-b px-4 py-3 md:px-5 {{ $notices->isNotEmpty() ? 'border-amber-200 bg-amber-50' : 'border-slate-200 bg-slate-50' }}">
+            <div class="flex items-center gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white {{ $notices->isNotEmpty() ? 'bg-amber-600' : 'bg-slate-500' }}">
+                    <i data-lucide="megaphone" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 id="company-notices-title" class="text-base font-black text-slate-950">企業向けお知らせ</h2>
+                    <p class="mt-0.5 text-xs font-medium text-slate-500">見出しを選択すると詳細を確認できます。</p>
+                </div>
+            </div>
+            <span class="inline-flex shrink-0 items-center rounded-full border bg-white px-2.5 py-1 text-xs font-bold {{ $notices->isNotEmpty() ? 'border-amber-300 text-amber-800' : 'border-slate-300 text-slate-600' }}">
+                {{ $notices->count() }}件
+            </span>
+        </div>
+
+        <div class="grid gap-2 p-3 md:grid-cols-2 md:p-4">
+            @forelse($notices as $notice)
+                <a href="{{ route('company.dashboard-notices.show', $notice) }}"
+                   class="group flex min-w-0 items-center justify-between gap-3 rounded-xl border bg-white px-4 py-3 transition hover:border-amber-300 hover:bg-amber-50 {{ $notice->is_important ? 'border-rose-200' : 'border-slate-200' }}">
+                    <h3 class="min-w-0 truncate text-sm font-bold text-slate-800 group-hover:text-amber-900">{{ $notice->title }}</h3>
+                    <i data-lucide="chevron-right" class="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-amber-700"></i>
+                </a>
+            @empty
+                <div class="py-4 text-center md:col-span-2">
+                    <p class="text-sm font-semibold text-slate-500">現在表示中のお知らせはありません。</p>
+                </div>
+            @endforelse
+        </div>
+    </section>
+
     <div class="tab-category-heading">
         <div>
             <h2>すべての機能</h2>
@@ -820,16 +852,6 @@ body {
                             <div class="rounded-2xl border border-sky-100 bg-sky-50/60 p-4"><div class="flex flex-wrap items-center gap-2 mb-2"><span class="px-2.5 py-1 rounded-full text-xs font-bold bg-sky-100 text-sky-700">回答</span>@if(!$inquiry->is_read_by_company)<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700">未読</span>@endif</div><div class="font-bold text-gray-800">{{ $inquiry->subject }}</div><div class="text-sm text-gray-600 mt-2">{{ \Illuminate\Support\Str::limit($inquiry->admin_reply, 120) }}</div><a href="{{ route('company.support.show', $inquiry) }}" class="inline-flex mt-3 px-4 py-2 rounded-2xl bg-white border border-sky-200 text-sky-700 font-bold text-sm">回答を見る</a></div>
                         @empty
                             <div class="text-sm text-gray-400 py-6 text-center">現在、サポートからの回答はありません</div>
-                        @endforelse
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="flex items-center justify-between gap-3 mb-4"><h2 class="section-title">企業向けお知らせ</h2><span class="text-xs text-gray-400">{{ $notices->count() }}件</span></div>
-                    <div class="space-y-3 max-h-[320px] overflow-y-auto pr-1">
-                        @forelse($notices as $notice)
-                            <a href="{{ route('company.dashboard-notices.show', $notice) }}" class="block rounded-2xl border border-gray-200 hover:bg-white transition p-4"><div class="flex flex-wrap items-center gap-2 mb-2">@if($notice->is_important)<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">重要</span>@endif @if($notice->is_new)<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">NEW</span>@endif <span class="text-xs text-gray-500">{{ optional($notice->start_date)->format('Y/m/d') ?: '指定なし' }}</span></div><div class="font-bold text-gray-800">{{ $notice->title }}</div><div class="text-sm text-gray-500 mt-1">{{ \Illuminate\Support\Str::limit(strip_tags($notice->body), 80) }}</div></a>
-                        @empty
-                            <div class="text-sm text-gray-400 py-6 text-center">現在表示中のお知らせはありません</div>
                         @endforelse
                     </div>
                 </div>

@@ -32,6 +32,10 @@ class AdminCompanyDashboardNoticeController extends Controller
 
     public function store(Request $request)
     {
+        $request->merge([
+            'company_code' => trim((string) $request->input('company_code')),
+        ]);
+
         $data = $request->validate([
             'title'        => ['required', 'string', 'max:255'],
             'body'         => ['nullable', 'string'],
@@ -40,7 +44,7 @@ class AdminCompanyDashboardNoticeController extends Controller
             'is_important' => ['nullable', 'boolean'],
             'is_active'    => ['nullable', 'boolean'],
             'target_type'  => ['required', 'in:all,company'],
-            'company_id'   => ['nullable', 'exists:companies,id'],
+            'company_code' => ['exclude_unless:target_type,company', 'required', 'string', 'max:8', 'exists:companies,company_code'],
             'start_date'   => ['nullable', 'date'],
             'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
         ], [
@@ -48,7 +52,8 @@ class AdminCompanyDashboardNoticeController extends Controller
             'title.max' => '題名は255文字以内で入力してください。',
             'image.image' => '画像ファイルを選択してください。',
             'image.max' => '画像は2MB以内にしてください。',
-            'company_id.exists' => '対象企業が存在しません。',
+            'company_code.required' => '特定企業向けの場合は企業コードを入力してください。',
+            'company_code.exists' => '入力された企業コードの企業が存在しません。',
             'end_date.after_or_equal' => '表示終了日は開始日以降を指定してください。',
         ]);
 
@@ -91,7 +96,11 @@ class AdminCompanyDashboardNoticeController extends Controller
 
         if ($data['target_type'] === 'all') {
             $data['company_id'] = null;
+        } else {
+            $data['company_id'] = Company::where('company_code', $data['company_code'])->value('id');
         }
+
+        unset($data['company_code']);
 
         CompanyDashboardNotice::create($data);
 
@@ -112,6 +121,10 @@ class AdminCompanyDashboardNoticeController extends Controller
 
     public function update(Request $request, CompanyDashboardNotice $companyDashboardNotice)
     {
+        $request->merge([
+            'company_code' => trim((string) $request->input('company_code')),
+        ]);
+
         $data = $request->validate([
             'title'        => ['required', 'string', 'max:255'],
             'body'         => ['nullable', 'string'],
@@ -120,7 +133,7 @@ class AdminCompanyDashboardNoticeController extends Controller
             'is_important' => ['nullable', 'boolean'],
             'is_active'    => ['nullable', 'boolean'],
             'target_type'  => ['required', 'in:all,company'],
-            'company_id'   => ['nullable', 'exists:companies,id'],
+            'company_code' => ['exclude_unless:target_type,company', 'required', 'string', 'max:8', 'exists:companies,company_code'],
             'start_date'   => ['nullable', 'date'],
             'end_date'     => ['nullable', 'date', 'after_or_equal:start_date'],
         ], [
@@ -128,7 +141,8 @@ class AdminCompanyDashboardNoticeController extends Controller
             'title.max' => '題名は255文字以内で入力してください。',
             'image.image' => '画像ファイルを選択してください。',
             'image.max' => '画像は2MB以内にしてください。',
-            'company_id.exists' => '対象企業が存在しません。',
+            'company_code.required' => '特定企業向けの場合は企業コードを入力してください。',
+            'company_code.exists' => '入力された企業コードの企業が存在しません。',
             'end_date.after_or_equal' => '表示終了日は開始日以降を指定してください。',
         ]);
 
@@ -174,7 +188,11 @@ class AdminCompanyDashboardNoticeController extends Controller
 
         if ($data['target_type'] === 'all') {
             $data['company_id'] = null;
+        } else {
+            $data['company_id'] = Company::where('company_code', $data['company_code'])->value('id');
         }
+
+        unset($data['company_code']);
 
         $companyDashboardNotice->update($data);
 

@@ -64,7 +64,7 @@ class CompanyDashboardNotice extends Model
         }
 
         return optional($this->company)->name
-            ? '特定企業向け（' . $this->company->name . '）'
+            ? '特定企業向け（' . $this->company->name . ' / ' . $this->company->company_code . '）'
             : '特定企業向け';
     }
 }

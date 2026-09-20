@@ -22,7 +22,19 @@ class InquiryController extends Controller
 
         $inquiries = $query->paginate(20)->withQueryString();
 
-        return view('admin.inquiries.index', compact('inquiries'));
+        $statusCounts = Inquiry::query()
+            ->selectRaw('status, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $stats = [
+            'all' => (int) $statusCounts->sum(),
+            'open' => (int) ($statusCounts['open'] ?? 0),
+            'answered' => (int) ($statusCounts['answered'] ?? 0),
+            'closed' => (int) ($statusCounts['closed'] ?? 0),
+        ];
+
+        return view('admin.inquiries.index', compact('inquiries', 'stats'));
     }
 
     public function show(Inquiry $inquiry)

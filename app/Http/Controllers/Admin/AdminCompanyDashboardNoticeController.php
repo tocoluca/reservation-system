@@ -20,7 +20,14 @@ class AdminCompanyDashboardNoticeController extends Controller
             ->orderByDesc('created_at')
             ->paginate(15);
 
-        return view('admin.company_dashboard_notices.index', compact('notices'));
+        $summary = [
+            'total' => CompanyDashboardNotice::count(),
+            'active' => CompanyDashboardNotice::where('is_active', true)->count(),
+            'all' => CompanyDashboardNotice::where('target_type', 'all')->count(),
+            'company' => CompanyDashboardNotice::where('target_type', 'company')->count(),
+        ];
+
+        return view('admin.company_dashboard_notices.index', compact('notices', 'summary'));
     }
 
     public function create()

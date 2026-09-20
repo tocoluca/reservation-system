@@ -5,23 +5,36 @@
     <title>企業申請管理</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { background: radial-gradient(circle at top left, rgba(14,165,233,.1), transparent 30rem), linear-gradient(180deg, #f8fafc, #eef2f7 55%, #f8fafc); }
+        .admin-panel { border: 2px solid #cbd5e1; border-radius: 1.5rem; background: #fff; box-shadow: 0 12px 28px rgba(15,23,42,.07); }
+        .application-row { border-left: 5px solid #cbd5e1; }
+        .application-row-pending { border-left-color: #7c3aed; background: #faf5ff; }
+        .application-row-approved { border-left-color: #059669; }
+        .application-row-rejected { border-left-color: #e11d48; background: #fffafa; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="min-h-screen text-slate-800">
 @include('admin.partials.navigation')
 
 <div class="max-w-7xl mx-auto px-4 md:px-6 py-6">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <header class="mb-6 overflow-hidden rounded-3xl border border-slate-700 bg-gradient-to-r from-slate-950 via-slate-900 to-sky-950 px-6 py-7 text-white shadow-xl md:px-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-800">企業申請管理</h1>
-            <p class="text-sm text-gray-500 mt-1">申請の確認・承認・却下・検索ができます</p>
+            <div class="flex items-center gap-2 text-xs font-bold tracking-[0.16em] text-sky-300"><i data-lucide="file-check-2" class="h-4 w-4"></i>APPLICATION REVIEW</div>
+            <h1 class="mt-3 text-2xl font-black md:text-3xl">企業申請管理</h1>
+            <p class="mt-2 text-sm font-medium text-slate-300">申請内容を確認し、承認または却下の対応を行います。</p>
         </div>
 
         <a href="{{ route('admin.dashboard') }}"
-           class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-gray-800 text-white hover:bg-black">
+           class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/25 bg-white/10 px-5 py-3 text-sm font-black text-white hover:bg-white/20">
+            <i data-lucide="arrow-left" class="h-4 w-4"></i>
             ダッシュボードへ戻る
         </a>
     </div>
+    </header>
 
     @if(session('success'))
         <div class="mb-4 px-4 py-3 rounded-xl bg-emerald-100 text-emerald-700 border border-emerald-200">
@@ -45,17 +58,36 @@
         </div>
     @endif
 
-    <nav aria-label="申請の状態" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+    <section aria-labelledby="application-status-title" class="mb-6">
+        <div class="mb-3"><h2 id="application-status-title" class="flex items-center gap-2 text-lg font-black text-slate-950"><i data-lucide="list-filter" class="h-5 w-5 text-sky-700"></i>申請状況</h2><p class="mt-1 text-xs font-medium text-slate-500">確認待ちの申請を優先して対応してください。</p></div>
+    <nav aria-label="申請の状態" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         @foreach(['all' => '全件', 'pending' => '確認待ち', 'approved' => '承認済', 'rejected' => '却下'] as $status => $label)
+            @php
+                $statusTone = match($status) {
+                    'pending' => 'border-violet-300 bg-violet-50 text-violet-950',
+                    'approved' => 'border-emerald-300 bg-emerald-50 text-emerald-950',
+                    'rejected' => 'border-rose-300 bg-rose-50 text-rose-950',
+                    default => 'border-sky-300 bg-sky-50 text-sky-950',
+                };
+                $statusIcon = match($status) {
+                    'pending' => 'clock-3',
+                    'approved' => 'circle-check',
+                    'rejected' => 'circle-x',
+                    default => 'files',
+                };
+                $isSelected = request('status', '') === ($status === 'all' ? '' : $status);
+            @endphp
             <a href="{{ route('admin.applications', ['status' => $status === 'all' ? null : $status]) }}"
-               class="rounded-xl border bg-white p-4 hover:border-sky-500 {{ request('status', '') === ($status === 'all' ? '' : $status) ? 'ring-2 ring-sky-600' : '' }}">
-                <span class="text-sm text-slate-600">{{ $label }}</span>
-                <span class="block text-2xl font-bold mt-1">{{ number_format($stats[$status]) }}</span>
+               class="rounded-2xl border-2 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md {{ $statusTone }} {{ $isSelected ? 'ring-4 ring-sky-200' : '' }}">
+                <span class="flex items-center justify-between gap-2 text-sm font-black"><span>{{ $label }}</span><i data-lucide="{{ $statusIcon }}" class="h-5 w-5"></i></span>
+                <span class="mt-2 block text-3xl font-black">{{ number_format($stats[$status]) }}<span class="ml-1 text-xs">件</span></span>
             </a>
         @endforeach
     </nav>
+    </section>
 
-    <div class="bg-white rounded-2xl shadow-sm border p-4 md:p-5 mb-6">
+    <div class="admin-panel mb-6 p-4 md:p-5">
+        <div class="mb-4"><h2 class="flex items-center gap-2 font-black text-slate-950"><i data-lucide="search" class="h-4 w-4 text-sky-700"></i>申請を検索・絞り込み</h2><p class="mt-1 text-xs font-medium text-slate-500">企業情報、状態、業種を組み合わせて検索できます。</p></div>
         <form method="GET" action="{{ route('admin.applications') }}"
               class="grid grid-cols-1 md:grid-cols-4 gap-3">
 
@@ -63,16 +95,16 @@
                    aria-label="申請検索" name="keyword"
                    value="{{ request('keyword') }}"
                    placeholder="企業名・担当者名・メール・電話で検索"
-                   class="w-full rounded-xl border-gray-300 px-4 py-3 border">
+                   class="w-full rounded-xl border-2 border-slate-300 bg-slate-50 px-4 py-3 focus:border-sky-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-sky-100">
 
-            <select aria-label="申請の状態" name="status" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
+            <select aria-label="申請の状態" name="status" class="w-full rounded-xl border-2 border-slate-300 bg-slate-50 px-4 py-3 focus:border-sky-600 focus:bg-white focus:outline-none">
                 <option value="">状態すべて</option>
                 <option value="pending"  @selected(request('status') === 'pending')>審査待ち</option>
                 <option value="approved" @selected(request('status') === 'approved')>承認済</option>
                 <option value="rejected" @selected(request('status') === 'rejected')>却下</option>
             </select>
 
-            <select aria-label="業種" name="industry_type" class="w-full rounded-xl border-gray-300 px-4 py-3 border">
+            <select aria-label="業種" name="industry_type" class="w-full rounded-xl border-2 border-slate-300 bg-slate-50 px-4 py-3 focus:border-sky-600 focus:bg-white focus:outline-none">
                 <option value="">業種すべて</option>
                 @foreach(config('industries.options') + config('industries.legacy') as $value => $label)
                     <option value="{{ $value }}" @selected(request('industry_type') === $value)>{{ $label }}</option>
@@ -81,7 +113,8 @@
 
             <div class="flex gap-2">
                 <button type="submit"
-                        class="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 font-semibold">
+                        class="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-700 px-4 py-3 font-black text-white shadow hover:bg-sky-800">
+                    <i data-lucide="search" class="h-4 w-4"></i>
                     検索
                 </button>
                 <a href="{{ route('admin.applications') }}"
@@ -93,55 +126,58 @@
     </div>
 
     @if(request('application_id'))
-        <p class="mb-3 text-sm text-slate-600">受付番号 #{{ request('application_id') }} を表示中 · <a class="text-sky-700 underline" href="{{ route('admin.applications', ['status' => 'pending']) }}">確認待ちの一覧へ</a></p>
+        <p class="mb-3 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-900">受付番号 #{{ request('application_id') }} を表示中 · <a class="text-sky-700 underline" href="{{ route('admin.applications', ['status' => 'pending']) }}">確認待ちの一覧へ</a></p>
     @endif
-    <p class="mb-3 text-sm text-slate-600" role="status">検索結果 {{ number_format($applications->total()) }}件</p>
-    <div class="bg-white rounded-2xl shadow-sm border overflow-hidden">
+    <div class="mb-3 flex items-center justify-between gap-3">
+        <h2 class="flex items-center gap-2 text-lg font-black text-slate-950"><i data-lucide="clipboard-list" class="h-5 w-5 text-sky-700"></i>申請一覧</h2>
+        <p class="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-black text-slate-700" role="status">検索結果 {{ number_format($applications->total()) }}件</p>
+    </div>
+    <div class="admin-panel overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full text-sm">
-                <thead class="bg-gray-100 text-gray-700">
+                <thead class="bg-slate-800 text-white">
                     <tr>
-                        <th class="px-4 py-3 text-left">申請日</th>
-                        <th class="px-4 py-3 text-left">企業名</th>
-                        <th class="px-4 py-3 text-left">業種</th>
-                        <th class="px-4 py-3 text-left">担当者</th>
-                        <th class="px-4 py-3 text-left">メール</th>
-                        <th class="px-4 py-3 text-left">電話</th>
-                        <th class="px-4 py-3 text-center">状態</th>
-                        <th class="px-4 py-3 text-center">操作</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">申請日</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">企業名</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">業種</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">担当者</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">メール</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-left text-xs font-black">電話</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center text-xs font-black">状態</th>
+                        <th class="whitespace-nowrap px-4 py-4 text-center text-xs font-black">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                 @forelse($applications as $app)
-                    <tr class="border-t hover:bg-gray-50 align-top">
-                        <td class="px-4 py-3 whitespace-nowrap">
+                    <tr class="application-row application-row-{{ $app->status }} border-t-2 border-slate-200 align-top transition hover:bg-sky-50/70">
+                        <td class="px-4 py-4 whitespace-nowrap font-semibold text-slate-600">
                             {{ optional($app->created_at)->format('Y-m-d H:i') }}
                         </td>
-                        <td class="px-4 py-3 font-semibold text-gray-800">
+                        <td class="px-4 py-4 font-black text-slate-950">
                             {{ $app->company_name }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-4 font-medium text-slate-700">
                             {{ $app->industry_label }}
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-4 font-medium text-slate-700">
                             {{ $app->contact_person }}
                         </td>
-                        <td class="px-4 py-3 break-all">
+                        <td class="px-4 py-4 break-all text-slate-700">
                             {{ $app->email }}
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-4 whitespace-nowrap text-slate-700">
                             {{ $app->phone }}
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold border {{ $app->status_color }}">
+                        <td class="px-4 py-4 text-center">
+                            <span class="inline-flex rounded-full border-2 px-3 py-1 text-xs font-black {{ $app->status_color }}">
                                 {{ $app->status_label }}
                             </span>
                         </td>
-                        <td class="px-4 py-3">
+                        <td class="px-4 py-4">
                             <div class="flex flex-wrap gap-2 justify-center">
                                 <button type="button"
                                         onclick="openDetail({{ $app->id }})"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg">
+                                        class="rounded-lg bg-sky-700 px-3 py-2 font-bold text-white hover:bg-sky-800">
                                     詳細
                                 </button>
 
@@ -151,14 +187,14 @@
                                         <input type="hidden" name="send_mail" value="1">
                                         <button type="submit"
                                                 onclick="return confirm('この申請を承認して企業アカウントを作成しますか？')"
-                                                class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg">
+                                                class="rounded-lg bg-emerald-600 px-3 py-2 font-bold text-white hover:bg-emerald-700">
                                             承認
                                         </button>
                                     </form>
 
                                     <button type="button"
                                             onclick="openReject({{ $app->id }}, @js($app->company_name))"
-                                            class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">
+                                            class="rounded-lg bg-rose-600 px-3 py-2 font-bold text-white hover:bg-rose-700">
                                         却下
                                     </button>
                                 @else
@@ -166,7 +202,7 @@
                                         @csrf
                                         <button type="submit"
                                                 onclick="return confirm('審査待ちに戻しますか？')"
-                                                class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 rounded-lg">
+                                                class="whitespace-nowrap rounded-lg bg-slate-600 px-3 py-2 font-bold text-white hover:bg-slate-700">
                                             審査待ちに戻す
                                         </button>
                                     </form>
@@ -364,6 +400,10 @@ document.getElementById('detailModal').addEventListener('click', function(e) {
 
 document.getElementById('rejectModal').addEventListener('click', function(e) {
     if (e.target.id === 'rejectModal') closeReject();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.lucide) window.lucide.createIcons();
 });
 </script>
 

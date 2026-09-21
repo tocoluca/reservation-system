@@ -993,6 +993,39 @@ body {
                     </div>
                 </section>
             </div>
+            @php
+                $patternGroups = [
+                    ['title' => '曜日別', 'rows' => $bookingPatterns['weekdays'], 'labels' => ['日', '月', '火', '水', '木', '金', '土']],
+                    ['title' => '開始時間別', 'rows' => array_filter($bookingPatterns['hours'], fn ($row) => $row['completed'] + $row['upcoming'] > 0), 'labels' => []],
+                ];
+            @endphp
+            <details class="card group" aria-label="曜日・時間帯別の予約状況">
+                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 py-1 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-700 [&::-webkit-details-marker]:hidden">
+                    <span><span class="section-title block">曜日・時間帯別の予約状況</span><span class="mt-1 block text-xs text-slate-600">{{ $salesPeriodLabel }}の予約開始日時を集計</span></span>
+                    <span class="flex shrink-0 items-center gap-1 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700">詳細を見る <span class="inline-block transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></span>
+                </summary>
+                <div class="mt-5 border-t border-slate-200 pt-5">
+                    <div class="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-xs font-semibold text-slate-700"><span><span class="mr-1 inline-block h-3 w-3 rounded-sm bg-slate-700 align-middle"></span>来店済み</span><span><span class="mr-1 inline-block h-3 w-3 rounded-sm bg-sky-500 align-middle"></span>今後の予約済み</span></div>
+                    <div class="grid gap-5 lg:grid-cols-2">
+                        @foreach($patternGroups as $group)
+                            @php $groupMax = max([1, ...array_map(fn ($row) => $row['completed'] + $row['upcoming'], $group['rows'])]); @endphp
+                            <section class="rounded-xl border border-slate-200 bg-slate-50 p-4" aria-label="{{ $group['title'] }}の予約件数">
+                                <h4 class="mb-3 font-bold text-slate-900">{{ $group['title'] }}</h4>
+                                @forelse($group['rows'] as $key => $row)
+                                    <div class="grid grid-cols-[3.25rem_minmax(0,1fr)_6rem] items-center gap-2 border-t border-slate-200 py-2 first:border-t-0">
+                                        <span class="text-sm font-semibold text-slate-700">{{ $group['labels'][$key] ?? sprintf('%02d時', $key) }}</span>
+                                        <div class="flex h-3 overflow-hidden rounded-full bg-slate-200" aria-hidden="true"><span class="bg-slate-700" style="width: {{ $row['completed'] / $groupMax * 100 }}%"></span><span class="bg-sky-500" style="width: {{ $row['upcoming'] / $groupMax * 100 }}%"></span></div>
+                                        <span class="text-right tabular-nums"><span class="block text-sm font-bold text-slate-900">{{ $row['completed'] + $row['upcoming'] }}件</span><span class="block text-[11px] text-slate-600">済{{ $row['completed'] }} / 予定{{ $row['upcoming'] }}</span></span>
+                                    </div>
+                                @empty
+                                    <p class="text-sm text-slate-600">対象の予約はありません。</p>
+                                @endforelse
+                            </section>
+                        @endforeach
+                    </div>
+                    <p class="mt-3 text-xs leading-5 text-slate-600">開始時刻の1時間単位で集計。キャンセル・無断キャンセル・開始時刻を過ぎた未処理の予約は含みません。</p>
+                </div>
+            </details>
             <div class="card"><h3 class="section-title mb-1">来店済み予約金額・今後の予約見込額（{{ $year }}年）</h3><p class="mb-4 text-xs text-slate-600">月ごとの予約日を基準に表示します。</p><div class="w-full overflow-x-auto"><div class="min-w-[560px]"><canvas id="salesChart"></canvas></div></div></div>
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
                 <div class="card"><h3 class="section-title mb-4">担当者別 来店済み予約金額</h3><div class="space-y-2">@forelse($staffRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->staff->name ?? '未設定' }}</span><span class="text-sm font-bold whitespace-nowrap">¥{{ number_format($row->total) }}</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>

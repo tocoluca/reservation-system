@@ -72,6 +72,30 @@ class CompanySalesMetricsTest extends TestCase
         $this->assertSame(0, $metrics['no_show_rate']);
     }
 
+    public function test_booking_patterns_count_only_completed_and_upcoming_reserved_by_start_time(): void
+    {
+        $now = Carbon::parse('2026-09-21 12:00:00');
+        $this->reservation(1, '2026-09-20 10:00:00', 'completed', 12000);
+        $this->reservation(1, '2026-09-21 13:00:00', 'reserved', 9000);
+        $this->reservation(1, '2026-09-28 13:30:00', 'reserved', 9000);
+        $this->reservation(1, '2026-09-21 11:00:00', 'reserved', 9000);
+        $this->reservation(1, '2026-09-22 13:00:00', 'cancelled', 9000);
+        $this->reservation(1, '2026-09-22 13:00:00', 'no_show', 9000);
+        $this->reservation(2, '2026-09-21 13:00:00', 'completed', 9000);
+        $this->reservation(1, '2026-10-01 13:00:00', 'completed', 9000);
+        $this->reservation(1, '2026-09-21 13:00:00', 'completed', 9000, true);
+
+        $patterns = app(CompanySalesMetrics::class)->bookingPatterns(
+            1, Carbon::parse('2026-09-01'), Carbon::parse('2026-10-01'), $now
+        );
+
+        $this->assertSame(['completed' => 1, 'upcoming' => 0], $patterns['weekdays'][0]);
+        $this->assertSame(['completed' => 0, 'upcoming' => 2], $patterns['weekdays'][1]);
+        $this->assertSame(['completed' => 1, 'upcoming' => 0], $patterns['hours'][10]);
+        $this->assertSame(['completed' => 0, 'upcoming' => 2], $patterns['hours'][13]);
+        $this->assertSame(['completed' => 0, 'upcoming' => 0], $patterns['hours'][11]);
+    }
+
     public function test_current_period_comparisons_use_the_same_elapsed_date_and_time(): void
     {
         $now = Carbon::parse('2026-09-21 12:00:00');

@@ -57,6 +57,39 @@ class CompanySalesMetrics
         ];
     }
 
+    /** Count attended and upcoming bookings by local weekday and starting hour. */
+    public function bookingPatterns(int $companyId, CarbonInterface $start, CarbonInterface $end, CarbonInterface $now): array
+    {
+        $weekdays = array_fill(0, 7, ['completed' => 0, 'upcoming' => 0]);
+        $hours = array_fill(0, 24, ['completed' => 0, 'upcoming' => 0]);
+
+        Reservation::query()
+            ->where('company_id', $companyId)
+            ->whereNull('deleted_at')
+            ->where('start_at', '>=', $start)
+            ->where('start_at', '<', $end)
+            ->whereIn('status', [Reservation::STATUS_COMPLETED, Reservation::STATUS_RESERVED])
+            ->select(['id', 'start_at', 'status'])
+            ->orderBy('id')
+            ->chunkById(500, function ($reservations) use (&$weekdays, &$hours, $now) {
+                foreach ($reservations as $reservation) {
+                    $startsAt = Carbon::parse($reservation->start_at);
+                    $type = $reservation->status === Reservation::STATUS_COMPLETED
+                        ? 'completed'
+                        : ($startsAt->gte($now) ? 'upcoming' : null);
+
+                    if ($type === null) {
+                        continue;
+                    }
+
+                    $weekdays[$startsAt->dayOfWeek][$type]++;
+                    $hours[$startsAt->hour][$type]++;
+                }
+            });
+
+        return ['weekdays' => $weekdays, 'hours' => $hours];
+    }
+
     public function comparisons(
         int $companyId,
         string $period,

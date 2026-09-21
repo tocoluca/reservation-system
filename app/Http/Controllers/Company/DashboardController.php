@@ -229,6 +229,7 @@ class DashboardController extends Controller
             ? $periodStart->copy()->addMonth()
             : $periodStart->copy()->addYear();
         $salesMetrics = $salesService->summarize($company->id, $periodStart, $periodEnd, $now);
+        $bookingPatterns = $salesService->bookingPatterns($company->id, $periodStart, $periodEnd, $now);
 
         $salesComparisons = $salesService->comparisons(
             $company->id,
@@ -346,6 +347,7 @@ class DashboardController extends Controller
             'todaySales',
             'yearlySales',
             'salesMetrics',
+            'bookingPatterns',
             'salesComparisons',
             'monthlyChart',
             'staffRanking',

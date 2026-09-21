@@ -6,6 +6,8 @@ use App\Http\Controllers\Company\ReservationController;
 use App\Models\Company;
 use App\Models\Reservation;
 use App\Models\Staff;
+use App\Services\ReservationChangeNoticeService;
+use Carbon\Carbon;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -155,7 +157,43 @@ class ShopCancellationNoticeTest extends TestCase
         $this->assertDatabaseCount('reservation_change_notice_items', 0);
     }
 
-    private function createReservation(): array
+    public function test_calendar_closure_creates_notices_only_for_today_and_future(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-21 12:00:00'));
+        [$company, , $pastReservation] = $this->createReservation('2026-09-20');
+        $todayReservation = $this->createReservationForDate($company, '2026-09-21');
+        $futureReservation = $this->createReservationForDate($company, '2026-09-22');
+        $service = $this->app->make(ReservationChangeNoticeService::class);
+
+        $this->assertNull($service->createForClosedDate($company, '2026-09-20'));
+        $this->assertNotNull($service->createForClosedDate($company, '2026-09-21'));
+        $this->assertNotNull($service->createForClosedDate($company, '2026-09-22'));
+
+        $this->assertDatabaseCount('reservation_change_notices', 2);
+        $this->assertDatabaseMissing('reservation_change_notice_items', ['reservation_id' => $pastReservation->id]);
+        $this->assertDatabaseHas('reservation_change_notice_items', ['reservation_id' => $todayReservation->id]);
+        $this->assertDatabaseHas('reservation_change_notice_items', ['reservation_id' => $futureReservation->id]);
+    }
+
+    public function test_calendar_time_change_creates_notices_only_for_today_and_future(): void
+    {
+        $this->travelTo(Carbon::parse('2026-09-21 12:00:00'));
+        [$company, , $pastReservation] = $this->createReservation('2026-09-20');
+        $todayReservation = $this->createReservationForDate($company, '2026-09-21');
+        $futureReservation = $this->createReservationForDate($company, '2026-09-22');
+        $service = $this->app->make(ReservationChangeNoticeService::class);
+
+        $this->assertNull($service->createForTimeChange($company, '2026-09-20', '12:00', '18:00'));
+        $this->assertNotNull($service->createForTimeChange($company, '2026-09-21', '12:00', '18:00'));
+        $this->assertNotNull($service->createForTimeChange($company, '2026-09-22', '12:00', '18:00'));
+
+        $this->assertDatabaseCount('reservation_change_notices', 2);
+        $this->assertDatabaseMissing('reservation_change_notice_items', ['reservation_id' => $pastReservation->id]);
+        $this->assertDatabaseHas('reservation_change_notice_items', ['reservation_id' => $todayReservation->id]);
+        $this->assertDatabaseHas('reservation_change_notice_items', ['reservation_id' => $futureReservation->id]);
+    }
+
+    private function createReservation(string $date = '2026-09-21'): array
     {
         $company = Company::create([
             'name' => 'Company A',
@@ -170,18 +208,23 @@ class ShopCancellationNoticeTest extends TestCase
             'role' => 'master',
         ]);
 
+        return [$company, $master, $this->createReservationForDate($company, $date)];
+    }
+
+    private function createReservationForDate(Company $company, string $date): Reservation
+    {
         $reservationId = DB::table('reservations')->insertGetId([
             'company_id' => $company->id,
             'customer_name' => '予約 太郎',
             'customer_email' => 'customer@example.com',
             'customer_phone' => '09012345678',
-            'start_at' => '2026-09-21 10:00:00',
-            'end_at' => '2026-09-21 11:00:00',
+            'start_at' => $date . ' 10:00:00',
+            'end_at' => $date . ' 11:00:00',
             'status' => 'reserved',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        return [$company, $master, Reservation::findOrFail($reservationId)];
+        return Reservation::findOrFail($reservationId);
     }
 }

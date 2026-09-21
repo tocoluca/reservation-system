@@ -63,6 +63,10 @@ class ReservationChangeNoticeService
     ): ?ReservationChangeNotice {
         $targetDate = Carbon::parse($date)->toDateString();
 
+        if ($targetDate < Carbon::today()->toDateString()) {
+            return null;
+        }
+
         $reservations = Reservation::query()
             ->where('company_id', $company->id)
             ->whereDate('start_at', $targetDate)
@@ -95,7 +99,7 @@ class ReservationChangeNoticeService
     ): ?ReservationChangeNotice {
         $targetDate = Carbon::parse($date)->toDateString();
 
-        if (empty($openTime) || empty($closeTime)) {
+        if ($targetDate < Carbon::today()->toDateString() || empty($openTime) || empty($closeTime)) {
             return null;
         }
 

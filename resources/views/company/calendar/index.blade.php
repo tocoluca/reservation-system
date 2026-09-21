@@ -241,48 +241,9 @@
             </div>
         </div>
 
-        {{-- 操作ガイド --}}
+        {{-- 年間一括設定 --}}
         <div class="business-calendar-guide px-5 sm:px-6 py-4">
-            <div class="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
-                <div class="rounded-2xl bg-amber-50/60 border border-amber-100 px-4 py-4">
-                    <div class="text-sm font-bold text-gray-900">この画面でできること</div>
-                    <div class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm text-gray-600">
-                        <div class="rounded-xl bg-white/80 border border-white px-3 py-3">
-                            <div class="font-semibold text-gray-800">日付を押す</div>
-                            <div class="mt-1 text-xs leading-relaxed">選択日の状態と予約件数を確認</div>
-                        </div>
-                        <div class="rounded-xl bg-white/80 border border-white px-3 py-3">
-                            <div class="font-semibold text-gray-800">時間変更</div>
-                            <div class="mt-1 text-xs leading-relaxed">その日の営業時間だけ個別変更</div>
-                        </div>
-                        <div class="rounded-xl bg-white/80 border border-white px-3 py-3">
-                            <div class="font-semibold text-gray-800">年間設定</div>
-                            <div class="mt-1 text-xs leading-relaxed">曜日ごとに1年分まとめて設定</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-4">
-                    <div class="text-sm font-bold text-gray-900">表示の見方</div>
-                    <div class="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 rounded bg-green-200 border border-green-300"></div>
-                            <span>営業日</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 rounded bg-red-200 border border-red-300"></div>
-                            <span>休業日</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 rounded bg-yellow-200 border border-yellow-300"></div>
-                            <span>営業時間変更</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- 年間一括設定 --}}
-            <div class="mt-4">
+            <div>
                 <button type="button"
                         onclick="toggleBulkPanel()"
                         id="bulkToggleBtn"
@@ -361,33 +322,6 @@
             </div>
         </div>
      </div>
-
-    <div class="business-calendar-secondary-nav mb-6 rounded-[1.75rem] border border-gray-100 bg-white p-4 sm:p-5 shadow-sm">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-                <p class="text-xs font-bold tracking-[0.18em] uppercase text-gray-400">Calendar Navigation</p>
-                <h2 class="mt-1 text-lg font-black text-gray-900">営業日管理の表示切替</h2>
-                <p class="mt-1 text-sm text-gray-500">月ごとの編集と年間確認を切り替えできます。</p>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[520px]">
-                <a href="{{ route('company.calendar.index', ['year' => now()->year, 'month' => now()->month]) }}"
-                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
-                    <div class="text-sm font-black">今月</div>
-                    <div class="mt-1 text-xs text-gray-500">今日の月へ戻る</div>
-                </a>
-                <div class="rounded-2xl border px-4 py-3 text-white shadow-sm"
-                     style="background: {{ $theme }}; border-color: {{ $theme }};">
-                    <div class="text-sm font-black">月間カレンダー</div>
-                    <div class="mt-1 text-xs text-white/80">{{ $year }}年 {{ $month }}月を編集中</div>
-                </div>
-                <a href="{{ route('company.calendar.year', ['year' => $year]) }}"
-                   class="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-3 text-gray-700 transition hover:bg-gray-100">
-                    <div class="text-sm font-black">年間カレンダー</div>
-                    <div class="mt-1 text-xs text-gray-500">{{ $year }}年を一覧確認</div>
-                </a>
-            </div>
-        </div>
-    </div>
 
     <div class="business-calendar-mobile-toolbar sm:hidden mb-3 rounded-2xl border border-gray-100 bg-white/95 p-2 shadow-lg backdrop-blur">
         <div class="flex items-center justify-between gap-2">

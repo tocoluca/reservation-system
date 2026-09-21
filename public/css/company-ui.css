@@ -1,12 +1,12 @@
 /* Shared company workspace surfaces. Customer-facing pages do not load this file. */
 body.company-ui {
-    --company-canvas: #e8edf2;
-    --company-surface: #fbfcfd;
-    --company-border: #cbd5e1;
+    --company-canvas: #e2eaf2;
+    --company-surface: #fff;
+    --company-border: #b9c8d8;
     --company-field: #f0f5f9;
     --company-field-border: #74879c;
     --company-focus: #1d4ed8;
-    background: var(--company-canvas);
+    background: linear-gradient(180deg, #ebf1f6 0%, #dfe9f1 52%, #e7eef5 100%);
     color: #1e293b;
     line-height: 1.65;
     font-family: system-ui, -apple-system, "Segoe UI", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
@@ -45,6 +45,9 @@ body.company-ui {
 /* Keep status colors and calendar cells; strengthen only neutral panel borders. */
 .company-ui .company-main-content :is(div, section, form, article).bg-white {
     background-color: var(--company-surface);
+}
+.company-ui .company-main-content :is(div, section, form, article).bg-white:is(.border-gray-100, .border-slate-100, .border-gray-200, .border-slate-200):not(.shadow-lg):not(.shadow-xl):not(.shadow-2xl) {
+    box-shadow: 0 3px 12px rgb(31 51 73 / 7%);
 }
 .company-ui .company-main-content :is(.border-gray-100, .border-slate-100, .border-gray-200, .border-slate-200) {
     border-color: var(--company-border);
@@ -92,12 +95,12 @@ body.company-ui {
 .company-ui .dashboard-shell .card {
     background: var(--company-surface);
     border-color: var(--company-border);
-    box-shadow: 0 2px 6px rgb(15 23 42 / 5%);
+    box-shadow: 0 5px 16px rgb(31 51 73 / 10%);
     backdrop-filter: none;
 }
 .company-ui .dashboard-shell .card:hover {
     transform: none;
-    box-shadow: 0 4px 12px rgb(15 23 42 / 9%);
+    box-shadow: 0 8px 20px rgb(31 51 73 / 14%);
 }
 .company-ui .dashboard-shell .card:has(a:hover) { border-color: #8293a7; }
 .company-ui .dashboard-shell .card.border-red-200 { background: #fff1f2; border-color: #fca5a5; }
@@ -106,6 +109,10 @@ body.company-ui {
     background: #f4f8fc;
     border-color: #b8c8d9;
     box-shadow: 0 2px 6px rgb(15 23 42 / 5%);
+}
+.company-ui .dashboard-shell .kpi.kpi-forecast {
+    background: #eff9ff;
+    border-color: #7dd3fc;
 }
 .company-ui .dashboard-shell :is(.tab-nav, .tab-category-heading) {
     background: #f1f5f9;

@@ -697,11 +697,17 @@
                     曜日別営業時間
                     <span class="tooltip text-gray-400 text-sm" onclick="toggleTooltip(this)">❓
                         <span class="tooltip-text">
-                            曜日別に営業時間を設定できます。臨時休業や時間変更は営業日カレンダーで管理してください。
+                            ここでは曜日ごとの通常の営業時間を登録します。休業日や日付ごとの時間変更は「営業日・営業時間管理」で設定してください。
                         </span>
                     </span>
                 </h2>
-                <p class="text-sm text-gray-500 mt-1">営業する可能性がある曜日だけ時間枠を設定してください。</p>
+                <p class="mt-1 text-sm font-medium leading-6 text-gray-700">平日・祝日を問わず、営業する可能性がある曜日の時間枠を登録します。</p>
+                <div class="mt-3 flex flex-col gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-950 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="leading-6"><span class="font-bold">休業日・臨時の営業時間変更</span>は、営業日・営業時間管理で設定します。</p>
+                    <a href="{{ route('company.calendar.index') }}" class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-blue-800 shadow-sm transition hover:border-blue-300 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-300">
+                        営業日・営業時間管理へ <span aria-hidden="true" class="text-base leading-none">→</span>
+                    </a>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 gap-5 p-6 xl:grid-cols-2">

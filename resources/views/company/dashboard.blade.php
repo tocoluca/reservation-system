@@ -554,7 +554,7 @@ body {
                         </a>
                         <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">予約変更連絡</div><div class="mt-1 text-3xl font-black {{ $changeTotalActive > 0 ? 'text-rose-200' : '' }}">{{ number_format($changeTotalActive) }}</div></div>
                         @if($can('dashboard.sales'))
-                            <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">今日売上</div><div class="mt-1 text-3xl font-black">¥{{ number_format($todaySales) }}</div></div>
+                            <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">今日の来店済み予約金額</div><div class="mt-1 text-3xl font-black">¥{{ number_format($todaySales) }}</div></div>
                         @else
                             <div class="rounded-2xl bg-white/10 border border-white/15 p-4"><div class="text-xs text-white/60">サポート回答</div><div class="mt-1 text-3xl font-black">{{ number_format($supportUnreadCount) }}</div></div>
                         @endif
@@ -955,7 +955,7 @@ body {
     @if($can('dashboard.sales'))
         <div x-show="showFeatureCards && tab==='analytics'" class="space-y-5">
             <div class="card">
-                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5"><div><h2 class="text-2xl font-black">売上ダッシュボード</h2><p class="text-sm text-gray-500 mt-1">必要な数字だけ見やすく確認できます。</p></div></div>
+                <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5"><div><h2 class="text-2xl font-black">売上分析</h2><p class="text-sm text-gray-600 mt-1">来店済み予約の金額と、今後の予約見込額を分けて表示します。</p></div></div>
                 <form method="GET" action="{{ route('company.dashboard') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     <select name="period" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full"><option value="month" {{ $period=='month' ? 'selected':'' }}>月別</option><option value="year" {{ $period=='year' ? 'selected':'' }}>年別</option></select>
                     <select name="year" class="border border-gray-300 rounded-2xl px-3 py-2.5 w-full">@for($y = now()->year; $y >= now()->year - 5; $y--)<option value="{{ $y }}" {{ $year==$y ? 'selected':'' }}>{{ $y }}年</option>@endfor</select>
@@ -963,12 +963,41 @@ body {
                     <button class="rounded-2xl text-white font-bold px-4 py-2.5" style="background: {{ $theme }}">表示</button>
                 </form>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"><div class="kpi"><div class="metric-label">今日売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($todaySales) }}</div></div><div class="kpi"><div class="metric-label">{{ $salesPeriodLabel }}売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($totalSales) }}</div></div><div class="kpi"><div class="metric-label">客単価</div><div class="text-3xl font-black mt-2">¥{{ number_format($averagePrice) }}</div></div><div class="kpi"><div class="metric-label">今年売上</div><div class="text-3xl font-black mt-2">¥{{ number_format($yearlySales) }}</div></div></div>
-            <div class="card"><h3 class="section-title mb-4">売上推移（{{ $year }}年）</h3><div class="w-full overflow-x-auto"><div class="min-w-[560px]"><canvas id="salesChart"></canvas></div></div></div>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+                <div class="kpi"><div class="metric-label">今日の来店済み予約金額</div><div class="mt-2 text-2xl font-black">¥{{ number_format($todaySales) }}</div></div>
+                <div class="kpi"><div class="metric-label">{{ $salesPeriodLabel }}の来店済み予約金額</div><div class="mt-2 text-2xl font-black">¥{{ number_format($totalSales) }}</div><div class="mt-1 text-xs text-slate-500">{{ number_format($salesMetrics['completed_count']) }}件</div></div>
+                <div class="kpi kpi-forecast"><div class="metric-label">{{ $salesPeriodLabel }}の今後の予約見込額</div><div class="mt-2 text-2xl font-black text-sky-900">¥{{ number_format($salesMetrics['forecast_amount']) }}</div><div class="mt-1 text-xs text-sky-700">{{ number_format($salesMetrics['forecast_count']) }}件</div></div>
+                <div class="kpi"><div class="metric-label">来店済み予約の平均金額</div><div class="mt-2 text-2xl font-black">¥{{ number_format($averagePrice) }}</div></div>
+                <div class="kpi"><div class="metric-label">今年の来店済み予約金額</div><div class="mt-2 text-2xl font-black">¥{{ number_format($yearlySales) }}</div></div>
+            </div>
+            <p class="px-1 text-xs leading-5 text-slate-600">金額は予約に登録された価格です。会計・入金が確定した実売上ではありません。見込額は現在時刻以降の「予約済み」のみを集計します。</p>
+            <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <section class="card" aria-label="前月・前年との比較">
+                    <h3 class="section-title mb-1">来店済み予約金額の比較</h3>
+                    <p class="mb-4 text-xs text-slate-600">{{ $salesPeriodLabel }}と比較します。進行中の期間は同じ日時までで比較します。</p>
+                    <div class="space-y-3">
+                        @foreach($salesComparisons as $comparison)
+                            <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <div><div class="text-xs font-bold text-slate-600">{{ $comparison['label'] }}</div><div class="mt-1 font-black text-slate-900">¥{{ number_format($comparison['amount']) }}</div></div>
+                                <div class="text-right"><div class="text-sm font-black {{ $comparison['change_amount'] >= 0 ? 'text-emerald-700' : 'text-rose-700' }}">{{ $comparison['change_amount'] >= 0 ? '+' : '−' }}¥{{ number_format(abs($comparison['change_amount'])) }}</div><div class="mt-1 text-xs font-bold text-slate-600">{{ $comparison['change_rate'] === null ? '比較対象なし' : ($comparison['change_rate'] >= 0 ? '+' : '−') . number_format(abs($comparison['change_rate']), 1) . '%' }}</div></div>
+                            </div>
+                        @endforeach
+                    </div>
+                </section>
+                <section class="card" aria-label="キャンセル・無断キャンセル">
+                    <h3 class="section-title mb-1">キャンセル状況</h3>
+                    <p class="mb-4 text-xs text-slate-600">{{ $salesPeriodLabel }}の予約総数 {{ number_format($salesMetrics['reservation_count']) }}件に対する割合です。</p>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="rounded-xl border-2 border-amber-200 bg-amber-50 p-4"><div class="text-sm font-black text-amber-900">キャンセル</div><div class="mt-2 text-2xl font-black text-amber-950">{{ number_format($salesMetrics['cancelled_count']) }}<span class="ml-1 text-sm">件</span></div><div class="mt-1 text-sm font-bold text-amber-800">{{ number_format($salesMetrics['cancelled_rate'], 1) }}%</div></div>
+                        <div class="rounded-xl border-2 border-rose-200 bg-rose-50 p-4"><div class="text-sm font-black text-rose-900">無断キャンセル</div><div class="mt-2 text-2xl font-black text-rose-950">{{ number_format($salesMetrics['no_show_count']) }}<span class="ml-1 text-sm">件</span></div><div class="mt-1 text-sm font-bold text-rose-800">{{ number_format($salesMetrics['no_show_rate'], 1) }}%</div></div>
+                    </div>
+                </section>
+            </div>
+            <div class="card"><h3 class="section-title mb-1">来店済み予約金額・今後の予約見込額（{{ $year }}年）</h3><p class="mb-4 text-xs text-slate-600">月ごとの予約日を基準に表示します。</p><div class="w-full overflow-x-auto"><div class="min-w-[560px]"><canvas id="salesChart"></canvas></div></div></div>
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                <div class="card"><h3 class="section-title mb-4">従業員売上ランキング</h3><div class="space-y-2">@forelse($staffRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->staff->name ?? '未設定' }}</span><span class="text-sm font-bold whitespace-nowrap">¥{{ number_format($row->total) }}</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>
+                <div class="card"><h3 class="section-title mb-4">担当者別 来店済み予約金額</h3><div class="space-y-2">@forelse($staffRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->staff->name ?? '未設定' }}</span><span class="text-sm font-bold whitespace-nowrap">¥{{ number_format($row->total) }}</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>
                 <div class="card"><h3 class="section-title mb-4">指名ランキング</h3><div class="space-y-2">@forelse($nominationRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->staff->name ?? '未設定' }}</span><span class="text-sm font-bold whitespace-nowrap">{{ $row->nomination_count }}回</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>
-                <div class="card"><h3 class="section-title mb-4">人気メニュー</h3><div class="space-y-2">@forelse($menuRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->name }}</span><span class="text-sm font-bold whitespace-nowrap">{{ $row->total }}回</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>
+                <div class="card"><h3 class="section-title mb-4">人気メニュー（来店済み）</h3><div class="space-y-2">@forelse($menuRanking as $i => $row)<div class="flex items-center justify-between gap-3 border-b border-gray-100 py-2"><span class="text-sm text-gray-700">{{ $i + 1 }}. {{ $row->name }}</span><span class="text-sm font-bold whitespace-nowrap">{{ $row->total }}回</span></div>@empty<div class="text-sm text-gray-400">データがありません</div>@endforelse</div></div>
             </div>
         </div>
     @endif
@@ -976,7 +1005,8 @@ body {
 
 <script>
 const salesLabels = @json($monthlyChart->pluck('month')->values());
-const salesData = @json($monthlyChart->pluck('total')->values());
+const completedSalesData = @json($monthlyChart->pluck('completed_amount')->values());
+const forecastSalesData = @json($monthlyChart->pluck('forecast_amount')->values());
 @if($can('dashboard.sales'))
 const salesCanvas = document.getElementById('salesChart');
 if (salesCanvas) {
@@ -984,12 +1014,15 @@ if (salesCanvas) {
         type: 'bar',
         data: {
             labels: salesLabels.map((m) => m + '月'),
-            datasets: [{ label: '売上', data: salesData, backgroundColor: '{{ $theme }}', borderRadius: 10, maxBarThickness: 42 }]
+            datasets: [
+                { label: '来店済み予約金額', data: completedSalesData, backgroundColor: '{{ $theme }}', borderRadius: 10, maxBarThickness: 28 },
+                { label: '今後の予約見込額', data: forecastSalesData, backgroundColor: '#7dd3fc', borderRadius: 10, maxBarThickness: 28 }
+            ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: { legend: { display: false } },
+            plugins: { legend: { display: true, position: 'bottom' } },
             scales: { y: { beginAtZero: true, ticks: { callback: (value) => '¥' + Number(value).toLocaleString() } } }
         }
     });

@@ -14,12 +14,13 @@ use App\Models\CompanyBusinessCalendar;
 use App\Models\CompanyDashboardPermission;
 use App\Models\ReservationChangeNoticeItem;
 use App\Models\Inquiry;
+use App\Services\CompanySalesMetrics;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(CompanySalesMetrics $salesService)
     {
         $staff = auth()->guard('company')->user();
         $company = $staff->company;
@@ -209,30 +210,38 @@ class DashboardController extends Controller
 		    ->where('is_read_by_company', false)
 		    ->count();
 
-		$salesStatuses = [Reservation::STATUS_RESERVED, Reservation::STATUS_COMPLETED];
+		$salesStatuses = [Reservation::STATUS_COMPLETED];
+		$todaySales = $salesService->summarize($company->id, $today, $today->copy()->addDay(), $now)['completed_amount'];
+        $yearlySales = $salesService->summarize(
+            $company->id,
+            $now->copy()->startOfYear(),
+            $now->copy()->startOfYear()->addYear(),
+            $now
+        )['completed_amount'];
 
-		$todaySales = Reservation::where('company_id', $company->id)
-            ->whereDate('start_at', $today->toDateString())
-            ->whereIn('status', $salesStatuses)
-            ->sum('total_price');
+        $period = request('period') === 'year' ? 'year' : 'month';
+        $year = max(2000, min($now->year, (int) request('year', $now->year)));
+        $month = max(1, min(12, (int) request('month', $now->month)));
+        $periodStart = $period === 'month'
+            ? Carbon::create($year, $month, 1)->startOfDay()
+            : Carbon::create($year, 1, 1)->startOfDay();
+        $periodEnd = $period === 'month'
+            ? $periodStart->copy()->addMonth()
+            : $periodStart->copy()->addYear();
+        $salesMetrics = $salesService->summarize($company->id, $periodStart, $periodEnd, $now);
 
-        $monthlySales = Reservation::where('company_id', $company->id)
-            ->whereYear('start_at', $now->year)
-            ->whereMonth('start_at', $now->month)
-            ->whereIn('status', $salesStatuses)
-            ->sum('total_price');
-
-        $yearlySales = Reservation::where('company_id', $company->id)
-            ->whereYear('start_at', $now->year)
-            ->whereIn('status', $salesStatuses)
-            ->sum('total_price');
-
-        $period = request('period', 'month');
-        $year = (int) request('year', now()->year);
-        $month = (int) request('month', now()->month);
+        $salesComparisons = $salesService->comparisons(
+            $company->id,
+            $period,
+            $periodStart,
+            $periodEnd,
+            $now,
+            $salesMetrics['completed_amount']
+        );
 
         $query = Reservation::where('company_id', $company->id)
-            ->whereIn('status', $salesStatuses);
+            ->whereNull('deleted_at')
+            ->where('status', Reservation::STATUS_COMPLETED);
 
         if ($period === 'month') {
             $query->whereYear('start_at', $year)
@@ -241,18 +250,15 @@ class DashboardController extends Controller
             $query->whereYear('start_at', $year);
         }
 
-		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year, $salesStatuses) {
+		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year, $now, $salesService) {
+            $chartStart = Carbon::create($year, $chartMonth, 1)->startOfDay();
+            $metrics = $salesService->summarize($company->id, $chartStart, $chartStart->copy()->addMonth(), $now);
 
-		    $query = Reservation::where('company_id', $company->id)
-		        ->whereYear('start_at', $year)
-		        ->whereMonth('start_at', $chartMonth)
-		        ->whereIn('status', $salesStatuses);
-
-		    return (object) [
-		        'month' => $chartMonth,
-		        'total' => (int) $query->sum('total_price'),
-		        'count' => (int) $query->count(),
-		    ];
+            return (object) [
+                'month' => $chartMonth,
+                'completed_amount' => $metrics['completed_amount'],
+                'forecast_amount' => $metrics['forecast_amount'],
+            ];
 		});
 
         $staffRanking = (clone $query)
@@ -280,6 +286,7 @@ class DashboardController extends Controller
             ->join('reservations', 'reservations.id', '=', 'reservation_menus.reservation_id')
             ->join('menus', 'menus.id', '=', 'reservation_menus.menu_id')
             ->where('reservations.company_id', $company->id)
+            ->whereNull('reservations.deleted_at')
             ->whereIn('reservations.status', $salesStatuses);
 
         if ($period === 'month') {
@@ -297,8 +304,8 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
-        $totalSales = (clone $query)->sum('total_price');
-        $totalReservations = (clone $query)->count();
+        $totalSales = $salesMetrics['completed_amount'];
+        $totalReservations = $salesMetrics['completed_count'];
         $salesPeriodLabel = $period === 'month'
             ? "{$year}年{$month}月"
             : "{$year}年";
@@ -337,8 +344,9 @@ class DashboardController extends Controller
 			'supportReplyInquiries',
 			'supportUnreadCount',
             'todaySales',
-            'monthlySales',
             'yearlySales',
+            'salesMetrics',
+            'salesComparisons',
             'monthlyChart',
             'staffRanking',
             'menuRanking',

@@ -16,41 +16,59 @@
         ['key' => 'features', 'label' => '機能説明', 'title' => '各機能の役割', 'icon' => 'layout-dashboard', 'desc' => 'どの画面で何を設定するのかを一覧で確認できます。'],
     ];
 
+    $featureRoutes = [
+        '予約カレンダー' => 'company.reserve', '予約一覧' => 'company.reservations.index',
+        '顧客管理' => 'company.customers', '担当者管理' => 'company.staff.index',
+        'マイプロフィール' => 'company.my-profile', '休暇管理' => 'company.vacation.index',
+        '営業日・営業時間管理' => 'company.calendar.index', '勤務管理' => 'company.staff-shifts',
+        'スタッフ別シフト表' => 'company.staff-shifts.view', 'シフトパターン' => 'company.shift-patterns',
+        '基本シフト' => 'company.staff-default-shifts', 'カテゴリー・タグ管理' => 'company.menu.settings',
+        'メニュー管理' => 'company.menu.index', 'メニュー対応スタッフ設定' => 'company.menu-staff.index',
+        'お知らせ情報管理' => 'company.notices.index', '口コミ管理' => 'company.reviews.index',
+        '最新スタイル投稿' => 'company.style-posts.index', '予約変更連絡管理' => 'company.reservation_change_notices.index',
+        '売上分析' => 'company.dashboard', '契約管理' => 'company.billing.index',
+        'ロゴ設定' => 'company.logo', 'テーマ設定' => 'company.theme',
+        'ダッシュボード管理' => 'company.dashboard-settings.index',
+        'よくあるご質問・お問い合わせ' => 'company.support.index',
+    ];
+
     $faqCategories = [
         'reservation' => [
             'label' => '予約・顧客',
             'icon' => 'calendar-check',
             'items' => [
-                ['予約画面にスタッフが表示されません', ['スタッフ管理で対象スタッフが有効か確認します。', '勤務管理で対象日に勤務時間が登録されているか確認します。', '営業日管理で対象日が営業日になっているか確認します。', 'メニュー対応スタッフ設定で対象メニューを担当できるか確認します。']],
-                ['予約できるはずの日付が選べません', ['営業日と営業時間が登録されているか確認します。', '担当スタッフの勤務日程を確認します。', '企業情報設定の予約可能期間と予約受付開始日を確認します。', 'メニューの所要時間が営業時間内に収まるか確認します。']],
-                ['お客様がWebからキャンセルできません', ['予約日時がWebキャンセル期限を過ぎていないか確認します。', '企業情報設定の「Webキャンセル締切」を確認します。', '期限を過ぎている場合は、店舗側の予約管理から対応してください。']],
-                ['電話や来店で受けた予約はどこから登録しますか', ['予約管理を開き、空いている日時を選択します。', 'お客様、メニュー、担当スタッフを入力して保存します。', '保存後、予約一覧に表示されたことを確認します。']],
+                ['予約画面にスタッフが表示されません', ['担当者管理で対象スタッフが予約対象として有効か確認します。', '営業日・営業時間管理で対象日が営業日か確認します。', '勤務管理で対象日の勤務時間を確認します。', 'メニュー対応スタッフ設定で選択したメニューを担当できるか確認します。'], [['担当者管理', 'company.staff.index'], ['営業日・営業時間管理', 'company.calendar.index'], ['勤務管理', 'company.staff-shifts'], ['メニュー対応スタッフ設定', 'company.menu-staff.index']]],
+                ['予約できるはずの日付が選べません', ['営業日・営業時間管理で対象日を確認します。', '勤務管理で担当スタッフの勤務時間を確認します。', '企業情報編集で予約受付開始・予約可能期間を確認します。', 'メニューの所要時間が営業時間と勤務時間に収まるか確認します。'], [['営業日・営業時間管理', 'company.calendar.index'], ['勤務管理', 'company.staff-shifts'], ['企業情報編集', 'company.info.edit']]],
+                ['お客様がWebからキャンセルできません', ['予約日時に対するWebキャンセル締切を確認します。', '企業情報編集の「Webキャンセル締切」を確認します。', '期限を過ぎた場合は店舗側の予約一覧または予約カレンダーから対応します。'], [['企業情報編集', 'company.info.edit'], ['予約一覧', 'company.reservations.index']]],
+                ['電話や来店で受けた予約はどこから登録しますか', ['予約カレンダーで空いている日時を選びます。', 'メニュー、担当スタッフ、お客様情報を入力して保存します。', '保存後、予約一覧でも確認できます。'], [['予約カレンダー', 'company.reserve'], ['予約一覧', 'company.reservations.index']]],
+                ['営業時間や休業日を変更した後、既存予約はどう確認しますか', ['営業日・営業時間管理で対象日を変更します。', '当日以降の予約に影響する場合は、予約変更連絡管理で対応が必要な予約を確認します。', 'お客様への連絡と確認状況を記録します。'], [['営業日・営業時間管理', 'company.calendar.index'], ['予約変更連絡管理', 'company.reservation_change_notices.index']]],
             ],
         ],
         'staff' => [
             'label' => 'スタッフ・シフト',
             'icon' => 'users',
             'items' => [
-                ['スタッフが急に休む場合はどうすればよいですか', ['最初に予約管理で、そのスタッフの予約有無を確認します。', '予約がある場合は担当変更、日時変更、キャンセルの順で対応します。', '対応後、勤務管理で該当日を休みに変更します。']],
-                ['シフトを登録したのに予約枠が出ません', ['店舗の営業日・営業時間を確認します。', 'スタッフの勤務時間が営業時間内か確認します。', 'メニュー対応スタッフ設定を確認します。', 'メニュー所要時間を確保できる空き時間があるか確認します。']],
-                ['スタッフのパスワードを忘れました', ['マスター、チーフ、統括リーダー、リーダー権限の担当者へ依頼します。', '担当者管理から対象スタッフを開き、パスワード初期化を行います。', '対象スタッフは初期パスワードでログインし、新しいパスワードへ変更します。']],
+                ['スタッフが急に休む場合はどうすればよいですか', ['予約一覧または予約カレンダーで、そのスタッフの予約を先に確認します。', '必要な予約変更・キャンセルとお客様への連絡を行い、予約変更連絡管理の未対応も確認します。', '勤務管理で該当日のシフトを変更します。'], [['予約一覧', 'company.reservations.index'], ['予約変更連絡管理', 'company.reservation_change_notices.index'], ['勤務管理', 'company.staff-shifts']]],
+                ['シフトを登録したのに予約枠が出ません', ['営業日・営業時間管理で対象日を確認します。', '勤務管理でスタッフの勤務時間を確認します。', 'メニュー対応スタッフ設定で担当可能なメニューを確認します。', '施術時間を確保できる空き時間があるか確認します。'], [['営業日・営業時間管理', 'company.calendar.index'], ['勤務管理', 'company.staff-shifts'], ['メニュー対応スタッフ設定', 'company.menu-staff.index']]],
+                ['スタッフのパスワードを忘れました', ['権限のある担当者に初期化を依頼します。', '担当者管理で対象スタッフを開き、パスワードを初期化します。', '初期化後は新しいパスワードへ変更します。'], [['担当者管理', 'company.staff.index']]],
             ],
         ],
         'settings' => [
             'label' => '設定・表示',
             'icon' => 'settings',
             'items' => [
-                ['設定を変更しても画面に反映されません', ['画面下部または上部の保存ボタンを押したか確認します。', '対象画面を再読み込みします。', '別の設定画面に同じ内容の項目がないか確認します。', '解決しない場合は、画面名と操作内容を添えてお問い合わせください。']],
-                ['ロゴやテーマカラーはどこで変更できますか', ['ダッシュボードの「ロゴ設定」または「テーマ設定」を開きます。', 'ロゴは画像選択後のプレビューを確認して保存します。', 'テーマカラーは選択後、予約画面でも見え方を確認してください。']],
-                ['役職によってダッシュボードの項目を変えられますか', ['ダッシュボード管理を開きます。', '対象の役職と表示したい機能にチェックを入れます。', '「変更を保存」を押すと、次回表示時から反映されます。']],
-                ['メニューが予約画面に表示されません', ['メニューが有効・公開状態か確認します。', 'カテゴリーと表示順を確認します。', 'メニュー対応スタッフが設定されているか確認します。', '料金と施術時間が登録されているか確認します。']],
+                ['設定を変更しても画面に反映されません', ['対象画面の保存ボタンを押したか確認します。', '画面を再読み込みします。', '営業時間は企業情報編集の通常設定と、日付ごとの営業日・営業時間管理の両方を確認します。', '解決しない場合は画面名と操作内容を添えてお問い合わせください。'], [['企業情報編集', 'company.info.edit'], ['営業日・営業時間管理', 'company.calendar.index']]],
+                ['ロゴやテーマカラーはどこで変更できますか', ['ダッシュボードの店舗・画面設定からロゴ設定またはテーマ設定を開きます。', '保存後、お客様向け予約画面で見え方を確認します。'], [['ロゴ設定', 'company.logo'], ['テーマ設定', 'company.theme']]],
+                ['役職によってダッシュボードの項目を変えられますか', ['ダッシュボード管理で役職ごとの表示項目を設定します。', '変更を保存すると、対象役職のダッシュボードに反映されます。'], [['ダッシュボード管理', 'company.dashboard-settings.index']]],
+                ['メニューが予約画面に表示されません', ['メニュー管理で公開状態、料金、施術時間を確認します。', 'カテゴリー・タグ管理でカテゴリーを確認します。', 'メニュー対応スタッフ設定で担当者との対応関係を確認します。'], [['メニュー管理', 'company.menu.index'], ['カテゴリー・タグ管理', 'company.menu.settings'], ['メニュー対応スタッフ設定', 'company.menu-staff.index']]],
+                ['カテゴリー内のメニューを担当者にまとめて設定できますか', ['メニュー対応スタッフ設定で担当者の列を確認します。', 'カテゴリーのチェックを入れると、そのカテゴリーに所属するメニューをまとめて選択できます。', '保存して対応関係一覧で確認します。'], [['メニュー対応スタッフ設定', 'company.menu-staff.index']]],
             ],
         ],
         'support' => [
             'label' => 'アカウント・サポート',
             'icon' => 'circle-help',
             'items' => [
-                ['問い合わせへの回答はどこで確認できますか', ['この画面上部の「問い合わせ履歴」を開きます。', '「回答済み」と表示された問い合わせの「詳細を見る」を押します。', '回答を確認すると、ダッシュボードの未読件数にも反映されます。']],
+                ['問い合わせへの回答はどこで確認できますか', ['この画面上部の「問い合わせ履歴」を開きます。', '回答済みの問い合わせの詳細を開きます。', '回答を確認すると、ダッシュボードの未読件数にも反映されます。'], [['問い合わせ履歴', 'company.support.index', ['view' => 'history']]]],
                 ['問い合わせには何を書けばよいですか', ['発生した日時と画面名を書きます。', '対象の予約日、スタッフ名、メニュー名を書きます。', '行った操作と実際に表示された内容を書きます。', '個人のパスワードやカード番号は記載しないでください。']],
                 ['操作中にエラーが表示されました', ['画面に表示されたエラーメッセージを控えます。', '入力内容を確認し、もう一度保存します。', '同じエラーが続く場合は、画面名とメッセージを添えてお問い合わせください。']],
             ],
@@ -117,31 +135,13 @@ body {
     background: {{ $theme }};
     flex: none;
 }
-.screen-mock {
-    border-radius: 22px;
-    border: 1px solid rgba(148,163,184,.22);
-    background: linear-gradient(180deg, #ffffff, #f8fafc);
-    overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.8);
-}
-.screen-top { height: 34px; background: #111827; display: flex; align-items: center; gap: 6px; padding: 0 14px; }
-.screen-dot { width: 8px; height: 8px; border-radius: 999px; background: rgba(255,255,255,.35); }
-.screen-body { padding: 16px; }
-.screen-line { height: 10px; border-radius: 999px; background: #e2e8f0; }
-.screen-pill { border-radius: 14px; background: {{ $themeSoft }}; border: 1px solid {{ $theme }}30; }
-.manual-shot {
-    border-radius: 22px;
-    border: 1px solid rgba(148,163,184,.24);
-    box-shadow: 0 18px 48px rgba(15,23,42,.12);
-    width: 100%;
-    background: white;
-}
-.shot-caption {
-    border-radius: 18px;
-    background: rgba(255,255,255,.86);
-    border: 1px solid rgba(148,163,184,.18);
-    padding: 14px 16px;
-}
+.screen-guide { border: 1px solid #cbd5e1; border-radius: 20px; overflow: hidden; background: #f8fafc; box-shadow: 0 12px 30px rgba(15,23,42,.08); }
+.screen-guide-head { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; background: #1e293b; color: white; font-size: 12px; font-weight: 800; }
+.screen-guide-body { padding: 16px; }
+.manual-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.support-deep-link { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 7px 11px; border: 1px solid #bfdbfe; border-radius: 11px; background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 800; text-decoration: none; transition: background .15s, border-color .15s, transform .15s; }
+.support-deep-link:hover { background: #dbeafe; border-color: #60a5fa; transform: translateY(-1px); }
+.support-deep-link:focus-visible { outline: 3px solid #60a5fa; outline-offset: 2px; }
 .faq-item summary::-webkit-details-marker { display: none; }
 .faq-item[open] summary [data-lucide="chevron-down"] { transform: rotate(180deg); }
 .faq-item summary [data-lucide="chevron-down"] { transition: transform .18s ease; }
@@ -160,7 +160,7 @@ body {
                     </div>
                     <h1 class="mt-5 text-2xl sm:text-4xl font-black">操作マニュアル・よくある質問</h1>
                     <p class="mt-3 text-sm sm:text-base text-white/72 leading-7 max-w-3xl">
-                        初めて使う方やPC操作に慣れていない方でも、上から順番に確認すれば運用を始められるようにまとめています。
+                        初めて使う方でも、設定から日々の操作まで順番に確認できます。各項目から対象画面へ移動できます。
                     </p>
                 </div>
                 <a href="{{ route('company.dashboard') }}"
@@ -224,9 +224,10 @@ body {
         <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 mb-5">
             <div>
                 <h2 class="text-xl sm:text-2xl font-black text-gray-900">操作マニュアル</h2>
-                <p class="text-sm text-gray-500 mt-1">目的を選ぶと、確認する順番と画面イメージが表示されます。</p>
+                <p class="text-sm text-gray-500 mt-1">目的を選ぶと、現在の操作手順と画面構成の案内が表示されます。</p>
             </div>
         </div>
+        <p class="mb-5 text-xs text-slate-600">※ 役職や契約状態により、リンク先の画面を利用できない場合があります。</p>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
             @foreach($manualCards as $card)
@@ -250,16 +251,16 @@ body {
                 <h3 class="text-lg font-black text-gray-900">初回にやっておく操作</h3>
                 <p class="text-sm text-gray-500 leading-7">上から順番に進めると、予約受付に必要な設定がそろいます。各項目は「保存」まで行ってから次へ進んでください。</p>
                 @foreach([
-                    ['企業情報を確認する', ['店舗名、住所、電話番号、メールアドレスに間違いがないか確認します。', '予約受付期間、Webキャンセル期限、再来店促進メールの日数を確認します。', '営業時間の考え方や注意事項など、お客様に見せたい基本情報を整えます。']],
-                    ['ロゴとテーマを設定する', ['ロゴ設定で店舗ロゴを登録します。', 'テーマ設定で予約画面や管理画面の基調カラーを選びます。', 'お客様が見ても店舗らしさが伝わる状態にします。']],
-                    ['スタッフを登録する', ['スタッフ管理で担当者を登録します。', '予約対象にしたいスタッフは有効状態にします。', '表示名、写真、指名可否、権限を確認します。']],
-                    ['カテゴリー・タグを用意する', ['カテゴリー・タグ管理でメニューを分類します。', 'カット、カラー、ネイルなど、お客様が探しやすい名前にします。', '不要な分類は増やしすぎないようにします。']],
-                    ['メニューを登録する', ['メニュー管理でメニュー名、料金、施術時間を登録します。', '予約画面に表示する順番を確認します。', '説明文には、対象者や注意点を書いておくと問い合わせが減ります。']],
-                    ['メニュー対応スタッフを設定する', ['メニューごとに担当できるスタッフを選びます。', 'スタッフを登録しただけでは、メニューを担当できない場合があります。', '予約画面にスタッフが出ない時は、まずここを確認します。']],
-                    ['営業日を登録する', ['営業日管理で営業日、休業日、営業時間を登録します。', '祝日や臨時休業日も先に入れておくと安心です。', '予約可能期間より先まで営業日を登録しておきます。']],
-                    ['シフトパターン・基本シフトを作る', ['シフトパターンで早番、遅番、通常勤務などの時間テンプレートを作ります。', '基本シフトで曜日ごとの標準勤務を登録します。', '毎月の勤務管理を入力しやすくするための下準備です。']],
-                    ['勤務管理で実際のシフトを入れる', ['勤務管理でスタッフごとの勤務日、勤務時間を登録します。', '基本シフトを使ってから、休みや時間変更だけ修正すると楽です。', '営業日、勤務時間、対応メニューがそろうと予約受付できます。']],
-                    ['予約画面で確認する', ['お客様側の予約画面を開いて、日付、メニュー、スタッフが選べるか確認します。', 'テスト予約を入れて、管理画面に表示されるか確認します。', '問題なければ初期設定は完了です。']],
+                    ['企業情報を確認する', ['店舗名と連絡先、予約受付開始・予約可能期間、Webキャンセル締切を確認します。', '曜日別営業時間は通常営業する可能性がある曜日の時間枠です。休業日は営業日・営業時間管理で設定します。'], [['企業情報編集', 'company.info.edit']]],
+                    ['ロゴとテーマを設定する', ['ロゴ設定で店舗ロゴ、テーマ設定で画面カラーを保存します。', 'お客様向け予約画面で見え方を確認します。'], [['ロゴ設定', 'company.logo'], ['テーマ設定', 'company.theme']]],
+                    ['担当者を登録する', ['担当者管理で予約対象のスタッフを登録します。', '表示名、写真、指名可否、権限を確認します。'], [['担当者管理', 'company.staff.index']]],
+                    ['カテゴリー・タグを用意する', ['カテゴリー・タグ管理でメニューの分類を作ります。', '予約画面ではカテゴリーごとにメニューを探せます。'], [['カテゴリー・タグ管理', 'company.menu.settings']]],
+                    ['メニューを登録する', ['メニュー管理で名前、料金、施術時間、公開状態を確認します。', 'お客様に見せる説明と表示順も整えます。'], [['メニュー管理', 'company.menu.index']]],
+                    ['メニュー対応スタッフを設定する', ['担当者ごとに対応できるメニューをチェックします。', 'カテゴリー単位のチェックで、そのカテゴリー内のメニューをまとめて切り替えられます。'], [['メニュー対応スタッフ設定', 'company.menu-staff.index']]],
+                    ['シフトパターンと基本シフトを作る', ['シフトパターンで勤務時間の選択肢を作ります。', '基本シフトで曜日ごとの標準勤務を登録します。'], [['シフトパターン', 'company.shift-patterns'], ['基本シフト', 'company.staff-default-shifts']]],
+                    ['営業日・営業時間を設定する', ['営業日カレンダーで休業日と日付ごとの営業時間を確認します。', '実際の月のシフトを入力する前に、予約受付期間内の休日を設定します。'], [['営業日・営業時間管理', 'company.calendar.index']]],
+                    ['勤務管理で実際のシフトを入れる', ['勤務管理で対象月のスタッフ別シフトを作成・調整します。', '営業日、勤務時間、メニュー対応がそろうと予約枠を出せます。'], [['勤務管理', 'company.staff-shifts']]],
+                    ['予約枠を確認する', ['予約カレンダーで日付、メニュー、担当者の選択と空き枠を確認します。', '実際の予約は予約一覧で確認できます。'], [['予約カレンダー', 'company.reserve'], ['予約一覧', 'company.reservations.index']]],
                 ] as $i => $step)
                     <details class="faq-item rounded-2xl border border-gray-100 bg-white p-4" @if($i === 0) open @endif>
                         <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
@@ -274,48 +275,62 @@ body {
                                 <li class="flex gap-2"><span class="text-gray-300">●</span><span>{{ $detail }}</span></li>
                             @endforeach
                         </ul>
+                        <div class="manual-links ml-11 mt-4">
+                            @foreach($step[2] as $target)
+                                <a href="{{ route($target[1], $target[2] ?? []) }}" class="support-deep-link"><i data-lucide="arrow-up-right" class="h-4 w-4"></i>{{ $target[0] }}を開く</a>
+                            @endforeach
+                        </div>
                     </details>
                 @endforeach
             </div>
             <div class="space-y-4">
-                <img src="{{ asset('images/manual/support-first-setup.png') }}" alt="初回設定チェック画面のスクリーンショット" class="manual-shot">
-                <div class="shot-caption text-sm text-gray-600 leading-7">
-                    画面上では、完了している項目と未完了の項目を分けて確認します。初期設定アラートが出ている場合は、未完了の項目から順番に設定してください。
+                <div class="screen-guide">
+                    <div class="screen-guide-head"><span>現在の画面構成</span><span>初回設定の順番</span></div>
+                    <div class="screen-guide-body">
+                        <p class="text-sm font-bold text-slate-800">ダッシュボードから各設定画面へ</p>
+                        <div class="mt-4 grid gap-2 sm:grid-cols-2">
+                            @foreach([['店舗・画面設定', '企業情報編集 / ロゴ設定 / テーマ設定'], ['スタッフ管理', '担当者管理'], ['メニュー設定', 'カテゴリー・タグ / メニュー / 対応スタッフ'], ['日常操作', '営業日・営業時間管理 / 勤務管理']] as $area)
+                                <div class="rounded-xl border border-slate-200 bg-white p-3"><div class="text-xs font-black text-slate-500">{{ $area[0] }}</div><div class="mt-1 text-sm font-semibold text-slate-800">{{ $area[1] }}</div></div>
+                            @endforeach
+                        </div>
+                        <div class="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm font-semibold text-sky-900">営業日・休業日を決めてから、勤務管理でシフトを入力します。</div>
+                    </div>
                 </div>
             </div>
-        </div>        <div x-show="section==='daily'" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        </div>
+        <div x-show="section==='daily'" class="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <div class="space-y-4">
                 <h3 class="text-lg font-black text-gray-900">通常運用でよく使う操作</h3>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">朝に確認する</div><p class="text-sm text-gray-600 mt-1">ダッシュボードで今日の予約、明日の予約、予約変更連絡、サポート回答を確認します。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">予約を確認・変更する</div><p class="text-sm text-gray-600 mt-1">予約管理から対象予約を開き、時間、スタッフ、メニュー、連絡事項を確認します。変更した場合は、お客様への連絡が必要かも確認します。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">スタッフが休んだ時</div><p class="text-sm text-gray-600 mt-1">勤務管理でそのスタッフの該当日を休みにします。すでに予約が入っている場合は、予約管理で別スタッフへの変更、日時変更、キャンセルの順に対応します。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">電話・来店で予約依頼が来た時</div><p class="text-sm text-gray-600 mt-1">予約管理から空き時間を確認し、メニュー、スタッフ、日時、お客様情報を登録します。登録後は予約一覧に反映されているか確認します。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">電話・来店でキャンセル依頼が来た時</div><p class="text-sm text-gray-600 mt-1">予約管理で対象予約を開き、キャンセル処理を行います。キャンセル理由や連絡済みかをメモしておくと後から確認しやすくなります。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">シフトを更新する</div><p class="text-sm text-gray-600 mt-1">勤務管理で日別シフトを入れます。先の日付までまとめて登録しておくと、予約受付期間内で予約できない日が出にくくなります。</p></div>
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-bold">お知らせを出す</div><p class="text-sm text-gray-600 mt-1">お知らせ情報管理でキャンペーン、臨時休業、注意事項を登録します。表示期間を設定すると古い案内が残りにくくなります。</p></div>
+                @foreach([
+                    ['朝に確認する', 'ダッシュボードで今日・明日の予約と、予約変更連絡の未対応、サポート回答を確認します。', [['ダッシュボード', 'company.dashboard'], ['予約変更連絡管理', 'company.reservation_change_notices.index']]],
+                    ['予約を確認・変更する', '予約一覧で状態を確認し、予約カレンダーで日時・担当者を確認します。店舗都合の変更・キャンセル後は連絡管理も確認します。', [['予約一覧', 'company.reservations.index'], ['予約カレンダー', 'company.reserve']]],
+                    ['スタッフが急に休んだ時', '該当日の予約を先に確認し、必要な変更とお客様への連絡を行います。その後、勤務管理でシフトを調整します。', [['予約一覧', 'company.reservations.index'], ['勤務管理', 'company.staff-shifts']]],
+                    ['電話・来店予約を登録する', '予約カレンダーの空き枠からメニュー、担当者、お客様情報を入力して保存します。', [['予約カレンダー', 'company.reserve']]],
+                    ['営業日・営業時間を変える', '営業日カレンダーで対象日を選び、休業日や営業時間を変更します。予約がある当日以降の日付では連絡管理も確認します。', [['営業日・営業時間管理', 'company.calendar.index'], ['予約変更連絡管理', 'company.reservation_change_notices.index']]],
+                    ['シフトを更新する', '営業日を確認してから勤務管理でスタッフ別の勤務時間を入力・調整します。', [['営業日・営業時間管理', 'company.calendar.index'], ['勤務管理', 'company.staff-shifts']]],
+                    ['お客様向けのお知らせを出す', 'お知らせ情報管理で内容と表示期間を設定します。', [['お知らせ情報管理', 'company.notices.index']]],
+                ] as $task)
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4"><div class="font-bold text-slate-900">{{ $task[0] }}</div><p class="mt-1 text-sm leading-6 text-slate-600">{{ $task[1] }}</p><div class="manual-links mt-3">@foreach($task[2] as $target)<a href="{{ route($target[1]) }}" class="support-deep-link"><i data-lucide="arrow-up-right" class="h-4 w-4"></i>{{ $target[0] }}を開く</a>@endforeach</div></div>
+                @endforeach
             </div>
             <div class="space-y-4">
-                <img src="{{ asset('images/manual/support-daily-dashboard.png') }}" alt="通常運用ダッシュボードのスクリーンショット" class="manual-shot">
-                <div class="shot-caption text-sm text-gray-600 leading-7">
-                    毎朝は、今日の予約、明日の予約、予約変更連絡、サポート回答を上から確認します。未対応がある時は先に処理してください。
-                </div>
-                <img src="{{ asset('images/manual/support-staff-absence.png') }}" alt="スタッフが休んだ時の確認手順スクリーンショット" class="manual-shot">
-                <div class="shot-caption text-sm text-gray-600 leading-7">
-                    スタッフが休んだ時は、先に予約管理で予約の有無を確認してから勤務管理を変更します。
-                </div>
-                <img src="{{ asset('images/manual/support-phone-reservation.png') }}" alt="電話・来店予約登録フォームのスクリーンショット" class="manual-shot">
-                <div class="shot-caption text-sm text-gray-600 leading-7">
-                    電話・来店で予約を受けた時は、空き時間を確認し、お客様名、メニュー、スタッフ、日時を登録します。
-                </div>
+                <div class="screen-guide"><div class="screen-guide-head"><span>現在の画面構成</span><span>日々の操作</span></div><div class="screen-guide-body space-y-3">
+                    <div class="rounded-xl border border-slate-200 bg-white p-4"><div class="text-xs font-black text-slate-500">ダッシュボード › 日常操作</div><div class="mt-2 flex flex-wrap gap-2 text-xs font-bold"><span class="rounded-lg bg-sky-50 px-3 py-2 text-sky-900">営業日・営業時間管理</span><span class="rounded-lg bg-sky-50 px-3 py-2 text-sky-900">勤務管理</span><span class="rounded-lg bg-sky-50 px-3 py-2 text-sky-900">スタッフ別シフト表</span></div></div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-4"><div class="text-xs font-black text-slate-500">ダッシュボード › 予約・顧客管理</div><div class="mt-2 flex flex-wrap gap-2 text-xs font-bold"><span class="rounded-lg bg-indigo-50 px-3 py-2 text-indigo-900">予約カレンダー</span><span class="rounded-lg bg-indigo-50 px-3 py-2 text-indigo-900">予約一覧</span><span class="rounded-lg bg-indigo-50 px-3 py-2 text-indigo-900">顧客管理</span></div></div>
+                    <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-900">予約変更連絡に未対応がある場合は「発信・連絡」から確認します。</div>
+                </div></div>
+                <p class="text-xs leading-5 text-slate-600">※ 旧スクリーンショットに代えて、現在のダッシュボードの分類を示しています。</p>
             </div>
-        </div>        <div x-show="section==='features'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        </div>
+        <div x-show="section==='features'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             @foreach([
-                ['予約管理', '予約の確認、登録、変更、キャンセル対応を行います。電話や来店で受けた予約もここで管理します。'],
+                ['予約カレンダー', '空き枠の確認と、電話・来店で受けた予約の登録を行います。'],
+                ['予約一覧', '予約の状態や詳細、来店済み・キャンセルを確認します。'],
                 ['顧客管理', '来店履歴や顧客情報を確認します。過去の予約内容を見たい時にも使います。'],
-                ['スタッフ管理', '担当者の登録、有効/無効、表示名、権限を設定します。スタッフが予約対象に出るための基本情報です。必要に応じて担当者のパスワード初期化も行えます。'],
+                ['担当者管理', 'スタッフの登録、予約対象の設定、表示名や権限を管理します。'],
                 ['マイプロフィール', 'ログイン中の担当者自身の情報や個人設定を確認・変更します。自分のパスワード変更もここから行えます。'],
                 ['休暇管理', 'スタッフの休みや有給など、通常シフトとは別の休暇情報を登録します。'],
-                ['営業日管理', '店舗の営業日、休業日、営業時間を設定します。予約できる日付の土台になります。'],
+                ['営業日・営業時間管理', '営業日カレンダーで休業日と日付ごとの営業時間を設定します。シフト入力より先に確認します。'],
                 ['勤務管理', 'スタッフごとの勤務日、勤務時間を登録します。予約枠を作るために必要です。'],
                 ['スタッフ別シフト表', 'スタッフごとの稼働状況を一覧で確認します。誰がいつ出勤しているかを見る画面です。'],
                 ['シフトパターン', '早番、遅番、通常勤務など、よく使う勤務時間のテンプレートを作ります。勤務管理の入力を楽にします。'],
@@ -327,13 +342,14 @@ body {
                 ['口コミ管理', 'お客様からの口コミや評価を確認し、必要に応じて返信します。'],
                 ['最新スタイル投稿', 'スタイル写真やおすすめ事例を投稿します。お客様へのアピールに使います。'],
                 ['予約変更連絡管理', '店舗都合で予約変更が必要な場合の連絡状況を管理します。未対応を残さないための画面です。'],
+                ['売上分析', 'ダッシュボードの売上分析タブで来店済み予約金額、予約見込額、キャンセル状況、曜日・時間帯別の予約状況を確認します。'],
                 ['契約管理', 'プラン、支払い状況、請求関連の情報を確認します。'],
                 ['ロゴ設定', '店舗ロゴを登録・変更します。予約画面や管理画面のブランド表示に使います。'],
                 ['テーマ設定', '画面の基調カラーを設定します。店舗の雰囲気に合わせて見た目を整えます。'],
                 ['ダッシュボード管理', '役職や権限ごとに、ダッシュボードで表示するカードを設定します。'],
                 ['よくあるご質問・お問い合わせ', '操作マニュアルの確認、困った時の確認順、サポートへの問い合わせを行います。'],
             ] as $feature)
-                <div class="rounded-2xl bg-white border border-gray-100 p-4"><div class="font-black text-gray-900">{{ $feature[0] }}</div><div class="text-sm text-gray-600 mt-2 leading-6">{{ $feature[1] }}</div></div>
+                <div class="rounded-2xl border border-slate-200 bg-white p-4"><div class="font-black text-gray-900">{{ $feature[0] }}</div><div class="mt-2 text-sm leading-6 text-gray-600">{{ $feature[1] }}</div><div class="manual-links mt-4"><a href="{{ route($featureRoutes[$feature[0]], $feature[0] === '売上分析' ? ['period' => 'month'] : []) }}" class="support-deep-link"><i data-lucide="arrow-up-right" class="h-4 w-4"></i>画面を開く</a></div></div>
             @endforeach
         </div>
     </section>
@@ -402,6 +418,13 @@ body {
                                         <li class="flex gap-3 text-sm leading-6 text-gray-700"><span class="step-number">{{ $i + 1 }}</span><span class="pt-1">{{ $item }}</span></li>
                                     @endforeach
                                 </ol>
+                                @if(!empty($faq[2]))
+                                    <div class="manual-links mt-5 border-t border-slate-100 pt-4">
+                                        @foreach($faq[2] as $target)
+                                            <a href="{{ route($target[1], $target[2] ?? []) }}" class="support-deep-link"><i data-lucide="arrow-up-right" class="h-4 w-4"></i>{{ $target[0] }}を開く</a>
+                                        @endforeach
+                                    </div>
+                                @endif
                             </div>
                         </details>
                     @endforeach

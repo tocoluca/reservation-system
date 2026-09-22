@@ -120,7 +120,26 @@ body.company-ui {
     box-shadow: 0 2px 8px rgb(15 23 42 / 5%);
     backdrop-filter: none;
 }
-.company-ui .company-login-shell { background: var(--company-canvas); }
+body.company-ui:has(.company-login-shell) {
+    background: radial-gradient(circle at 15% 12%, #eee3d5, transparent 34rem), #f4f0e9;
+}
+.company-ui .company-login-shell { background: transparent; }
+.company-ui .company-login-shell .salon-login-field {
+    min-height: 52px;
+    background: #fff !important;
+    border-color: #d5cbc3;
+    color: #252d29;
+    box-shadow: none;
+}
+.company-ui .company-login-shell .salon-login-field::placeholder { color: #847e78; }
+.company-ui .company-login-shell .salon-login-field:focus {
+    border-color: #486b59 !important;
+    outline: 2px solid #486b59 !important;
+    box-shadow: 0 0 0 4px rgba(72, 107, 89, .16) !important;
+}
+.company-ui .company-login-shell :is(.salon-login-button, .salon-login-link):focus-visible {
+    outline-color: #bc9978 !important;
+}
 
 @media (max-width: 640px) {
     .company-ui .company-main-content :is(input, select, textarea) { font-size: 16px; }

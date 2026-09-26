@@ -18,9 +18,12 @@
 <div class="company-login-shell flex min-h-[calc(100vh-12rem)] items-center justify-center py-5 sm:py-10">
     <div class="salon-login-stage grid w-full max-w-5xl overflow-hidden rounded-[2rem] lg:grid-cols-[.9fr_1.1fr]">
         <div class="salon-login-story flex flex-col justify-between px-7 py-8 text-[#f7f1e8] sm:px-10 sm:py-10 lg:min-h-[640px] lg:px-12 lg:py-12">
-            <div class="flex items-center gap-3">
-                <span class="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/25 bg-white/10 font-serif text-2xl font-semibold">T</span>
-                <div><div class="font-serif text-xl tracking-[.16em]">tocoluca</div><div class="text-[10px] font-semibold tracking-[.27em] text-[#d5c9b8]">SALON CONSOLE</div></div>
+            <div class="relative h-[72px] w-[240px] max-w-full overflow-hidden rounded-2xl border border-white/20 bg-[#fffaf3]/95 shadow-lg shadow-black/10">
+                <img src="{{ asset('images/brand/tocoluca-reserve-system-logo.png') }}"
+                     alt="Tocoluca Reserve System"
+                     class="absolute left-1/2 top-1/2 h-auto w-[220px] max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+                     width="1774"
+                     height="887">
             </div>
             <p class="mt-5 text-sm font-semibold tracking-wide text-[#e8ded0] lg:hidden">サロンの日々を、心地よく整える。</p>
             <div class="hidden max-w-sm lg:block">

@@ -164,8 +164,9 @@
             <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div class="reserve-date-nav flex items-center gap-2">
                     <button type="button"
+                            id="previousDateButton"
                             onclick="navigateCurrent(-1)"
-                            class="inline-flex items-center gap-1 px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition"
+                            class="inline-flex items-center gap-1 px-4 py-2.5 rounded-2xl text-white shadow hover:opacity-90 transition disabled:cursor-not-allowed disabled:opacity-40"
                             style="background: {{ $theme }};">
                         <i data-lucide="chevron-left" class="w-4 h-4"></i>
                         <span>前へ</span>
@@ -190,6 +191,7 @@
                 <div class="reserve-date-picker flex-1">
                     <input type="date"
                            id="globalDatePicker"
+                           min="{{ now()->toDateString() }}"
                            class="w-full border rounded-2xl px-3 py-2.5 shadow-sm focus:outline-none focus:ring-2"
                            style="border-color: #d6d3d1; --tw-ring-color: {{ $theme }};"
                            onchange="jumpByMode(this.value)">
@@ -197,7 +199,7 @@
             </div>
 
             <div class="reserve-selected-date mt-3 rounded-2xl bg-stone-50 border border-stone-200 px-4 py-3">
-                <div class="text-xs text-stone-500 mb-1">選択中の日付</div>
+                <div class="text-xs text-stone-500 mb-1">{{ $mode === 'week' ? '表示期間' : '選択中の日付' }}</div>
                 <div id="currentDateHero" class="text-lg sm:text-xl font-bold text-stone-800">-</div>
             </div>
         </div>
@@ -464,9 +466,18 @@ function updateTopDateLabel() {
     const dateStr = getLocalDateStr(currentDate);
     const hero = document.getElementById('currentDateHero');
     const picker = document.getElementById('globalDatePicker');
+    const previousButton = document.getElementById('previousDateButton');
 
-    if (hero) hero.innerText = formatDateLabel(dateStr);
+    if (hero) {
+        if (mode === 'week') {
+            const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate() + 6);
+            hero.innerText = `${formatDateLabel(dateStr)} 〜 ${formatDateLabel(getLocalDateStr(endDate))}`;
+        } else {
+            hero.innerText = formatDateLabel(dateStr);
+        }
+    }
     if (picker) picker.value = dateStr;
+    if (previousButton) previousButton.disabled = dateStr <= getLocalDateStr();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -489,12 +500,17 @@ function navigateCurrent(diff) {
         currentDate.setDate(currentDate.getDate() + diff);
     }
 
+    const today = new Date(getLocalDateStr() + "T00:00:00");
+    if (currentDate < today) currentDate = today;
+
     updateTopDateLabel();
     reloadByMode();
 }
 
 function jumpByMode(dateStr) {
     currentDate = new Date(dateStr + "T00:00:00");
+    const today = new Date(getLocalDateStr() + "T00:00:00");
+    if (currentDate < today) currentDate = today;
     updateTopDateLabel();
     reloadByMode();
 }
@@ -586,8 +602,7 @@ function loadCalendar() {
             }
 
             let slots = data.slots;
-            let firstTimeKey = Object.keys(slots)[0];
-            let dates = firstTimeKey ? Object.keys(slots[firstTimeKey] || {}) : [];
+            let dates = Array.isArray(data.dates) ? data.dates : [];
             let times = Object.keys(slots);
 
             const timeColWidth = 88;

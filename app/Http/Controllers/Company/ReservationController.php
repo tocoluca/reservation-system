@@ -20,11 +20,13 @@ use Carbon\Carbon;
 use Yasumi\Yasumi;
 use Illuminate\Support\Facades\Log;
 use App\Services\ReservationChangeNoticeService;
+use App\Services\ReservationCalendarWindow;
 
 class ReservationController extends Controller
 {
     public function __construct(
-        protected ReservationChangeNoticeService $changeNoticeService
+        protected ReservationChangeNoticeService $changeNoticeService,
+        protected ReservationCalendarWindow $calendarWindow
     ) {}
 
     public function index(Request $request)
@@ -648,12 +650,9 @@ class ReservationController extends Controller
         try {
             $staffId = $request->staff_id;
 
-            $startDate = $request->date
-                ? Carbon::parse($request->date)
-                : now();
-
-            $startDate = $startDate->copy()->startOfWeek();
+            $startDate = $this->calendarWindow->start($request->date, now());
             $endDate = $startDate->copy()->addDays(6)->endOfDay();
+            $displayDates = $this->calendarWindow->dates($startDate);
 
             $limits = $this->getReservationLimits($company);
 
@@ -814,6 +813,9 @@ class ReservationController extends Controller
 
             return response()->json([
                 'mode' => 'week',
+                'start_date' => $startDate->toDateString(),
+                'end_date' => $endDate->toDateString(),
+                'dates' => $displayDates,
                 'slots' => $data ?? [],
                 'staffs' => $staffList,
             ]);

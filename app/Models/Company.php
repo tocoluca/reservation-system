@@ -20,6 +20,12 @@ class Company extends Authenticatable
         'password',
         'theme_color',
         'logo_path',
+        'reservation_hero_image_path',
+        'reservation_hero_heading',
+        'reservation_hero_subheading',
+        'reservation_hero_heading_size',
+        'reservation_hero_subheading_size',
+        'reservation_hero_text_color',
         'address',
         'phone',
         'homepage',
@@ -105,6 +111,8 @@ class Company extends Authenticatable
         'grace_until' => 'datetime',
         'billing_starts_at' => 'datetime',
         'email_verified_at' => 'datetime',
+        'reservation_hero_heading_size' => 'integer',
+        'reservation_hero_subheading_size' => 'integer',
     ];
 
     public function staff(): HasMany

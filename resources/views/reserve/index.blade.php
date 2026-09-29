@@ -13,16 +13,31 @@
 
         {{-- ヘッダー --}}
         <div class="bg-white rounded-[24px] overflow-hidden border border-[#eadfd3] shadow-sm mb-4 sm:mb-5">
-            <div class="px-6 sm:px-8 py-7 sm:py-9 text-white text-center"
+            <div class="relative px-6 sm:px-8 py-7 sm:py-9 text-white text-center {{ $company->reservation_hero_image_path ? 'min-h-[260px] sm:min-h-[340px] flex items-center justify-center' : '' }}"
                  style="background: #243b53; background: linear-gradient(135deg, var(--main-color), #243b53);">
+                @if($company->reservation_hero_image_path)
+                    <img src="{{ route('reserve.hero-image', ['company_code' => $company->company_code, 'v' => optional($company->updated_at)->timestamp]) }}"
+                         alt=""
+                         class="absolute inset-0 h-full w-full object-cover"
+                         fetchpriority="high">
+                    <div class="absolute inset-0 bg-black/35"></div>
+                @endif
+                <div class="relative z-10">
                 <div class="text-[12px] tracking-[0.12em] font-bold opacity-90">ONLINE RESERVATION</div>
-                <h1 class="mt-3 text-3xl sm:text-4xl font-bold leading-tight">
-                    ご予約
+                <h1 class="mt-3 font-bold leading-tight {{ $company->reservation_hero_image_path ? '' : 'text-3xl sm:text-4xl' }}"
+                    @if($company->reservation_hero_image_path) style="font-size: clamp(20px, 6vw, {{ $company->reservation_hero_heading_size ?? 40 }}px); color: {{ $company->reservation_hero_text_color ?? '#ffffff' }};" @endif>
+                    {{ $company->reservation_hero_image_path ? ($company->reservation_hero_heading ?: 'ご予約') : 'ご予約' }}
                 </h1>
-                <p class="mt-3 text-sm sm:text-base leading-7 opacity-95 max-w-2xl mx-auto">
-                    メニューを選んで、ご希望の日付・時間を選ぶだけ。<br class="hidden sm:block">
-                    担当者のご希望がある場合は、あとから選べます。
+                <p class="mt-3 leading-7 opacity-95 max-w-2xl mx-auto {{ $company->reservation_hero_image_path ? 'whitespace-pre-line' : 'text-sm sm:text-base' }}"
+                   @if($company->reservation_hero_image_path) style="font-size: clamp(12px, 3.5vw, {{ $company->reservation_hero_subheading_size ?? 16 }}px); color: {{ $company->reservation_hero_text_color ?? '#ffffff' }};" @endif>
+                    @if($company->reservation_hero_image_path)
+                        {{ $company->reservation_hero_subheading ?: 'メニューを選んで、ご希望の日付・時間をお選びください。' }}
+                    @else
+                        メニューを選んで、ご希望の日付・時間を選ぶだけ。<br class="hidden sm:block">
+                        担当者のご希望がある場合は、あとから選べます。
+                    @endif
                 </p>
+                </div>
             </div>
         </div>
 

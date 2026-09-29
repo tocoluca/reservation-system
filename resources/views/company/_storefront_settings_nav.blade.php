@@ -12,6 +12,11 @@
             'description' => 'ロゴ画像を変更',
             'route' => 'company.logo',
         ],
+        'reservation-hero' => [
+            'label' => '予約画面設定',
+            'description' => 'メイン画像・見出し',
+            'route' => 'company.reservation-hero.edit',
+        ],
         'theme' => [
             'label' => 'テーマカラー',
             'description' => '画面の色を変更',
@@ -28,7 +33,7 @@
             <p class="mt-1 text-sm text-gray-500">店舗情報、ロゴ、テーマカラーをまとめて設定できます。</p>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 lg:min-w-[580px]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 lg:min-w-[720px]">
             @foreach($items as $key => $item)
                 @php($active = $current === $key)
                 <a href="{{ route($item['route']) }}"

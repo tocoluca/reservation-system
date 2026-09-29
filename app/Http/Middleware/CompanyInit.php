@@ -54,6 +54,9 @@ class CompanyInit
             // 企業情報
             'company.info.edit',
             'company.info.update',
+            'company.reservation-hero.edit',
+            'company.reservation-hero.update',
+            'company.reservation-hero.image.destroy',
 
             // 営業日カレンダー
             'company.calendar.index',

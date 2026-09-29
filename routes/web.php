@@ -48,6 +48,8 @@ use App\Http\Controllers\Company\StylePostController;
 
 use App\Http\Controllers\Company\InquiryController;
 use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
+use App\Http\Controllers\Company\ReservationHeroController;
+use App\Http\Controllers\ReservationHeroImageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -235,6 +237,15 @@ Route::prefix('company')->group(function () {
 
             Route::post('company-info', [CompanyInfoController::class, 'update'])
                 ->name('company.info.update');
+
+            Route::get('reservation-screen', [ReservationHeroController::class, 'edit'])
+                ->name('company.reservation-hero.edit');
+
+            Route::post('reservation-screen', [ReservationHeroController::class, 'update'])
+                ->name('company.reservation-hero.update');
+
+            Route::delete('reservation-screen/main-image', [ReservationHeroController::class, 'destroyImage'])
+                ->name('company.reservation-hero.image.destroy');
 
             Route::get('staff', [StaffController::class, 'index'])
                 ->name('company.staff.index');
@@ -533,6 +544,9 @@ Route::get('/company/staff/list', function () {
 Route::prefix('r/{company_code}')
     ->middleware(['company.code', 'public.reservation.available'])
     ->group(function () {
+        Route::get('/hero-image', [ReservationHeroImageController::class, 'show'])
+            ->name('reserve.hero-image');
+
         Route::get('/', [ReserveController::class, 'index'])
             ->name('reserve.index');
 

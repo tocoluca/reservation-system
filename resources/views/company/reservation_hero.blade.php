@@ -24,10 +24,6 @@
         @include('company._storefront_settings_nav', ['current' => 'reservation-hero'])
     </div>
 
-    @if(session('success'))
-        <div class="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700">{{ session('success') }}</div>
-    @endif
-
     @if($errors->any())
         <div class="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <div class="mb-1 font-bold">入力内容をご確認ください。</div>

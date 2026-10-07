@@ -3,18 +3,16 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-use App\Models\Reservation;
-use App\Models\Staff;
-use App\Models\Menu;
-use App\Models\CompanyDashboardNotice;
-use App\Models\ShiftPattern;
-use App\Models\StaffDefaultShift;
-use App\Models\StaffShift;
 use App\Models\CompanyBusinessCalendar;
+use App\Models\CompanyDashboardNotice;
 use App\Models\CompanyDashboardPermission;
-use App\Models\ReservationChangeNoticeItem;
 use App\Models\Inquiry;
+use App\Models\Reservation;
+use App\Models\ReservationChangeNoticeItem;
+use App\Models\Staff;
+use App\Models\StaffShift;
 use App\Services\CompanySalesMetrics;
+use App\Support\CompanySetupProgress;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -51,63 +49,18 @@ class DashboardController extends Controller
 
         $hasChangeNoticeAlert = $changeNoticePendingCount > 0;
 
-        $openPatterns = $company->open_patterns ?? [];
-        $hasOpenPattern = false;
-
-        if (is_array($openPatterns)) {
-            foreach ($openPatterns as $weekdayPatterns) {
-                if (!is_array($weekdayPatterns)) {
-                    continue;
-                }
-
-                foreach ($weekdayPatterns as $pattern) {
-                    if (
-                        (!empty($pattern['open']) && !empty($pattern['close'])) ||
-                        (!empty($pattern['open_time']) && !empty($pattern['close_time']))
-                    ) {
-                        $hasOpenPattern = true;
-                        break 2;
-                    }
-                }
-            }
-        }
-
-        $setupCompanyInfoDone =
-            !empty($company->slot_minutes) &&
-            $hasOpenPattern;
-
-        $setupStaffDone = Staff::where('company_id', $company->id)->exists();
-        $setupMenuDone = Menu::where('company_id', $company->id)->exists();
-
-        $setupShiftPatternDone = ShiftPattern::where('company_id', $company->id)->exists();
-        $setupStaffIds = Staff::where('company_id', $company->id)->pluck('id');
-
-        $setupDefaultShiftDone = false;
-        $setupMonthlyShiftDone = false;
-
-        if ($setupStaffIds->isNotEmpty()) {
-            $setupDefaultShiftDone = StaffDefaultShift::whereIn('staff_id', $setupStaffIds)
-                ->where('is_work', 1)
-                ->exists();
-
-            $setupMonthlyShiftDone = StaffShift::whereIn('staff_id', $setupStaffIds)
-                ->exists();
-        }
-
-        $setupShiftDone = $setupMonthlyShiftDone || ($setupShiftPatternDone && $setupDefaultShiftDone);
-        $setupReserveDone = $setupCompanyInfoDone && $setupStaffDone && $setupMenuDone && $setupShiftDone;
-
-        $setupStatusList = [
-            ['label' => '担当者', 'done' => $setupStaffDone],
-            ['label' => '企業情報', 'done' => $setupCompanyInfoDone],
-            ['label' => 'メニュー', 'done' => $setupMenuDone],
-            ['label' => 'シフト', 'done' => $setupShiftDone],
-            ['label' => '予約確認', 'done' => $setupReserveDone],
-        ];
-
-        $setupDoneCount = collect($setupStatusList)->where('done', true)->count();
-        $setupTotalCount = count($setupStatusList);
-        $showSetupGuide = $setupDoneCount < $setupTotalCount;
+        $setupProgress = CompanySetupProgress::for($company);
+        $setupStatusList = collect($setupProgress['steps'])
+            ->where('required', true)
+            ->map(fn (array $step) => [
+                'label' => $step['label'],
+                'done' => $step['done'],
+            ])
+            ->values()
+            ->all();
+        $setupDoneCount = $setupProgress['required_done_count'];
+        $setupTotalCount = $setupProgress['required_total_count'];
+        $showSetupGuide = ! $setupProgress['all_required_completed'];
 
         $settingWarnings = $this->buildReservationSettingWarnings($company);
 
@@ -133,7 +86,7 @@ class DashboardController extends Controller
 
             if (is_array($dayPatterns)) {
                 foreach ($dayPatterns as $pattern) {
-                    if (!is_array($pattern)) {
+                    if (! is_array($pattern)) {
                         continue;
                     }
 
@@ -144,8 +97,8 @@ class DashboardController extends Controller
                         continue;
                     }
 
-                    $open = Carbon::parse($date->format('Y-m-d') . ' ' . $openTime);
-                    $close = Carbon::parse($date->format('Y-m-d') . ' ' . $closeTime);
+                    $open = Carbon::parse($date->format('Y-m-d').' '.$openTime);
+                    $close = Carbon::parse($date->format('Y-m-d').' '.$closeTime);
 
                     if ($close->gt($open)) {
                         $totalAvailableMinutes += $open->diffInMinutes($close) * $staffCount;
@@ -180,14 +133,14 @@ class DashboardController extends Controller
             ->orderBy('start_at')
             ->get();
 
-		$tomorrow = $today->copy()->addDay();
+        $tomorrow = $today->copy()->addDay();
 
-		$tomorrowReservations = Reservation::where('company_id', $company->id)
-		    ->whereDate('start_at', $tomorrow->toDateString())
-		    ->where('status', 'reserved')
-		    ->with(['staff', 'menus'])
-		    ->orderBy('start_at')
-		    ->get();
+        $tomorrowReservations = Reservation::where('company_id', $company->id)
+            ->whereDate('start_at', $tomorrow->toDateString())
+            ->where('status', 'reserved')
+            ->with(['staff', 'menus'])
+            ->orderBy('start_at')
+            ->get();
 
         $notices = CompanyDashboardNotice::visibleForCompany($company->id)
             ->orderByDesc('is_important')
@@ -197,21 +150,21 @@ class DashboardController extends Controller
             ->limit(6)
             ->get();
 
-		$supportReplyInquiries = Inquiry::where('company_id', $company->id)
-		    ->whereIn('status', ['answered', 'closed'])
-		    ->whereNotNull('admin_reply')
-		    ->orderByDesc('replied_at')
-		    ->limit(5)
-		    ->get();
+        $supportReplyInquiries = Inquiry::where('company_id', $company->id)
+            ->whereIn('status', ['answered', 'closed'])
+            ->whereNotNull('admin_reply')
+            ->orderByDesc('replied_at')
+            ->limit(5)
+            ->get();
 
-		$supportUnreadCount = Inquiry::where('company_id', $company->id)
-		    ->whereIn('status', ['answered', 'closed'])
-		    ->whereNotNull('admin_reply')
-		    ->where('is_read_by_company', false)
-		    ->count();
+        $supportUnreadCount = Inquiry::where('company_id', $company->id)
+            ->whereIn('status', ['answered', 'closed'])
+            ->whereNotNull('admin_reply')
+            ->where('is_read_by_company', false)
+            ->count();
 
-		$salesStatuses = [Reservation::STATUS_COMPLETED];
-		$todaySales = $salesService->summarize($company->id, $today, $today->copy()->addDay(), $now)['completed_amount'];
+        $salesStatuses = [Reservation::STATUS_COMPLETED];
+        $todaySales = $salesService->summarize($company->id, $today, $today->copy()->addDay(), $now)['completed_amount'];
         $yearlySales = $salesService->summarize(
             $company->id,
             $now->copy()->startOfYear(),
@@ -251,7 +204,7 @@ class DashboardController extends Controller
             $query->whereYear('start_at', $year);
         }
 
-		$monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year, $now, $salesService) {
+        $monthlyChart = collect(range(1, 12))->map(function ($chartMonth) use ($company, $year, $now, $salesService) {
             $chartStart = Carbon::create($year, $chartMonth, 1)->startOfDay();
             $metrics = $salesService->summarize($company->id, $chartStart, $chartStart->copy()->addMonth(), $now);
 
@@ -260,7 +213,7 @@ class DashboardController extends Controller
                 'completed_amount' => $metrics['completed_amount'],
                 'forecast_amount' => $metrics['forecast_amount'],
             ];
-		});
+        });
 
         $staffRanking = (clone $query)
             ->select('staff_id', DB::raw('SUM(total_price) as total'))
@@ -319,19 +272,19 @@ class DashboardController extends Controller
         $subscriptionAvailable = $company->isSubscriptionAvailable();
         $billingWarning = null;
 
-		if ($company->subscription_status === 'past_due') {
-		    if ($company->isInGracePeriod()) {
-		        $billingWarning = 'お支払い更新が確認できていません。利用停止予定日: ' . optional($company->grace_until)->format('Y/m/d') . '。カード情報の更新をお願いします。';
-		    } else {
-		        $billingWarning = 'お支払い更新が確認できないため、現在システム利用を停止しています。';
-		    }
-		} elseif ($company->subscription_status === 'unpaid') {
-		    $billingWarning = '未払い状態のため、現在システム利用を停止しています。';
-		} elseif ($company->subscription_status === 'canceled') {
-		    $billingWarning = '現在は解約済みです。再開する場合はプランをお申し込みください。';
-		} elseif (!$company->subscription_status) {
-		    $billingWarning = 'まだご契約がありません。プランを選んでお申し込みください。';
-		}
+        if ($company->subscription_status === 'past_due') {
+            if ($company->isInGracePeriod()) {
+                $billingWarning = 'お支払い更新が確認できていません。利用停止予定日: '.optional($company->grace_until)->format('Y/m/d').'。カード情報の更新をお願いします。';
+            } else {
+                $billingWarning = 'お支払い更新が確認できないため、現在システム利用を停止しています。';
+            }
+        } elseif ($company->subscription_status === 'unpaid') {
+            $billingWarning = '未払い状態のため、現在システム利用を停止しています。';
+        } elseif ($company->subscription_status === 'canceled') {
+            $billingWarning = '現在は解約済みです。再開する場合はプランをお申し込みください。';
+        } elseif (! $company->subscription_status) {
+            $billingWarning = 'まだご契約がありません。プランを選んでお申し込みください。';
+        }
 
         return view('company.dashboard', compact(
             'staff',
@@ -342,8 +295,8 @@ class DashboardController extends Controller
             'utilizationRate',
             'todayReservations',
             'notices',
-			'supportReplyInquiries',
-			'supportUnreadCount',
+            'supportReplyInquiries',
+            'supportUnreadCount',
             'todaySales',
             'yearlySales',
             'salesMetrics',
@@ -373,7 +326,7 @@ class DashboardController extends Controller
             'changeNoticeConfirmedCount',
             'changeNoticeTotalCount',
             'hasChangeNoticeAlert',
-			'tomorrowReservations'
+            'tomorrowReservations'
         ));
     }
 
@@ -386,10 +339,10 @@ class DashboardController extends Controller
             'card.business_calendar',
             'card.customers',
             'card.month_shift',
-			'card.month_shift_view',
+            'card.month_shift_view',
             'card.reservation_change_notices',
             'card.reviews',
-	        'card.style',
+            'card.style',
             'card.vacation',
             'card.my_profile',
             'dashboard.sales',
@@ -433,7 +386,7 @@ class DashboardController extends Controller
             $key = $aliases[$key] ?? $key;
             $normalized[$key] = filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE);
             if ($normalized[$key] === null) {
-                $normalized[$key] = !empty($value);
+                $normalized[$key] = ! empty($value);
             }
         }
 
@@ -445,7 +398,7 @@ class DashboardController extends Controller
                 'card.business_calendar' => true,
                 'card.customers' => true,
                 'card.month_shift' => false,
-				'card.month_shift_view' => false,
+                'card.month_shift_view' => false,
                 'card.reservation_change_notices' => true,
                 'card.support' => true,
                 'card.style' => true,
@@ -541,7 +494,7 @@ class DashboardController extends Controller
         $hasAlert = false;
         $hasWarning = false;
 
-        if (!$lastDateCarbon) {
+        if (! $lastDateCarbon) {
             $hasAlert = true;
         } elseif ($lastDateCarbon->lt($alertEnd)) {
             $hasAlert = true;

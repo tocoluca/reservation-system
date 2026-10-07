@@ -132,7 +132,7 @@ class CalendarController extends Controller
 
         $createdNotice = null;
 
-        if (!(bool) $calendar->is_open) {
+        if (!(bool) $calendar->is_open && $company->hasFeature('reservation_change_notifications')) {
             $createdNotice = $this->changeNoticeService->createForClosedDate(
                 company: $company,
                 date: $request->date,
@@ -187,13 +187,15 @@ class CalendarController extends Controller
 
         $calendar->save();
 
-        $createdNotice = $this->changeNoticeService->createForTimeChange(
-            company: $company,
-            date: $request->date,
-            openTime: $request->open_time,
-            closeTime: $request->close_time,
-            reasonText: '営業時間変更のため、ご予約内容の変更をお願いしております。'
-        );
+        $createdNotice = $company->hasFeature('reservation_change_notifications')
+            ? $this->changeNoticeService->createForTimeChange(
+                company: $company,
+                date: $request->date,
+                openTime: $request->open_time,
+                closeTime: $request->close_time,
+                reasonText: '営業時間変更のため、ご予約内容の変更をお願いしております。'
+            )
+            : null;
 
         return response()->json([
             'success' => true,
@@ -239,11 +241,13 @@ class CalendarController extends Controller
                     ]
                 );
 
-                $notice = $this->changeNoticeService->createForClosedDate(
-                    company: $company,
-                    date: $date->format('Y-m-d'),
-                    reasonText: '営業日が休業日に一括変更されたため、ご予約内容の変更をお願いしております。'
-                );
+                $notice = $company->hasFeature('reservation_change_notifications')
+                    ? $this->changeNoticeService->createForClosedDate(
+                        company: $company,
+                        date: $date->format('Y-m-d'),
+                        reasonText: '営業日が休業日に一括変更されたため、ご予約内容の変更をお願いしております。'
+                    )
+                    : null;
 
                 if ($notice) {
                     $createdCount++;
@@ -292,11 +296,13 @@ class CalendarController extends Controller
                     ]
                 );
 
-                $notice = $this->changeNoticeService->createForClosedDate(
-                    company: $company,
-                    date: $date->format('Y-m-d'),
-                    reasonText: '営業日が休業日に一括変更されたため、ご予約内容の変更をお願いしております。'
-                );
+                $notice = $company->hasFeature('reservation_change_notifications')
+                    ? $this->changeNoticeService->createForClosedDate(
+                        company: $company,
+                        date: $date->format('Y-m-d'),
+                        reasonText: '営業日が休業日に一括変更されたため、ご予約内容の変更をお願いしております。'
+                    )
+                    : null;
 
                 if ($notice) {
                     $createdCount++;
@@ -522,6 +528,10 @@ class CalendarController extends Controller
             : \Carbon\Carbon::parse($startAt);
 
         $end = (clone $start)->addMinutes($durationMinutes);
+
+        if (! $staff->isActiveForReservation($start->toDateString())) {
+            return false;
+        }
 
         $hasVacation = \App\Models\Vacation::query()
             ->where('staff_id', $staff->id)

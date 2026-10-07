@@ -27,6 +27,7 @@
     };
 
     $planLabel = match($company->plan_code) {
+        'light' => 'ライト',
         'standard' => 'スタンダード',
         'platinum' => 'プラチナ',
         default => '未契約',
@@ -203,7 +204,7 @@
         </p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         @foreach($plans as $plan)
             @php
                 $isCurrentPlan = $hasCurrentStripePlan
@@ -244,7 +245,9 @@
                 <div class="mt-5 rounded-[1.5rem] bg-gray-50 border border-gray-100 px-4 py-4">
                     <div class="text-3xl font-extrabold text-gray-900">
                         ¥{{ number_format($plan['amount']) }}
-                        <span class="text-sm font-normal text-gray-500">/ 月（税抜）</span>
+                        <span class="text-sm font-normal text-gray-500">
+                            / 月（{{ ($plan['tax_included'] ?? false) ? '税込' : '税抜' }}）
+                        </span>
                     </div>
                 </div>
 

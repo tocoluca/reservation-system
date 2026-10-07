@@ -73,13 +73,18 @@ class ReviewController extends Controller
 
     public function complete(string $token)
     {
-        $reservation = Reservation::where('review_token', $token)->firstOrFail();
+        $reservation = Reservation::with('company')->where('review_token', $token)->firstOrFail();
+        abort_unless($reservation->company?->hasFeature('reviews'), 404);
 
         return view('reviews.complete', compact('reservation'));
     }
 
     private function canReview(Reservation $reservation): bool
     {
+        if (! $reservation->company?->hasFeature('reviews')) {
+            return false;
+        }
+
         if (!$reservation->review_token) {
             return false;
         }

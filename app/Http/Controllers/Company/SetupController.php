@@ -3,13 +3,11 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Support\CompanySetupProgress;
+use App\Support\PlanCatalog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Staff;
-use App\Models\Menu;
-use App\Models\ShiftPattern;
-use App\Models\StaffDefaultShift;
-use App\Models\StaffShift;
+use Illuminate\Validation\Rule;
 
 class SetupController extends Controller
 {
@@ -20,142 +18,20 @@ class SetupController extends Controller
     {
         $staff = Auth::guard('company')->user();
         $company = $staff->company;
-
-        /*
-        |--------------------------------------------------------------------------
-        | 1. 企業情報
-        |--------------------------------------------------------------------------
-        | 営業時間のどれか1つ以上 + 刻み時間 が入っていれば最低限OK
-        */
-		$openPatterns = $company->open_patterns;
-
-		if (is_string($openPatterns)) {
-		    $decoded = json_decode($openPatterns, true);
-		    if (json_last_error() === JSON_ERROR_NONE) {
-		        $openPatterns = $decoded;
-		    }
-		}
-
-		$companyInfoDone =
-		    !empty($company->slot_minutes) &&
-		    !empty($openPatterns);
-
-        /*
-        |--------------------------------------------------------------------------
-        | 2. 担当者
-        |--------------------------------------------------------------------------
-        */
-        $staffDone = Staff::where('company_id', $company->id)->exists();
-
-        /*
-        |--------------------------------------------------------------------------
-        | 3. メニュー
-        |--------------------------------------------------------------------------
-        */
-        $menuDone = Menu::where('company_id', $company->id)->exists();
-
-        /*
-        |--------------------------------------------------------------------------
-        | 4. シフト
-        |--------------------------------------------------------------------------
-        | シフトパターンがあり、
-        | 基本シフト または 月シフト のどちらかが1件でもあればOK
-        */
-        $shiftPatternDone = ShiftPattern::where('company_id', $company->id)->exists();
-
-        $staffIds = Staff::where('company_id', $company->id)->pluck('id');
-
-        $defaultShiftDone = false;
-        $monthlyShiftDone = false;
-
-        if ($staffIds->isNotEmpty()) {
-            $defaultShiftDone = StaffDefaultShift::whereIn('staff_id', $staffIds)
-                ->where('is_work', 1)
-                ->exists();
-
-            $monthlyShiftDone = StaffShift::whereIn('staff_id', $staffIds)
-                ->exists();
-        }
-
-        $shiftDone = $monthlyShiftDone || ($shiftPatternDone && $defaultShiftDone);
-
-        /*
-        |--------------------------------------------------------------------------
-        | 5. 予約確認
-        |--------------------------------------------------------------------------
-        */
-        $reserveCheckDone = $companyInfoDone && $staffDone && $menuDone && $shiftDone;
-
-        /*
-        |--------------------------------------------------------------------------
-        | 任意項目
-        |--------------------------------------------------------------------------
-        | マイプロフィールは初期設定の完了条件に含めない。
-        | 会社アカウント名が入っているだけで「設定済み」と誤判定しないよう、
-        | ガイド上は完了判定を持たせず、任意項目として扱う。
-        */
-        $myProfileDone = false;
-
-        /*
-        |--------------------------------------------------------------------------
-        | 進捗情報
-        |--------------------------------------------------------------------------
-        */
-        $setupSteps = [
-            [
-                'key' => 'staff',
-                'step' => 1,
-                'label' => '担当者',
-                'done' => $staffDone,
-                'required' => true,
-                'description' => 'スタッフ情報や権限を登録します。',
-            ],
-            [
-                'key' => 'company_info',
-                'step' => 2,
-                'label' => '企業情報',
-                'done' => $companyInfoDone,
-                'required' => true,
-                'description' => '営業時間や予約受付の基本条件を設定します。',
-            ],
-            [
-                'key' => 'menu',
-                'step' => 3,
-                'label' => 'メニュー',
-                'done' => $menuDone,
-                'required' => true,
-                'description' => 'メニュー名・時間・料金を設定します。',
-            ],
-            [
-                'key' => 'shift',
-                'step' => 4,
-                'label' => 'シフト',
-                'done' => $shiftDone,
-                'required' => true,
-                'description' => 'スタッフが対応できる時間を設定します。',
-            ],
-            [
-                'key' => 'reserve',
-                'step' => 5,
-                'label' => '予約確認',
-                'done' => $reserveCheckDone,
-                'required' => true,
-                'description' => '予約カレンダーが表示できる状態か確認します。',
-            ],
-            [
-                'key' => 'my_profile',
-                'step' => null,
-                'label' => 'マイプロフィール',
-                'done' => $myProfileDone,
-                'required' => false,
-                'description' => '自分のプロフィール情報を設定します。',
-            ],
-        ];
-
-        $requiredSteps = collect($setupSteps)->where('required', true)->values();
-        $requiredDoneCount = $requiredSteps->where('done', true)->count();
-        $requiredTotalCount = $requiredSteps->count();
-        $allRequiredCompleted = $requiredDoneCount === $requiredTotalCount;
+        $progress = CompanySetupProgress::for($company);
+        $setupSteps = $progress['steps'];
+        $requiredDoneCount = $progress['required_done_count'];
+        $requiredTotalCount = $progress['required_total_count'];
+        $allRequiredCompleted = $progress['all_required_completed'];
+        $planSelected = $progress['plan_selected'];
+        $isLight = $progress['is_light'];
+        $plans = PlanCatalog::checkoutPlans();
+        $selectedPlanName = PlanCatalog::get($company->plan_code)['name']
+            ?? PlanCatalog::get(config('plans.default', 'standard'))['name']
+            ?? 'スタンダードプラン';
+        $canChangePlan = ! $company->is_initialized
+            && ! $company->isSubscribed()
+            && blank($company->stripe_subscription_id);
 
         return view('company.setup', compact(
             'company',
@@ -163,8 +39,47 @@ class SetupController extends Controller
             'setupSteps',
             'requiredDoneCount',
             'requiredTotalCount',
-            'allRequiredCompleted'
+            'allRequiredCompleted',
+            'planSelected',
+            'isLight',
+            'plans',
+            'selectedPlanName',
+            'canChangePlan'
         ));
+    }
+
+    /**
+     * 初期設定で利用するプランを保存
+     */
+    public function selectPlan(Request $request)
+    {
+        $staff = Auth::guard('company')->user();
+        $company = $staff->company;
+
+        abort_if(
+            $company->is_initialized || $company->isSubscribed() || filled($company->stripe_subscription_id),
+            403,
+            '契約中または初期設定完了後のプランは、契約管理画面から変更してください。'
+        );
+
+        $validated = $request->validate([
+            'plan_code' => ['required', Rule::in(PlanCatalog::codes())],
+        ], [
+            'plan_code.required' => '利用するプランを選択してください。',
+            'plan_code.in' => '選択したプランが正しくありません。',
+        ]);
+
+        $company->update(['plan_code' => $validated['plan_code']]);
+
+        // Light is a one-person plan. The signed-in owner becomes its fixed
+        // reservable staff automatically, so no staff setup screen is needed.
+        if ($validated['plan_code'] === 'light' && ! $staff->isStoreOperator()) {
+            $staff->update(['is_reservable' => true]);
+        }
+
+        return redirect()
+            ->route('company.setup')
+            ->with('success', $company->fresh()->planLabel().'プランを選択しました。');
     }
 
     /**
@@ -175,13 +90,37 @@ class SetupController extends Controller
         $staff = Auth::guard('company')->user();
         $company = $staff->company;
 
+        $progress = CompanySetupProgress::for($company);
+
+        if (! $progress['plan_selected']) {
+            return redirect()
+                ->route('company.setup')
+                ->with('error', '最初に利用するプランを選択してください。');
+        }
+
+        if (! $progress['all_required_completed']) {
+            $incompleteLabels = collect($progress['steps'])
+                ->where('required', true)
+                ->where('done', false)
+                ->pluck('label')
+                ->implode('、');
+
+            return redirect()
+                ->route('company.setup')
+                ->with('error', '未完了の必須設定があります：'.$incompleteLabels);
+        }
+
+        if ($company->isLightPlan() && ! $staff->isStoreOperator() && ! $staff->is_reservable) {
+            $staff->update(['is_reservable' => true]);
+        }
+
         $company->update([
             'is_initialized' => true,
         ]);
 
         return redirect()
             ->route('company.dashboard')
-            ->with('success', '初回ガイドを確認しました。続けて必要な設定を進めてください。');
+            ->with('success', '初期設定が完了しました。予約受付を開始できます。');
     }
 
     /**

@@ -2,34 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Reservation;
-use App\Models\ReservationMenu;
-use App\Models\ReservationDetail;
-use App\Models\Company;
-use App\Models\Menu;
-use App\Models\Staff;
-use App\Models\Vacation;
-use App\Models\StaffShift;
-use App\Models\ShiftPattern;
-use App\Models\Customer;
-use App\Models\Notice;
-use App\Models\Review;
-use App\Models\StylePost;
 use App\Mail\ReservationCompleteMail;
+use App\Models\Company;
+use App\Models\CompanyBusinessCalendar;
+use App\Models\Customer;
+use App\Models\Menu;
+use App\Models\Notice;
+use App\Models\Reservation;
+use App\Models\ReservationDetail;
+use App\Models\ReservationMenu;
+use App\Models\Review;
+use App\Models\Staff;
+use App\Models\StaffShift;
+use App\Models\StylePost;
+use App\Models\Vacation;
 use App\Services\LineMessagingService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
-use Carbon\Carbon;
+use Yasumi\Yasumi;
 
 class ReserveController extends Controller
 {
+    private array $lightBusinessWindows = [];
+
     /*
     |--------------------------------------------------------------------------
     | 予約可能期間
@@ -40,48 +43,48 @@ class ReserveController extends Controller
     {
         return [
             'start' => now()->addDays($company->reservation_open_days ?? 0)->startOfDay(),
-            'end'   => now()->addMonths($company->reservation_month_limit ?? 3)->endOfMonth(),
+            'end' => now()->addMonths($company->reservation_month_limit ?? 3)->endOfMonth(),
             'close' => now()->addHours($company->reservation_close_hours ?? 1),
         ];
     }
 
-	private function buildGoogleCalendarUrl($company, $reservation, $menus): string
-	{
-	    $startAt = Carbon::parse($reservation->start_at);
-	    $endAt   = Carbon::parse($reservation->end_at);
+    private function buildGoogleCalendarUrl($company, $reservation, $menus): string
+    {
+        $startAt = Carbon::parse($reservation->start_at);
+        $endAt = Carbon::parse($reservation->end_at);
 
-	    $menuNames = collect($menus)
-	        ->map(function ($row) {
-	            return $row->menu->name ?? null;
-	        })
-	        ->filter()
-	        ->implode(' / ');
+        $menuNames = collect($menus)
+            ->map(function ($row) {
+                return $row->menu->name ?? null;
+            })
+            ->filter()
+            ->implode(' / ');
 
-	    $staffName = optional($reservation->staff)->name ?? '指名なし';
+        $staffName = optional($reservation->staff)->name ?? '指名なし';
 
-	    $title = 'ご予約：' . $company->name;
+        $title = 'ご予約：'.$company->name;
 
-	    $details = implode("\n", array_filter([
-	        '店舗: ' . $company->name,
-	        $menuNames ? 'メニュー: ' . $menuNames : null,
-	        '担当者: ' . $staffName,
-	        '予約日時: ' . $startAt->format('Y年n月j日 H:i'),
-	        !empty($reservation->customer_name) ? 'お名前: ' . $reservation->customer_name : null,
-	        !empty($company->phone) ? '電話: ' . $company->phone : null,
-	    ]));
+        $details = implode("\n", array_filter([
+            '店舗: '.$company->name,
+            $menuNames ? 'メニュー: '.$menuNames : null,
+            '担当者: '.$staffName,
+            '予約日時: '.$startAt->format('Y年n月j日 H:i'),
+            ! empty($reservation->customer_name) ? 'お名前: '.$reservation->customer_name : null,
+            ! empty($company->phone) ? '電話: '.$company->phone : null,
+        ]));
 
-	    $location = (string) ($company->address ?? '');
+        $location = (string) ($company->address ?? '');
 
-	    $startUtc = $startAt->copy()->utc()->format('Ymd\THis\Z');
-	    $endUtc   = $endAt->copy()->utc()->format('Ymd\THis\Z');
+        $startUtc = $startAt->copy()->utc()->format('Ymd\THis\Z');
+        $endUtc = $endAt->copy()->utc()->format('Ymd\THis\Z');
 
-	    return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
-	        . '&text=' . urlencode($title)
-	        . '&dates=' . urlencode($startUtc . '/' . $endUtc)
-	        . '&details=' . urlencode($details)
-	        . '&location=' . urlencode($location)
-	        . '&ctz=' . urlencode('Asia/Tokyo');
-	}
+        return 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+            .'&text='.urlencode($title)
+            .'&dates='.urlencode($startUtc.'/'.$endUtc)
+            .'&details='.urlencode($details)
+            .'&location='.urlencode($location)
+            .'&ctz='.urlencode('Asia/Tokyo');
+    }
 
     private function perStaffSimultaneousLimit($company): int
     {
@@ -90,21 +93,21 @@ class ReserveController extends Controller
 
     private function isLineLoginEnabled($company)
     {
-        return $company->plan_code === 'platinum'
+        return $company->hasFeature('line_login')
             && (bool) $company->line_login_enabled
-            && !empty($company->line_channel_id)
-            && !empty($company->line_channel_secret);
+            && ! empty($company->line_channel_id)
+            && ! empty($company->line_channel_secret);
     }
 
     private function setupLineConfig($company): void
     {
         abort_unless($this->isLineLoginEnabled($company), 404);
-/*TEST
-		dd(url('/line/callback'));
-		Log::debug($company->line_channel_id);
-		Log::debug($company->line_channel_secret);
-		Log::debug(url('/line/callback'));
-*/
+        /*TEST
+                dd(url('/line/callback'));
+                Log::debug($company->line_channel_id);
+                Log::debug($company->line_channel_secret);
+                Log::debug(url('/line/callback'));
+        */
 
         config([
             'services.line.client_id' => $company->line_channel_id,
@@ -160,7 +163,7 @@ class ReserveController extends Controller
 
         $customerId = session('reserve_line_customer_id');
 
-        if (!$customerId) {
+        if (! $customerId) {
             return null;
         }
 
@@ -198,6 +201,31 @@ class ReserveController extends Controller
 
     private function isStaffWorkingOnWindow($company, int $staffId, Carbon $startAt, Carbon $endAt): bool
     {
+        if ($company->isLightPlan()) {
+            $fixedStaff = $company->fixedReservableStaff($startAt);
+
+            if (! $fixedStaff || (int) $fixedStaff->id !== $staffId) {
+                return false;
+            }
+
+            $patterns = $this->lightBusinessWindowsForDate($company, $startAt);
+
+            foreach ($patterns as $pattern) {
+                if (empty($pattern['open']) || empty($pattern['close'])) {
+                    continue;
+                }
+
+                $open = Carbon::parse($startAt->toDateString().' '.$pattern['open']);
+                $close = Carbon::parse($startAt->toDateString().' '.$pattern['close']);
+
+                if ($startAt->gte($open) && $endAt->lte($close)) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         $date = $startAt->copy()->format('Y-m-d');
 
         $shift = StaffShift::with('pattern')
@@ -205,16 +233,16 @@ class ReserveController extends Controller
             ->whereDate('date', $date)
             ->first();
 
-        if (!$shift || !(bool) $shift->is_work) {
+        if (! $shift || ! (bool) $shift->is_work) {
             return false;
         }
 
-        if (empty($shift->shift_pattern_id) || !$shift->pattern) {
+        if (empty($shift->shift_pattern_id) || ! $shift->pattern) {
             return false;
         }
 
-        $shiftStart = Carbon::parse($date . ' ' . $shift->pattern->start_time);
-        $shiftEnd   = Carbon::parse($date . ' ' . $shift->pattern->end_time);
+        $shiftStart = Carbon::parse($date.' '.$shift->pattern->start_time);
+        $shiftEnd = Carbon::parse($date.' '.$shift->pattern->end_time);
 
         if ($startAt->lt($shiftStart) || $endAt->gt($shiftEnd)) {
             return false;
@@ -223,9 +251,55 @@ class ReserveController extends Controller
         return true;
     }
 
+    private function lightBusinessWindowsForDate($company, Carbon $date): array
+    {
+        $dateKey = $date->toDateString();
+        $cacheKey = $company->id.':'.$dateKey;
+
+        if (array_key_exists($cacheKey, $this->lightBusinessWindows)) {
+            return $this->lightBusinessWindows[$cacheKey];
+        }
+
+        $calendar = CompanyBusinessCalendar::where('company_id', $company->id)
+            ->whereDate('date', $dateKey)
+            ->first();
+
+        if ($calendar) {
+            if (! (bool) $calendar->is_open) {
+                return $this->lightBusinessWindows[$cacheKey] = [];
+            }
+
+            if (filled($calendar->open_time) && filled($calendar->close_time)) {
+                return $this->lightBusinessWindows[$cacheKey] = [[
+                    'open' => $calendar->open_time,
+                    'close' => $calendar->close_time,
+                ]];
+            }
+        }
+
+        if (in_array($date->dayOfWeek, (array) ($company->regular_holidays ?? []))) {
+            return $this->lightBusinessWindows[$cacheKey] = [];
+        }
+
+        if ($company->holiday_is_closed && Yasumi::create('Japan', $date->year)->isHoliday($date)) {
+            return $this->lightBusinessWindows[$cacheKey] = [];
+        }
+
+        return $this->lightBusinessWindows[$cacheKey] = (($company->open_patterns ?? [])[$date->dayOfWeek] ?? []);
+    }
+
     private function isStaffSelectableForPublic($company, int $staffId, Carbon $startAt, Carbon $endAt): bool
     {
-        if ($this->hasApprovedVacationInWindow($staffId, $startAt, $endAt)) {
+        $staff = Staff::query()
+            ->where('company_id', $company->id)
+            ->whereKey($staffId)
+            ->first();
+
+        if (! $staff || ! $staff->isActiveForReservation($startAt->toDateString())) {
+            return false;
+        }
+
+        if (! $company->isLightPlan() && $this->hasApprovedVacationInWindow($staffId, $startAt, $endAt)) {
             return false;
         }
 
@@ -237,11 +311,24 @@ class ReserveController extends Controller
         $endAt = $this->calculateRequestedEndAt($company, $menus, $startAt);
         $menuIds = $menus->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
 
+        if ($company->isLightPlan()) {
+            return collect([$company->fixedReservableStaff($startAt)])
+                ->filter()
+                ->filter(fn ($staff) => $this->isStaffSelectableForPublic($company, (int) $staff->id, $startAt, $endAt))
+                ->values()
+                ->map(function ($staff) {
+                    $staff->image_url = $staff->image_path ? asset($staff->image_path) : asset('logos/logo.png');
+
+                    return $staff;
+                });
+        }
+
         return Staff::query()
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
             ->where('role', '!=', 'store_operator')
-            ->when(!empty($menuIds), function ($query) use ($menuIds) {
+            ->activeForReservationOn($startAt)
+            ->when(! empty($menuIds), function ($query) use ($menuIds) {
                 $query->whereHas('menus', function ($q) use ($menuIds) {
                     $q->whereIn('menus.id', $menuIds);
                 });
@@ -267,11 +354,23 @@ class ReserveController extends Controller
         $menuIds = $menus->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
         $targetDate = $date->copy()->toDateString();
 
+        if ($company->isLightPlan()) {
+            return collect([$company->fixedReservableStaff($date)])
+                ->filter()
+                ->values()
+                ->map(function ($staff) {
+                    $staff->image_url = $staff->image_path ? asset($staff->image_path) : asset('logos/logo.png');
+
+                    return $staff;
+                });
+        }
+
         return Staff::query()
             ->where('company_id', $company->id)
             ->where('is_reservable', 1)
             ->where('role', '!=', 'store_operator')
-            ->when(!empty($menuIds), function ($query) use ($menuIds) {
+            ->activeForReservationOn($targetDate)
+            ->when(! empty($menuIds), function ($query) use ($menuIds) {
                 $query->whereHas('menus', function ($q) use ($menuIds) {
                     $q->whereIn('menus.id', $menuIds);
                 });
@@ -285,12 +384,12 @@ class ReserveController extends Controller
                     ->whereDate('date', $targetDate)
                     ->first();
 
-                if (!$shift || !(bool) $shift->is_work || empty($shift->shift_pattern_id) || !$shift->pattern) {
+                if (! $shift || ! (bool) $shift->is_work || empty($shift->shift_pattern_id) || ! $shift->pattern) {
                     return false;
                 }
 
-                $dayStart = Carbon::parse($targetDate . ' 00:00:00');
-                $dayEnd   = Carbon::parse($targetDate . ' 23:59:59');
+                $dayStart = Carbon::parse($targetDate.' 00:00:00');
+                $dayEnd = Carbon::parse($targetDate.' 23:59:59');
 
                 $hasFullDayVacation = Vacation::query()
                     ->where('staff_id', $staff->id)
@@ -300,7 +399,7 @@ class ReserveController extends Controller
                     ->where('is_full_day', 1)
                     ->exists();
 
-                return !$hasFullDayVacation;
+                return ! $hasFullDayVacation;
             })
             ->values()
             ->map(function ($s) {
@@ -315,7 +414,7 @@ class ReserveController extends Controller
     private function canBuildReservationAt($company, Collection $menus, Carbon $startAt, ?int $selectedStaffId = null): bool
     {
         try {
-            if ($company->prefer_less_capable_staff_for_menu_assignment) {
+            if ($company->hasFeature('auto_assignment') && $company->prefer_less_capable_staff_for_menu_assignment) {
                 $this->buildReservationDetailsWithPriorityPolicy($company, $menus, $startAt);
             } else {
                 $this->buildReservationDetailsNormal($company, $selectedStaffId, $menus, $startAt);
@@ -351,8 +450,8 @@ class ReserveController extends Controller
                 continue;
             }
 
-            $open = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['open']);
-            $close = Carbon::parse($date->format('Y-m-d') . ' ' . $pattern['close']);
+            $open = Carbon::parse($date->format('Y-m-d').' '.$pattern['open']);
+            $close = Carbon::parse($date->format('Y-m-d').' '.$pattern['close']);
             $time = $open->copy();
 
             while ($time < $close) {
@@ -365,8 +464,9 @@ class ReserveController extends Controller
                     $selectedStaffId
                 );
 
-                if (!$isReservable) {
+                if (! $isReservable) {
                     $time->addMinutes($slotStep);
+
                     continue;
                 }
 
@@ -374,11 +474,13 @@ class ReserveController extends Controller
 
                 if ($end->gt($close)) {
                     $time->addMinutes($slotStep);
+
                     continue;
                 }
 
                 if ($start->lt($limits['close']) || $start->lt($limits['start']) || $start->gt($limits['end'])) {
                     $time->addMinutes($slotStep);
+
                     continue;
                 }
 
@@ -410,7 +512,7 @@ class ReserveController extends Controller
         $this->setupLineConfig($company);
 
         session([
-            'line_login_company_code'   => $company_code,
+            'line_login_company_code' => $company_code,
             'reserve_line_company_code' => $company_code,
         ]);
 
@@ -423,7 +525,7 @@ class ReserveController extends Controller
     {
         $company_code = session('line_login_company_code');
 
-        if (!$company_code) {
+        if (! $company_code) {
             abort(404, 'company_code がセッションにありません。');
         }
 
@@ -436,7 +538,7 @@ class ReserveController extends Controller
         try {
             $lineUser = Socialite::driver('line')->user();
         } catch (\Throwable $e) {
-            return redirect('/r/' . $company_code)
+            return redirect('/r/'.$company_code)
                 ->with('error', 'LINEログインに失敗しました。時間をおいてもう一度お試しください。');
         }
 
@@ -446,33 +548,33 @@ class ReserveController extends Controller
             ->where('line_user_id', $lineUser->getId())
             ->first();
 
-		if ($linkedCustomer) {
-		    $linkedCustomer->line_name = $lineUser->getName() ?: $linkedCustomer->line_name;
-		    $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
-		    $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
-		    $linkedCustomer->line_notifications_enabled = true;
-		    if ($lineFriendFlag !== null) {
-		        $linkedCustomer->line_friend_flag = $lineFriendFlag;
-		    }
-		    $linkedCustomer->save();
-		}
+        if ($linkedCustomer) {
+            $linkedCustomer->line_name = $lineUser->getName() ?: $linkedCustomer->line_name;
+            $linkedCustomer->line_picture_url = $lineUser->getAvatar() ?: $linkedCustomer->line_picture_url;
+            $linkedCustomer->line_linked_at = $linkedCustomer->line_linked_at ?: now();
+            $linkedCustomer->line_notifications_enabled = true;
+            if ($lineFriendFlag !== null) {
+                $linkedCustomer->line_friend_flag = $lineFriendFlag;
+            }
+            $linkedCustomer->save();
+        }
 
         session([
-            'reserve_line_company_id'   => $company->id,
+            'reserve_line_company_id' => $company->id,
             'reserve_line_company_code' => $company_code,
-            'reserve_line_customer_id'  => $linkedCustomer?->id,
-            'reserve_line_profile'      => [
+            'reserve_line_customer_id' => $linkedCustomer?->id,
+            'reserve_line_profile' => [
                 'line_user_id' => $lineUser->getId(),
-                'name'         => $lineUser->getName(),
-                'email'        => $lineUser->getEmail(),
-                'avatar'       => $lineUser->getAvatar(),
-                'friend_flag'  => $lineFriendFlag,
+                'name' => $lineUser->getName(),
+                'email' => $lineUser->getEmail(),
+                'avatar' => $lineUser->getAvatar(),
+                'friend_flag' => $lineFriendFlag,
             ],
         ]);
 
         session()->forget('line_login_company_code');
 
-        return redirect('/r/' . $company_code)->with(
+        return redirect('/r/'.$company_code)->with(
             'success',
             $linkedCustomer
                 ? 'LINEでログインしました。前回情報を利用できます。'
@@ -493,47 +595,47 @@ class ReserveController extends Controller
             ]);
         }
 
-        return redirect('/r/' . $company_code)
+        return redirect('/r/'.$company_code)
             ->with('success', 'LINEログインを解除しました。');
     }
 
-	private function sendReservationCompleteLine(Company $company, Reservation $reservation): void
-	{
-	    $customer = $reservation->customer;
+    private function sendReservationCompleteLine(Company $company, Reservation $reservation): void
+    {
+        $customer = $reservation->customer;
 
-	    if (
-	        !$customer ||
-	        !$company->sendsCustomerLine() ||
-	        empty($customer->line_user_id) ||
-	        !(bool) ($customer->line_notifications_enabled ?? true) ||
-	        !(bool) ($customer->line_friend_flag ?? false)
-	    ) {
-	        return;
-	    }
+        if (
+            ! $customer ||
+            ! $company->sendsCustomerLine() ||
+            empty($customer->line_user_id) ||
+            ! (bool) ($customer->line_notifications_enabled ?? true) ||
+            ! (bool) ($customer->line_friend_flag ?? false)
+        ) {
+            return;
+        }
 
-	    $staffName = $reservation->staff->name ?? '担当未定';
-	    $dateText = Carbon::parse($reservation->start_at)->format('Y年n月j日 H:i');
+        $staffName = $reservation->staff->name ?? '担当未定';
+        $dateText = Carbon::parse($reservation->start_at)->format('Y年n月j日 H:i');
 
-	    $menus = $reservation->menus->pluck('name')->filter()->implode('、');
-	    if ($menus === '') {
-	        $menus = 'ご予約メニュー';
-	    }
+        $menus = $reservation->menus->pluck('name')->filter()->implode('、');
+        if ($menus === '') {
+            $menus = 'ご予約メニュー';
+        }
 
-	    $text = "【{$company->name}】ご予約ありがとうございます。\n"
-	        . "日時：{$dateText}\n"
-	        . "担当：{$staffName}\n"
-	        . "内容：{$menus}\n";
+        $text = "【{$company->name}】ご予約ありがとうございます。\n"
+            ."日時：{$dateText}\n"
+            ."担当：{$staffName}\n"
+            ."内容：{$menus}\n";
 
-	    if (!empty($reservation->cancel_token)) {
-	        $text .= "キャンセルはこちら\n" . url('/cancel/' . $reservation->cancel_token);
-	    }
+        if (! empty($reservation->cancel_token)) {
+            $text .= "キャンセルはこちら\n".url('/cancel/'.$reservation->cancel_token);
+        }
 
-	    app(LineMessagingService::class)->pushText($company, $customer->line_user_id, $text);
+        app(LineMessagingService::class)->pushText($company, $customer->line_user_id, $text);
 
-	    $customer->forceFill([
-	        'last_line_sent_at' => now(),
-	    ])->save();
-	}
+        $customer->forceFill([
+            'last_line_sent_at' => now(),
+        ])->save();
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -545,13 +647,12 @@ class ReserveController extends Controller
     {
         $company = Company::where('company_code', $company_code)->firstOrFail();
 
-        $sessionKey = 'reserve_confirm.' . $company->id;
+        $sessionKey = 'reserve_confirm.'.$company->id;
         $confirmData = session($sessionKey, []);
 
-        $notices = Notice::where('company_id', $company->id)
-            ->visible()
-            ->sorted()
-            ->get();
+        $notices = $company->hasFeature('notices')
+            ? Notice::where('company_id', $company->id)->visible()->sorted()->get()
+            : collect();
 
         $menus = Menu::with(['tags', 'category'])
             ->where('company_id', $company->id)
@@ -575,7 +676,7 @@ class ReserveController extends Controller
             ->values();
 
         $requestedDate = null;
-        if (!empty($requestedStartAt)) {
+        if (! empty($requestedStartAt)) {
             try {
                 $requestedDate = Carbon::parse($requestedStartAt)->format('Y-m-d');
             } catch (\Throwable $e) {
@@ -598,10 +699,17 @@ class ReserveController extends Controller
         }
 
         if ($staff->isEmpty()) {
-            $staff = Staff::where('company_id', $company->id)
+            $staffQuery = Staff::where('company_id', $company->id)
                 ->where('is_reservable', 1)
                 ->where('role', '!=', 'store_operator')
-                ->orderBy('priority_order')
+                ->activeForReservationOn($requestedDate ?? today())
+                ->orderBy('priority_order');
+
+            if ($company->isLightPlan()) {
+                $staffQuery->limit(1);
+            }
+
+            $staff = $staffQuery
                 ->get()
                 ->map(function ($s) {
                     $s->image_url = $s->image_path
@@ -612,53 +720,49 @@ class ReserveController extends Controller
                 });
         }
 
-        $publicReviews = Review::where('company_id', $company->id)
-            ->where('is_public', true)
-            ->where('status', 'approved')
-            ->latest()
-            ->take(5)
-            ->get();
+        $publicReviews = $company->hasFeature('reviews')
+            ? Review::where('company_id', $company->id)->where('is_public', true)->where('status', 'approved')->latest()->take(5)->get()
+            : collect();
 
-        $reviewCount = Review::where('company_id', $company->id)
-            ->where('is_public', true)
-            ->where('status', 'approved')
-            ->count();
+        $reviewCount = $company->hasFeature('reviews')
+            ? Review::where('company_id', $company->id)->where('is_public', true)->where('status', 'approved')->count()
+            : 0;
 
-        $averageRating = Review::where('company_id', $company->id)
-            ->where('is_public', true)
-            ->where('status', 'approved')
-            ->avg('rating');
+        $averageRating = $company->hasFeature('reviews')
+            ? Review::where('company_id', $company->id)->where('is_public', true)->where('status', 'approved')->avg('rating')
+            : null;
 
         $lineProfile = $this->getLineProfileFromSession($company);
         $lineCustomer = $this->getLineCustomerFromSession($company);
 
-		$styles = StylePost::where('company_id', $company->id)
-		    ->where('is_public', true)
-		    ->orderBy('sort_order')
-		    ->orderByDesc('id')
-		    ->take(3)
-		    ->get()
-		    ->map(function ($style) {
-		        $style->image_url = $style->image_path ? asset($style->image_path) : null;
-		        return $style;
-		    });
+        $styles = $company->hasFeature('style_posts') ? StylePost::where('company_id', $company->id)
+            ->where('is_public', true)
+            ->orderBy('sort_order')
+            ->orderByDesc('id')
+            ->take(3)
+            ->get()
+            ->map(function ($style) {
+                $style->image_url = $style->image_path ? asset($style->image_path) : null;
+
+                return $style;
+            }) : collect();
 
         return view('reserve.index', [
-            'company'          => $company,
-            'menus'            => $menus,
-            'staff'            => $staff,
-            'notices'          => $notices,
-            'publicReviews'    => $publicReviews,
-            'reviewCount'      => $reviewCount,
-            'averageRating'    => $averageRating,
+            'company' => $company,
+            'menus' => $menus,
+            'staff' => $staff,
+            'notices' => $notices,
+            'publicReviews' => $publicReviews,
+            'reviewCount' => $reviewCount,
+            'averageRating' => $averageRating,
             'lineLoginEnabled' => $this->isLineLoginEnabled($company),
-            'lineProfile'      => $lineProfile,
-            'lineCustomer'     => $lineCustomer,
-            'step'             => 1,
-            'prefillMenuIds'   => $requestedMenuIds->all(),
-            'prefillStaffId'   => $requestedStaffId,
-            'prefillStartAt'   => $requestedStartAt,
-			'styles'		   => $styles,
+            'lineProfile' => $lineProfile,
+            'lineCustomer' => $lineCustomer,
+            'step' => 1,
+            'prefillMenuIds' => $requestedMenuIds->all(),
+            'prefillStaffId' => $requestedStaffId,
+            'prefillStartAt' => $requestedStartAt,
+            'styles' => $styles,
         ]);
     }
     /*
@@ -679,7 +783,7 @@ class ReserveController extends Controller
         $date = $request->query('date');
         $time = $request->query('time');
 
-        if ($menuIds->isEmpty() || !$date) {
+        if ($menuIds->isEmpty() || ! $date) {
             return response()->json([
                 'ok' => true,
                 'staff' => [],
@@ -701,7 +805,7 @@ class ReserveController extends Controller
         }
 
         if ($time) {
-            $startAt = Carbon::parse(trim($date . ' ' . $time));
+            $startAt = Carbon::parse(trim($date.' '.$time));
             $staff = $this->getPublicSelectableStaff($company, $menus, $startAt);
         } else {
             $staff = $this->getPublicSelectableStaffForDate(
@@ -769,7 +873,7 @@ class ReserveController extends Controller
             : null;
 
         while ($candidate->lte($limits['end'])) {
-            if (!empty($this->getPublicSlotsForDate($company, $menus, $candidate, $selectedStaffId))) {
+            if (! empty($this->getPublicSlotsForDate($company, $menus, $candidate, $selectedStaffId))) {
                 return response()->json([
                     'ok' => true,
                     'date' => $candidate->format('Y-m-d'),
@@ -795,7 +899,7 @@ class ReserveController extends Controller
     {
         $company = Company::where('company_code', $company_code)->firstOrFail();
 
-        $sessionKey = 'reserve_confirm.' . $company->id;
+        $sessionKey = 'reserve_confirm.'.$company->id;
 
         if ($request->isMethod('post')) {
             session([
@@ -827,7 +931,7 @@ class ReserveController extends Controller
             : ($confirmData['staff_id'] ?? null);
 
         if ($menuIds->isEmpty() || empty($startAtValue)) {
-            return redirect('/r/' . $company_code)->withErrors([
+            return redirect('/r/'.$company_code)->withErrors([
                 'menu_ids' => 'メニューと日時を選択してください。',
             ])->withInput();
         }
@@ -840,7 +944,7 @@ class ReserveController extends Controller
             ->values();
 
         if ($menus->isEmpty()) {
-            return redirect('/r/' . $company_code)->withErrors([
+            return redirect('/r/'.$company_code)->withErrors([
                 'menu_ids' => 'メニューを選択してください。',
             ])->withInput();
         }
@@ -848,21 +952,25 @@ class ReserveController extends Controller
         $startAt = Carbon::parse($startAtValue);
         $endAt = $this->calculateRequestedEndAt($company, $menus, $startAt);
 
+        if ($company->isLightPlan()) {
+            $staffId = $company->fixedReservableStaff($startAt)?->id;
+        }
+
         $staff = null;
-        if (!empty($staffId)) {
+        if (! empty($staffId)) {
             $staff = Staff::where('company_id', $company->id)
                 ->where('id', $staffId)
                 ->where('role', '!=', 'store_operator')
                 ->first();
 
-            if (!$staff) {
-                return redirect('/r/' . $company_code)->withErrors([
+            if (! $staff) {
+                return redirect('/r/'.$company_code)->withErrors([
                     'staff_id' => '選択した担当者が見つかりません。',
                 ])->withInput();
             }
 
-            if (!$this->isStaffSelectableForPublic($company, (int) $staff->id, $startAt, $endAt)) {
-                return redirect('/r/' . $company_code)->withErrors([
+            if (! $this->isStaffSelectableForPublic($company, (int) $staff->id, $startAt, $endAt)) {
+                return redirect('/r/'.$company_code)->withErrors([
                     'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
                 ])->withInput();
             }
@@ -872,13 +980,13 @@ class ReserveController extends Controller
         $lineCustomer = $this->getLineCustomerFromSession($company);
 
         return view('reserve.confirm', [
-            'company'      => $company,
-            'menus'        => $menus,
-            'staff'        => $staff,
-            'start_at'     => $startAtValue,
-            'lineProfile'  => $lineProfile,
+            'company' => $company,
+            'menus' => $menus,
+            'staff' => $staff,
+            'start_at' => $startAtValue,
+            'lineProfile' => $lineProfile,
             'lineCustomer' => $lineCustomer,
-            'step'         => 2,
+            'step' => 2,
         ]);
     }
 
@@ -887,311 +995,321 @@ class ReserveController extends Controller
     | store
     |--------------------------------------------------------------------------
     */
-public function store(Request $request, $company_code)
-{
-    $company = Company::where('company_code', $company_code)->firstOrFail();
+    public function store(Request $request, $company_code)
+    {
+        $company = Company::where('company_code', $company_code)->firstOrFail();
 
-    $lineProfile = $this->getLineProfileFromSession($company);
-    $lineCustomer = $this->getLineCustomerFromSession($company);
+        $lineProfile = $this->getLineProfileFromSession($company);
+        $lineCustomer = $this->getLineCustomerFromSession($company);
 
-    $hasLinkedCustomer = !empty($lineCustomer);
+        $hasLinkedCustomer = ! empty($lineCustomer);
 
-    $nameRules = ['required', 'max:255'];
-    $phoneRules = ['required', 'regex:/^[0-9\-]+$/'];
+        $nameRules = ['required', 'max:255'];
+        $phoneRules = ['required', 'regex:/^[0-9\-]+$/'];
 
-    // 既にLINE連携済み顧客なら、空欄でも既存情報で予約できるようにする
-    if ($hasLinkedCustomer) {
-        $nameRules = ['nullable', 'max:255'];
-        $phoneRules = ['nullable', 'regex:/^[0-9\-]+$/'];
-    }
-
-    $request->validate([
-        'customer_name'  => $nameRules,
-        'customer_phone' => $phoneRules,
-        'customer_email' => ['nullable', 'email', 'max:255'],
-        'start_at'       => ['required', 'date'],
-        'menu_ids'       => ['required', 'array', 'min:1'],
-        'menu_ids.*'     => ['integer'],
-    ], [
-        'customer_name.required'  => ':attributeを入力してください',
-        'customer_phone.required' => ':attributeを入力してください',
-        'customer_phone.regex'    => ':attributeは半角数字とハイフンのみ入力できます',
-    ], [
-        'customer_name'  => 'お名前',
-        'customer_phone' => '電話番号',
-        'customer_email' => 'メールアドレス',
-        'start_at'       => '予約日時',
-        'menu_ids'       => 'メニュー',
-    ]);
-
-    $menus = Menu::where('company_id', $company->id)
-        ->whereIn('id', $request->menu_ids ?? [])
-        ->orderBy('sort_order')
-        ->get()
-        ->sortBy(fn ($menu) => array_search($menu->id, $request->menu_ids ?? []))
-        ->values();
-
-    if ($menus->isEmpty()) {
-        return back()->with('error', 'メニューを選択してください');
-    }
-
-    $start = Carbon::parse($request->start_at);
-    $limits = $this->getReservationLimits($company);
-
-    if ($start < $limits['start']) {
-        return back()->with('error', 'この日はまだ予約受付していません');
-    }
-
-    if ($start > $limits['end']) {
-        return back()->with('error', '予約可能期間を超えています');
-    }
-
-    if ($start < $limits['close']) {
-        return back()->with('error', '予約締切を過ぎています');
-    }
-
-    if ($request->filled('staff_id')) {
-        $selectedStaff = Staff::where('company_id', $company->id)
-            ->where('id', (int) $request->staff_id)
-            ->where('role', '!=', 'store_operator')
-            ->first();
-
-        if (!$selectedStaff) {
-            return back()->withErrors([
-                'staff_id' => '選択した担当者が見つかりません。',
-            ])->withInput();
+        // 既にLINE連携済み顧客なら、空欄でも既存情報で予約できるようにする
+        if ($hasLinkedCustomer) {
+            $nameRules = ['nullable', 'max:255'];
+            $phoneRules = ['nullable', 'regex:/^[0-9\-]+$/'];
         }
 
-        $requestedEndAt = $this->calculateRequestedEndAt($company, $menus, $start);
+        $request->validate([
+            'customer_name' => $nameRules,
+            'customer_phone' => $phoneRules,
+            'customer_email' => ['nullable', 'email', 'max:255'],
+            'start_at' => ['required', 'date'],
+            'menu_ids' => ['required', 'array', 'min:1'],
+            'menu_ids.*' => ['integer'],
+        ], [
+            'customer_name.required' => ':attributeを入力してください',
+            'customer_phone.required' => ':attributeを入力してください',
+            'customer_phone.regex' => ':attributeは半角数字とハイフンのみ入力できます',
+        ], [
+            'customer_name' => 'お名前',
+            'customer_phone' => '電話番号',
+            'customer_email' => 'メールアドレス',
+            'start_at' => '予約日時',
+            'menu_ids' => 'メニュー',
+        ]);
 
-        if (!$this->isStaffSelectableForPublic($company, (int) $selectedStaff->id, $start, $requestedEndAt)) {
-            return back()->withErrors([
-                'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
-            ])->withInput();
+        $menus = Menu::where('company_id', $company->id)
+            ->whereIn('id', $request->menu_ids ?? [])
+            ->orderBy('sort_order')
+            ->get()
+            ->sortBy(fn ($menu) => array_search($menu->id, $request->menu_ids ?? []))
+            ->values();
+
+        if ($menus->isEmpty()) {
+            return back()->with('error', 'メニューを選択してください');
         }
-    }
 
-    try {
-        if ($company->prefer_less_capable_staff_for_menu_assignment && !$request->filled('staff_id')) {
-            [$detailPlans, $end, $totalPrice, $representativeStaffId] =
-                $this->buildReservationDetailsWithPriorityPolicy(
-                    $company,
-                    $menus,
-                    $start
-                );
-        } else {
-            [$detailPlans, $end, $totalPrice, $representativeStaffId] =
-                $this->buildReservationDetailsNormal(
-                    $company,
-                    $request->filled('staff_id') ? (int) $request->staff_id : null,
-                    $menus,
-                    $start
-                );
+        $start = Carbon::parse($request->start_at);
+
+        if ($company->isLightPlan()) {
+            $request->merge([
+                'staff_id' => $company->fixedReservableStaff($start)?->id,
+                'assignments' => null,
+            ]);
         }
-    } catch (ValidationException $e) {
-        return back()->withErrors($e->errors())->withInput();
-    }
 
-    $resolvedName = trim((string) $request->input('customer_name', ''));
-    if ($resolvedName === '') {
-        $resolvedName = $lineCustomer->name
-            ?? ($lineProfile['name'] ?? '');
-    }
+        $limits = $this->getReservationLimits($company);
 
-    $resolvedPhone = trim((string) $request->input('customer_phone', ''));
-    if ($resolvedPhone === '') {
-        $resolvedPhone = $lineCustomer->phone ?? '';
-    }
+        if ($start < $limits['start']) {
+            return back()->with('error', 'この日はまだ予約受付していません');
+        }
 
-    $resolvedEmail = trim((string) $request->input('customer_email', ''));
-    if ($resolvedEmail === '') {
-        $resolvedEmail = $lineCustomer->email
-            ?? ($lineProfile['email'] ?? '');
-    }
+        if ($start > $limits['end']) {
+            return back()->with('error', '予約可能期間を超えています');
+        }
 
-    $normalizedPhone = $resolvedPhone !== ''
-        ? preg_replace('/[^0-9]/', '', $resolvedPhone)
-        : null;
+        if ($start < $limits['close']) {
+            return back()->with('error', '予約締切を過ぎています');
+        }
 
-    DB::beginTransaction();
-
-    try {
-        if ($lineCustomer) {
-            $customer = Customer::where('id', $lineCustomer->id)
-                ->lockForUpdate()
+        if ($request->filled('staff_id')) {
+            $selectedStaff = Staff::where('company_id', $company->id)
+                ->where('id', (int) $request->staff_id)
+                ->where('role', '!=', 'store_operator')
                 ->first();
-        } else {
-            $customer = null;
 
-            if (!empty($normalizedPhone)) {
-                $customer = Customer::where('company_id', $company->id)
-                    ->where('phone', $normalizedPhone)
+            if (! $selectedStaff) {
+                return back()->withErrors([
+                    'staff_id' => '選択した担当者が見つかりません。',
+                ])->withInput();
+            }
+
+            $requestedEndAt = $this->calculateRequestedEndAt($company, $menus, $start);
+
+            if (! $this->isStaffSelectableForPublic($company, (int) $selectedStaff->id, $start, $requestedEndAt)) {
+                return back()->withErrors([
+                    'staff_id' => '選択した担当者は、その日時では勤務対象外です。別の担当者または日時を選択してください。',
+                ])->withInput();
+            }
+        }
+
+        try {
+            if ($company->hasFeature('auto_assignment') && $company->prefer_less_capable_staff_for_menu_assignment && ! $request->filled('staff_id')) {
+                [$detailPlans, $end, $totalPrice, $representativeStaffId] =
+                    $this->buildReservationDetailsWithPriorityPolicy(
+                        $company,
+                        $menus,
+                        $start
+                    );
+            } else {
+                [$detailPlans, $end, $totalPrice, $representativeStaffId] =
+                    $this->buildReservationDetailsNormal(
+                        $company,
+                        $request->filled('staff_id') ? (int) $request->staff_id : null,
+                        $menus,
+                        $start
+                    );
+            }
+        } catch (ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+        }
+
+        $resolvedName = trim((string) $request->input('customer_name', ''));
+        if ($resolvedName === '') {
+            $resolvedName = $lineCustomer->name
+                ?? ($lineProfile['name'] ?? '');
+        }
+
+        $resolvedPhone = trim((string) $request->input('customer_phone', ''));
+        if ($resolvedPhone === '') {
+            $resolvedPhone = $lineCustomer->phone ?? '';
+        }
+
+        $resolvedEmail = trim((string) $request->input('customer_email', ''));
+        if ($resolvedEmail === '') {
+            $resolvedEmail = $lineCustomer->email
+                ?? ($lineProfile['email'] ?? '');
+        }
+
+        $normalizedPhone = $resolvedPhone !== ''
+            ? preg_replace('/[^0-9]/', '', $resolvedPhone)
+            : null;
+
+        DB::beginTransaction();
+
+        try {
+            if ($lineCustomer) {
+                $customer = Customer::where('id', $lineCustomer->id)
                     ->lockForUpdate()
                     ->first();
+            } else {
+                $customer = null;
+
+                if (! empty($normalizedPhone)) {
+                    $customer = Customer::where('company_id', $company->id)
+                        ->where('phone', $normalizedPhone)
+                        ->lockForUpdate()
+                        ->first();
+                }
+
+                if (! $customer) {
+                    $customer = new Customer;
+                    $customer->company_id = $company->id;
+                }
             }
 
-            if (!$customer) {
-                $customer = new Customer();
-                $customer->company_id = $company->id;
+            if ($resolvedName !== '') {
+                $customer->name = $resolvedName;
             }
-        }
 
-        if ($resolvedName !== '') {
-            $customer->name = $resolvedName;
-        }
+            if (! empty($normalizedPhone)) {
+                $customer->phone = $normalizedPhone;
+            }
 
-        if (!empty($normalizedPhone)) {
-            $customer->phone = $normalizedPhone;
-        }
+            if ($resolvedEmail !== '') {
+                $customer->email = $resolvedEmail;
+            }
 
-        if ($resolvedEmail !== '') {
-            $customer->email = $resolvedEmail;
-        }
+            if (! empty($lineProfile['line_user_id'])) {
+                $customer->line_user_id = $lineProfile['line_user_id'];
+                $customer->line_name = $lineProfile['name'] ?? ($customer->line_name ?? null);
+                $customer->line_picture_url = $lineProfile['avatar'] ?? ($customer->line_picture_url ?? null);
+                $customer->line_linked_at = $customer->line_linked_at ?? now();
+                $customer->line_notifications_enabled = true;
+                if (array_key_exists('friend_flag', $lineProfile) && $lineProfile['friend_flag'] !== null) {
+                    $customer->line_friend_flag = (bool) $lineProfile['friend_flag'];
+                }
+            }
 
-        if (!empty($lineProfile['line_user_id'])) {
-            $customer->line_user_id = $lineProfile['line_user_id'];
-            $customer->line_name = $lineProfile['name'] ?? ($customer->line_name ?? null);
-            $customer->line_picture_url = $lineProfile['avatar'] ?? ($customer->line_picture_url ?? null);
-            $customer->line_linked_at = $customer->line_linked_at ?? now();
-            $customer->line_notifications_enabled = true;
-		    if (array_key_exists('friend_flag', $lineProfile) && $lineProfile['friend_flag'] !== null) {
-		        $customer->line_friend_flag = (bool) $lineProfile['friend_flag'];
-		    }
-        }
+            $customer->save();
 
-        $customer->save();
+            if (! empty($lineProfile)) {
+                session([
+                    'reserve_line_customer_id' => $customer->id,
+                ]);
+            }
 
-        if (!empty($lineProfile)) {
-            session([
-                'reserve_line_customer_id' => $customer->id,
+            $representativeStaff = Staff::where('company_id', $company->id)
+                ->where('id', $representativeStaffId)
+                ->where('role', '!=', 'store_operator')
+                ->first();
+
+            // Light uses one fixed reservable staff member. The server-added staff_id
+            // is an assignment, not a customer nomination, and must not add a fee.
+            $isStaffNominated = ! $company->isLightPlan() && $request->filled('staff_id');
+            $nominationFee = $isStaffNominated
+                ? (int) ($representativeStaff->nomination_fee ?? 0)
+                : 0;
+
+            $reservation = Reservation::create([
+                'company_id' => $company->id,
+                'customer_id' => $customer->id,
+                'staff_id' => $representativeStaffId,
+                'is_staff_nominated' => $isStaffNominated,
+                'start_at' => $start,
+                'end_at' => $end,
+                'status' => 'reserved',
+                'customer_name' => $resolvedName,
+                'customer_phone' => ! empty($normalizedPhone) ? $normalizedPhone : null,
+                'customer_email' => $resolvedEmail ?: null,
+                'price' => $totalPrice,
+                'nomination_fee' => $nominationFee,
+                'total_price' => $totalPrice + $nominationFee,
+                'cancel_token' => Str::random(40),
             ]);
+
+            foreach ($menus as $menu) {
+                ReservationMenu::create([
+                    'reservation_id' => $reservation->id,
+                    'menu_id' => $menu->id,
+                    'price' => (int) ($menu->price ?? 0),
+                    'duration' => (int) ($menu->duration ?? 0),
+                ]);
+            }
+
+            foreach ($detailPlans as $index => $detail) {
+                ReservationDetail::create([
+                    'reservation_id' => $reservation->id,
+                    'menu_id' => $detail['menu_id'],
+                    'staff_id' => $detail['staff_id'],
+                    'start_at' => $detail['start_at'],
+                    'end_at' => $detail['end_at'],
+                    'duration' => $detail['duration'],
+                    'price' => $detail['price'],
+                    'sort_order' => $index + 1,
+                ]);
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error('公開予約登録失敗', [
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', '予約登録に失敗しました。時間をおいて再度お試しください。');
         }
 
-        $representativeStaff = Staff::where('company_id', $company->id)
-            ->where('id', $representativeStaffId)
-            ->where('role', '!=', 'store_operator')
-            ->first();
-
-        $isStaffNominated = $request->filled('staff_id');
-        $nominationFee = $isStaffNominated
-            ? (int) ($representativeStaff->nomination_fee ?? 0)
-            : 0;
-
-        $reservation = Reservation::create([
-            'company_id'      => $company->id,
-            'customer_id'     => $customer->id,
-            'staff_id'        => $representativeStaffId,
-            'is_staff_nominated' => $isStaffNominated,
-            'start_at'        => $start,
-            'end_at'          => $end,
-            'status'          => 'reserved',
-            'customer_name'   => $resolvedName,
-            'customer_phone'  => !empty($normalizedPhone) ? $normalizedPhone : null,
-            'customer_email'  => $resolvedEmail ?: null,
-            'price'           => $totalPrice,
-            'nomination_fee'  => $nominationFee,
-            'total_price'     => $totalPrice + $nominationFee,
-            'cancel_token'    => Str::random(40),
-        ]);
-
-        foreach ($menus as $menu) {
-            ReservationMenu::create([
+        try {
+            $reservation->load(['customer', 'staff', 'menus']);
+            if (
+                $company->sendsCustomerEmail() &&
+                ! empty($reservation->customer_email)
+            ) {
+                Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($company, $reservation));
+            }
+        } catch (\Throwable $e) {
+            Log::error('予約完了メール送信失敗', [
                 'reservation_id' => $reservation->id,
-                'menu_id'        => $menu->id,
-                'price'          => (int) ($menu->price ?? 0),
-                'duration'       => (int) ($menu->duration ?? 0),
+                'email' => $reservation->customer_email,
+                'error' => $e->getMessage(),
             ]);
         }
 
-        foreach ($detailPlans as $index => $detail) {
-            ReservationDetail::create([
+        try {
+            $reservation->loadMissing(['customer', 'staff', 'menus']);
+            $this->sendReservationCompleteLine($company, $reservation);
+        } catch (\Throwable $e) {
+            Log::error('LINE予約完了通知失敗', [
                 'reservation_id' => $reservation->id,
-                'menu_id'        => $detail['menu_id'],
-                'staff_id'       => $detail['staff_id'],
-                'start_at'       => $detail['start_at'],
-                'end_at'         => $detail['end_at'],
-                'duration'       => $detail['duration'],
-                'price'          => $detail['price'],
-                'sort_order'     => $index + 1,
+                'error' => $e->getMessage(),
             ]);
         }
 
-        DB::commit();
-    } catch (\Throwable $e) {
-        DB::rollBack();
+        session()->forget('reserve_confirm.'.$company->id);
 
-        Log::error('公開予約登録失敗', [
-            'company_id' => $company->id,
-            'error' => $e->getMessage(),
-        ]);
-
-        return back()->with('error', '予約登録に失敗しました。時間をおいて再度お試しください。');
+        return redirect('/r/'.$company_code.'/complete?reservation_id='.$reservation->id);
     }
-
-    try {
-        $reservation->load(['customer', 'staff', 'menus']);
-        if (
-            $company->sendsCustomerEmail() &&
-            !empty($reservation->customer_email)
-        ) {
-            Mail::to($reservation->customer_email)->send(new ReservationCompleteMail($company, $reservation));
-        }
-    } catch (\Throwable $e) {
-        Log::error('予約完了メール送信失敗', [
-            'reservation_id' => $reservation->id,
-            'email' => $reservation->customer_email,
-            'error' => $e->getMessage(),
-        ]);
-    }
-
-    try {
-        $reservation->loadMissing(['customer', 'staff', 'menus']);
-        $this->sendReservationCompleteLine($company, $reservation);
-    } catch (\Throwable $e) {
-        Log::error('LINE予約完了通知失敗', [
-            'reservation_id' => $reservation->id,
-            'error' => $e->getMessage(),
-        ]);
-    }
-
-    session()->forget('reserve_confirm.' . $company->id);
-
-    return redirect("/r/" . $company_code . "/complete?reservation_id=" . $reservation->id);
-}
     /*
     |--------------------------------------------------------------------------
     | complete
     |--------------------------------------------------------------------------
     */
 
-	public function complete($company_code, Request $request)
-	{
-	    $company = Company::where('company_code', $company_code)->firstOrFail();
+    public function complete($company_code, Request $request)
+    {
+        $company = Company::where('company_code', $company_code)->firstOrFail();
 
-	    $reservation = Reservation::where('id', $request->reservation_id)
-	        ->where('company_id', $company->id)
-	        ->with(['staff', 'details.menu', 'details.staff'])
-	        ->firstOrFail();
+        $reservation = Reservation::where('id', $request->reservation_id)
+            ->where('company_id', $company->id)
+            ->with(['staff', 'details.menu', 'details.staff'])
+            ->firstOrFail();
 
-	    $menus = ReservationMenu::where('reservation_id', $reservation->id)
-	        ->with('menu')
-	        ->get();
+        $menus = ReservationMenu::where('reservation_id', $reservation->id)
+            ->with('menu')
+            ->get();
 
-	    $staff = $reservation->staff;
+        $staff = $reservation->staff;
 
-	    $googleCalendarUrl = $this->buildGoogleCalendarUrl($company, $reservation, $menus);
+        $googleCalendarUrl = $this->buildGoogleCalendarUrl($company, $reservation, $menus);
 
-	    return view('reserve.complete', [
-	        'company'           => $company,
-	        'reservation'       => $reservation,
-	        'menus'             => $menus,
-	        'staff'             => $staff,
-	        'details'           => $reservation->details,
-	        'start_at'          => $reservation->start_at,
-	        'step'              => 3,
-	        'googleCalendarUrl' => $googleCalendarUrl,
-	    ]);
-	}
+        return view('reserve.complete', [
+            'company' => $company,
+            'reservation' => $reservation,
+            'menus' => $menus,
+            'staff' => $staff,
+            'details' => $reservation->details,
+            'start_at' => $reservation->start_at,
+            'step' => 3,
+            'googleCalendarUrl' => $googleCalendarUrl,
+        ]);
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -1236,13 +1354,13 @@ public function store(Request $request, $company_code)
                 $duration
             );
 
-            if (!$assignedStaffId) {
+            if (! $assignedStaffId) {
                 throw ValidationException::withMessages([
                     'menu_ids' => "「{$menu->name}」を担当できるスタッフを確保できませんでした。",
                 ]);
             }
 
-            if (!$representativeStaffId) {
+            if (! $representativeStaffId) {
                 $representativeStaffId = $assignedStaffId;
             }
 
@@ -1250,12 +1368,12 @@ public function store(Request $request, $company_code)
             $detailEnd = $cursor->copy()->addMinutes($duration);
 
             $details[] = [
-                'menu_id'  => $menu->id,
+                'menu_id' => $menu->id,
                 'staff_id' => $assignedStaffId,
                 'start_at' => $detailStart,
-                'end_at'   => $detailEnd,
+                'end_at' => $detailEnd,
                 'duration' => $duration,
-                'price'    => (int) $menu->price,
+                'price' => (int) $menu->price,
             ];
 
             $totalPrice += (int) $menu->price;
@@ -1268,7 +1386,7 @@ public function store(Request $request, $company_code)
     private function resolveStaffForMenuNormal($company, ?int $selectedStaffId, Menu $menu, Carbon $startAt, int $duration): ?int
     {
         $endAt = $startAt->copy()->addMinutes($duration);
-        $candidateStaffIds = $this->getCandidateStaffIdsForMenu($company->id, $menu->id);
+        $candidateStaffIds = $this->getCandidateStaffIdsForMenu($company, $menu->id);
 
         if (empty($candidateStaffIds)) {
             return null;
@@ -1297,7 +1415,7 @@ public function store(Request $request, $company_code)
 
         foreach ($menus as $index => $menu) {
             $duration = $this->resolveMenuDuration($company, $menu);
-            $candidateIds = $this->getCandidateStaffIdsForMenu($company->id, $menu->id);
+            $candidateIds = $this->getCandidateStaffIdsForMenu($company, $menu->id);
 
             if (empty($candidateIds)) {
                 throw ValidationException::withMessages([
@@ -1307,9 +1425,9 @@ public function store(Request $request, $company_code)
 
             $menuCandidates[$index] = $candidateIds;
             $slotMap[$index] = [
-                'menu'     => $menu,
+                'menu' => $menu,
                 'start_at' => $cursor->copy(),
-                'end_at'   => $cursor->copy()->addMinutes($duration),
+                'end_at' => $cursor->copy()->addMinutes($duration),
                 'duration' => $duration,
             ];
 
@@ -1326,7 +1444,7 @@ public function store(Request $request, $company_code)
             foreach ($assignment as $index => $staffId) {
                 $slot = $slotMap[$index];
 
-                if (!$this->isStaffAvailableForWindow(
+                if (! $this->isStaffAvailableForWindow(
                     $company,
                     $staffId,
                     $slot['start_at'],
@@ -1380,12 +1498,12 @@ public function store(Request $request, $company_code)
             }
 
             $details[] = [
-                'menu_id'  => $menu->id,
+                'menu_id' => $menu->id,
                 'staff_id' => $assignedStaffId,
                 'start_at' => $slot['start_at'],
-                'end_at'   => $slot['end_at'],
+                'end_at' => $slot['end_at'],
                 'duration' => $slot['duration'],
-                'price'    => (int) $menu->price,
+                'price' => (int) $menu->price,
             ];
 
             $totalPrice += (int) $menu->price;
@@ -1405,12 +1523,18 @@ public function store(Request $request, $company_code)
         return max(1, (int) ($company->slot_minutes ?: ($duration > 0 ? $duration : 30)));
     }
 
-    private function getCandidateStaffIdsForMenu(int $companyId, int $menuId): array
+    private function getCandidateStaffIdsForMenu($company, int $menuId): array
     {
+        if ($company->isLightPlan()) {
+            $staffId = $company->fixedReservableStaff()?->id;
+
+            return $staffId ? [(int) $staffId] : [];
+        }
+
         return DB::table('menu_staff')
             ->join('staff', 'staff.id', '=', 'menu_staff.staff_id')
             ->where('menu_staff.menu_id', $menuId)
-            ->where('staff.company_id', $companyId)
+            ->where('staff.company_id', $company->id)
             ->where('staff.is_reservable', 1)
             ->where('staff.role', '!=', 'store_operator')
             ->orderBy('staff.priority_order')
@@ -1436,7 +1560,7 @@ public function store(Request $request, $company_code)
     {
         $keys = array_keys($menuCandidates);
 
-        if (!isset($keys[$index])) {
+        if (! isset($keys[$index])) {
             return [$current];
         }
 
@@ -1485,11 +1609,20 @@ public function store(Request $request, $company_code)
 
     private function isStaffAvailableForWindow($company, int $staffId, Carbon $startAt, Carbon $endAt): bool
     {
-        $vacation = Vacation::where('staff_id', $staffId)
+        $staff = Staff::query()
+            ->where('company_id', $company->id)
+            ->whereKey($staffId)
+            ->first();
+
+        if (! $staff || ! $staff->isActiveForReservation($startAt->toDateString())) {
+            return false;
+        }
+
+        $vacation = ! $company->isLightPlan() && Vacation::where('staff_id', $staffId)
             ->where('status', 'approved')
             ->where(function ($q) use ($startAt, $endAt) {
                 $q->where('start_at', '<', $endAt)
-                  ->where('end_at', '>', $startAt);
+                    ->where('end_at', '>', $startAt);
             })
             ->exists();
 
@@ -1497,7 +1630,7 @@ public function store(Request $request, $company_code)
             return false;
         }
 
-        if (!$this->isStaffWorkingOnWindow($company, $staffId, $startAt, $endAt)) {
+        if (! $this->isStaffWorkingOnWindow($company, $staffId, $startAt, $endAt)) {
             return false;
         }
 
@@ -1507,7 +1640,7 @@ public function store(Request $request, $company_code)
             ->where('staff_id', $staffId)
             ->whereHas('reservation', function ($q) use ($company) {
                 $q->where('company_id', $company->id)
-                  ->where('status', 'reserved');
+                    ->where('status', 'reserved');
             })
             ->where('start_at', '<', $endAt)
             ->where('end_at', '>', $startAt)
@@ -1572,6 +1705,7 @@ public function store(Request $request, $company_code)
     public function stylesIndex($company_code)
     {
         $company = Company::where('company_code', $company_code)->firstOrFail();
+        abort_unless($company->hasFeature('style_posts'), 404);
 
         $styles = StylePost::where('company_id', $company->id)
             ->where('is_public', true)
@@ -1582,10 +1716,12 @@ public function store(Request $request, $company_code)
 
         return view('reserve.styles.index', compact('company', 'styles'));
     }
+
     public function noticeShow($company_code, $id)
     {
         $company = Company::where('company_code', $company_code)
             ->firstOrFail();
+        abort_unless($company->hasFeature('notices'), 404);
 
         $notice = Notice::where('company_id', $company->id)
             ->visible()

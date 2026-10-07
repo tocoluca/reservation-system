@@ -235,8 +235,12 @@
         ['label' => 'ダッシュボード', 'icon' => 'layout-dashboard', 'route' => 'company.dashboard', 'url' => route('company.dashboard'), 'active' => request()->routeIs('company.dashboard')],
         ['label' => '予約カレンダー', 'icon' => 'calendar-check', 'route' => 'company.reserve', 'url' => route('company.reserve'), 'active' => request()->routeIs('company.reserve')],
         ['label' => '予約一覧', 'icon' => 'list-checks', 'route' => 'company.reservations.index', 'url' => route('company.reservations.index'), 'active' => request()->routeIs('company.reservations.*')],
-        ['label' => '顧客管理', 'icon' => 'users', 'route' => 'company.customers', 'url' => route('company.customers'), 'active' => request()->routeIs('company.customers*')],
-        ['label' => '勤務管理', 'icon' => 'clock', 'route' => 'company.staff-shifts', 'url' => route('company.staff-shifts'), 'active' => request()->routeIs('company.staff-shifts*') || request()->routeIs('company.shift-patterns*') || request()->routeIs('company.staff-default-shifts*')],
+        ...($company->hasFeature('advanced_customer_management') ? [
+            ['label' => '顧客管理', 'icon' => 'users', 'route' => 'company.customers', 'url' => route('company.customers'), 'active' => request()->routeIs('company.customers*')],
+        ] : []),
+        ...($company->hasFeature('shifts') ? [
+            ['label' => '勤務管理', 'icon' => 'clock', 'route' => 'company.staff-shifts', 'url' => route('company.staff-shifts'), 'active' => request()->routeIs('company.staff-shifts*') || request()->routeIs('company.shift-patterns*') || request()->routeIs('company.staff-default-shifts*')],
+        ] : []),
     ] : [];
 
     if ($staff && $staff->isStoreOperator() && !$staff->canDashboard('card.month_shift')) {

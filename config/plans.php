@@ -1,0 +1,58 @@
+<?php
+
+return [
+    'default' => 'standard',
+
+    'plans' => [
+        'light' => [
+            'name' => 'ライトプラン',
+            'short_name' => 'ライト',
+            'price_id' => env('STRIPE_PRICE_LIGHT'),
+            'amount' => 1980,
+            'tax_included' => true,
+            'description' => '1人サロンのネット予約に必要な機能を、シンプルに利用できます。',
+            'max_active_staff' => 1,
+            'trial_days' => 0,
+            'campaign_eligible' => false,
+            'features' => [
+                'reservation_page',
+                'menus',
+                'multiple_menu_selection',
+                'reservation_calendar',
+                'reservation_management',
+                'business_calendar',
+                'reservation_window',
+                'past_time_block',
+                'double_booking_prevention',
+                'customer_basic_information',
+                'reservation_hero',
+            ],
+        ],
+        'standard' => [
+            'name' => 'スタンダードプラン',
+            'short_name' => 'スタンダード',
+            'price_id' => env('STRIPE_PRICE_STANDARD'),
+            'amount' => 5980,
+            'tax_included' => true,
+            'description' => '予約・顧客・スタッフ・シフトをまとめて管理できます。',
+            'max_active_staff' => null,
+            'trial_days' => null,
+            'campaign_eligible' => true,
+            'features' => ['*'],
+            'excluded_features' => ['line_login', 'line_notifications', 'customer_login'],
+        ],
+        'platinum' => [
+            'name' => 'プラチナプラン',
+            'short_name' => 'プラチナ',
+            'price_id' => env('STRIPE_PRICE_PLATINUM'),
+            'amount' => 7980,
+            'tax_included' => true,
+            'description' => 'LINEログイン・通知を含むすべての機能を利用できます。',
+            'max_active_staff' => null,
+            'trial_days' => null,
+            'campaign_eligible' => true,
+            'features' => ['*'],
+            'excluded_features' => [],
+        ],
+    ],
+];

@@ -4,15 +4,38 @@
 @php
     $company = auth()->guard('company')->user()->company;
     $theme = $company->theme_color ?? '#3b82f6';
+    $planFeatureForCard = [
+        'card.customers' => 'advanced_customer_management',
+        'card.reviews' => 'reviews',
+        'card.style' => 'style_posts',
+        'card.notices' => 'notices',
+        'card.reservation_change_notices' => 'reservation_change_notifications',
+        'card.menu_staff' => 'auto_assignment',
+        'card.staff' => 'staff_management',
+        'card.vacation' => 'vacations',
+        'card.month_shift' => 'shifts',
+        'card.month_shift_view' => 'shifts',
+        'card.default_shift' => 'shifts',
+        'card.shift_patterns' => 'shifts',
+        'card.theme' => 'advanced_theme',
+        'card.logo' => 'advanced_theme',
+        'dashboard.manage' => 'staff_management',
+        'dashboard.sales' => 'analytics',
+    ];
+    $planAllowsCard = function ($key) use ($company, $planFeatureForCard) {
+        $feature = $planFeatureForCard[$key] ?? null;
+        return !$feature || $company->hasFeature($feature);
+    };
     $settingWarnings = $settingWarnings ?? [];
     $businessWarning = $settingWarnings['business_calendar'] ?? [];
     $shiftWarning = $settingWarnings['staff_shifts'] ?? [];
     $hasBusinessAlert = ($businessWarning['has_alert'] ?? false) || ($businessWarning['has_warning'] ?? false);
-    $hasShiftAlert = ($shiftWarning['has_alert'] ?? false) || ($shiftWarning['has_warning'] ?? false);
+    $hasShiftAlert = $company->hasFeature('shifts')
+        && (($shiftWarning['has_alert'] ?? false) || ($shiftWarning['has_warning'] ?? false));
     $hasAnySettingAlert = $hasBusinessAlert || $hasShiftAlert;
-    $changePending = (int) ($changeNoticePendingCount ?? 0);
-    $changePhonePending = (int) ($changeNoticePhonePendingCount ?? 0);
-    $changeConfirmed = (int) ($changeNoticeConfirmedCount ?? 0);
+    $changePending = $company->hasFeature('reservation_change_notifications') ? (int) ($changeNoticePendingCount ?? 0) : 0;
+    $changePhonePending = $company->hasFeature('reservation_change_notifications') ? (int) ($changeNoticePhonePendingCount ?? 0) : 0;
+    $changeConfirmed = $company->hasFeature('reservation_change_notifications') ? (int) ($changeNoticeConfirmedCount ?? 0) : 0;
     // 予約変更連絡の代表件数は、重複し得る電話対応待ちを足さず確認待ちで集計する。
     $changeTotalActive = $changePending;
     $setupDoneCount = (int) ($setupDoneCount ?? 0);
@@ -35,8 +58,8 @@
         'status' => 'reserved',
     ]);
     $dashboardPermissions = $dashboardPermissions ?? [];
-    $can = function ($key, $default = false) use ($dashboardPermissions) {
-        return (bool) ($dashboardPermissions[$key] ?? $default);
+    $can = function ($key, $default = false) use ($dashboardPermissions, $planAllowsCard) {
+        return $planAllowsCard($key) && (bool) ($dashboardPermissions[$key] ?? $default);
     };
     $canAny = function (array $keys) use ($can) {
         foreach ($keys as $key) {

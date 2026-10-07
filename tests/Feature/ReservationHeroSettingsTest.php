@@ -28,6 +28,7 @@ class ReservationHeroSettingsTest extends TestCase
             $table->string('name');
             $table->string('industry_type');
             $table->string('theme_color')->nullable();
+            $table->string('plan_code')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_initialized')->default(true);
             $table->timestamp('billing_starts_at')->nullable();
@@ -153,13 +154,41 @@ class ReservationHeroSettingsTest extends TestCase
         $this->get(route('reserve.hero-image', ['company_code' => $other->company_code]))->assertNotFound();
     }
 
-    private function companyAndMaster(string $code): array
+    public function test_downgrading_to_light_resets_theme_and_removes_hero_image(): void
+    {
+        foreach (['standard', 'platinum'] as $index => $sourcePlan) {
+            [$company] = $this->companyAndMaster('LIGHT00'.($index + 1), $sourcePlan);
+            $processor = $this->app->make(ReservationHeroImageProcessor::class);
+            $imagePath = $processor->store(
+                UploadedFile::fake()->image("{$sourcePlan}.jpg", 1200, 600),
+                $company->id
+            );
+            $absolutePath = $processor->absolutePath($imagePath, $company->id);
+
+            $company->update([
+                'theme_color' => '#8b5e3c',
+                'reservation_hero_image_path' => $imagePath,
+            ]);
+
+            $this->assertFileExists($absolutePath);
+
+            $company->update(['plan_code' => 'light']);
+            $company->refresh();
+
+            $this->assertSame(Company::DEFAULT_THEME_COLOR, $company->theme_color, $sourcePlan);
+            $this->assertNull($company->reservation_hero_image_path, $sourcePlan);
+            $this->assertFileDoesNotExist($absolutePath, $sourcePlan);
+        }
+    }
+
+    private function companyAndMaster(string $code, ?string $planCode = null): array
     {
         $company = Company::create([
             'company_code' => $code,
             'name' => 'テストサロン',
             'industry_type' => 'beauty',
             'theme_color' => '#8b5e3c',
+            'plan_code' => $planCode,
             'is_active' => true,
             'is_initialized' => true,
             'billing_starts_at' => now()->addDay(),

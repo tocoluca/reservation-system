@@ -1,55 +1,48 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-
-use App\Http\Controllers\Admin\AuthController;
-use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\AdminApplicationController;
 use App\Http\Controllers\Admin\AdminCompanyDashboardNoticeController;
-
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\CompanyController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
 use App\Http\Controllers\Company\AuthController as CompanyAuth;
-use App\Http\Controllers\Company\DashboardController as CompanyDash;
-use App\Http\Controllers\Company\SetupController;
-use App\Http\Controllers\Company\ReservationController;
-use App\Http\Controllers\Company\QuestionnaireController;
-use App\Http\Controllers\Company\ThemeController;
-use App\Http\Controllers\Company\LogoController;
-use App\Http\Controllers\Company\StaffController;
-use App\Http\Controllers\Company\PasswordController;
-use App\Http\Controllers\Company\VacationController;
-use App\Http\Controllers\Company\CompanyController as CompanyInfoController;
-use App\Http\Controllers\Company\MyProfileController;
+use App\Http\Controllers\Company\BillingController;
 use App\Http\Controllers\Company\CalendarController;
-use App\Http\Controllers\Company\MenuController;
-use App\Http\Controllers\Company\MenuStaffController;
-use App\Http\Controllers\Company\MenuSettingController;
-use App\Http\Controllers\Company\ShiftPatternController;
-use App\Http\Controllers\Company\StaffDefaultShiftController;
-use App\Http\Controllers\Company\StaffShiftController;
+use App\Http\Controllers\Company\CompanyController as CompanyInfoController;
 use App\Http\Controllers\Company\CustomerController;
-use App\Http\Controllers\Company\NoticeController;
+use App\Http\Controllers\Company\DashboardController as CompanyDash;
 use App\Http\Controllers\Company\DashboardNoticeController;
 use App\Http\Controllers\Company\DashboardSettingController;
-use App\Http\Controllers\Company\ReviewController as CompanyReviewController;
-use App\Http\Controllers\ReservationNoticeResponseController;
-use App\Http\Controllers\Company\ReservationChangeNoticeController;
-
-use App\Http\Controllers\CompanyApplicationController;
-use App\Http\Controllers\ReserveController;
-use App\Http\Controllers\ReserveCancelController;
-use App\Http\Controllers\ReviewController;
-
-use App\Http\Controllers\Company\BillingController;
-use App\Http\Controllers\StripeWebhookController;
-
-use App\Http\Controllers\Company\StylePostController;
-
 use App\Http\Controllers\Company\InquiryController;
-use App\Http\Controllers\Admin\InquiryController as AdminInquiryController;
+use App\Http\Controllers\Company\LogoController;
+use App\Http\Controllers\Company\MenuController;
+use App\Http\Controllers\Company\MenuSettingController;
+use App\Http\Controllers\Company\MenuStaffController;
+use App\Http\Controllers\Company\MyProfileController;
+use App\Http\Controllers\Company\NoticeController;
+use App\Http\Controllers\Company\PasswordController;
+use App\Http\Controllers\Company\QuestionnaireController;
+use App\Http\Controllers\Company\ReservationChangeNoticeController;
+use App\Http\Controllers\Company\ReservationController;
 use App\Http\Controllers\Company\ReservationHeroController;
+use App\Http\Controllers\Company\ReviewController as CompanyReviewController;
+use App\Http\Controllers\Company\SetupController;
+use App\Http\Controllers\Company\ShiftPatternController;
+use App\Http\Controllers\Company\StaffController;
+use App\Http\Controllers\Company\StaffDefaultShiftController;
+use App\Http\Controllers\Company\StaffShiftController;
+use App\Http\Controllers\Company\StylePostController;
+use App\Http\Controllers\Company\ThemeController;
+use App\Http\Controllers\Company\VacationController;
+use App\Http\Controllers\CompanyApplicationController;
 use App\Http\Controllers\ReservationHeroImageController;
+use App\Http\Controllers\ReservationNoticeResponseController;
+use App\Http\Controllers\ReserveCancelController;
+use App\Http\Controllers\ReserveController;
+use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\StripeWebhookController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,11 +139,9 @@ Route::prefix('admin')->group(function () {
 
         Route::post('/companies/{id}/toggle', [CompanyController::class, 'toggle'])->name('admin.company.toggle');
 
-
 	    Route::get('/inquiries', [AdminInquiryController::class, 'index'])->name('admin.inquiries.index');
 	    Route::get('/inquiries/{inquiry}', [AdminInquiryController::class, 'show'])->name('admin.inquiries.show');
 	    Route::post('/inquiries/{inquiry}/reply', [AdminInquiryController::class, 'reply'])->name('admin.inquiries.reply');
-
 
     });
 });
@@ -201,6 +192,9 @@ Route::prefix('company')->group(function () {
         Route::get('setup', [SetupController::class, 'index'])
             ->name('company.setup');
 
+        Route::post('setup/plan', [SetupController::class, 'selectPlan'])
+            ->name('company.setup.plan');
+
         Route::post('setup/complete', [SetupController::class, 'complete'])
             ->name('company.setup.complete');
 
@@ -218,16 +212,20 @@ Route::prefix('company')->group(function () {
                 ->name('company.reserve.data');
 
             Route::get('theme', [ThemeController::class, 'edit'])
-                ->name('company.theme');
+                ->name('company.theme')
+                ->middleware('company.plan.feature:advanced_theme');
 
             Route::post('theme', [ThemeController::class, 'update'])
-                ->name('company.theme.update');
+                ->name('company.theme.update')
+                ->middleware('company.plan.feature:advanced_theme');
 
             Route::get('logo', [LogoController::class, 'edit'])
-                ->name('company.logo');
+                ->name('company.logo')
+                ->middleware('company.plan.feature:advanced_theme');
 
             Route::post('logo', [LogoController::class, 'update'])
-                ->name('company.logo.update');
+                ->name('company.logo.update')
+                ->middleware('company.plan.feature:advanced_theme');
 
             Route::get('dashboard-notices/{dashboardNotice}', [DashboardNoticeController::class, 'show'])
                 ->name('company.dashboard-notices.show');
@@ -248,49 +246,65 @@ Route::prefix('company')->group(function () {
                 ->name('company.reservation-hero.image.destroy');
 
             Route::get('staff', [StaffController::class, 'index'])
-                ->name('company.staff.index');
+                ->name('company.staff.index')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::get('staff/create', [StaffController::class, 'create'])
-                ->name('company.staff.create');
+                ->name('company.staff.create')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::post('staff', [StaffController::class, 'store'])
-                ->name('company.staff.store');
+                ->name('company.staff.store')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::get('staff/{staff}/edit', [StaffController::class, 'edit'])
-                ->name('company.staff.edit');
+                ->name('company.staff.edit')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::put('staff/{staff}', [StaffController::class, 'update'])
-                ->name('company.staff.update');
+                ->name('company.staff.update')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::delete('staff/{staff}', [StaffController::class, 'destroy'])
-                ->name('company.staff.destroy');
+                ->name('company.staff.destroy')
+                ->middleware('company.plan.feature:staff_management');
 
             Route::post('staff/{id}/reset-password', [StaffController::class, 'resetPassword'])
-                ->name('company.staff.reset-password');
+                ->name('company.staff.reset-password')
+                ->middleware('company.plan.feature:staff_management');
 
-            Route::get('vacation/apply', [VacationController::class, 'create']);
-            Route::post('vacation/apply', [VacationController::class, 'store']);
+            Route::get('vacation/apply', [VacationController::class, 'create'])
+                ->middleware('company.plan.feature:vacations');
+            Route::post('vacation/apply', [VacationController::class, 'store'])
+                ->middleware('company.plan.feature:vacations');
 
             Route::get('vacation', [VacationController::class, 'index'])
-                ->name('company.vacation.index');
+                ->name('company.vacation.index')
+                ->middleware('company.plan.feature:vacations');
 
             Route::get('vacation/create', [VacationController::class, 'create'])
-                ->name('company.vacation.create');
+                ->name('company.vacation.create')
+                ->middleware('company.plan.feature:vacations');
 
             Route::post('vacation', [VacationController::class, 'store'])
-                ->name('company.vacation.store');
+                ->name('company.vacation.store')
+                ->middleware('company.plan.feature:vacations');
 
             Route::post('vacation/{vacation}/approve', [VacationController::class, 'approve'])
-                ->name('company.vacation.approve');
+                ->name('company.vacation.approve')
+                ->middleware('company.plan.feature:vacations');
 
             Route::post('vacation/{vacation}/reject', [VacationController::class, 'reject'])
-                ->name('company.vacation.reject');
+                ->name('company.vacation.reject')
+                ->middleware('company.plan.feature:vacations');
 
             Route::post('vacation/{vacation}/cancel', [VacationController::class, 'cancel'])
-                ->name('company.vacation.cancel');
+                ->name('company.vacation.cancel')
+                ->middleware('company.plan.feature:vacations');
 
             Route::delete('vacation/{vacation}', [VacationController::class, 'destroy'])
-                ->name('company.vacation.destroy');
+                ->name('company.vacation.destroy')
+                ->middleware('company.plan.feature:vacations');
 
             Route::get('my-profile', [MyProfileController::class, 'edit'])
                 ->name('company.my-profile');
@@ -383,74 +397,97 @@ Route::prefix('company')->group(function () {
                 ->name('company.menu.destroy');
 
             Route::get('menu-staff', [MenuStaffController::class, 'index'])
-                ->name('company.menu-staff.index');
+                ->name('company.menu-staff.index')
+                ->middleware('company.plan.feature:auto_assignment');
 
             Route::post('menu-staff', [MenuStaffController::class, 'update'])
-                ->name('company.menu-staff.update');
+                ->name('company.menu-staff.update')
+                ->middleware('company.plan.feature:auto_assignment');
 
             Route::post('shift-patterns/order', [ShiftPatternController::class, 'updateOrder'])
-                ->name('company.shift-patterns.order');
+                ->name('company.shift-patterns.order')
+                ->middleware('company.plan.feature:shifts');
 
             Route::get('shift-patterns', [ShiftPatternController::class, 'index'])
-                ->name('company.shift-patterns');
+                ->name('company.shift-patterns')
+                ->middleware('company.plan.feature:shifts');
 
             Route::post('shift-patterns/store', [ShiftPatternController::class, 'store'])
-                ->name('company.shift-patterns.store');
+                ->name('company.shift-patterns.store')
+                ->middleware('company.plan.feature:shifts');
 
             Route::get('shift-patterns/delete/{id}', [ShiftPatternController::class, 'delete'])
-                ->name('company.shift-patterns.delete');
+                ->name('company.shift-patterns.delete')
+                ->middleware('company.plan.feature:shifts');
 
             Route::get('staff-default-shifts', [StaffDefaultShiftController::class, 'index'])
-                ->name('company.staff-default-shifts');
+                ->name('company.staff-default-shifts')
+                ->middleware('company.plan.feature:shifts');
 
             Route::post('staff-default-shifts', [StaffDefaultShiftController::class, 'update'])
-                ->name('company.staff-default-shifts.update');
+                ->name('company.staff-default-shifts.update')
+                ->middleware('company.plan.feature:shifts');
 
             Route::get('staff-shifts', [StaffShiftController::class, 'index'])
-                ->name('company.staff-shifts');
+                ->name('company.staff-shifts')
+                ->middleware('company.plan.feature:shifts');
 
             Route::post('staff-shifts/generate', [StaffShiftController::class, 'generate'])
-                ->name('company.staff-shifts.generate');
+                ->name('company.staff-shifts.generate')
+                ->middleware('company.plan.feature:shifts');
 
             Route::post('staff-shifts/update', [StaffShiftController::class, 'update'])
-                ->name('company.staff-shifts.update');
+                ->name('company.staff-shifts.update')
+                ->middleware('company.plan.feature:shifts');
 
             Route::post('staff-shifts/copy', [StaffShiftController::class, 'copy'])
-                ->name('company.staff-shifts.copy');
+                ->name('company.staff-shifts.copy')
+                ->middleware('company.plan.feature:shifts');
 
 			Route::get('staff-shifts/view', [StaffShiftController::class, 'view'])
-			    ->name('company.staff-shifts.view');
+                ->name('company.staff-shifts.view')
+                ->middleware('company.plan.feature:shifts');
 
 			Route::get('staff-shifts/pdf', [StaffShiftController::class, 'pdf'])
-			    ->name('company.staff-shifts.pdf');
+                ->name('company.staff-shifts.pdf')
+                ->middleware('company.plan.feature:shifts');
 
             Route::get('customers', [CustomerController::class, 'index'])
-                ->name('company.customers');
+                ->name('company.customers')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::get('customers/{id}', [CustomerController::class, 'show'])
-                ->name('company.customers.show');
+                ->name('company.customers.show')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::post('customers/{id}/revisit-reminder', [CustomerController::class, 'sendRevisitReminder'])
-                ->name('company.customers.revisit-reminder');
+                ->name('company.customers.revisit-reminder')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::post('customers/{id}/profile', [CustomerController::class, 'updateProfile'])
-                ->name('company.customers.profile');
+                ->name('company.customers.profile')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::post('customers/{id}/note', [CustomerController::class, 'note'])
-                ->name('company.customers.note');
+                ->name('company.customers.note')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::post('customers/{id}/photo', [CustomerController::class, 'photo'])
-                ->name('company.customers.photo');
+                ->name('company.customers.photo')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::delete('customers/note/{id}', [CustomerController::class, 'deleteNote'])
-                ->name('company.customers.note.delete');
+                ->name('company.customers.note.delete')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::delete('customers/photo/{id}', [CustomerController::class, 'deletePhoto'])
-                ->name('company.customers.photo.delete');
+                ->name('company.customers.photo.delete')
+                ->middleware('company.plan.feature:advanced_customer_management');
 
             Route::resource('notices', NoticeController::class)
                 ->except('show')
-                ->names('company.notices');
+                ->names('company.notices')
+                ->middleware('company.plan.feature:notices');
 
             Route::get('/dashboard-settings', [DashboardSettingController::class, 'index'])
                 ->name('company.dashboard-settings.index');
@@ -459,64 +496,75 @@ Route::prefix('company')->group(function () {
                 ->name('company.dashboard-settings.update');
 
             Route::get('reviews', [CompanyReviewController::class, 'index'])
-                ->name('company.reviews.index');
+                ->name('company.reviews.index')
+                ->middleware('company.plan.feature:reviews');
 
             Route::get('reviews/{review}', [CompanyReviewController::class, 'show'])
-                ->name('company.reviews.show');
+                ->name('company.reviews.show')
+                ->middleware('company.plan.feature:reviews');
 
             Route::post('reviews/{review}/approve', [CompanyReviewController::class, 'approve'])
-                ->name('company.reviews.approve');
+                ->name('company.reviews.approve')
+                ->middleware('company.plan.feature:reviews');
 
             Route::post('reviews/{review}/reject', [CompanyReviewController::class, 'reject'])
-                ->name('company.reviews.reject');
+                ->name('company.reviews.reject')
+                ->middleware('company.plan.feature:reviews');
 
             Route::post('reviews/{review}/reply', [CompanyReviewController::class, 'reply'])
-                ->name('company.reviews.reply');
+                ->name('company.reviews.reply')
+                ->middleware('company.plan.feature:reviews');
 
-            Route::get('reservations', [\App\Http\Controllers\Company\ReservationController::class, 'index'])
+            Route::get('reservations', [ReservationController::class, 'index'])
                 ->name('company.reservations.index');
 
-            Route::post('reservations/{id}/cancel', [\App\Http\Controllers\Company\ReservationController::class, 'cancelFromList'])
+            Route::post('reservations/{id}/cancel', [ReservationController::class, 'cancelFromList'])
                 ->name('company.reservations.cancel');
 
-            Route::post('reservations/{id}/complete', [\App\Http\Controllers\Company\ReservationController::class, 'completeFromList'])
+            Route::post('reservations/{id}/complete', [ReservationController::class, 'completeFromList'])
                 ->name('company.reservations.complete');
 
-            Route::post('reservations/{id}/staff', [\App\Http\Controllers\Company\ReservationController::class, 'updateStaff'])
-                ->name('company.reservations.staff.update');
+            Route::post('reservations/{id}/staff', [ReservationController::class, 'updateStaff'])
+                ->name('company.reservations.staff.update')
+                ->middleware('company.plan.feature:auto_assignment');
 
             Route::get('/reservation-change-notices', [ReservationChangeNoticeController::class, 'index'])
-                ->name('company.reservation_change_notices.index');
+                ->name('company.reservation_change_notices.index')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
             Route::get('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'show'])
-                ->name('company.reservation_change_notices.show');
+                ->name('company.reservation_change_notices.show')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
             Route::post('/reservation-change-notices/create-from-closed-date', [ReservationChangeNoticeController::class, 'createFromClosedDate'])
-                ->name('company.reservation_change_notices.create_from_closed_date');
+                ->name('company.reservation_change_notices.create_from_closed_date')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
             Route::post('/reservation-change-notices/{notice}/send-mails', [ReservationChangeNoticeController::class, 'sendMails'])
-                ->name('company.reservation_change_notices.send_mails');
+                ->name('company.reservation_change_notices.send_mails')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
 			Route::delete('/reservation-change-notices/{notice}', [ReservationChangeNoticeController::class, 'destroy'])
-			    ->name('company.reservation_change_notices.destroy');
+                ->name('company.reservation_change_notices.destroy')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
             Route::post('/reservation-change-notices/items/{item}/phone-confirmed', [ReservationChangeNoticeController::class, 'markPhoneConfirmed'])
-                ->name('company.reservation_change_notices.items.phone_confirmed');
+                ->name('company.reservation_change_notices.items.phone_confirmed')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
             Route::post('/reservation-change-notices/items/{item}/update-note', [ReservationChangeNoticeController::class, 'updateNote'])
-                ->name('company.reservation_change_notices.items.update_note');
+                ->name('company.reservation_change_notices.items.update_note')
+                ->middleware('company.plan.feature:reservation_change_notifications');
 
-            Route::get('/calendar/assignment-candidates', [\App\Http\Controllers\Company\ReservationController::class, 'assignmentCandidates'])
+            Route::get('/calendar/assignment-candidates', [ReservationController::class, 'assignmentCandidates'])
                 ->name('company.calendar.assignment-candidates');
 
-	        Route::get('/style-posts', [StylePostController::class, 'index'])->name('company.style-posts.index');
-	        Route::get('/style-posts/create', [StylePostController::class, 'create'])->name('company.style-posts.create');
-	        Route::post('/style-posts', [StylePostController::class, 'store'])->name('company.style-posts.store');
-	        Route::get('/style-posts/{id}/edit', [StylePostController::class, 'edit'])->name('company.style-posts.edit');
-	        Route::put('/style-posts/{id}', [StylePostController::class, 'update'])->name('company.style-posts.update');
-	        Route::delete('/style-posts/{id}', [StylePostController::class, 'destroy'])->name('company.style-posts.destroy');
-
-
+            Route::get('/style-posts', [StylePostController::class, 'index'])->name('company.style-posts.index')->middleware('company.plan.feature:style_posts');
+            Route::get('/style-posts/create', [StylePostController::class, 'create'])->name('company.style-posts.create')->middleware('company.plan.feature:style_posts');
+            Route::post('/style-posts', [StylePostController::class, 'store'])->name('company.style-posts.store')->middleware('company.plan.feature:style_posts');
+            Route::get('/style-posts/{id}/edit', [StylePostController::class, 'edit'])->name('company.style-posts.edit')->middleware('company.plan.feature:style_posts');
+            Route::put('/style-posts/{id}', [StylePostController::class, 'update'])->name('company.style-posts.update')->middleware('company.plan.feature:style_posts');
+            Route::delete('/style-posts/{id}', [StylePostController::class, 'destroy'])->name('company.style-posts.destroy')->middleware('company.plan.feature:style_posts');
 
         });
     });
@@ -525,11 +573,18 @@ Route::prefix('company')->group(function () {
 Route::get('/company/staff/list', function () {
     $company = auth()->guard('company')->user()->company;
 
-    return $company->staff()
+    if ($company->isLightPlan()) {
+        $staff = $company->fixedReservableStaff();
+        return $staff ? collect([$staff->only(['id', 'name'])]) : collect();
+    }
+
+    $query = $company->staff()
         ->where('is_reservable', true)
         ->where('role', '!=', 'store_operator')
-        ->orderBy('priority_order')
-        ->get(['id', 'name']);
+        ->activeForReservationOn(today())
+        ->orderBy('priority_order');
+
+    return $query->get(['id', 'name']);
 })->middleware('auth:company');
 
 /*
@@ -583,7 +638,6 @@ Route::prefix('r/{company_code}')
         Route::get('/notice/{id}', [ReserveController::class, 'noticeShow'])
             ->name('reserve.notice.show');
     });
-
 
 Route::get('/line/callback', [ReserveController::class, 'lineCallback'])
     ->name('reserve.line.callback');

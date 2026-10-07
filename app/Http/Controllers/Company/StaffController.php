@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Intervention\Image\ImageManager;
+use Illuminate\Support\Facades\Validator;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
 class StaffController extends Controller
 {
@@ -22,7 +23,7 @@ class StaffController extends Controller
     {
         $current = $this->currentStaff();
 
-        if (!$current->canDashboard('card.staff')) {
+        if (! $current->canDashboard('card.staff')) {
             abort(403, '讓ｩ髯舌′縺ゅｊ縺ｾ縺帙ｓ');
         }
     }
@@ -32,7 +33,7 @@ class StaffController extends Controller
         $current = $this->currentStaff();
 
         // 縺ｾ縺壹・螳牙・蛛ｴ縺ｧ master 縺ｮ縺ｿ螟画峩邉ｻ繧定ｨｱ蜿ｯ
-        if (!$current->isMaster()) {
+        if (! $current->isMaster()) {
             abort(403, '諡・ｽ楢・ｮ｡逅・・讓ｩ髯舌′縺ゅｊ縺ｾ縺帙ｓ');
         }
     }
@@ -83,7 +84,7 @@ class StaffController extends Controller
             $existingCodes = DB::table('staff')
                 ->where('company_id', $companyId)
                 ->where('role', 'store_operator')
-                ->where('staff_code', 'like', $prefix . '%')
+                ->where('staff_code', 'like', $prefix.'%')
                 ->lockForUpdate()
                 ->pluck('staff_code');
 
@@ -97,7 +98,7 @@ class StaffController extends Controller
                 throw new \RuntimeException('店舗運営ユーザーコードは SHOP99 までです。');
             }
 
-            return $prefix . str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+            return $prefix.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
         }
 
         if ($role === 'master') {
@@ -106,7 +107,7 @@ class StaffController extends Controller
             $existingCodes = DB::table('staff')
                 ->where('company_id', $companyId)
                 ->where('role', 'master')
-                ->where('staff_code', 'like', $prefix . '%')
+                ->where('staff_code', 'like', $prefix.'%')
                 ->lockForUpdate()
                 ->pluck('staff_code');
 
@@ -120,7 +121,7 @@ class StaffController extends Controller
                 throw new \RuntimeException('マスターユーザーコードは MST99 までです。');
             }
 
-            return $prefix . str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+            return $prefix.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
         }
 
         $lastCode = DB::table('staff')
@@ -135,17 +136,21 @@ class StaffController extends Controller
         return str_pad((string) $nextNumber, 4, '0', STR_PAD_LEFT);
     }
 
-	public function index(Request $request)
-	{
-	    $this->authorizeStaffIndex();
+    public function index(Request $request)
+    {
+        $this->authorizeStaffIndex();
 
-	    $company = $this->currentStaff()->company;
+        $company = $this->currentStaff()->company;
 
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', 'in:all,active,reservable,retiring,retired,not_reservable'],
             'sort' => ['nullable', 'in:priority,name,code,role'],
         ]);
+
+        if (! $company->isLightPlan() && $company->staff_setup_confirmed_at === null) {
+            $company->update(['staff_setup_confirmed_at' => now()]);
+        }
 
         $status = $filters['status'] ?? 'all';
         $sort = $filters['sort'] ?? 'priority';
@@ -186,8 +191,8 @@ class StaffController extends Controller
             ->when($sort === 'priority', fn ($query) => $query->orderBy('priority_order')->orderBy('name'))
             ->get();
 
-	    return view('company.staff.index', compact('staffs', 'staffStats', 'status', 'sort'));
-	}
+        return view('company.staff.index', compact('staffs', 'staffStats', 'status', 'sort'));
+    }
 
     public function create()
     {
@@ -210,15 +215,15 @@ class StaffController extends Controller
             ]);
         }
 
-		$request->validate([
-		    'name' => 'required|string|max:255',
-		    'password' => 'required|string|min:8',
-		    'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
-		    'image' => 'nullable|image|max:2048',
-		    'priority_order' => 'nullable|integer|min:0',
-		    'nomination_fee' => 'nullable|numeric|min:0',
-		    'retired_at' => 'nullable|date',
-		]);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'password' => 'required|string|min:8',
+            'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
+            'image' => 'nullable|image|max:2048',
+            'priority_order' => 'nullable|integer|min:0',
+            'nomination_fee' => 'nullable|numeric|min:0',
+            'retired_at' => 'nullable|date',
+        ]);
 
         if ($this->roleLevel($request->role) > $this->roleLevel($current->role)) {
             return redirect()
@@ -236,37 +241,37 @@ class StaffController extends Controller
                 if ($request->hasFile('image')) {
                     $file = $request->file('image');
 
-                    $manager = new ImageManager(new Driver());
+                    $manager = new ImageManager(new Driver);
                     $image = $manager->read($file);
                     $image->scaleDown(width: 800);
                     $encoded = $image->toWebp(quality: 85);
 
-                    $dir = public_path('companies/' . $company->id . '/staff');
-                    if (!file_exists($dir)) {
+                    $dir = public_path('companies/'.$company->id.'/staff');
+                    if (! file_exists($dir)) {
                         mkdir($dir, 0755, true);
                     }
 
-                    $filename = uniqid() . '.webp';
-                    $path = 'companies/' . $company->id . '/staff/' . $filename;
+                    $filename = uniqid().'.webp';
+                    $path = 'companies/'.$company->id.'/staff/'.$filename;
 
                     file_put_contents(public_path($path), $encoded);
                 }
 
                 $isStoreOperator = $request->role === 'store_operator';
 
-				$staff = Staff::create([
-				    'company_id' => $company->id,
-				    'staff_code' => $newCode,
-				    'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
-				    'password' => Hash::make($request->password),
-				    'role' => $request->role,
-				    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
-				    'priority_order' => $request->priority_order ?? 0,
-				    'nomination_fee' => $request->nomination_fee ?? 0,
-				    'image_path' => $path,
-				    'retired_at' => $request->filled('retired_at') ? $request->retired_at : null,
-				    'force_password_change' => true,
-				]);
+                $staff = Staff::create([
+                    'company_id' => $company->id,
+                    'staff_code' => $newCode,
+                    'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
+                    'password' => Hash::make($request->password),
+                    'role' => $request->role,
+                    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
+                    'priority_order' => $request->priority_order ?? 0,
+                    'nomination_fee' => $request->nomination_fee ?? 0,
+                    'image_path' => $path,
+                    'retired_at' => $request->filled('retired_at') ? $request->retired_at : null,
+                    'force_password_change' => true,
+                ]);
 
                 if ($request->role === 'area_leader' && $request->filled('store_ids')) {
                     $staff->stores()->sync($request->store_ids);
@@ -327,14 +332,14 @@ class StaffController extends Controller
             ]);
         }
 
-		$request->validate([
-		    'name' => 'required|string|max:255',
-		    'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
-		    'image' => 'nullable|image|max:2048',
-		    'priority_order' => 'nullable|integer|min:0',
-		    'nomination_fee' => 'nullable|numeric|min:0',
-		    'retired_at' => 'nullable|date',
-		]);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'role' => 'required|string|in:staff,leader,area_leader,chief,store_operator,master',
+            'image' => 'nullable|image|max:2048',
+            'priority_order' => 'nullable|integer|min:0',
+            'nomination_fee' => 'nullable|numeric|min:0',
+            'retired_at' => 'nullable|date',
+        ]);
 
         DB::transaction(function () use ($request, $staff) {
             $oldImagePath = $staff->image_path;
@@ -343,33 +348,33 @@ class StaffController extends Controller
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
 
-                $manager = new ImageManager(new Driver());
+                $manager = new ImageManager(new Driver);
                 $image = $manager->read($file);
                 $image->scaleDown(width: 800);
                 $encoded = $image->toWebp(quality: 85);
 
-                $dir = public_path('companies/' . $staff->company_id . '/staff');
-                if (!file_exists($dir)) {
+                $dir = public_path('companies/'.$staff->company_id.'/staff');
+                if (! file_exists($dir)) {
                     mkdir($dir, 0755, true);
                 }
 
-                $filename = uniqid() . '.webp';
-                $newImagePath = 'companies/' . $staff->company_id . '/staff/' . $filename;
+                $filename = uniqid().'.webp';
+                $newImagePath = 'companies/'.$staff->company_id.'/staff/'.$filename;
 
                 file_put_contents(public_path($newImagePath), $encoded);
             }
 
             $isStoreOperator = $request->role === 'store_operator';
 
-			$staff->update([
-			    'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
-			    'role' => $request->role,
-			    'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
-			    'priority_order' => $request->priority_order ?? 0,
-			    'nomination_fee' => $request->nomination_fee ?? 0,
-			    'image_path' => $newImagePath,
-			    'retired_at' => $request->filled('retired_at') ? $request->retired_at : null,
-			]);
+            $staff->update([
+                'name' => $isStoreOperator ? '店舗ユーザ' : $request->name,
+                'role' => $request->role,
+                'is_reservable' => $isStoreOperator ? false : $request->boolean('is_reservable'),
+                'priority_order' => $request->priority_order ?? 0,
+                'nomination_fee' => $request->nomination_fee ?? 0,
+                'image_path' => $newImagePath,
+                'retired_at' => $request->filled('retired_at') ? $request->retired_at : null,
+            ]);
 
             if (
                 $request->hasFile('image') &&
@@ -427,13 +432,13 @@ class StaffController extends Controller
             ->where('id', $id)
             ->firstOrFail();
 
-        if (!$this->canResetStaffPassword($current, $staff)) {
+        if (! $this->canResetStaffPassword($current, $staff)) {
             return redirect()
                 ->route('company.staff.index')
                 ->with('error', 'この担当者のパスワードは初期化できません');
         }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'initial_password' => ['required', 'string', 'min:8'],
         ], [
             'initial_password.required' => '初期パスワードを入力してください。',
@@ -452,7 +457,6 @@ class StaffController extends Controller
         $staff->force_password_change = true;
         $staff->save();
 
-        return back()->with('success', $staff->name . ' のパスワードを初期化しました');
+        return back()->with('success', $staff->name.' のパスワードを初期化しました');
     }
 }
-

@@ -30,6 +30,12 @@ class SendReservationReminders extends Command
             ->where('status', 'reserved')
             ->whereBetween('start_at', [$tomorrowStart, $tomorrowEnd])
             ->whereNull('reminder_sent_at')
+            ->whereHas('company', function ($query) {
+                $query->where(function ($planQuery) {
+                    $planQuery->whereNull('plan_code')
+                        ->orWhere('plan_code', '!=', 'light');
+                });
+            })
             ->get();
 
         if ($reservations->isEmpty()) {
@@ -45,6 +51,12 @@ class SendReservationReminders extends Command
 
         foreach ($reservations as $reservation) {
             try {
+                if (! $reservation->company || $reservation->company->isLightPlan()) {
+                    $skipCount++;
+
+                    continue;
+                }
+
                 if (!$reservation->customer) {
                     $skipCount++;
 /*

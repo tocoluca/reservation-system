@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class CompanyInit
 {
@@ -16,13 +16,13 @@ class CompanyInit
     {
         $staff = Auth::guard('company')->user();
 
-        if (!$staff) {
+        if (! $staff) {
             return redirect()->route('company.login');
         }
 
         $company = $staff->company;
 
-        if (!$company) {
+        if (! $company) {
             Auth::guard('company')->logout();
 
             $request->session()->invalidate();
@@ -33,11 +33,11 @@ class CompanyInit
         }
 
         // 初回パスワード変更が必要なら、そちらを優先
-        if ($staff->force_password_change && !(bool) $request->session()->get('admin_impersonating_company', false)) {
+        if ($staff->force_password_change && ! (bool) $request->session()->get('admin_impersonating_company', false)) {
             if (
-                !$request->routeIs('company.password.change') &&
-                !$request->routeIs('company.password.change.update') &&
-                !$request->routeIs('company.logout')
+                ! $request->routeIs('company.password.change') &&
+                ! $request->routeIs('company.password.change.update') &&
+                ! $request->routeIs('company.logout')
             ) {
                 return redirect()->route('company.password.change');
             }
@@ -49,6 +49,7 @@ class CompanyInit
         $setupAllowedRoutes = [
             // 初期設定ガイド
             'company.setup',
+            'company.setup.plan',
             'company.setup.complete',
 
             // 企業情報
@@ -115,15 +116,23 @@ class CompanyInit
             'company.staff-shifts.update',
             'company.staff-shifts.copy',
 
+            // 最後の予約確認
+            'company.reserve',
+            'company.reserve.data',
+            'company.reservation.store',
+            'company.calendar.assignment-candidates',
+            'company.calendar.availableStaff',
+            'company.calendar.staff-menus',
+
             // ログアウト
             'company.logout',
         ];
 
         // 初期ガイド未完了なら、許可画面以外は setup へ誘導
-        if (!$company->is_initialized) {
+        if (! $company->is_initialized) {
             $currentRouteName = optional($request->route())->getName();
 
-            if (!$currentRouteName || !in_array($currentRouteName, $setupAllowedRoutes, true)) {
+            if (! $currentRouteName || ! in_array($currentRouteName, $setupAllowedRoutes, true)) {
                 return redirect()->route('company.setup')
                     ->with('error', '最初に初期設定を完了してください。');
             }

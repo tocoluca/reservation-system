@@ -43,7 +43,10 @@ class SendReviewRequestMails extends Command
                     continue;
                 }
 
-                if (!(bool) ($reservation->company->review_enabled ?? false)) {
+                if (
+                    !$reservation->company->hasFeature('reviews')
+                    || !(bool) ($reservation->company->review_enabled ?? false)
+                ) {
                     continue;
                 }
 

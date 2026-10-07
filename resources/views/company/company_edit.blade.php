@@ -7,6 +7,7 @@
     $theme = $company->theme_color ?? '#3b82f6';
     $themeSoft = $theme . '15';
     $isPlatinumPlan = ($company->plan_code ?? null) === 'platinum';
+    $isLightPlan = $company->isLightPlan();
     $notificationChannel = old('customer_notification_channel', $company->customerNotificationChannel());
 
     $days = [0=>'日',1=>'月',2=>'火',3=>'水',4=>'木',5=>'金',6=>'土'];
@@ -353,6 +354,11 @@
             </div>
 
             <div class="p-6 grid grid-cols-1 gap-6">
+                @if($isLightPlan)
+                    <div class="rounded-2xl border border-sky-200 bg-sky-50 p-5 text-sm leading-6 text-sky-900">
+                        ライトプランでは、口コミ・担当者自動割当・LINE機能は利用できません。予約受付に必要な基本設定は下の「予約設定」から変更できます。
+                    </div>
+                @else
                 <div class="md:col-span-2">
                     <label class="block font-semibold mb-2 flex items-center gap-2">
                         口コミ機能
@@ -477,7 +483,7 @@
                         @endunless
                     </div>
                 </div>
-
+                @endif
             </div>
         </section>
 
@@ -527,9 +533,10 @@
                     <input type="number"
                            name="max_simultaneous_reservations"
                            min="1"
-                           max="10"
+                           max="{{ $isLightPlan ? 1 : 10 }}"
                            required
-                           value="{{ old('max_simultaneous_reservations',$company->max_simultaneous_reservations) }}"
+                           value="{{ $isLightPlan ? 1 : old('max_simultaneous_reservations',$company->max_simultaneous_reservations) }}"
+                           @readonly($isLightPlan)
                            class="w-full border rounded-2xl p-3 focus:ring-2"
                            style="--tw-ring-color: {{ $theme }};">
                     @error('max_simultaneous_reservations')
@@ -602,6 +609,7 @@
                     @enderror
                 </div>
 
+                @unless($isLightPlan)
                 <div>
                     <label class="block font-semibold mb-2">再来店促進メール送信日数</label>
                     <input type="number"
@@ -615,6 +623,8 @@
                         <p class="text-sm text-red-500 mt-2">{{ $message }}</p>
                     @enderror
                 </div>
+
+                @endunless
 
                 <div>
                     <label class="block font-semibold mb-2">

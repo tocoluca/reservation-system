@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Staff extends Authenticatable
 {
@@ -101,17 +101,27 @@ class Staff extends Authenticatable
         }
 
         $target = $dateTime
-            ? Carbon::parse($dateTime)
-            : now();
+            ? Carbon::parse($dateTime)->startOfDay()
+            : now()->startOfDay();
 
-        return $target->gte(Carbon::parse($this->retired_at)->startOfDay());
+        return $target->gt(Carbon::parse($this->retired_at)->startOfDay());
     }
 
     public function isActiveForReservation(?string $dateTime = null): bool
     {
         return $this->role !== 'store_operator'
             && $this->is_reservable
-            && !$this->isRetired($dateTime);
+            && ! $this->isRetired($dateTime);
+    }
+
+    public function scopeActiveForReservationOn($query, $date)
+    {
+        $targetDate = Carbon::parse($date)->toDateString();
+
+        return $query->where(function ($staffQuery) use ($targetDate) {
+            $staffQuery->whereNull('retired_at')
+                ->orWhereDate('retired_at', '>=', $targetDate);
+        });
     }
 
     public function roleLabel(): string

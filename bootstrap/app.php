@@ -1,11 +1,15 @@
 <?php
 
 use App\Http\Middleware\CheckCompanyCode;
+use App\Http\Middleware\CompanyInit;
 use App\Http\Middleware\EnsureCompanyBillingIsActive;
+use App\Http\Middleware\EnsureCompanyPlanFeature;
 use App\Http\Middleware\EnsurePublicReservationAvailable;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,9 +20,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'company.code' => CheckCompanyCode::class,
-            'company.init' => \App\Http\Middleware\CompanyInit::class,
+            'company.init' => CompanyInit::class,
             'company.billing.active' => EnsureCompanyBillingIsActive::class,
             'public.reservation.available' => EnsurePublicReservationAvailable::class,
+            'company.plan.feature' => EnsureCompanyPlanFeature::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
@@ -39,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, \Illuminate\Http\Request $request) {
+        $exceptions->render(function (TokenMismatchException $e, Request $request) {
             if ($request->is('company/*')) {
                 return redirect()
                     ->route('company.login')

@@ -1,16 +1,19 @@
 <?php
 
 namespace App\Providers;
-use Carbon\Carbon;
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\View;
-use SocialiteProviders\Manager\SocialiteWasCalled;
-use SocialiteProviders\Line\LineExtendSocialite;
-use App\Console\Commands\DemoResetCommand;
+
 use App\Console\Commands\DemoExportSeedCommand;
+use App\Console\Commands\DemoResetCommand;
+use App\Models\Company;
 use App\Models\Inquiry;
 use App\Models\ReservationChangeNoticeItem;
+use App\Observers\CompanyObserver;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
+use SocialiteProviders\Line\Provider;
+use SocialiteProviders\Manager\SocialiteWasCalled;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,14 +30,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Company::observe(CompanyObserver::class);
+
         Carbon::setLocale('ja');
         Event::listen(function (SocialiteWasCalled $event) {
-            $event->extendSocialite('line', \SocialiteProviders\Line\Provider::class);
+            $event->extendSocialite('line', Provider::class);
         });
         View::composer('layouts.company', function ($view) {
             $staff = auth()->guard('company')->user();
 
-            if (!$staff || !$staff->company_id) {
+            if (! $staff || ! $staff->company_id) {
                 return;
             }
 

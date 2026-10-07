@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Support\PlanCatalog;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,7 @@ class StripeWebhookController extends Controller
 
         if (!$secret) {
             Log::error('Stripe webhook secret is not configured.');
+
             return response()->json(['message' => 'Webhook secret not configured.'], 500);
         }
 
@@ -31,11 +33,13 @@ class StripeWebhookController extends Controller
             Log::warning('Stripe webhook payload invalid.', [
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['message' => 'Invalid payload.'], 400);
         } catch (SignatureVerificationException $e) {
             Log::warning('Stripe webhook signature invalid.', [
                 'error' => $e->getMessage(),
             ]);
+
             return response()->json(['message' => 'Invalid signature.'], 400);
         }
 
@@ -102,10 +106,11 @@ class StripeWebhookController extends Controller
                 'company_id' => $companyId,
                 'company_code' => $companyCode,
             ]);
+
             return;
         }
 
-        $company->forceFill([
+        $checkoutData = [
             'stripe_id' => $customerId ?: $company->stripe_id,
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'plan_code' => $planCode ?: $company->plan_code,
@@ -114,7 +119,19 @@ class StripeWebhookController extends Controller
                 : ($company->subscribed_at ?: now()),
             'grace_until' => null,
             'is_billing_active' => true,
-        ])->save();
+        ];
+
+        if ($planCode === 'light') {
+            $checkoutData['trial_ends_at'] = null;
+            $checkoutData['billing_starts_at'] = null;
+            $checkoutData['max_simultaneous_reservations'] = 1;
+            $checkoutData['review_enabled'] = false;
+            $checkoutData['prefer_less_capable_staff_for_menu_assignment'] = false;
+            $checkoutData['line_login_enabled'] = false;
+            $checkoutData['customer_notification_channel'] = 'email';
+        }
+
+        $company->forceFill($checkoutData)->save();
 
         Log::info('Stripe checkout.session.completed handled.', [
             'company_id' => $company->id,
@@ -131,6 +148,14 @@ class StripeWebhookController extends Controller
         $subscriptionId = data_get($subscription, 'id');
         $status = data_get($subscription, 'status');
         $priceId = data_get($subscription, 'items.data.0.price.id');
+        $metadataPlan = data_get($subscription, 'metadata.plan');
+        $metadataPrice = PlanCatalog::priceId($metadataPlan);
+        $planCode = in_array($metadataPlan, PlanCatalog::codes(), true)
+            && $metadataPrice
+            && $priceId
+            && hash_equals($metadataPrice, $priceId)
+                ? $metadataPlan
+                : PlanCatalog::codeForPriceId($priceId);
 
         $currentPeriodEnd = data_get($subscription, 'current_period_end');
         $trialEnd = data_get($subscription, 'trial_end');
@@ -147,6 +172,19 @@ class StripeWebhookController extends Controller
                 'stripe_id' => $customerId,
                 'stripe_subscription_id' => $subscriptionId,
             ]);
+
+            return;
+        }
+
+        if ($company->stripe_subscription_id
+            && $subscriptionId
+            && ! hash_equals((string) $company->stripe_subscription_id, (string) $subscriptionId)) {
+            Log::info('Stripe subscription event ignored for superseded subscription.', [
+                'company_id' => $company->id,
+                'current_subscription_id' => $company->stripe_subscription_id,
+                'event_subscription_id' => $subscriptionId,
+            ]);
+
             return;
         }
 
@@ -155,6 +193,7 @@ class StripeWebhookController extends Controller
             'stripe_subscription_id' => $subscriptionId ?: $company->stripe_subscription_id,
             'stripe_price_id' => $priceId ?: $company->stripe_price_id,
             'subscription_status' => $status,
+            'plan_code' => $planCode ?: $company->plan_code,
             'trial_ends_at' => $trialEnd ? Carbon::createFromTimestamp($trialEnd) : null,
             'current_period_end' => $currentPeriodEnd
                 ? Carbon::createFromTimestamp($currentPeriodEnd)
@@ -164,6 +203,16 @@ class StripeWebhookController extends Controller
                 $createdAt ? Carbon::createFromTimestamp($createdAt) : now()
             ),
         ];
+
+        if ($planCode === 'light') {
+            $data['trial_ends_at'] = null;
+            $data['billing_starts_at'] = null;
+            $data['max_simultaneous_reservations'] = 1;
+            $data['review_enabled'] = false;
+            $data['prefer_less_capable_staff_for_menu_assignment'] = false;
+            $data['line_login_enabled'] = false;
+            $data['customer_notification_channel'] = 'email';
+        }
 
         if (in_array($status, ['active', 'trialing'], true)) {
             $data['grace_until'] = null;
@@ -204,6 +253,7 @@ class StripeWebhookController extends Controller
                 'stripe_id' => $customerId,
                 'stripe_subscription_id' => $subscriptionId,
             ]);
+
             return;
         }
 
@@ -265,6 +315,7 @@ class StripeWebhookController extends Controller
                 'stripe_id' => $customerId,
                 'stripe_subscription_id' => $subscriptionId,
             ]);
+
             return;
         }
 
@@ -288,6 +339,7 @@ class StripeWebhookController extends Controller
 
         if (!$customerId) {
             Log::warning('Stripe payment_intent.payment_failed: customer missing.');
+
             return;
         }
 
@@ -299,6 +351,7 @@ class StripeWebhookController extends Controller
             Log::warning('Stripe payment_intent.payment_failed: company not found.', [
                 'stripe_id' => $customerId,
             ]);
+
             return;
         }
 

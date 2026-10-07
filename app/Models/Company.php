@@ -2,15 +2,19 @@
 
 namespace App\Models;
 
+use App\Support\PlanCatalog;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Authenticatable
 {
-    use HasFactory, Notifiable, Billable;
+    use Billable, HasFactory, Notifiable;
+
+    public const DEFAULT_THEME_COLOR = '#3b82f6';
 
     protected $fillable = [
         'company_code',
@@ -31,6 +35,7 @@ class Company extends Authenticatable
         'homepage',
         'is_active',
         'is_initialized',
+        'staff_setup_confirmed_at',
         'slot_minutes',
 
         // 予約設定
@@ -113,6 +118,7 @@ class Company extends Authenticatable
         'email_verified_at' => 'datetime',
         'reservation_hero_heading_size' => 'integer',
         'reservation_hero_subheading_size' => 'integer',
+        'staff_setup_confirmed_at' => 'datetime',
     ];
 
     public function staff(): HasMany
@@ -147,7 +153,7 @@ class Company extends Authenticatable
 
     public function inquiries()
     {
-        return $this->hasMany(\App\Models\Inquiry::class);
+        return $this->hasMany(Inquiry::class);
     }
 
     public function isSubscribed(): bool
@@ -159,20 +165,20 @@ class Company extends Authenticatable
     public function isOnTrial(): bool
     {
         return $this->subscription_status === 'trialing'
-            && !is_null($this->trial_ends_at)
+            && ! is_null($this->trial_ends_at)
             && $this->trial_ends_at->isFuture();
     }
 
     public function isInGracePeriod(): bool
     {
         return $this->subscription_status === 'past_due'
-            && !is_null($this->grace_until)
+            && ! is_null($this->grace_until)
             && $this->grace_until->isFuture();
     }
 
     public function isInBillingStartCampaign(): bool
     {
-        return !is_null($this->billing_starts_at)
+        return ! is_null($this->billing_starts_at)
             && $this->billing_starts_at->isFuture();
     }
 
@@ -186,7 +192,7 @@ class Company extends Authenticatable
 
     public function shouldBeLockedForBilling(): bool
     {
-        return !$this->isSubscriptionAvailable();
+        return ! $this->isSubscriptionAvailable();
     }
 
     public function isCanceled(): bool
@@ -212,13 +218,44 @@ class Company extends Authenticatable
 
     public function sendsCustomerLine(): bool
     {
-        return $this->plan_code === 'platinum'
+        return $this->hasFeature('line_notifications')
             && in_array($this->customerNotificationChannel(), ['both', 'line'], true);
+    }
+
+    public function isLightPlan(): bool
+    {
+        return $this->plan_code === 'light';
+    }
+
+    public function hasFeature(string $feature): bool
+    {
+        return PlanCatalog::hasFeature($this->plan_code, $feature);
+    }
+
+    public function activeStaffCount(): int
+    {
+        return $this->staff()
+            ->activeForReservationOn(today())
+            ->count();
+    }
+
+    public function fixedReservableStaff($reservationDate = null)
+    {
+        $targetDate = Carbon::parse($reservationDate ?? today())->toDateString();
+
+        return $this->staff()
+            ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
+            ->activeForReservationOn($targetDate)
+            ->orderBy('priority_order')
+            ->orderBy('id')
+            ->first();
     }
 
     public function planLabel(): string
     {
         return match ($this->plan_code) {
+            'light' => 'ライト',
             'standard' => 'スタンダード',
             'platinum' => 'プラチナ',
             default => '未契約',
@@ -254,10 +291,11 @@ class Company extends Authenticatable
     {
         return $this->subscribed_at ? '契約開始' : '登録日';
     }
+
     public function getNeedsBillingAttentionAttribute(): bool
     {
-        return !$this->isInBillingStartCampaign()
-            && (!$this->is_billing_active || in_array($this->subscription_status,
+        return ! $this->isInBillingStartCampaign()
+            && (! $this->is_billing_active || in_array($this->subscription_status,
                 ['past_due', 'unpaid', 'incomplete', 'incomplete_expired'], true));
     }
 

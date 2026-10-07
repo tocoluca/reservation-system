@@ -10,8 +10,6 @@
     $stepMenu        = collect($setupSteps)->firstWhere('key', 'menu');
     $stepShift       = collect($setupSteps)->firstWhere('key', 'shift');
     $stepReserve     = collect($setupSteps)->firstWhere('key', 'reserve');
-    $stepMyProfile   = collect($setupSteps)->firstWhere('key', 'my_profile');
-
     $requiredPercent = $requiredTotalCount > 0
         ? (int) floor(($requiredDoneCount / $requiredTotalCount) * 100)
         : 0;
@@ -59,6 +57,78 @@
             </div>
         </div>
     </div>
+
+    {{-- 1. 利用プラン --}}
+    <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8 mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
+                     style="background: {{ $theme }}">
+                    1
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">利用プランを選択する</h2>
+                    <p class="mt-2 text-gray-600 leading-7">
+                        最初に利用するプランを選択してください。選択したプランに合わせて必要な設定だけをご案内します。
+                    </p>
+                </div>
+            </div>
+
+            <span class="shrink-0 text-sm px-4 py-2 rounded-full font-bold
+                {{ $planSelected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                {{ $planSelected ? '選択済み' : '未選択' }}
+            </span>
+        </div>
+
+        @if($canChangePlan)
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                @foreach($plans as $plan)
+                    @php($selected = $company->plan_code === $plan['key'])
+                    <form method="POST" action="{{ route('company.setup.plan') }}"
+                          class="rounded-2xl border p-5 flex flex-col {{ $selected ? 'border-green-300 bg-green-50' : 'border-gray-200 bg-gray-50' }}">
+                        @csrf
+                        <input type="hidden" name="plan_code" value="{{ $plan['key'] }}">
+
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">{{ $plan['name'] }}</h3>
+                                <p class="mt-1 text-lg font-extrabold" style="color: {{ $theme }}">
+                                    ¥{{ number_format($plan['amount']) }}<span class="text-xs font-semibold text-gray-500"> / 月（{{ ($plan['tax_included'] ?? false) ? '税込' : '税抜' }}）</span>
+                                </p>
+                            </div>
+                            @if($selected)
+                                <span class="shrink-0 text-xs px-3 py-1 rounded-full bg-green-100 text-green-700 font-bold">選択中</span>
+                            @endif
+                        </div>
+
+                        <p class="mt-4 text-sm text-gray-600 leading-6 flex-1">{{ $plan['description'] }}</p>
+
+                        @if($plan['key'] === 'light')
+                            <p class="mt-3 text-xs text-gray-500 leading-5">担当者・シフト設定なしで、営業時間とメニューの設定だけで始められます。</p>
+                        @endif
+
+                        <button type="submit"
+                                class="mt-5 w-full px-5 py-3 rounded-xl font-semibold {{ $selected ? 'border bg-white' : 'text-white shadow-sm' }}"
+                                style="{{ $selected ? 'border-color: '.$theme.'; color: '.$theme : 'background: '.$theme }}">
+                            {{ $selected ? 'このプランを選択中' : 'このプランを選択' }}
+                        </button>
+                    </form>
+                @endforeach
+            </div>
+        @else
+            <div class="rounded-2xl border border-green-200 bg-green-50 px-5 py-4">
+                <div class="text-xs font-bold text-green-700">選択中のプラン</div>
+                <div class="mt-1 text-xl font-bold text-gray-900">{{ $selectedPlanName }}</div>
+                <p class="mt-2 text-sm text-gray-600">初期設定完了後または契約中のプラン変更は、契約管理画面から行ってください。</p>
+            </div>
+        @endif
+    </div>
+
+    @if(!$planSelected)
+        <div class="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 sm:p-6 text-amber-800 font-semibold">
+            プランを選択すると、そのプランに必要な初期設定が表示されます。
+        </div>
+    @else
 
     {{-- 進捗 --}}
     <div class="rounded-[2rem] border p-5 sm:p-6 lg:p-8 mb-6 shadow-sm
@@ -145,52 +215,52 @@
             </h2>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-            @foreach([
-                ['step' => 'STEP 1', 'data' => $stepStaff, 'title' => '担当者', 'desc' => 'スタッフ情報や権限を登録します。'],
-                ['step' => 'STEP 2', 'data' => $stepCompanyInfo, 'title' => '企業情報', 'desc' => '営業時間や予約受付の基本条件を設定します。'],
-                ['step' => 'STEP 3', 'data' => $stepMenu, 'title' => 'メニュー', 'desc' => 'メニュー名・時間・料金を設定します。'],
-                ['step' => 'STEP 4', 'data' => $stepShift, 'title' => 'シフト', 'desc' => 'スタッフが対応できる時間を設定します。'],
-                ['step' => 'STEP 5', 'data' => $stepReserve, 'title' => '予約確認', 'desc' => '予約カレンダーが表示されるか確認します。'],
-            ] as $card)
+        <div class="grid grid-cols-1 md:grid-cols-2 {{ $isLight ? 'xl:grid-cols-4' : 'xl:grid-cols-6' }} gap-4">
+            @foreach(collect($setupSteps)->where('required', true) as $card)
                 <div class="rounded-2xl border px-5 py-5 shadow-sm
-                    {{ $card['data']['done'] ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50' }}">
+                    {{ $card['done'] ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50' }}">
                     <div class="flex items-center justify-between mb-3">
-                        <div class="text-sm font-bold" style="color: {{ $theme }}">{{ $card['step'] }}</div>
+                        <div class="text-sm font-bold" style="color: {{ $theme }}">STEP {{ $card['step'] }}</div>
                         <span class="text-xs px-3 py-1 rounded-full font-bold
-                            {{ $card['data']['done'] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
-                            {{ $card['data']['done'] ? '完了' : '未完了' }}
+                            {{ $card['done'] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                            {{ $card['done'] ? '完了' : '未完了' }}
                         </span>
                     </div>
 
-                    <div class="text-lg font-bold text-gray-900 mb-2">{{ $card['title'] }}</div>
-                    <p class="text-sm text-gray-600 leading-6">{{ $card['desc'] }}</p>
+                    <div class="text-lg font-bold text-gray-900 mb-2">{{ $card['label'] }}</div>
+                    <p class="text-sm text-gray-600 leading-6">{{ $card['description'] }}</p>
                 </div>
             @endforeach
         </div>
 
         <div class="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
             <p class="text-sm lg:text-base text-amber-800 leading-7">
-                <span class="font-bold">迷ったときは、まず「担当者」から進めてください。</span><br>
-                先に担当者を登録しておくと、その後のメニュー設定やシフト設定が進めやすくなります。
+                @if($isLight)
+                    <span class="font-bold">ライトプランでは担当者・シフトの設定は不要です。</span><br>
+                    企業情報と営業時間を設定してから、予約メニューを登録してください。
+                @else
+                    <span class="font-bold">迷ったときは、まず「担当者」から進めてください。</span><br>
+                    先に担当者を登録しておくと、その後のメニュー設定やシフト設定が進めやすくなります。
+                @endif
             </p>
         </div>
     </div>
 
     <div class="space-y-6">
 
-        {{-- 1. 担当者 --}}
+        @unless($isLight)
+        {{-- 2. 担当者 --}}
         <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
                          style="background: {{ $theme }}">
-                        1
+                        2
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">担当者を設定する</h2>
                         <p class="mt-2 text-gray-600 leading-7">
-                            予約を受けるスタッフの情報や権限を設定します。
+                            担当者一覧を確認し、必要に応じて予約を受けるスタッフを登録します。1名で利用する場合は、一覧の確認だけで完了です。
                         </p>
                     </div>
                 </div>
@@ -205,7 +275,7 @@
                 <div class="rounded-2xl bg-gray-50 border border-gray-200 p-5">
                     <h3 class="text-lg font-bold text-gray-900 mb-3">担当者管理</h3>
                     <p class="text-sm lg:text-base text-gray-700 leading-7">
-                        スタッフの登録、編集、権限設定を行います。
+                        スタッフの登録、編集、権限設定を行います。この画面を開くと初期設定の確認が完了します。
                     </p>
 
                     <div class="mt-5">
@@ -245,14 +315,15 @@
                 </div>
             </div>
         </div>
+        @endunless
 
-        {{-- 2. 企業情報 --}}
+        {{-- 企業情報 --}}
         <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
                          style="background: {{ $theme }}">
-                        2
+                        {{ $isLight ? 2 : 3 }}
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">企業情報を設定する</h2>
@@ -319,13 +390,13 @@
             </div>
         </div>
 
-        {{-- 3. メニュー --}}
+        {{-- メニュー --}}
         <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
                          style="background: {{ $theme }}">
-                        3
+                        {{ $isLight ? 3 : 4 }}
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">メニューを設定する</h2>
@@ -341,7 +412,7 @@
                 </span>
             </div>
 
-            <div class="grid lg:grid-cols-3 gap-6">
+            <div class="grid {{ $isLight ? 'lg:grid-cols-2' : 'lg:grid-cols-3' }} gap-6">
                 <div class="rounded-2xl bg-gray-50 border border-gray-200 p-5">
                     <h3 class="text-lg font-bold text-gray-900 mb-3">カテゴリー・タグ管理</h3>
                     <p class="text-sm lg:text-base text-gray-700 leading-7">
@@ -370,6 +441,7 @@
                     </div>
                 </div>
 
+                @unless($isLight)
                 <div class="rounded-2xl bg-gray-50 border border-gray-200 p-5">
                     <h3 class="text-lg font-bold text-gray-900 mb-3">メニュー対応スタッフ</h3>
                     <p class="text-sm lg:text-base text-gray-700 leading-7">
@@ -383,16 +455,18 @@
                         </a>
                     </div>
                 </div>
+                @endunless
             </div>
         </div>
 
-        {{-- 4. シフト --}}
+        @unless($isLight)
+        {{-- 5. シフト --}}
         <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
                          style="background: {{ $theme }}">
-                        4
+                        5
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">シフトを設定する</h2>
@@ -452,14 +526,15 @@
                 </div>
             </div>
         </div>
+        @endunless
 
-        {{-- 5. 最後の確認 --}}
+        {{-- 最後の確認 --}}
         <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 sm:p-6 lg:p-8">
             <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
                 <div class="flex items-start gap-4">
                     <div class="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold shrink-0 shadow-sm"
                          style="background: {{ $theme }}">
-                        5
+                        {{ $isLight ? 4 : 6 }}
                     </div>
                     <div>
                         <h2 class="text-2xl font-bold text-gray-900">最後に予約カレンダーを確認する</h2>
@@ -478,8 +553,13 @@
             <div class="rounded-2xl bg-blue-50 border border-blue-100 px-5 py-4 mb-5">
                 <p class="text-sm lg:text-base text-blue-800 leading-7">
                     予約カレンダーに表示されない場合は、<br>
-                    <span class="font-bold">「担当者」→「企業情報」→「シフト」</span>
-                    の順で見直すと確認しやすいです。
+                    @if($isLight)
+                        <span class="font-bold">「企業情報・営業時間」→「メニュー」</span>
+                        の順で見直すと確認しやすいです。
+                    @else
+                        <span class="font-bold">「担当者」→「企業情報」→「シフト」</span>
+                        の順で見直すと確認しやすいです。
+                    @endif
                 </p>
             </div>
 
@@ -506,8 +586,8 @@
 
                 <form method="POST" action="{{ route('company.setup.complete') }}">
                     @csrf
-                    <button type="submit"
-                            class="px-6 py-3 rounded-xl border font-semibold bg-white"
+                    <button type="submit" @disabled(!$allRequiredCompleted)
+                            class="px-6 py-3 rounded-xl border font-semibold bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                             style="border-color: {{ $theme }}; color: {{ $theme }}">
                         ガイド確認完了
                     </button>
@@ -516,5 +596,6 @@
         </div>
 
     </div>
+    @endif
 </div>
 @endsection

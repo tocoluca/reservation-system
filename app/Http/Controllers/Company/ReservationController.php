@@ -3,24 +3,24 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Models\Company;
+use App\Models\CompanyBusinessCalendar;
+use App\Models\Customer;
+use App\Models\Menu;
 use App\Models\Reservation;
 use App\Models\ReservationDetail;
-use App\Models\Vacation;
-use App\Models\Menu;
-use App\Models\CompanyBusinessCalendar;
+use App\Models\ShiftPattern;
 use App\Models\Staff;
 use App\Models\StaffShift;
-use App\Models\ShiftPattern;
-use App\Models\Customer;
-use App\Models\Company;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
-use Yasumi\Yasumi;
-use Illuminate\Support\Facades\Log;
-use App\Services\ReservationChangeNoticeService;
+use App\Models\Vacation;
 use App\Services\ReservationCalendarWindow;
+use App\Services\ReservationChangeNoticeService;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Yasumi\Yasumi;
 
 class ReservationController extends Controller
 {
@@ -33,17 +33,17 @@ class ReservationController extends Controller
     {
         $company = auth()->guard('company')->user()->company;
 
-        $keyword  = trim((string) $request->get('keyword'));
+        $keyword = trim((string) $request->get('keyword'));
         $dateFrom = $request->get('date_from');
-        $dateTo   = $request->get('date_to');
-        $status   = $request->get('status');
+        $dateTo = $request->get('date_to');
+        $status = $request->get('status');
         $customerId = $request->get('customer_id');
         $customerFilter = null;
 
         $query = Reservation::with(['staff', 'customer', 'menus', 'details.staff', 'details.menu'])
             ->where('company_id', $company->id);
 
-        if (!empty($customerId)) {
+        if (! empty($customerId)) {
             $customerFilter = Customer::where('company_id', $company->id)->find($customerId);
 
             if ($customerFilter) {
@@ -55,24 +55,24 @@ class ReservationController extends Controller
             $normalizedKeyword = str_replace(['-', 'ー', ' '], '', $keyword);
 
             $query->where(function ($q) use ($keyword, $normalizedKeyword) {
-                $q->where('customer_name', 'like', '%' . $keyword . '%')
-                  ->orWhere('customer_phone', 'like', '%' . $normalizedKeyword . '%')
-                  ->orWhereHas('customer', function ($customerQuery) use ($keyword, $normalizedKeyword) {
-                      $customerQuery->where('name', 'like', '%' . $keyword . '%')
-                                    ->orWhere('phone', 'like', '%' . $normalizedKeyword . '%');
-                  });
+                $q->where('customer_name', 'like', '%'.$keyword.'%')
+                    ->orWhere('customer_phone', 'like', '%'.$normalizedKeyword.'%')
+                    ->orWhereHas('customer', function ($customerQuery) use ($keyword, $normalizedKeyword) {
+                        $customerQuery->where('name', 'like', '%'.$keyword.'%')
+                            ->orWhere('phone', 'like', '%'.$normalizedKeyword.'%');
+                    });
             });
         }
 
-        if (!empty($dateFrom)) {
+        if (! empty($dateFrom)) {
             $query->whereDate('start_at', '>=', $dateFrom);
         }
 
-        if (!empty($dateTo)) {
+        if (! empty($dateTo)) {
             $query->whereDate('start_at', '<=', $dateTo);
         }
 
-        if (!empty($status)) {
+        if (! empty($status)) {
             $query->where('status', $status);
         }
 
@@ -85,8 +85,12 @@ class ReservationController extends Controller
         $staffOptions = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
             ->where('role', '!=', 'store_operator')
+            ->activeForReservationOn(today())
             ->orderBy('priority_order')
             ->orderBy('id')
+            ->when($company->isLightPlan(), function ($query) {
+                $query->limit(1);
+            })
             ->get(['id', 'name']);
 
         $today = now()->toDateString();
@@ -152,7 +156,7 @@ class ReservationController extends Controller
             ->where('company_id', $company->id)
             ->find($id);
 
-        if (!$reservation) {
+        if (! $reservation) {
             return $errorResponse('予約が見つかりません。', 404);
         }
 
@@ -160,7 +164,7 @@ class ReservationController extends Controller
             return $errorResponse('予約中の予約だけ担当者を変更できます。');
         }
 
-        if (!$reservation->start_at || $reservation->start_at->lt(now()->startOfDay())) {
+        if (! $reservation->start_at || $reservation->start_at->lt(now()->startOfDay())) {
             return $errorResponse('昨日以前の予約は担当者を変更できません。');
         }
 
@@ -168,7 +172,7 @@ class ReservationController extends Controller
             ->with('menus:id')
             ->find($validated['staff_id']);
 
-        if (!$staff || !$staff->isActiveForReservation(optional($reservation->start_at)->toDateTimeString())) {
+        if (! $staff || ! $staff->isActiveForReservation(optional($reservation->start_at)->toDateTimeString())) {
             return $errorResponse('予約対応可能な担当者を選択してください。');
         }
 
@@ -195,7 +199,7 @@ class ReservationController extends Controller
             ->unique()
             ->values();
 
-        if ($menuIds->contains(fn ($menuId) => !$staff->menus->contains('id', (int) $menuId))) {
+        if ($menuIds->contains(fn ($menuId) => ! $staff->menus->contains('id', (int) $menuId))) {
             return $errorResponse('選択した担当者は、この予約のすべてのメニューに対応していません。');
         }
 
@@ -218,7 +222,7 @@ class ReservationController extends Controller
         $shifts = StaffShift::where('staff_id', $staff->id)
             ->whereBetween('date', [$rangeStart->toDateString(), $rangeEnd->toDateString()])
             ->get()
-            ->keyBy(fn ($shift) => $shift->staff_id . '_' . Carbon::parse($shift->date)->toDateString());
+            ->keyBy(fn ($shift) => $shift->staff_id.'_'.Carbon::parse($shift->date)->toDateString());
         $shiftPatterns = ShiftPattern::whereIn('id', $shifts->pluck('shift_pattern_id')->filter())
             ->get()
             ->keyBy('id');
@@ -230,7 +234,7 @@ class ReservationController extends Controller
         $maxSimultaneous = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
 
         foreach ($segments as $segment) {
-            if (!$this->isStaffSchedulable($staff, $segment['start_at'], $segment['end_at'], $shifts, $shiftPatterns, $vacations)) {
+            if (! $this->isStaffSchedulable($staff, $segment['start_at'], $segment['end_at'], $shifts, $shiftPatterns, $vacations)) {
                 return $errorResponse('選択した担当者は予約時間内に勤務していません。シフト・休暇を確認してください。');
             }
 
@@ -285,7 +289,7 @@ class ReservationController extends Controller
             ->where('company_id', $company->id)
             ->first();
 
-        if (!$reservation) {
+        if (! $reservation) {
             return redirect()
                 ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => '予約が見つかりません。']);
@@ -305,7 +309,7 @@ class ReservationController extends Controller
 
         $cancelKind = $request->input('cancel_kind', 'customer');
 
-        if (!in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
+        if (! in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
             $cancelKind = 'customer';
         }
 
@@ -325,7 +329,7 @@ class ReservationController extends Controller
             ->where('company_id', $company->id)
             ->first();
 
-        if (!$reservation) {
+        if (! $reservation) {
             return redirect()
                 ->route('company.reservations.index', $redirectParams)
                 ->withErrors(['reservation' => '予約が見つかりません。']);
@@ -355,7 +359,7 @@ class ReservationController extends Controller
     {
         $filters = $request->input('filters', []);
 
-        if (!is_array($filters)) {
+        if (! is_array($filters)) {
             return [];
         }
 
@@ -368,7 +372,7 @@ class ReservationController extends Controller
     private function getReservationLimits($company)
     {
         $limitMonth = $company->reservation_month_limit ?? 3;
-        $openDays   = $company->reservation_open_days ?? 0;
+        $openDays = $company->reservation_open_days ?? 0;
 
         $closeHours = is_numeric($company->reservation_close_hours)
             ? (int) $company->reservation_close_hours
@@ -386,7 +390,7 @@ class ReservationController extends Controller
 
         return [
             'start' => $startReservableDate,
-            'end'   => $lastReservableDate,
+            'end' => $lastReservableDate,
             'close' => $closeLimit,
         ];
     }
@@ -402,7 +406,7 @@ class ReservationController extends Controller
                 ? $request->get('mode')
                 : ($isMobile ? 'day' : 'week');
 
-            if (!in_array($mode, ['day', 'week'], true)) {
+            if (! in_array($mode, ['day', 'week'], true)) {
                 $mode = 'week';
             }
 
@@ -421,6 +425,10 @@ class ReservationController extends Controller
                 ->where('role', '!=', 'store_operator')
                 ->orderBy('priority_order')
                 ->orderBy('id')
+                ->when($company->isLightPlan(), function ($query) {
+                    $query->activeForReservationOn(today())
+                        ->limit(1);
+                })
                 ->get(['id', 'name']);
 
             return view('company.calendar', [
@@ -445,10 +453,14 @@ class ReservationController extends Controller
                 : now();
             $staffId = $request->staff_id;
 
+            if ($company->isLightPlan()) {
+                $staffId = $company->fixedReservableStaff($date)?->id;
+            }
+
             $limits = $this->getReservationLimits($company);
 
             if (
-                ($date->copy()->startOfDay() < $limits['start'] && !$date->isToday())
+                ($date->copy()->startOfDay() < $limits['start'] && ! $date->isToday())
                 || $date->copy()->startOfDay() > $limits['end']
             ) {
                 return response()->json([
@@ -459,14 +471,18 @@ class ReservationController extends Controller
 
             $staffQuery = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
-                ->where('role', '!=', 'store_operator');
+                ->where('role', '!=', 'store_operator')
+                ->activeForReservationOn($date);
 
-            if (!empty($staffId)) {
+            if (! empty($staffId)) {
                 $staffQuery->where('id', $staffId);
             }
 
             $staffList = $staffQuery
                 ->orderBy('priority_order')
+                ->when($company->isLightPlan(), function ($query) {
+                    $query->limit(1);
+                })
                 ->get();
 
             $staffIds = $staffList->pluck('id');
@@ -487,7 +503,7 @@ class ReservationController extends Controller
                 ->whereDate('date', $date->toDateString())
                 ->get()
                 ->keyBy(function ($s) {
-                    return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+                    return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
                 });
 
             $patternIds = $shifts->pluck('shift_pattern_id')->filter();
@@ -505,8 +521,8 @@ class ReservationController extends Controller
                     continue;
                 }
 
-                $open = Carbon::parse($date->format('Y-m-d') . ' ' . $p['open']);
-                $close = Carbon::parse($date->format('Y-m-d') . ' ' . $p['close']);
+                $open = Carbon::parse($date->format('Y-m-d').' '.$p['open']);
+                $close = Carbon::parse($date->format('Y-m-d').' '.$p['close']);
 
                 $time = $open->copy();
                 $now = Carbon::now();
@@ -527,6 +543,7 @@ class ReservationController extends Controller
                         }
 
                         $time->addMinutes($company->slot_minutes);
+
                         continue;
                     }
 
@@ -544,6 +561,7 @@ class ReservationController extends Controller
                         }
 
                         $time->addMinutes($company->slot_minutes);
+
                         continue;
                     }
 
@@ -576,7 +594,7 @@ class ReservationController extends Controller
                         $perStaffLimit = max(1, (int) ($company->max_simultaneous_reservations ?? 1));
 
                         if (
-                            !$result['is_closed']
+                            ! $result['is_closed']
                             && $overlapDetail
                             && $staffReservedCount >= $perStaffLimit
                         ) {
@@ -592,19 +610,19 @@ class ReservationController extends Controller
                             );
 
                             $data[$slotStart->format('H:i')][$staff->id] = [
-                                'status'            => '×',
-                                'reservation_id'    => $reservation?->id,
-                                'customer_name'     => $reservation?->customer_name,
-                                'customer_phone'    => $reservation?->customer_phone,
-                                'staff_id'          => $reservation?->staff_id,
-                                'is_staff_nominated'=> (bool) ($reservation?->is_staff_nominated ?? false),
-                                'staff_name'        => $staff->name,
+                                'status' => '×',
+                                'reservation_id' => $reservation?->id,
+                                'customer_name' => $reservation?->customer_name,
+                                'customer_phone' => $reservation?->customer_phone,
+                                'staff_id' => $reservation?->staff_id,
+                                'is_staff_nominated' => (bool) ($reservation?->is_staff_nominated ?? false),
+                                'staff_name' => $staff->name,
                                 'reservation_start' => optional($reservation?->start_at)->format('Y-m-d H:i'),
-                                'reservations'      => $reservationOptions,
-                                'available'         => 0,
-                                'total'             => $perStaffLimit,
-                                'is_closed'         => false,
-                                'unavailable_reason'=> 'already_booked',
+                                'reservations' => $reservationOptions,
+                                'available' => 0,
+                                'total' => $perStaffLimit,
+                                'is_closed' => false,
+                                'unavailable_reason' => 'already_booked',
                             ];
                         } else {
                             if ($overlapDetail) {
@@ -654,24 +672,31 @@ class ReservationController extends Controller
             $endDate = $startDate->copy()->addDays(6)->endOfDay();
             $displayDates = $this->calendarWindow->dates($startDate);
 
+            if ($company->isLightPlan()) {
+                $staffId = $company->fixedReservableStaff($startDate)?->id;
+            }
+
             $limits = $this->getReservationLimits($company);
 
             $staffQuery = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
                 ->where('role', '!=', 'store_operator');
 
-            if (!empty($menuIds)) {
+            if (! empty($menuIds) && ! $company->isLightPlan()) {
                 $staffQuery->whereHas('menus', function ($q) use ($menuIds) {
                     $q->whereIn('menus.id', $menuIds);
                 });
             }
 
-            if (!empty($staffId)) {
+            if (! empty($staffId)) {
                 $staffQuery->where('id', $staffId);
             }
 
             $staffList = $staffQuery
                 ->orderBy('priority_order')
+                ->when($company->isLightPlan(), function ($query) {
+                    $query->limit(1);
+                })
                 ->get();
 
             $staffIds = $staffList->pluck('id');
@@ -680,7 +705,7 @@ class ReservationController extends Controller
                 ->whereIn('staff_id', $staffIds)
                 ->where(function ($q) use ($startDate, $endDate) {
                     $q->where('start_at', '<', $endDate)
-                      ->where('end_at', '>', $startDate);
+                        ->where('end_at', '>', $startDate);
                 })
                 ->where('status', 'reserved')
                 ->get();
@@ -689,7 +714,7 @@ class ReservationController extends Controller
                 ->where('status', 'approved')
                 ->where(function ($q) use ($startDate, $endDate) {
                     $q->where('start_at', '<', $endDate)
-                      ->where('end_at', '>', $startDate);
+                        ->where('end_at', '>', $startDate);
                 })
                 ->get();
 
@@ -697,7 +722,7 @@ class ReservationController extends Controller
                 ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->get()
                 ->keyBy(function ($s) {
-                    return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+                    return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
                 });
 
             $patternIds = $shifts->pluck('shift_pattern_id')->filter();
@@ -716,7 +741,7 @@ class ReservationController extends Controller
                     $day->copy()->startOfDay() < $limits['start'] ||
                     $day->copy()->startOfDay() > $limits['end']
                 ) {
-                    if (!$day->isToday()) {
+                    if (! $day->isToday()) {
                         continue;
                     }
                 }
@@ -732,14 +757,14 @@ class ReservationController extends Controller
                         continue;
                     }
 
-                    $open = Carbon::parse($day->format('Y-m-d') . ' ' . $p['open']);
-                    $close = Carbon::parse($day->format('Y-m-d') . ' ' . $p['close']);
+                    $open = Carbon::parse($day->format('Y-m-d').' '.$p['open']);
+                    $close = Carbon::parse($day->format('Y-m-d').' '.$p['close']);
 
                     $time = $open->copy();
 
                     while ($time < $close) {
-                        $slotStart = Carbon::parse($day->format('Y-m-d') . ' ' . $time->format('H:i'));
-                        $slotEnd   = $slotStart->copy()->addMinutes($minutes);
+                        $slotStart = Carbon::parse($day->format('Y-m-d').' '.$time->format('H:i'));
+                        $slotEnd = $slotStart->copy()->addMinutes($minutes);
 
                         if ($day->isToday() && $slotStart < now()) {
                             $data[$time->format('H:i')][$day->format('Y-m-d')] = [
@@ -751,6 +776,7 @@ class ReservationController extends Controller
                             ];
 
                             $time->addMinutes($minutes);
+
                             continue;
                         }
 
@@ -765,6 +791,7 @@ class ReservationController extends Controller
                                 'unavailable_reason' => $status === 'closed' ? 'non_business_day' : 'outside_business_hours',
                             ];
                             $time->addMinutes($minutes);
+
                             continue;
                         }
 
@@ -790,7 +817,7 @@ class ReservationController extends Controller
                                 $vacations
                             );
 
-                            if (!empty($reservationOptions)) {
+                            if (! empty($reservationOptions)) {
                                 $firstReservation = $reservationOptions[0];
 
                                 $result['reservations'] = $reservationOptions;
@@ -835,20 +862,28 @@ class ReservationController extends Controller
 
         try {
             $request->validate([
-                'start_at'                  => 'required|date',
-                'customer_name'             => 'required|string|max:255',
-                'customer_phone'            => 'required|string|max:50',
-                'customer_email'            => 'nullable|email|max:255',
-                'menu_ids'                  => 'required|array|min:1',
-                'menu_ids.*'                => 'integer',
-                'staff_id'                  => 'nullable|integer',
-                'is_staff_nominated'        => 'nullable|boolean',
-                'assignments'               => 'nullable|array',
-                'assignments.*.menu_id'     => 'required_with:assignments|integer',
-                'assignments.*.staff_id'    => 'required_with:assignments|integer',
+                'start_at' => 'required|date',
+                'customer_name' => 'required|string|max:255',
+                'customer_phone' => 'required|string|max:50',
+                'customer_email' => 'nullable|email|max:255',
+                'menu_ids' => 'required|array|min:1',
+                'menu_ids.*' => 'integer',
+                'staff_id' => 'nullable|integer',
+                'is_staff_nominated' => 'nullable|boolean',
+                'assignments' => 'nullable|array',
+                'assignments.*.menu_id' => 'required_with:assignments|integer',
+                'assignments.*.staff_id' => 'required_with:assignments|integer',
             ]);
 
             $start = Carbon::parse($request->start_at);
+
+            if ($company->isLightPlan()) {
+                $request->merge([
+                    'staff_id' => $company->fixedReservableStaff($start)?->id,
+                    'is_staff_nominated' => false,
+                    'assignments' => null,
+                ]);
+            }
 
             $menuIds = collect($request->menu_ids ?? [])->map(fn ($id) => (int) $id)->values();
 
@@ -890,9 +925,16 @@ class ReservationController extends Controller
             $staffList = Staff::where('company_id', $company->id)
                 ->where('is_reservable', true)
                 ->where('role', '!=', 'store_operator')
+                ->activeForReservationOn($start)
                 ->with('menus:id')
                 ->orderBy('priority_order')
                 ->get();
+
+            if ($company->isLightPlan()) {
+                $fixedStaff = $company->fixedReservableStaff($start);
+                $staffList = $fixedStaff ? collect([$fixedStaff]) : collect();
+                $staffList->each(fn ($staff) => $staff->setRelation('menus', $orderedMenus));
+            }
 
             if ($staffList->isEmpty()) {
                 return response()->json([
@@ -904,13 +946,13 @@ class ReservationController extends Controller
             $staffIds = $staffList->pluck('id');
 
             $shiftDateFrom = $start->toDateString();
-            $shiftDateTo   = $end->copy()->toDateString();
+            $shiftDateTo = $end->copy()->toDateString();
 
             $shifts = StaffShift::whereIn('staff_id', $staffIds)
                 ->whereBetween('date', [$shiftDateFrom, $shiftDateTo])
                 ->get()
                 ->keyBy(function ($s) {
-                    return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+                    return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
                 });
 
             $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
@@ -923,29 +965,30 @@ class ReservationController extends Controller
                 ->where('status', 'approved')
                 ->where(function ($q) use ($start, $end) {
                     $q->where('start_at', '<', $end)
-                      ->where('end_at', '>', $start);
+                        ->where('end_at', '>', $start);
                 })
                 ->get();
 
             $requestedAssignments = collect($request->assignments ?? [])
                 ->map(function ($row) {
                     return [
-                        'menu_id'  => (int) ($row['menu_id'] ?? 0),
+                        'menu_id' => (int) ($row['menu_id'] ?? 0),
                         'staff_id' => (int) ($row['staff_id'] ?? 0),
                     ];
                 })
                 ->values();
 
             $requestedStaffId = $request->staff_id ? (int) $request->staff_id : null;
-            $isStaffNominated = $request->boolean('is_staff_nominated');
-            $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
+            $isStaffNominated = ! $company->isLightPlan()
+                && $request->boolean('is_staff_nominated');
+            $preferLessCapable = $company->hasFeature('auto_assignment')
+                && (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
 
             DB::transaction(function () use (
                 $request,
                 $company,
                 $start,
                 $end,
-                $orderedMenus,
                 $segments,
                 $staffList,
                 $shifts,
@@ -967,21 +1010,21 @@ class ReservationController extends Controller
                         $menuId = (int) $segment['menu']->id;
                         $assignment = $requestedAssignments->firstWhere('menu_id', $menuId);
 
-                        if (!$assignment) {
+                        if (! $assignment) {
                             throw new \Exception('担当パターンが不正です');
                         }
 
                         $staff = $staffList->firstWhere('id', (int) $assignment['staff_id']);
 
-                        if (!$staff) {
+                        if (! $staff) {
                             throw new \Exception('担当者が見つかりません');
                         }
 
-                        if (!$staff->menus->contains('id', $menuId)) {
+                        if (! $staff->menus->contains('id', $menuId)) {
                             throw new \Exception('担当者とメニューの組み合わせが不正です');
                         }
 
-                        if (!$this->isSegmentReservableForStaff(
+                        if (! $this->isSegmentReservableForStaff(
                             $company,
                             $staff,
                             $segment['start_at'],
@@ -994,11 +1037,11 @@ class ReservationController extends Controller
                         }
 
                         $finalAssignments[] = [
-                            'menu'      => $segment['menu'],
-                            'staff'     => $staff,
-                            'start_at'  => $segment['start_at'],
-                            'end_at'    => $segment['end_at'],
-                            'duration'  => $segment['duration'],
+                            'menu' => $segment['menu'],
+                            'staff' => $staff,
+                            'start_at' => $segment['start_at'],
+                            'end_at' => $segment['end_at'],
+                            'duration' => $segment['duration'],
                         ];
                     }
                 } else {
@@ -1007,16 +1050,16 @@ class ReservationController extends Controller
                     if ($requestedStaffId) {
                         $staff = $staffList->firstWhere('id', $requestedStaffId);
 
-                        if (!$staff) {
+                        if (! $staff) {
                             throw new \Exception('担当者が見つかりません');
                         }
 
                         foreach ($segments as $segment) {
-                            if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                            if (! $staff->menus->contains('id', $segment['menu']->id)) {
                                 throw new \Exception('この担当者は選択メニューすべてに対応していません');
                             }
 
-                            if (!$this->isSegmentReservableForStaff(
+                            if (! $this->isSegmentReservableForStaff(
                                 $company,
                                 $staff,
                                 $segment['start_at'],
@@ -1033,11 +1076,11 @@ class ReservationController extends Controller
                     } else {
                         $candidateStaff = $staffList->filter(function ($staff) use ($segments, $company, $shifts, $shiftPatterns, $vacations) {
                             foreach ($segments as $segment) {
-                                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                                if (! $staff->menus->contains('id', $segment['menu']->id)) {
                                     return false;
                                 }
 
-                                if (!$this->isSegmentReservableForStaff(
+                                if (! $this->isSegmentReservableForStaff(
                                     $company,
                                     $staff,
                                     $segment['start_at'],
@@ -1055,18 +1098,18 @@ class ReservationController extends Controller
 
                         $assignedStaff = $candidateStaff->first();
 
-                        if (!$assignedStaff) {
+                        if (! $assignedStaff) {
                             throw new \Exception('空いているスタッフがいません');
                         }
                     }
 
                     foreach ($segments as $segment) {
                         $finalAssignments[] = [
-                            'menu'      => $segment['menu'],
-                            'staff'     => $assignedStaff,
-                            'start_at'  => $segment['start_at'],
-                            'end_at'    => $segment['end_at'],
-                            'duration'  => $segment['duration'],
+                            'menu' => $segment['menu'],
+                            'staff' => $assignedStaff,
+                            'start_at' => $segment['start_at'],
+                            'end_at' => $segment['end_at'],
+                            'duration' => $segment['duration'],
                         ];
                     }
                 }
@@ -1082,7 +1125,7 @@ class ReservationController extends Controller
 
                 $mainStaff = $mainStaffGroup ? collect($mainStaffGroup)->first()['staff'] : null;
 
-                if (!$mainStaff) {
+                if (! $mainStaff) {
                     throw new \Exception('担当者の割当ができませんでした');
                 }
 
@@ -1117,30 +1160,30 @@ class ReservationController extends Controller
                     $customer->save();
                 } else {
                     $customer = Customer::create([
-                        'company_id'  => $company->id,
-                        'name'        => $request->customer_name,
-                        'phone'       => $normalizedPhone,
-                        'email'       => $request->customer_email ?? null,
+                        'company_id' => $company->id,
+                        'name' => $request->customer_name,
+                        'phone' => $normalizedPhone,
+                        'email' => $request->customer_email ?? null,
                         'visit_count' => 1,
-                        'last_visit'  => $start,
+                        'last_visit' => $start,
                     ]);
                 }
 
                 $reservation = Reservation::create([
-                    'company_id'     => $company->id,
-                    'staff_id'       => $mainStaff->id,
+                    'company_id' => $company->id,
+                    'staff_id' => $mainStaff->id,
                     'is_staff_nominated' => $isStaffNominated,
-                    'customer_name'  => $request->customer_name,
+                    'customer_name' => $request->customer_name,
                     'customer_phone' => $normalizedPhone,
                     'customer_email' => $request->customer_email ?? null,
-                    'start_at'       => $start,
-                    'end_at'         => $end,
-                    'price'          => $price,
+                    'start_at' => $start,
+                    'end_at' => $end,
+                    'price' => $price,
                     'nomination_fee' => $nominationFee,
-                    'total_price'    => $totalPrice,
-                    'status'         => 'reserved',
-                    'customer_id'    => $customer->id,
-                    'source'         => 'staff',
+                    'total_price' => $totalPrice,
+                    'status' => 'reserved',
+                    'customer_id' => $customer->id,
+                    'source' => 'staff',
                 ]);
 
                 $attachData = [];
@@ -1150,25 +1193,25 @@ class ReservationController extends Controller
                     $staff = $row['staff'];
 
                     $attachData[$menu->id] = [
-                        'price'      => $menu->price,
-                        'duration'   => $row['duration'],
+                        'price' => $menu->price,
+                        'duration' => $row['duration'],
                         'created_at' => now(),
                         'updated_at' => now(),
                     ];
 
                     ReservationDetail::create([
                         'reservation_id' => $reservation->id,
-                        'menu_id'        => $menu->id,
-                        'staff_id'       => $staff->id,
-                        'start_at'       => $row['start_at'],
-                        'end_at'         => $row['end_at'],
-                        'duration'       => $row['duration'],
-                        'price'          => (int) ($menu->price ?? 0),
-                        'sort_order'     => $index + 1,
+                        'menu_id' => $menu->id,
+                        'staff_id' => $staff->id,
+                        'start_at' => $row['start_at'],
+                        'end_at' => $row['end_at'],
+                        'duration' => $row['duration'],
+                        'price' => (int) ($menu->price ?? 0),
+                        'sort_order' => $index + 1,
                     ]);
                 }
 
-                if (!empty($attachData)) {
+                if (! empty($attachData)) {
                     $reservation->menus()->attach($attachData);
                 }
             });
@@ -1186,15 +1229,15 @@ class ReservationController extends Controller
     {
         $companyUser = auth()->guard('company')->user();
 
-        if (!$companyUser) {
+        if (! $companyUser) {
             return response()->json([], 401);
         }
 
         $company = $companyUser->company;
 
         $request->validate([
-            'datetime'   => 'required|date',
-            'menu_ids'   => 'required|array|min:1',
+            'datetime' => 'required|date',
+            'menu_ids' => 'required|array|min:1',
             'menu_ids.*' => 'integer',
         ]);
 
@@ -1227,14 +1270,22 @@ class ReservationController extends Controller
         }
 
         $segments = $this->buildMenuSegments($orderedMenus, $start, $company);
-        $preferLessCapable = (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
+        $preferLessCapable = $company->hasFeature('auto_assignment')
+            && (bool) ($company->prefer_less_capable_staff_for_menu_assignment ?? false);
 
         $staffList = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
             ->where('role', '!=', 'store_operator')
+            ->activeForReservationOn($start)
             ->with('menus:id')
             ->orderBy('priority_order')
             ->get();
+
+        if ($company->isLightPlan()) {
+            $fixedStaff = $company->fixedReservableStaff($start);
+            $staffList = $fixedStaff ? collect([$fixedStaff]) : collect();
+            $staffList->each(fn ($staff) => $staff->setRelation('menus', $orderedMenus));
+        }
 
         $staffIds = $staffList->pluck('id');
 
@@ -1244,7 +1295,7 @@ class ReservationController extends Controller
             ->whereBetween('date', [$start->toDateString(), $end->toDateString()])
             ->get()
             ->keyBy(function ($s) {
-                return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+                return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
             });
 
         $patternIds = $shifts->pluck('shift_pattern_id')->filter()->unique()->values();
@@ -1257,7 +1308,7 @@ class ReservationController extends Controller
             ->where('status', 'approved')
             ->where(function ($q) use ($start, $end) {
                 $q->where('start_at', '<', $end)
-                  ->where('end_at', '>', $start);
+                    ->where('end_at', '>', $start);
             })
             ->get();
 
@@ -1362,7 +1413,7 @@ class ReservationController extends Controller
 
         foreach ($segments as $segment) {
             $candidates = $staffList->filter(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
-                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                if (! $staff->menus->contains('id', $segment['menu']->id)) {
                     return false;
                 }
 
@@ -1383,16 +1434,17 @@ class ReservationController extends Controller
 
             $segmentCandidates[] = [
                 'segment' => $segment,
-                'staffs'  => $candidates,
+                'staffs' => $candidates,
             ];
         }
 
         $patterns = [];
-        $current  = [];
+        $current = [];
 
         $walk = function ($index) use (&$walk, &$patterns, &$current, $segmentCandidates) {
             if ($index >= count($segmentCandidates)) {
                 $patterns[] = $current;
+
                 return;
             }
 
@@ -1400,14 +1452,14 @@ class ReservationController extends Controller
 
             foreach ($entry['staffs'] as $staff) {
                 $current[] = [
-                    'menu_id'          => $entry['segment']['menu']->id,
-                    'menu_name'        => $entry['segment']['menu']->name,
-                    'staff_id'         => $staff->id,
-                    'staff_name'       => $staff->name,
+                    'menu_id' => $entry['segment']['menu']->id,
+                    'menu_name' => $entry['segment']['menu']->name,
+                    'staff_id' => $staff->id,
+                    'staff_name' => $staff->name,
                     'staff_menu_count' => $staff->menus->count(),
-                    'duration'         => $entry['segment']['duration'],
-                    'start_at'         => $entry['segment']['start_at']->format('Y-m-d H:i:s'),
-                    'end_at'           => $entry['segment']['end_at']->format('Y-m-d H:i:s'),
+                    'duration' => $entry['segment']['duration'],
+                    'start_at' => $entry['segment']['start_at']->format('Y-m-d H:i:s'),
+                    'end_at' => $entry['segment']['end_at']->format('Y-m-d H:i:s'),
                 ];
                 $walk($index + 1);
                 array_pop($current);
@@ -1451,7 +1503,7 @@ class ReservationController extends Controller
             ->where('company_id', $company->id)
             ->first();
 
-        if (!$reservation) {
+        if (! $reservation) {
             return response()->json([
                 'success' => false,
                 'message' => '予約が見つかりません',
@@ -1460,7 +1512,7 @@ class ReservationController extends Controller
 
         $cancelKind = $request->input('cancel_kind', 'shop');
 
-        if (!in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
+        if (! in_array($cancelKind, ['customer', 'shop', 'no_show'], true)) {
             $cancelKind = 'shop';
         }
 
@@ -1479,7 +1531,7 @@ class ReservationController extends Controller
             $reservation->cancelled_type = $cancelKind;
             $reservation->save();
 
-            if ($cancelKind === 'shop') {
+            if ($cancelKind === 'shop' && $company->hasFeature('reservation_change_notifications')) {
                 $this->changeNoticeService->createForShopCancellation($company, $reservation);
             }
         });
@@ -1489,14 +1541,14 @@ class ReservationController extends Controller
     {
         $companyUser = auth()->guard('company')->user();
 
-        if (!$companyUser) {
+        if (! $companyUser) {
             return response()->json([], 401);
         }
 
         $company = $companyUser->company;
         $datetime = $request->datetime;
 
-        if (!$datetime) {
+        if (! $datetime) {
             return response()->json([], 400);
         }
 
@@ -1516,8 +1568,14 @@ class ReservationController extends Controller
         $staffList = Staff::where('company_id', $company->id)
             ->where('is_reservable', true)
             ->where('role', '!=', 'store_operator')
+            ->activeForReservationOn($start)
             ->orderBy('priority_order')
             ->get();
+
+        if ($company->isLightPlan()) {
+            $fixedStaff = $company->fixedReservableStaff($start);
+            $staffList = $fixedStaff ? collect([$fixedStaff]) : collect();
+        }
 
         $staffIds = $staffList->pluck('id');
 
@@ -1525,7 +1583,7 @@ class ReservationController extends Controller
             ->whereDate('date', $start->toDateString())
             ->get()
             ->keyBy(function ($s) {
-                return $s->staff_id . '_' . Carbon::parse($s->date)->toDateString();
+                return $s->staff_id.'_'.Carbon::parse($s->date)->toDateString();
             });
 
         $patternIds = $shifts->pluck('shift_pattern_id')->filter();
@@ -1538,7 +1596,7 @@ class ReservationController extends Controller
             ->where('status', 'approved')
             ->where(function ($q) use ($start, $end) {
                 $q->where('start_at', '<', $end)
-                  ->where('end_at', '>', $start);
+                    ->where('end_at', '>', $start);
             })
             ->get();
 
@@ -1547,7 +1605,15 @@ class ReservationController extends Controller
         $availableStaff = [];
 
         foreach ($staffList as $staff) {
-            if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+            if (! $staff->isActiveForReservation($start->toDateString())) {
+                continue;
+            }
+
+            if (! $company->isLightPlan() && ! $this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+                continue;
+            }
+
+            if ($company->isLightPlan() && $this->getBusinessStatus($company, $start, $end) !== 'open') {
                 continue;
             }
 
@@ -1575,9 +1641,9 @@ class ReservationController extends Controller
                 return 'closed';
             }
 
-            if (!empty($calendar->open_time) && !empty($calendar->close_time)) {
-                $open  = Carbon::parse($dateKey . ' ' . $calendar->open_time);
-                $close = Carbon::parse($dateKey . ' ' . $calendar->close_time);
+            if (! empty($calendar->open_time) && ! empty($calendar->close_time)) {
+                $open = Carbon::parse($dateKey.' '.$calendar->open_time);
+                $close = Carbon::parse($dateKey.' '.$calendar->close_time);
 
                 if ($start >= $open && $end <= $close) {
                     return 'open';
@@ -1605,8 +1671,8 @@ class ReservationController extends Controller
                 continue;
             }
 
-            $open  = Carbon::parse($dateKey . ' ' . $p['open']);
-            $close = Carbon::parse($dateKey . ' ' . $p['close']);
+            $open = Carbon::parse($dateKey.' '.$p['open']);
+            $close = Carbon::parse($dateKey.' '.$p['close']);
 
             if ($start >= $open && $end <= $close) {
                 return 'open';
@@ -1618,18 +1684,22 @@ class ReservationController extends Controller
 
     private function isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations): bool
     {
-        $key = $staff->id . '_' . $start->toDateString();
+        if (! $staff->isActiveForReservation($start->toDateString())) {
+            return false;
+        }
+
+        $key = $staff->id.'_'.$start->toDateString();
         $shift = $shifts[$key] ?? null;
 
-        if (!$shift || !$shift->is_work) {
+        if (! $shift || ! $shift->is_work) {
             return false;
         }
 
         $shiftPattern = $shiftPatterns[$shift->shift_pattern_id] ?? null;
 
         if ($shiftPattern) {
-            $shiftStart = Carbon::parse($start->format('Y-m-d') . ' ' . $shiftPattern->start_time);
-            $shiftEnd   = Carbon::parse($start->format('Y-m-d') . ' ' . $shiftPattern->end_time);
+            $shiftStart = Carbon::parse($start->format('Y-m-d').' '.$shiftPattern->start_time);
+            $shiftEnd = Carbon::parse($start->format('Y-m-d').' '.$shiftPattern->end_time);
 
             if ($start < $shiftStart || $end > $shiftEnd) {
                 return false;
@@ -1657,7 +1727,7 @@ class ReservationController extends Controller
             ->where('end_at', '>', $start)
             ->whereHas('reservation', function ($q) use ($company) {
                 $q->where('company_id', $company->id)
-                  ->where('status', 'reserved');
+                    ->where('status', 'reserved');
             });
     }
 
@@ -1694,20 +1764,24 @@ class ReservationController extends Controller
         $reservations = [];
 
         foreach ($staffList as $staff) {
-            if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+            if (! $staff->isActiveForReservation($start->toDateString())) {
+                continue;
+            }
+
+            if (! $company->isLightPlan() && ! $this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
                 continue;
             }
 
             foreach ($this->overlappingReservationDetails($company, (int) $staff->id, $start, $end) as $detail) {
                 $reservation = $detail->reservation;
 
-                if (!$reservation) {
+                if (! $reservation) {
                     continue;
                 }
 
                 $reservationId = (int) $reservation->id;
 
-                if (!isset($reservations[$reservationId])) {
+                if (! isset($reservations[$reservationId])) {
                     $reservations[$reservationId] = [
                         'id' => $reservationId,
                         'customer_name' => $reservation->customer_name,
@@ -1721,7 +1795,7 @@ class ReservationController extends Controller
 
                 $staffName = $detail->staff?->name ?? $staff->name;
 
-                if ($staffName && !in_array($staffName, $reservations[$reservationId]['staff_names'], true)) {
+                if ($staffName && ! in_array($staffName, $reservations[$reservationId]['staff_names'], true)) {
                     $reservations[$reservationId]['staff_names'][] = $staffName;
                 }
             }
@@ -1751,7 +1825,15 @@ class ReservationController extends Controller
         $available = 0;
 
         foreach ($staffList as $staff) {
-            if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+            if (! $staff->isActiveForReservation($start->toDateString())) {
+                continue;
+            }
+
+            if (! $company->isLightPlan() && ! $this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+                continue;
+            }
+
+            if ($company->isLightPlan() && $this->getBusinessStatus($company, $start, $end) !== 'open') {
                 continue;
             }
 
@@ -1821,13 +1903,13 @@ class ReservationController extends Controller
             }
 
             $segmentStart = $cursor->copy();
-            $segmentEnd   = $cursor->copy()->addMinutes($duration);
+            $segmentEnd = $cursor->copy()->addMinutes($duration);
 
             $segments[] = [
-                'menu'      => $menu,
-                'start_at'  => $segmentStart,
-                'end_at'    => $segmentEnd,
-                'duration'  => $duration,
+                'menu' => $menu,
+                'start_at' => $segmentStart,
+                'end_at' => $segmentEnd,
+                'duration' => $duration,
             ];
 
             $cursor = $segmentEnd->copy();
@@ -1838,7 +1920,11 @@ class ReservationController extends Controller
 
     private function isSegmentReservableForStaff($company, $staff, Carbon $start, Carbon $end, $shifts, $shiftPatterns, $vacations): bool
     {
-        if (!$this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
+        if (! $staff->isActiveForReservation($start->toDateString())) {
+            return false;
+        }
+
+        if (! $company->isLightPlan() && ! $this->isStaffSchedulable($staff, $start, $end, $shifts, $shiftPatterns, $vacations)) {
             return false;
         }
 
@@ -1867,12 +1953,12 @@ class ReservationController extends Controller
             $ok = true;
 
             foreach ($segments as $segment) {
-                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                if (! $staff->menus->contains('id', $segment['menu']->id)) {
                     $ok = false;
                     break;
                 }
 
-                if (!$this->isSegmentReservableForStaff(
+                if (! $this->isSegmentReservableForStaff(
                     $company,
                     $staff,
                     $segment['start_at'],
@@ -1886,26 +1972,26 @@ class ReservationController extends Controller
                 }
             }
 
-            if (!$ok) {
+            if (! $ok) {
                 continue;
             }
 
             $assignments = [];
             foreach ($segments as $segment) {
                 $assignments[] = [
-                    'menu_id'    => $segment['menu']->id,
-                    'menu_name'  => $segment['menu']->name,
-                    'staff_id'   => $staff->id,
+                    'menu_id' => $segment['menu']->id,
+                    'menu_name' => $segment['menu']->name,
+                    'staff_id' => $staff->id,
                     'staff_name' => $staff->name,
-                    'duration'   => $segment['duration'],
-                    'start_at'   => $segment['start_at']->format('Y-m-d H:i:s'),
-                    'end_at'     => $segment['end_at']->format('Y-m-d H:i:s'),
+                    'duration' => $segment['duration'],
+                    'start_at' => $segment['start_at']->format('Y-m-d H:i:s'),
+                    'end_at' => $segment['end_at']->format('Y-m-d H:i:s'),
                 ];
             }
 
             $rows[] = [
                 'rank' => count($rows) + 1,
-                'label' => $staff->name . ' さんが全メニューを担当',
+                'label' => $staff->name.' さんが全メニューを担当',
                 'assignments' => $assignments,
             ];
         }
@@ -1966,15 +2052,15 @@ class ReservationController extends Controller
 
                 $reason = null;
 
-                if (!$hasMenu) {
+                if (! $hasMenu) {
                     $reason = 'menu_not_supported';
-                } elseif (!$schedulable) {
+                } elseif (! $schedulable) {
                     $reason = 'not_schedulable';
-                } elseif (!$businessOpen) {
+                } elseif (! $businessOpen) {
                     $reason = 'outside_business_hours';
                 } elseif (($overlapCount ?? 0) >= max(1, (int) ($company->max_simultaneous_reservations ?? 1))) {
                     $reason = 'already_booked';
-                } elseif (!$reservable) {
+                } elseif (! $reservable) {
                     $reason = 'not_reservable';
                 } else {
                     $reason = 'ok';
@@ -2003,7 +2089,7 @@ class ReservationController extends Controller
     {
         foreach ($segments as $segment) {
             $exists = $staffList->contains(function ($staff) use ($company, $segment, $shifts, $shiftPatterns, $vacations) {
-                if (!$staff->menus->contains('id', $segment['menu']->id)) {
+                if (! $staff->menus->contains('id', $segment['menu']->id)) {
                     return false;
                 }
 
@@ -2018,7 +2104,7 @@ class ReservationController extends Controller
                 );
             });
 
-            if (!$exists) {
+            if (! $exists) {
                 return false;
             }
         }
@@ -2053,8 +2139,10 @@ class ReservationController extends Controller
         $staffId = $request->staff_id;
 
         $menus = Menu::where('company_id', $company->id)
-            ->whereHas('staffs', function ($q) use ($staffId) {
-                $q->where('staff_id', $staffId);
+            ->when(! $company->isLightPlan(), function ($query) use ($staffId) {
+                $query->whereHas('staffs', function ($q) use ($staffId) {
+                    $q->where('staff_id', $staffId);
+                });
             })
             ->orderBy('sort_order')
             ->get();

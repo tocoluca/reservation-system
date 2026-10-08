@@ -67,4 +67,14 @@ final class PlanCatalog
 
         return in_array($feature, $features, true);
     }
+
+    public static function availablePlanLabelsForFeature(string $feature): array
+    {
+        return collect(self::all())
+            ->filter(fn (array $plan, string $code) => self::hasFeature($code, $feature))
+            ->map(fn (array $plan) => (string) ($plan['short_name'] ?? $plan['name'] ?? ''))
+            ->filter()
+            ->values()
+            ->all();
+    }
 }

@@ -83,6 +83,18 @@ class LightPlanTest extends TestCase
         $this->assertTrue($platinum->hasFeature('line_notifications'));
     }
 
+    public function test_plan_restriction_can_show_the_plans_that_include_a_feature(): void
+    {
+        $this->assertSame(
+            ['スタンダード', 'プラチナ'],
+            PlanCatalog::availablePlanLabelsForFeature('staff_management')
+        );
+        $this->assertSame(
+            ['プラチナ'],
+            PlanCatalog::availablePlanLabelsForFeature('line_notifications')
+        );
+    }
+
     public function test_stripe_price_ids_resolve_to_all_plan_codes(): void
     {
         config()->set('plans.plans.light.price_id', 'price_light');

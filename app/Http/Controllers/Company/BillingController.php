@@ -20,7 +20,7 @@ class BillingController extends Controller
     private function authorizeBilling(): void
     {
         $staff = Auth::guard('company')->user();
-        abort_if(!$staff || !$staff->canDashboard('card.billing'), 403);
+        abort_if(! $staff || ! $staff->canDashboard('card.billing'), 403);
     }
 
     public function index()
@@ -49,7 +49,7 @@ class BillingController extends Controller
 
         $priceId = PlanCatalog::priceId($request->plan);
 
-        if (!$priceId) {
+        if (! $priceId) {
             return back()->with('error', 'Stripeの料金設定が見つかりません。.env を確認してください。');
         }
 
@@ -61,8 +61,8 @@ class BillingController extends Controller
         $staffLimit = $plan['max_active_staff'] ?? null;
 
         if ($staffLimit !== null && (
-            $company->activeStaffCount() > $staffLimit
-            || !$company->fixedReservableStaff()
+            $company->activeReservableStaffCount() !== $staffLimit
+            || ! $company->fixedReservableStaff()
         )) {
             return back()->with(
                 'error',
@@ -96,8 +96,8 @@ class BillingController extends Controller
             return $company
                 ->newSubscription('default', $priceId)
                 ->checkout([
-                    'success_url' => route('company.billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                    'cancel_url'  => route('company.billing.index'),
+                    'success_url' => route('company.billing.success').'?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url' => route('company.billing.index'),
                     'customer_update' => [
                         'name' => 'auto',
                         'address' => 'auto',
@@ -142,8 +142,8 @@ class BillingController extends Controller
                     return $company
                         ->newSubscription('default', $priceId)
                         ->checkout([
-                            'success_url' => route('company.billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                            'cancel_url'  => route('company.billing.index'),
+                            'success_url' => route('company.billing.success').'?session_id={CHECKOUT_SESSION_ID}',
+                            'cancel_url' => route('company.billing.index'),
                             'customer_update' => [
                                 'name' => 'auto',
                                 'address' => 'auto',
@@ -171,7 +171,7 @@ class BillingController extends Controller
                 }
             }
 
-            return back()->with('error', 'Stripeエラー: ' . $e->getMessage());
+            return back()->with('error', 'Stripeエラー: '.$e->getMessage());
         }
     }
 
@@ -270,7 +270,7 @@ class BillingController extends Controller
 
         return redirect()
             ->route('company.billing.index')
-            ->with('success', $company->fresh()->planLabel() . 'プランの契約情報を反映しました。');
+            ->with('success', $company->fresh()->planLabel().'プランの契約情報を反映しました。');
     }
 
     public function portal()
@@ -314,7 +314,7 @@ class BillingController extends Controller
 
                 return;
             } catch (InvalidRequestException $e) {
-                if (!str_contains($e->getMessage(), 'No such customer')) {
+                if (! str_contains($e->getMessage(), 'No such customer')) {
                     throw $e;
                 }
 
@@ -332,7 +332,7 @@ class BillingController extends Controller
 
         $company->createAsStripeCustomer([
             'email' => $company->email,
-            'name'  => $company->name,
+            'name' => $company->name,
             'phone' => $company->phone,
         ]);
 

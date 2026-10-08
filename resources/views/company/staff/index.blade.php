@@ -293,18 +293,23 @@
                                        style="background: {{ $theme }}">
                                         編集
                                     </a>
+
+                                    @if((int) $staff->id !== (int) $current->id)
+                                        <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？予約履歴は残りますが、この担当者はログイン・予約受付できなくなります。'));">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-red-200 bg-white font-semibold text-red-600 hover:bg-red-50 transition">
+                                                削除
+                                            </button>
+                                        </form>
+                                    @endif
                                 @endif
 
-                                @if($canResetPassword($staff) || ($current->isMaster() && (int) $staff->id !== (int) $current->id))
+                                @if($canResetPassword($staff))
                                     <details class="relative">
                                         <summary class="cursor-pointer list-none inline-flex items-center justify-center px-4 py-2 rounded-xl border border-gray-300 bg-white font-semibold text-gray-700 hover:bg-gray-50">その他</summary>
                                         <div class="absolute right-0 z-20 mt-2 w-40 rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
-                                            @if($canResetPassword($staff))
-                                                <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50">パスワード初期化</button>
-                                            @endif
-                                            @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
-                                                <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));"><input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE"><button type="submit" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-gray-100">削除する</button></form>
-                                            @endif
+                                            <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50">パスワード初期化</button>
                                         </div>
                                     </details>
                                 @endif
@@ -397,18 +402,23 @@
                                style="background: {{ $theme }}">
                                 編集する
                             </a>
+
+                            @if((int) $staff->id !== (int) $current->id)
+                                <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？予約履歴は残りますが、この担当者はログイン・予約受付できなくなります。'));">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="w-full rounded-2xl border border-red-200 bg-white py-3 text-sm font-semibold text-red-600">
+                                        担当者を削除
+                                    </button>
+                                </form>
+                            @endif
                         @endif
 
-                        @if($canResetPassword($staff) || ($current->isMaster() && (int) $staff->id !== (int) $current->id))
+                        @if($canResetPassword($staff))
                             <details class="rounded-2xl border border-gray-200 bg-gray-50">
                                 <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-gray-700">その他の操作</summary>
                                 <div class="border-t border-gray-200 p-3 space-y-2">
-                                    @if($canResetPassword($staff))
-                                        <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-xl border border-red-200 bg-white py-3 text-sm font-semibold text-red-600">パスワード初期化</button>
-                                    @endif
-                                    @if($current->isMaster() && (int) $staff->id !== (int) $current->id)
-                                        <form method="POST" action="{{ route('company.staff.destroy', $staff->id) }}" onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？この操作は取り消せません。'));">@csrf @method('DELETE')<button type="submit" class="w-full rounded-xl border border-gray-300 bg-white py-3 text-sm font-semibold text-gray-700">削除する</button></form>
-                                    @endif
+                                    <button type="button" onclick="openPasswordResetModal('{{ route('company.staff.reset-password', $staff->id) }}', @js($staff->name), @js($roleLabel))" class="w-full rounded-xl border border-red-200 bg-white py-3 text-sm font-semibold text-red-600">パスワード初期化</button>
                                 </div>
                             </details>
                         @endif

@@ -14,6 +14,7 @@
     $graceUntil = optional($company->grace_until)->format('Y/m/d');
     $currentPeriodEnd = optional($company->current_period_end)->format('Y/m/d');
     $subscribedAt = optional($company->subscribed_at)->format('Y/m/d');
+    $activeReservableStaffCount = $company->activeReservableStaffCount();
 
     $statusLabel = match($company->subscription_status) {
         'active' => '有効',
@@ -251,9 +252,29 @@
                     </div>
                 </div>
 
+                @if($plan['key'] === 'light')
+                    <div class="mt-4 rounded-2xl border px-4 py-3 text-sm {{ $activeReservableStaffCount === 1 ? 'border-green-200 bg-green-50 text-green-800' : 'border-amber-200 bg-amber-50 text-amber-900' }}">
+                        <div class="font-bold">
+                            予約受付中の担当者：{{ number_format($activeReservableStaffCount) }}名
+                        </div>
+                        <p class="mt-1 leading-6">
+                            ライトプランは、予約を担当する稼働中のスタッフが1名の場合に利用できます。
+                        </p>
+                        @if($activeReservableStaffCount !== 1 && $company->hasFeature('staff_management'))
+                            <a href="{{ route('company.staff.index') }}" class="mt-2 inline-flex font-bold underline">
+                                担当者を編集・削除する
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
                 @if($isCurrentPlan)
                     <div class="mt-6 w-full px-4 py-3.5 rounded-2xl bg-gray-100 text-gray-500 text-center font-bold">
                         現在ご利用中のプランです
+                    </div>
+                @elseif($plan['key'] === 'light' && $activeReservableStaffCount !== 1)
+                    <div class="mt-6 w-full px-4 py-3.5 rounded-2xl bg-gray-100 text-gray-500 text-center font-bold">
+                        担当者を1名にすると申し込めます
                     </div>
                 @else
                     <form action="{{ route('company.billing.checkout') }}" method="POST" class="mt-6">

@@ -391,7 +391,7 @@ class StaffController extends Controller
             }
         });
 
-        return back()->with('success', '譖ｴ譁ｰ縺励∪縺励◆');
+        return back()->with('success', '担当者情報を更新しました。');
     }
 
     public function destroy(Staff $staff)
@@ -404,13 +404,13 @@ class StaffController extends Controller
         if ($this->roleLevel($staff->role) > $this->roleLevel($current->role)) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '荳贋ｽ肴ｨｩ髯舌・蜑企勁縺ｧ縺阪∪縺帙ｓ');
+                ->with('error', '上位権限の担当者は削除できません。');
         }
 
         if ((int) $staff->id === (int) $current->id) {
             return redirect()
                 ->route('company.staff.index')
-                ->with('error', '閾ｪ蛻・・霄ｫ縺ｯ蜑企勁縺ｧ縺阪∪縺帙ｓ');
+                ->with('error', '現在ログイン中の担当者は削除できません。');
         }
 
         if ($staff->image_path && file_exists(public_path($staff->image_path))) {
@@ -419,7 +419,7 @@ class StaffController extends Controller
 
         $staff->delete();
 
-        return back()->with('success', '蜑企勁縺励∪縺励◆');
+        return back()->with('success', '担当者を削除しました。');
     }
 
     public function resetPassword(Request $request, $id)

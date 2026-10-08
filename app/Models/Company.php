@@ -239,6 +239,18 @@ class Company extends Authenticatable
             ->count();
     }
 
+    public function activeReservableStaffCount(): int
+    {
+        return $this->staff()
+            ->where('is_reservable', true)
+            ->where('role', '!=', 'store_operator')
+            ->where(function ($query) {
+                $query->whereNull('retired_at')
+                    ->orWhereDate('retired_at', '>', today()->toDateString());
+            })
+            ->count();
+    }
+
     public function fixedReservableStaff($reservationDate = null)
     {
         $targetDate = Carbon::parse($reservationDate ?? today())->toDateString();

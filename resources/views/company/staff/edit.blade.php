@@ -308,11 +308,29 @@
                            class="block w-full text-center px-6 py-3.5 rounded-2xl border border-gray-200 text-gray-700 bg-white hover:bg-gray-50 transition">
                             一覧へ戻る
                         </a>
+
+                        @if($canDelete)
+                            <button type="submit"
+                                    form="delete-staff-form"
+                                    class="w-full px-6 py-3.5 rounded-2xl border border-red-200 bg-white text-red-600 font-semibold hover:bg-red-50 transition">
+                                この担当者を削除
+                            </button>
+                        @endif
                     </div>
                 </section>
             </div>
         </div>
     </form>
+
+    @if($canDelete)
+        <form id="delete-staff-form"
+              method="POST"
+              action="{{ route('company.staff.destroy', $staff->id) }}"
+              onsubmit="return confirm(@js('「' . $staff->name . '」を削除しますか？予約履歴は残りますが、この担当者はログイン・予約受付できなくなります。'));">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endif
 </div>
 
 <script>

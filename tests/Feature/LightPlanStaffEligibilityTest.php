@@ -62,6 +62,7 @@ class LightPlanStaffEligibilityTest extends TestCase
         $this->staff($company, '0002', 'staff', true, '2026-10-08');
 
         $this->assertSame(1, $company->activeReservableStaffCount());
+        $this->assertTrue($company->isEligibleForLightPlan());
         $this->assertSame('MST01', $company->fixedReservableStaff()?->staff_code);
     }
 
@@ -78,6 +79,7 @@ class LightPlanStaffEligibilityTest extends TestCase
 
         $this->assertSoftDeleted('staff', ['id' => $extra->id]);
         $this->assertSame(1, $company->activeReservableStaffCount());
+        $this->assertTrue($company->isEligibleForLightPlan());
         $this->assertSame('担当者を削除しました。', session('success'));
         $this->assertTrue($response->isRedirect());
     }

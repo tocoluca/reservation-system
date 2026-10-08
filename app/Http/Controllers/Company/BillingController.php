@@ -60,10 +60,7 @@ class BillingController extends Controller
         $plan = PlanCatalog::get($request->plan);
         $staffLimit = $plan['max_active_staff'] ?? null;
 
-        if ($staffLimit !== null && (
-            $company->activeReservableStaffCount() !== $staffLimit
-            || ! $company->fixedReservableStaff()
-        )) {
+        if ($staffLimit !== null && ! $company->isEligibleForLightPlan($staffLimit)) {
             return back()->with(
                 'error',
                 'ライトプランは予約を担当する稼働中のスタッフが1名の店舗のみお申し込みいただけます。担当者を1名にしてから再度お申し込みください。'

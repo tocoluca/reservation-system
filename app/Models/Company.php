@@ -251,6 +251,11 @@ class Company extends Authenticatable
             ->count();
     }
 
+    public function isEligibleForLightPlan(int $staffLimit = 1): bool
+    {
+        return $this->activeReservableStaffCount() === $staffLimit;
+    }
+
     public function fixedReservableStaff($reservationDate = null)
     {
         $targetDate = Carbon::parse($reservationDate ?? today())->toDateString();
